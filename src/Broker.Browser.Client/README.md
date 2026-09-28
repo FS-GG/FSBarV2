@@ -21,7 +21,8 @@ controls with credentials received through its private ready file.
 
 Pointer, arrow-key, and numeric target input share one domain path and a
 0.25-world-unit target quantum. The quantized coordinate is the protobuf guest
-input and the semantic coordinate displayed from validated echoed output.
+input. Validated guest output remains byte-semantically raw; display formatting
+does not rewrite coordinates produced by an independently authored guest.
 
 Build with the repository-pinned Fable 5.18.0 tool and exact package locks:
 

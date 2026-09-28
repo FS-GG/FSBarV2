@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { decodeServerFrame, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
+import { decodeServerFrame, projectGuestResponse, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
 import { encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
 import { selectProductUrl } from "./product-topology.mjs";
 
@@ -43,6 +43,16 @@ test("external receiver URL selection preserves the private ready handoff", () =
   assert.equal(ready.sessionId, "session"); assert.equal(ready.credential, "secret");
   assert.throws(() => selectProductUrl(ready, { BARC_EXTERNAL_PRODUCT_URL: "http://127.0.0.1:4300/barc/" }), /requires BARC_EXTERNAL_READY_FILE/);
   assert.throws(() => selectProductUrl(ready, { BARC_EXTERNAL_READY_FILE: "/private/ready.json", BARC_EXTERNAL_PRODUCT_URL: "file:///tmp/barc/" }), /HTTP or HTTPS/);
+});
+
+test("raw independently-authored guest coordinates are not host-quantized", () => {
+  const raw = { x: 1.234567, elevation: -7.654321, z: 9.876543 };
+  const bytes = encodeObject(v1.GuestResponse, { requestId: "41", sessionId: bootstrap.sessionId, consumedSequence: "9007199254740993", acknowledgment: "GUEST_ACK_STATUS_CONSUMED", kind: "INTENT_KIND_MOVE", move: { unitIds: ["77"], groundTarget: raw } });
+  const canonical = v1.GuestResponse.toObject(v1.GuestResponse.decode(bytes), { longs: String, enums: String, bytes: String, defaults: false, arrays: true, oneofs: true }).move;
+  const projected = projectGuestResponse(bytes, { requestId: "41", contextSequence: "9007199254740993" }, bootstrap);
+  assert.deepEqual(projected, canonical);
+  assert.notEqual(projected.groundTarget.x, 1.25);
+  assert.notEqual(projected.groundTarget.z, 10);
 });
 
 for (const [name, message] of [

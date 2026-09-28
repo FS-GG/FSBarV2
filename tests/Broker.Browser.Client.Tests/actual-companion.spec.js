@@ -114,7 +114,9 @@ test("actual companion preserves the complete read-only product boundary", async
     await expect(page.locator('.unit.visual[data-unit-id="88"]')).toBeVisible();
     await expect(page.locator('.unit.radar[data-unit-id="99"]')).toBeVisible();
     await expect(page.locator('.feature[data-feature-id="77"][data-definition-id="909"]')).toBeVisible();
-    await expect(page.locator('.unit.radar[data-unit-id="99"] title')).toContainText("type unknown");
+    await expect(page.locator('.unit.own[data-unit-id="77"]')).toHaveAttribute("aria-label", /team 7 · elevation 403.5 · health 123.5 of 800/);
+    await expect(page.locator('.unit.radar[data-unit-id="99"]')).toHaveAttribute("aria-label", /type unknown · team unknown · elevation unavailable · health unavailable/);
+    await expect(page.locator('.feature[data-feature-id="77"]')).toHaveAttribute("aria-label", /elevation 222.25/);
     await expect(page.locator(".economy")).toContainText("Metal 42.5 · Energy 0");
 
     await chooseFile(page, "Import .wasm", source("tests/Broker.Browser.Wasm.Tests/generated/custom-preview.wasm"));
@@ -139,6 +141,8 @@ test("actual companion preserves the complete read-only product boundary", async
     await page.evaluate(() => window.__barcPointerPreview = document.querySelector(".move-preview"));
     await selectAndKeyboardTarget(page);
     await page.waitForFunction(() => document.querySelector(".move-preview") !== window.__barcPointerPreview);
+    const keyboardMove = await page.locator(".move-preview").evaluate(element => ({ x: Number(element.dataset.x), z: Number(element.dataset.z), units: element.dataset.unitIds }));
+    expect(keyboardMove).toEqual(pointerMove);
 
     await expect(page.getByRole("status")).toContainText("stale");
     await expect(page.locator(".age")).toContainText("capture time unavailable");

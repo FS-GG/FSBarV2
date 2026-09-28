@@ -109,6 +109,16 @@ export function decodeServerFrame(bytesLike, context = {}) {
   return envelope;
 }
 
+export function projectGuestResponse(bytes, expected, bootstrap) {
+  const response = canonicalObject(v1.GuestResponse, bytes);
+  if (response.requestId !== expected.requestId || response.sessionId !== bootstrap.sessionId || response.consumedSequence !== expected.contextSequence || response.acknowledgment !== "GUEST_ACK_STATUS_CONSUMED") {
+    throw new Error("guest response identity did not match queued input");
+  }
+  if (response.kind === "INTENT_KIND_MOVE" && response.preview === "move") return response.move;
+  if (!response.kind && !response.preview) return null;
+  throw new Error("guest response preview and kind disagree");
+}
+
 export class SerialGuestQueue {
   constructor(supervisor, onResult, onFault) {
     this.supervisor = supervisor;
@@ -221,18 +231,7 @@ export function createRuntime(root, options, emit) {
   const queue = new SerialGuestQueue(supervisor, (item, result) => {
     if (!projection.armed || item.connectionGeneration !== connectionGeneration || item.guestGeneration !== supervisor.generation) return;
     try {
-      const response = canonicalObject(v1.GuestResponse, result.output);
-      if (response.requestId !== item.requestId || response.sessionId !== bootstrap.sessionId || response.consumedSequence !== item.contextSequence || response.acknowledgment !== "GUEST_ACK_STATUS_CONSUMED") {
-        throw new Error("guest response identity did not match queued input");
-      }
-      if (response.kind === "INTENT_KIND_MOVE" && response.preview === "move") {
-        response.move.groundTarget.x = quantizeTarget(response.move.groundTarget.x);
-        response.move.groundTarget.z = quantizeTarget(response.move.groundTarget.z);
-        if (Object.hasOwn(response.move.groundTarget, "elevation")) response.move.groundTarget.elevation = quantizeTarget(response.move.groundTarget.elevation);
-        notify("preview", "", response.move);
-      }
-      else if (!response.kind && !response.preview) notify("preview", "", null);
-      else throw new Error("guest response preview and kind disagree");
+      notify("preview", "", projectGuestResponse(result.output, item, bootstrap));
     } catch (error) { disarm(`Guest output refused: ${error.message}`); }
   }, fault);
 
@@ -403,12 +402,20 @@ export function createRuntime(root, options, emit) {
     const observation = model.snapshot;
     elements.units.replaceChildren(); elements.features.replaceChildren(); elements.preview.replaceChildren();
     if (observation) {
-      for (const feature of observation.features) { const p = coordinates(feature.position); const shape = svgElement("rect", { x: p.x - 5, y: p.y - 5, width: 10, height: 10, class: "feature" }); shape.dataset.featureId = feature.id; shape.dataset.definitionId = feature.definitionId; elements.features.append(shape); }
+      for (const feature of observation.features) {
+        const p = coordinates(feature.position); const shape = svgElement("rect", { x: p.x - 5, y: p.y - 5, width: 10, height: 10, class: "feature", role: "img" });
+        shape.dataset.featureId = feature.id; shape.dataset.definitionId = feature.definitionId;
+        const detail = `feature ${feature.id} type ${feature.definitionId} · elevation ${Object.hasOwn(feature.position, "elevation") ? feature.position.elevation : "unavailable"}`;
+        shape.setAttribute("aria-label", detail); const title = svgElement("title"); title.textContent = detail; shape.append(title); elements.features.append(shape);
+      }
       for (const unit of observation.units) {
         const p = coordinates(unit.position); const own = unit.observation === "OBSERVATION_KIND_OWN";
         const shape = unit.observation === "OBSERVATION_KIND_RADAR" ? svgElement("rect", { x: p.x - 7, y: p.y - 7, width: 14, height: 14 }) : svgElement("circle", { cx: p.x, cy: p.y, r: own ? 10 : 8 });
         shape.setAttribute("class", `unit ${own ? "own" : unit.observation === "OBSERVATION_KIND_RADAR" ? "radar" : "visual"}${selected.includes(unit.id) ? " selected" : ""}`);
-        shape.dataset.unitId = unit.id; shape.dataset.own = String(own); const title = svgElement("title"); title.textContent = `${unit.observation.replace("OBSERVATION_KIND_", "").toLowerCase()} unit ${unit.id}${Object.hasOwn(unit, "definitionId") ? ` type ${unit.definitionId}` : " type unknown"}`; shape.append(title); elements.units.append(shape);
+        const kind = unit.observation.replace("OBSERVATION_KIND_", "").toLowerCase();
+        const health = Object.hasOwn(unit, "health") ? `${unit.health}${Object.hasOwn(unit, "maxHealth") ? ` of ${unit.maxHealth}` : ""}` : "unavailable";
+        const detail = `${kind} unit ${unit.id} · type ${Object.hasOwn(unit, "definitionId") ? unit.definitionId : "unknown"} · team ${Object.hasOwn(unit, "teamId") ? unit.teamId : "unknown"} · elevation ${Object.hasOwn(unit.position, "elevation") ? unit.position.elevation : "unavailable"} · health ${health}`;
+        shape.dataset.unitId = unit.id; shape.dataset.own = String(own); shape.setAttribute("role", "img"); shape.setAttribute("aria-label", detail); const title = svgElement("title"); title.textContent = detail; shape.append(title); elements.units.append(shape);
       }
       const captured = Object.hasOwn(observation, "capturedAtUnixMs") ? ` · captured ${new Date(Number(observation.capturedAtUnixMs)).toISOString()}` : " · capture time unavailable";
       elements.age.textContent = `Snapshot ${observation.sequence}${captured}`;
