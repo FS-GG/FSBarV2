@@ -173,6 +173,28 @@ let tests = testList "authenticated browser preview boundary" [
         do! host.StopAsync()
     }
 
+    testTask "wrong game and wrong session metadata are refused" {
+        let hub, sessionId = setupHub()
+        let origin = "http://127.0.0.1:4173"
+        let port = freePort()
+        let httpUrl = sprintf "http://127.0.0.1:%d" port
+        let wsUrl = sprintf "ws://127.0.0.1:%d/barc-preview" port
+        let! (host: Microsoft.Extensions.Hosting.IHost) =
+            Gateway.startAsync hub (Gateway.defaultConfig httpUrl origin "secret" sessionId) CancellationToken.None
+        let wrongGame = auth sessionId origin "secret"
+        wrongGame.Game <- "arena"
+        let! (arena: ClientWebSocket) = connect wsUrl origin wrongGame
+        let buffer = Array.zeroCreate<byte> 128
+        let! (arenaClosed: ValueWebSocketReceiveResult) = arena.ReceiveAsync(Memory<byte>(buffer), CancellationToken.None).AsTask()
+        Expect.equal arenaClosed.MessageType WebSocketMessageType.Close "wrong game closes socket"
+        let wrongSession = auth (Guid.NewGuid()) origin "secret"
+        let! (session: ClientWebSocket) = connect wsUrl origin wrongSession
+        let! (sessionClosed: ValueWebSocketReceiveResult) = session.ReceiveAsync(Memory<byte>(buffer), CancellationToken.None).AsTask()
+        Expect.equal sessionClosed.MessageType WebSocketMessageType.Close "wrong session closes socket"
+        arena.Dispose(); session.Dispose()
+        do! host.StopAsync()
+    }
+
     testTask "post-auth hostile frames cannot enter an active coordinator command channel" {
         let hub, sessionId = setupHub()
         let claim = BrokerState.tryClaimCoordinatorCommandChannel "highbar" "browser-test" hub
