@@ -10,8 +10,8 @@ open Expecto
 /// sha256 drifts from this constant, the test fails loudly with a diff —
 /// re-run the re-vendoring procedure in the pin manifest.
 let private expectedHashes : (string * string) list =
-    [ "coordinator.proto", "d8a0e651ed6a8186a7eea0beb6a05ede7c4a9f0a132b581e8af2e23fe30cf5f6"
-      "state.proto",       "ca223f63ba081e23b6baf201a053337282332b018f69114681924016b06d9810"
+    [ "coordinator.proto", "b8d3f56494564a8628a20ffdcc2ac7e42a0508f8f1162bcc87ee6c0f6b7c3c1d"
+      "state.proto",       "11ff63ac8211cbb6530e9be3ce4323a8b5911306d85c1b472c6aaa4618fc78d8"
       "commands.proto",    "19cbca8c0b84de976e5e99c20fd9a7e3b63909248d45caed3f237315cc780de0"
       "events.proto",      "796d79ed2eb3c20505565d7b93d2d14ce8e1c1c75caa8f4e10bf87ab2a4f0175"
       "common.proto",      "15072451c53f4428bc3c1c1c35e21be5f79a2461c451fa1be523ce26667826b1" ]

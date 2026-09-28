@@ -11,8 +11,9 @@ workflow per spec Assumptions; this file is the audit anchor for
 
 - **Repo**: `EHotwagner/HighBarV3`
 - **Branch**: `master`
-- **Commit SHA (full)**: `66483515a3333d6160bb5298e0d0bf6bb7188b4c`
-- **Captured at**: 2026-04-28
+- **Commit SHA (full)**: `dd6f5ef909905a8b5182d3d52c10946527ea79e5`
+- **Captured at**: 2026-09-28
+- **Ordered five-file bundle sha256**: `796278dda7e178a5592413e9842795711efae7b101bc502d1501622bfb5c316e`
 
 ## Vendored files
 
@@ -23,8 +24,8 @@ byte-for-byte.
 
 | File | GitHub blob SHA | sha256 of file content |
 |------|-----------------|------------------------|
-| `coordinator.proto` | `2955ac7d29898da08bc776e9ab2010d7aa05accd` | `d8a0e651ed6a8186a7eea0beb6a05ede7c4a9f0a132b581e8af2e23fe30cf5f6` |
-| `state.proto` | `530ed5e5f9ac8187a63053b213de0d48d110ee13` | `ca223f63ba081e23b6baf201a053337282332b018f69114681924016b06d9810` |
+| `coordinator.proto` | `497483c703ebca8279d328f4bd39ba94118e1ecd` | `b8d3f56494564a8628a20ffdcc2ac7e42a0508f8f1162bcc87ee6c0f6b7c3c1d` |
+| `state.proto` | `53b5fc0d439c3abb386151e5fc93fa27997cfbfb` | `11ff63ac8211cbb6530e9be3ce4323a8b5911306d85c1b472c6aaa4618fc78d8` |
 | `commands.proto` | `ff8a676496501c3e47aa7fb69fd226550f6b320e` | `19cbca8c0b84de976e5e99c20fd9a7e3b63909248d45caed3f237315cc780de0` |
 | `events.proto` | `0b050ceb5820f4b1f34a825abc399e8bc446200c` | `796d79ed2eb3c20505565d7b93d2d14ce8e1c1c75caa8f4e10bf87ab2a4f0175` |
 | `common.proto` | `7b8b1d915b22e874d672593650917a3f0fc8a97e` | `15072451c53f4428bc3c1c1c35e21be5f79a2461c451fa1be523ce26667826b1` |

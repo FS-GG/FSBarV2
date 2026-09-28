@@ -1,11 +1,17 @@
   C Broker.Protocol.BrokerState.CoordinatorCommandClaim.AlreadyClaimed()
   C Broker.Protocol.BrokerState.CoordinatorCommandClaim.Claimed(Item:CoordinatorCommandLease)
   C Broker.Protocol.BrokerState.CoordinatorCommandClaim.NoCoordinator()
+  C Broker.Protocol.BrokerState.NativeResultDisposition.Duplicate()
+  C Broker.Protocol.BrokerState.NativeResultDisposition.Late()
+  C Broker.Protocol.BrokerState.NativeResultDisposition.Recorded()
   C Broker.Protocol.BrokerState.OwnerRule.FirstAttached()
   C Broker.Protocol.BrokerState.OwnerRule.Pinned(pluginId:String)
+  F Broker.Protocol.BrokerState.ClientChannel.feedbackBacklog : Queue<StateMsg>
   F Broker.Protocol.BrokerState.ClientChannel.id : ScriptingClientId
   F Broker.Protocol.BrokerState.ClientChannel.subscriber : FSharpOption<Channel`1>
+  F Broker.Protocol.BrokerState.CoordinatorCommandLease.channelIncarnation : String
   F Broker.Protocol.BrokerState.CoordinatorCommandLease.leaseId : Guid
+  F Broker.Protocol.BrokerState.CoordinatorCommandLease.pluginId : String
   F Broker.Protocol.BrokerState.CoordinatorCommandLease.reader : ChannelReader<OutboundDelivery>
   F Broker.Protocol.BrokerState.CoordinatorCommandLease.sessionId : Guid
   F Broker.Protocol.BrokerState.Hub.activePluginId : FSharpOption<String>
@@ -13,14 +19,17 @@
   F Broker.Protocol.BrokerState.Hub.brokerVersion : Version
   F Broker.Protocol.BrokerState.Hub.clients : ConcurrentDictionary<ScriptingClientId,ClientChannel>
   F Broker.Protocol.BrokerState.Hub.commandQueueCapacity : Int32
+  F Broker.Protocol.BrokerState.Hub.completedNativeResults : HashSet<ValueTuple`3>
   F Broker.Protocol.BrokerState.Hub.coordinatorOutbound : FSharpOption<CoordinatorOutbound>
   F Broker.Protocol.BrokerState.Hub.expectedSchemaVersion : String
   F Broker.Protocol.BrokerState.Hub.invalidity : FSharpOption<Tuple`3>
   F Broker.Protocol.BrokerState.Hub.lastHeartbeatAt : DateTimeOffset
   F Broker.Protocol.BrokerState.Hub.mode : Mode
+  F Broker.Protocol.BrokerState.Hub.nativeIdentities : Dictionary<ValueTuple`3,NativeIdentity>
   F Broker.Protocol.BrokerState.Hub.nextBatchSeq : UInt64
   F Broker.Protocol.BrokerState.Hub.nextCorrelation : UInt64
   F Broker.Protocol.BrokerState.Hub.ownerRule : OwnerRule
+  F Broker.Protocol.BrokerState.Hub.pendingNativeResults : Dictionary<ValueTuple`3,PendingNativeResult>
   F Broker.Protocol.BrokerState.Hub.roster : Roster
   F Broker.Protocol.BrokerState.Hub.session : FSharpOption<Session>
   F Broker.Protocol.BrokerState.Hub.slots : FSharpList<ParticipantSlot>
@@ -47,6 +56,8 @@ M Broker.Protocol.BrokerState.completeCoordinatorCommandChannel(sessionId:Guid, 
 M Broker.Protocol.BrokerState.create(brokerVersion:Version, commandQueueCapacity:Int32, auditEmitter:FSharpFunc<AuditEvent,Unit>) : Hub
 M Broker.Protocol.BrokerState.ensureCoordinatorCommandChannel(hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.expectedSchemaVersion(hub:Hub) : String
+M Broker.Protocol.BrokerState.expirePendingNativeResult(channelIncarnation:String, batchSeq:UInt64, correlation:UInt64, detail:String, hub:Hub) : Void
+M Broker.Protocol.BrokerState.flushFeedbackBacklog(client:ClientChannel, hub:Hub) : Void
 M Broker.Protocol.BrokerState.grantAdmin(id:ScriptingClientId, by:String, at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,RosterError>
 M Broker.Protocol.BrokerState.hasCoordinatorCommandChannel(hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.isCurrentDelivery(delivery:OutboundDelivery, hub:Hub) : Boolean
@@ -55,6 +66,7 @@ M Broker.Protocol.BrokerState.launchHostSession(at:DateTimeOffset, hub:Hub) : FS
 M Broker.Protocol.BrokerState.liveClients(hub:Hub) : FSharpList<ClientChannel>
 M Broker.Protocol.BrokerState.mode(hub:Hub) : Mode
 M Broker.Protocol.BrokerState.noteHeartbeat(pluginId:String, at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,RejectReason>
+M Broker.Protocol.BrokerState.noteNativeDispatch(dispatch:CommandDispatchEvent, hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.noteStateGap(pluginId:String, lastSeq:UInt64, receivedSeq:UInt64, at:DateTimeOffset, hub:Hub) : Void
 M Broker.Protocol.BrokerState.noteStateInvalidated(pluginId:String, lastSeq:UInt64, receivedSeq:UInt64, detail:String, at:DateTimeOffset, hub:Hub) : Void
 M Broker.Protocol.BrokerState.openGuestSession(at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,String>
@@ -62,6 +74,8 @@ M Broker.Protocol.BrokerState.openHostSession(config:LobbyConfig, at:DateTimeOff
 M Broker.Protocol.BrokerState.ownerRule(hub:Hub) : OwnerRule
 M Broker.Protocol.BrokerState.refreshLiveness(at:DateTimeOffset, hub:Hub) : Void
 M Broker.Protocol.BrokerState.registerClient(id:ScriptingClientId, peerVersion:Version, at:DateTimeOffset, hub:Hub) : FSharpResult<ClientChannel,RosterError>
+M Broker.Protocol.BrokerState.registerPendingNativeResult(lease:CoordinatorCommandLease, delivery:OutboundDelivery, childIndex:Int32, hub:Hub) : FSharpResult<Task`1,String>
+M Broker.Protocol.BrokerState.reportNativeResult(pluginId:String, channelIncarnation:String, result:CommandBatchResult, hub:Hub) : NativeResultDisposition
 M Broker.Protocol.BrokerState.revokeAdmin(id:ScriptingClientId, by:String, at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,RosterError>
 M Broker.Protocol.BrokerState.roster(hub:Hub) : Roster
 M Broker.Protocol.BrokerState.sendToCoordinator(command:Command, hub:Hub) : FSharpResult<Unit,RejectReason>
@@ -75,7 +89,7 @@ M Broker.Protocol.BrokerState.subscribeState(client:ClientChannel, channel:Chann
 M Broker.Protocol.BrokerState.telemetryGap(hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.telemetryValid(hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.togglePause(hub:Hub) : FSharpResult<Unit,String>
-M Broker.Protocol.BrokerState.tryClaimCoordinatorCommandChannel(hub:Hub) : CoordinatorCommandClaim
+M Broker.Protocol.BrokerState.tryClaimCoordinatorCommandChannel(pluginId:String, channelIncarnation:String, hub:Hub) : CoordinatorCommandClaim
 M Broker.Protocol.BrokerState.tryGetClient(id:ScriptingClientId, hub:Hub) : FSharpOption<ClientChannel>
 M Broker.Protocol.BrokerState.unbindSlot(id:ScriptingClientId, slot:Int32, hub:Hub) : Void
 M Broker.Protocol.BrokerState.unregisterClient(id:ScriptingClientId, reason:String, at:DateTimeOffset, hub:Hub) : Void
@@ -84,5 +98,6 @@ T Broker.Protocol.BrokerState.ClientChannel : record
 T Broker.Protocol.BrokerState.CoordinatorCommandClaim : union
 T Broker.Protocol.BrokerState.CoordinatorCommandLease : record
 T Broker.Protocol.BrokerState.Hub : record
+T Broker.Protocol.BrokerState.NativeResultDisposition : union
 T Broker.Protocol.BrokerState.OutboundDelivery : record
 T Broker.Protocol.BrokerState.OwnerRule : union

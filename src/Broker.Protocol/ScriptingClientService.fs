@@ -132,6 +132,7 @@ module ScriptingClientService =
                             let mutable msg = Unchecked.defaultof<StateMsg>
                             while ch.Reader.TryRead(&msg) do
                                 do! response.WriteAsync(msg)
+                            BrokerState.flushFeedbackBacklog client hub
                     with
                     | :? OperationCanceledException -> ()
                 finally

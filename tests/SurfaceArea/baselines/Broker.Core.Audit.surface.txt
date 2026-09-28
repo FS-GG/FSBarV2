@@ -9,10 +9,13 @@
   C Broker.Core.Audit.AuditEvent.CoordinatorCommandDelivery(at:DateTimeOffset, sessionId:Guid, originatingClient:ScriptingClientId, parentCommandId:Guid, childIndex:Int32, childCount:Int32, actingUnit:UInt32, batchSeq:UInt64, correlation:UInt64, outcome:CoordinatorDeliveryOutcome, detail:String)
   C Broker.Core.Audit.AuditEvent.CoordinatorDetached(at:DateTimeOffset, pluginId:String, reason:String)
   C Broker.Core.Audit.AuditEvent.CoordinatorHeartbeat(at:DateTimeOffset, pluginId:String, frame:UInt32)
+  C Broker.Core.Audit.AuditEvent.CoordinatorNativeCommandDispatch(at:DateTimeOffset, sessionId:Guid, originatingClient:ScriptingClientId, parentCommandId:Guid, childIndex:Int32, childCount:Int32, commandIndex:UInt32, actingUnit:UInt32, batchSeq:UInt64, correlation:UInt64, channelIncarnation:String, outcome:NativeDispatchOutcome, frame:UInt32, detail:String)
+  C Broker.Core.Audit.AuditEvent.CoordinatorNativeCommandResult(at:DateTimeOffset, sessionId:Guid, originatingClient:ScriptingClientId, parentCommandId:Guid, childIndex:Int32, childCount:Int32, actingUnit:UInt32, batchSeq:UInt64, correlation:UInt64, channelIncarnation:String, outcome:NativeAdmissionOutcome, acceptedCommandCount:UInt32, detail:String)
   C Broker.Core.Audit.AuditEvent.CoordinatorNonOwnerRejected(at:DateTimeOffset, attemptedPluginId:String, ownerPluginId:String)
   C Broker.Core.Audit.AuditEvent.CoordinatorSchemaMismatch(at:DateTimeOffset, expected:String, received:String, pluginId:String)
   C Broker.Core.Audit.AuditEvent.CoordinatorStateGap(at:DateTimeOffset, pluginId:String, lastSeq:UInt64, receivedSeq:UInt64)
   C Broker.Core.Audit.AuditEvent.CoordinatorStateInvalidated(at:DateTimeOffset, pluginId:String, lastSeq:UInt64, receivedSeq:UInt64, detail:String)
+  C Broker.Core.Audit.AuditEvent.CoordinatorTerminalFeedbackUnavailable(at:DateTimeOffset, originatingClient:ScriptingClientId, parentCommandId:Guid, stage:String, detail:String)
   C Broker.Core.Audit.AuditEvent.ModeChanged(at:DateTimeOffset, from':Mode, to':Mode)
   C Broker.Core.Audit.AuditEvent.NameInUseRejected(at:DateTimeOffset, attempted:String)
   C Broker.Core.Audit.AuditEvent.SessionEnded(at:DateTimeOffset, sessionId:Guid, reason:EndReason)
@@ -20,6 +23,14 @@
   C Broker.Core.Audit.CoordinatorDeliveryOutcome.NotAttempted()
   C Broker.Core.Audit.CoordinatorDeliveryOutcome.Unknown()
   C Broker.Core.Audit.CoordinatorDeliveryOutcome.WrittenToTransport()
+  C Broker.Core.Audit.NativeAdmissionOutcome.Accepted()
+  C Broker.Core.Audit.NativeAdmissionOutcome.NativeUnknown()
+  C Broker.Core.Audit.NativeAdmissionOutcome.RejectedInvalid()
+  C Broker.Core.Audit.NativeAdmissionOutcome.RejectedQueueFull()
+  C Broker.Core.Audit.NativeDispatchOutcome.Applied()
+  C Broker.Core.Audit.NativeDispatchOutcome.Skipped(nativeStatus:UInt32)
 M Broker.Core.Audit.toLogTemplate(event:AuditEvent) : ValueTuple<String,Tuple`2[]>
 T Broker.Core.Audit.AuditEvent : union
 T Broker.Core.Audit.CoordinatorDeliveryOutcome : union
+T Broker.Core.Audit.NativeAdmissionOutcome : union
+T Broker.Core.Audit.NativeDispatchOutcome : union

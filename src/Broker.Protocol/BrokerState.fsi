@@ -1,6 +1,8 @@
 namespace Broker.Protocol
 
 open System
+open System.Collections.Generic
+open System.Threading.Tasks
 open System.Threading.Channels
 open Broker.Core
 open FSBarV2.Broker.Contracts
@@ -12,7 +14,8 @@ module BrokerState =
     /// identity and optional state subscription.
     type ClientChannel =
         { id: ScriptingClientId
-          mutable subscriber: Channel<StateMsg> option }
+          mutable subscriber: Channel<StateMsg> option
+          feedbackBacklog: Queue<StateMsg> }
 
     type OutboundDelivery =
         { sessionId: Guid
@@ -24,12 +27,19 @@ module BrokerState =
     type CoordinatorCommandLease =
         { sessionId: Guid
           leaseId: Guid
+          pluginId: string
+          channelIncarnation: string
           reader: ChannelReader<OutboundDelivery> }
 
     type CoordinatorCommandClaim =
         | NoCoordinator
         | AlreadyClaimed
         | Claimed of CoordinatorCommandLease
+
+    type NativeResultDisposition =
+        | Recorded
+        | Duplicate
+        | Late
 
     /// In-process broker state. Owned by `Broker.App.Program` and shared
     /// across the two gRPC services + the TUI. All mutation is single-
@@ -154,6 +164,10 @@ module BrokerState =
 
     val unsubscribeState : client:ClientChannel -> hub:Hub -> unit
 
+    /// Refill a live subscriber channel from retained terminal feedback after
+    /// the network writer drains capacity.
+    val flushFeedbackBacklog : client:ClientChannel -> hub:Hub -> unit
+
     /// Clear a historical gap badge only when the current baseline is valid.
     /// Invalid state can be cleared only by applying a complete snapshot.
     val clearTelemetryGap : hub:Hub -> unit
@@ -175,7 +189,7 @@ module BrokerState =
     /// None when no coordinator is currently attached.
     /// Claim the current session's outbound reader exactly once. A lease
     /// never follows a later replacement session.
-    val tryClaimCoordinatorCommandChannel : hub:Hub -> CoordinatorCommandClaim
+    val tryClaimCoordinatorCommandChannel : pluginId:string -> channelIncarnation:string -> hub:Hub -> CoordinatorCommandClaim
 
     val hasCoordinatorCommandChannel : hub:Hub -> bool
 
@@ -194,6 +208,20 @@ module BrokerState =
 
     /// True only while this delivery still belongs to the live session.
     val isCurrentDelivery : delivery:OutboundDelivery -> hub:Hub -> bool
+
+    /// Register one child before its gRPC stream write. The returned task is
+    /// completed only by the matching native report.
+    val registerPendingNativeResult : lease:CoordinatorCommandLease -> delivery:OutboundDelivery -> childIndex:int -> hub:Hub -> Result<Task<Highbar.V1.CommandBatchResult>, string>
+
+    /// End an unresolved forwarded child as UNKNOWN without replaying it.
+    val expirePendingNativeResult : channelIncarnation:string -> batchSeq:uint64 -> correlation:uint64 -> detail:string -> hub:Hub -> unit
+
+    /// Correlate one native admission result. Exact repeats are idempotent;
+    /// stale, mismatched and already-unknown reports are late.
+    val reportNativeResult : pluginId:string -> channelIncarnation:string -> result:Highbar.V1.CommandBatchResult -> hub:Hub -> NativeResultDisposition
+
+    /// Consume a dispatch event separately from state materialization.
+    val noteNativeDispatch : dispatch:Highbar.V1.CommandDispatchEvent -> hub:Hub -> bool
 
     /// Validate, expand and atomically admit a Core command. Refuses when
     /// there is no live coordinator or the bounded parent queue is full.
