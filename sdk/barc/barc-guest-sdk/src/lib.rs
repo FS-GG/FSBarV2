@@ -88,7 +88,25 @@ impl GuestState {
                 self.observed_kinds[..count].copy_from_slice(&kinds[..count]);
                 self.observed_count = count;
                 self.context_sequence = request.context_sequence;
-                self.selected_count = 0;
+                // A complete observation replaces the known world, but it does
+                // not erase a user's selection while the same owned units are
+                // still present. Preserve order and apply the guest policy
+                // again; lost, non-owned, and newly disallowed units drop.
+                let previous_count = self.selected_count;
+                let mut retained = 0;
+                for index in 0..previous_count {
+                    let unit_id = self.selected[index];
+                    let observed = self.observed_ids[..self.observed_count]
+                        .iter()
+                        .position(|value| *value == unit_id);
+                    if observed.is_some_and(|observed_index| {
+                        self.observed_kinds[observed_index] == 1 && P::retain_unit(unit_id)
+                    }) {
+                        self.selected[retained] = unit_id;
+                        retained += 1;
+                    }
+                }
+                self.selected_count = retained;
                 let length = encode_response(&mut self.output, request.request_id, &request.session_id[..request.session_length], request.context_sequence, &[], None).ok_or(4)?;
                 Ok(Some(&self.output[..length]))
             }
