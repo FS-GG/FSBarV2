@@ -1,0 +1,68 @@
+{
+  "schema": "fsbar.barc-clean-receiver-provenance/v1",
+  "receiver": {
+    "name": "BarcFableGame",
+    "templateIdentity": "fs-gg-fable-game",
+    "provider": "fable-game",
+    "effectiveLifecycle": "typed-sdd",
+    "effectiveBundle": "player"
+  },
+  "publicPackages": [
+    {
+      "id": "FS.GG.Workspace.Template",
+      "version": "0.15.0",
+      "source": "https://api.nuget.org/v3/index.json",
+      "sha256": "b822e77d4046a81c453d983a78cc6f319c67a2d3cbd3ec354d7038687416ec3e",
+      "repository": "https://github.com/FS-GG/FS.GG.Templates",
+      "commit": "b86c841a1c4c4bf7f157a3ae4dc61b0356d6576d"
+    },
+    {
+      "id": "FS.GG.SDD.Cli",
+      "version": "2.0.3",
+      "source": "https://api.nuget.org/v3/index.json",
+      "sha256": "b950bf4fc46a09554a51b6b31f920830c8811bb6580b2724c500b8317bcfa9d7",
+      "repository": "https://github.com/FS-GG/FS.GG.SDD",
+      "commit": "0c26ac591e76d2839177da823b3f6ada5c09a698"
+    }
+  ],
+  "optionalQualifiedRoute": {
+    "package": "FS.GG.NewSddWorkspace",
+    "version": "0.12.0",
+    "sha256": "22ebcedbff41e42ee98cadbe44cb65808e4de52ce7c2d95b2f0f453653967589",
+    "repository": "https://github.com/FS-GG/.github",
+    "commit": "4889c446de0a431d1168a61a89ab660fc2062314",
+    "usedForThisScaffold": false
+  },
+  "providerDescriptor": {
+    "url": "https://raw.githubusercontent.com/FS-GG/FS.GG.Templates/fs-gg-templates/v0.15.0/providers/fable-game.providers.yml",
+    "sha256": "16326925cd728a833cc2a1febc0ab2865ea5120047fe8a1d56ee499aed68161a"
+  },
+  "generation": {
+    "dotnetSdk": "10.0.401",
+    "command": "fsgg-sdd scaffold --root <receiver> --provider fable-game --no-update --json --param productName=BarcFableGame --param rootNamespace=BarcFableGame",
+    "selectedCaches": {
+      "dotnetCliHome": "new empty directory",
+      "nugetPackages": "new empty directory",
+      "nugetHttpCache": "new empty directory",
+      "observedInitialEntries": 0
+    },
+    "result": "succeeded",
+    "providerInvoked": true,
+    "repoInitOutcome": "initialized",
+    "producedPathCount": 112
+  },
+  "canonicalPins": {
+    "fableCompiler": "5.18.0",
+    "fableCore": "5.3.0",
+    "elmish": "5.0.2",
+    "fableBrowserDom": "2.20.0",
+    "vite": "7.3.6"
+  },
+  "barcAdoption": {
+    "status": "awaiting-joined-barc-01.3c-archive",
+    "requiredMount": "Broker.Browser.Client.BarcPreview.mount(root, { assetBaseUrl; initialGatewayUrl?; initialCredential?; initialExpectedSessionId? })",
+    "pairing": "visible endpoint/session UUID/credential controls; optional initial values remain in memory only; authenticated bootstrap must match expected session",
+    "assetRoot": "Client/barc-preview/",
+    "arenaAuthority": "separate"
+  }
+}
