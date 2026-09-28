@@ -18,13 +18,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 [[ -n "$source_root" && -n "$pins" && -n "$output" ]] || usage
-source_root="$(cd "$source_root" && pwd)"
+source_root="$(realpath -e "$source_root")"
 pins="$(cd "$(dirname "$pins")" && pwd)/$(basename "$pins")"
 [[ "$output" = /* ]] || output="$(pwd)/$output"
 [[ -f "$pins" ]] || { echo "live receiver pins not found: $pins" >&2; exit 1; }
 [[ ! -e "$output" && ! -e "$output.sha256" ]] || { echo "refusing to overwrite live receiver archive" >&2; exit 1; }
 
 jq -e '
+  def safe_relative:
+    (startswith("/") | not) and
+    (split("/") | length > 0 and all(. != "" and . != "." and . != ".."));
   .schema == "fsbar.barc-live-receiver-pins/v1" and
   .profile == "barc-live-v1" and
   (.source.commit | test("^[0-9a-f]{40}$")) and
@@ -33,16 +36,25 @@ jq -e '
   all(.files[]; .role == "clientCss" or .role == "clientJs" or .role == "codec" or
     .role == "contract" or .role == "customGuest" or .role == "manualGuest" or
     .role == "worker" or .role == "dependency") and
-  ([.files[].archivePath] | unique | length == 7) and
+  (([.files[].sourcePath] | unique | length) == (.files | length)) and
+  (([.files[].archivePath] | unique | length) == (.files | length)) and
   all(.files[];
     (.sha256 | test("^[0-9a-f]{64}$")) and
-    (.sourcePath | test("^(?!/)(?!.*(^|/)\\.\\.(/|$)).+$")) and
-    (.archivePath | test("^(src|guests)/(?!.*(^|/)\\.\\.(/|$)).+$"))) and
+    (.sourcePath | safe_relative) and
+    (.archivePath | safe_relative) and
+    (.archivePath | startswith("src/") or startswith("guests/"))) and
   (.files[] | select(.role == "clientJs") | .archivePath) == "src/Broker.Browser.Client/dist/assets/barc-preview.js" and
   (.files[] | select(.role == "clientCss") | .archivePath) == "src/Broker.Browser.Client/dist/assets/barc-preview.css" and
   (.files[] | select(.role == "worker") | .archivePath) == "src/Broker.Browser.Wasm/guest-worker.js" and
   (.files[] | select(.role == "codec") | .archivePath) == "src/Broker.Browser.Contracts/generated/codec.js" and
   (.files[] | select(.role == "contract") | .archivePath) == "src/Broker.Browser.Contracts/generated/barc_browser.js" and
+  (. as $pins | all([
+    "src/Broker.Browser.Wasm/barc-wire.js",
+    "src/Broker.Browser.Wasm/wasm-profile.js",
+    "src/Broker.Browser.Wasm/guest-supervisor.js",
+    "src/Broker.Browser.Wasm/index.js"
+  ][]; . as $path | any($pins.files[];
+    .role == "dependency" and .sourcePath == $path and .archivePath == $path))) and
   all(.files[] | select(.role == "manualGuest" or .role == "customGuest"); .archivePath | test("^guests/[^/]+\\.wasm$"))
 ' "$pins" >/dev/null || { echo "invalid or incomplete live receiver pins" >&2; exit 2; }
 
@@ -57,6 +69,11 @@ actual_commit="$(git -C "$source_root" rev-parse HEAD)"
 while IFS=$'\t' read -r role source_path archive_path expected_sha; do
   file="$source_root/$source_path"
   [[ -f "$file" ]] || { echo "missing pinned $role source: $source_path" >&2; exit 2; }
+  resolved="$(realpath -e "$file")"
+  case "$resolved" in
+    "$source_root"/*) ;;
+    *) echo "pinned $role source escapes joined source root: $source_path" >&2; exit 2 ;;
+  esac
   [[ "$(sha256sum "$file" | cut -d' ' -f1)" == "$expected_sha" ]] || {
     echo "pinned $role source hash mismatch: $source_path" >&2
     exit 2

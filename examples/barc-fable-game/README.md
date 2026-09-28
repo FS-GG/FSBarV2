@@ -59,6 +59,10 @@ generated codec/contract and two independently built guests. Every transitive
 runtime import is an additional `dependency` pin; unlisted files are excluded.
 It copies product bytes without rewriting them, embeds the pins, and emits a
 deterministic archive.
+The live protobuf is part of the existing generated `barc_browser.js`; there is
+no second live codec bundle. The single `codec.js` adapter and the preserved
+Worker imports `barc-wire.js`, `wasm-profile.js`, `guest-supervisor.js`, and
+`index.js` are mandatory exact-path pins.
 `BARC_LIVE_RECEIVER_PINS.schema.json` documents that handoff shape; the packager
 also enforces the fixed client/codec/Worker archive locations, unique paths and
 exactly one entry for every named role.
