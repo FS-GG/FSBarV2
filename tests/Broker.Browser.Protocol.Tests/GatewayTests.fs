@@ -100,8 +100,28 @@ let tests = testList "authenticated browser preview boundary" [
         let own = OwnUnit.empty()
         own.UnitId <- 77u; own.DefId <- 501u; own.TeamId <- 7
         own.Health <- 10.0f; own.MaxHealth <- 20.0f; own.Position <- ValueSome pos
+        let enemyPos = Vector3.empty()
+        enemyPos.X <- -19.5f; enemyPos.Y <- 17.25f; enemyPos.Z <- 61.75f
+        let enemy = EnemyUnit.empty()
+        enemy.UnitId <- 88u; enemy.DefId <- 502u; enemy.TeamId <- 9
+        enemy.Health <- 30.0f; enemy.MaxHealth <- 40.0f; enemy.Position <- ValueSome enemyPos
+        let radarPos = Vector3.empty()
+        radarPos.X <- 73.25f; radarPos.Y <- 0.0f; radarPos.Z <- -8.5f
+        let radar = RadarBlip.empty()
+        radar.BlipId <- 99u; radar.Position <- ValueSome radarPos
+        let featurePos = Vector3.empty()
+        featurePos.X <- -5.5f; featurePos.Y <- 222.25f; featurePos.Z <- 91.75f
+        let feature = MapFeature.empty()
+        feature.FeatureId <- 77u; feature.DefId <- 909u; feature.Position <- ValueSome featurePos
+        let economy = TeamEconomy.empty()
+        economy.Metal <- 42.5f; economy.MetalStorage <- 1000.0f; economy.MetalIncome <- 7.25f
+        economy.Energy <- 0.0f; economy.EnergyStorage <- 5000.0f; economy.EnergyIncome <- 91.5f
         let snapshot = StateSnapshot.empty()
         snapshot.OwnUnits.Add own
+        snapshot.VisibleEnemies.Add enemy
+        snapshot.RadarEnemies.Add radar
+        snapshot.MapFeatures.Add feature
+        snapshot.Economy <- ValueSome economy
         let update = StateUpdate.empty()
         update.Seq <- 9007199254740993UL; update.Frame <- 10u; update.Snapshot <- snapshot
         do! push.RequestStream.WriteAsync update
@@ -114,6 +134,20 @@ let tests = testList "authenticated browser preview boundary" [
         let! (state: ServerEnvelope) = receive socket
         Expect.equal state.Observation.Sequence 9007199254740993UL "coordinator uint64 reaches WebSocket"
         Expect.equal state.Observation.Units.[0].Position.Elevation 403.5f "coordinator elevation reaches WebSocket"
+        Expect.equal state.Observation.Units.[0].Observation ObservationKind.Own "own provenance crosses boundary"
+        Expect.equal state.Observation.Units.[1].Observation ObservationKind.Visual "visual provenance crosses boundary"
+        Expect.equal state.Observation.Units.[1].Position.Elevation 17.25f "visual elevation crosses boundary"
+        Expect.equal state.Observation.Units.[2].Observation ObservationKind.Radar "radar provenance crosses boundary"
+        Expect.isFalse state.Observation.Units.[2].HasDefinitionId "unknown radar definition remains unavailable"
+        Expect.isFalse state.Observation.Units.[2].HasTeamId "radar team remains unavailable"
+        Expect.isFalse state.Observation.Units.[2].HasHealth "radar health remains unavailable"
+        Expect.equal state.Observation.Features.[0].Id 77UL "feature identity may equal a unit identity"
+        Expect.equal state.Observation.Features.[0].DefinitionId 909u "feature definition crosses boundary"
+        Expect.equal state.Observation.Features.[0].Position.Elevation 222.25f "feature elevation crosses boundary"
+        Expect.isNotNull state.Observation.TeamEconomy "team economy crosses boundary"
+        Expect.isFalse state.Observation.TeamEconomy.HasTeamId "unavailable economy team stays absent"
+        Expect.equal state.Observation.TeamEconomy.Metal.Current 42.5 "metal current crosses boundary"
+        Expect.isFalse state.Observation.TeamEconomy.Metal.HasExpenditure "unavailable expenditure stays absent"
         socket.Abort(); socket.Dispose(); push.Dispose(); channel.Dispose()
         do! gateway.StopAsync()
         do! (handle :> IAsyncDisposable).DisposeAsync().AsTask()
