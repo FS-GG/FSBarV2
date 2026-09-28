@@ -7,6 +7,7 @@ const GAME = "bar";
 const CONFIGURED_MAX_FRAME = 1024 * 1024;
 const MAX_GUEST_ENTITIES = 64;
 const MAX_QUEUE = 8;
+const MAX_MODULE_BYTES = 8 * 1024 * 1024;
 
 const bytesEqual = (left, right) => left === right;
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
@@ -112,6 +113,7 @@ export class SerialGuestQueue {
     this.items = [];
     this.running = false;
     this.epoch = 0;
+    this.measureCount = 0;
   }
   reset(reason) {
     this.epoch++;
@@ -135,8 +137,14 @@ export class SerialGuestQueue {
     while (this.items.length && epoch === this.epoch) {
       const item = this.items.shift();
       let result;
+      const started = performance.now();
       try { result = await this.supervisor.process(item.bytes); }
       catch (error) { this.reset(`Guest call failed: ${error.message}`); break; }
+      finally {
+        performance.measure("barc-preview-guest-process", { start: started, end: performance.now() });
+        this.measureCount++;
+        if (this.measureCount > 128) { performance.clearMeasures("barc-preview-guest-process"); this.measureCount = 0; }
+      }
       if (epoch !== this.epoch) break;
       if (result.state !== "completed") { this.reset(`Guest ${result.state}: ${result.reason}`); break; }
       this.onResult(item, result);
@@ -264,6 +272,7 @@ export function createRuntime(root, options, emit) {
 
   async function loadModule(name, bytes) {
     disarm("Module replacement disarmed the previous guest.");
+    if (bytes.byteLength > MAX_MODULE_BYTES) return fault(`Module exceeds the ${MAX_MODULE_BYTES} byte import limit.`);
     moduleBytes = Uint8Array.from(bytes);
     moduleName = name;
     notify("module", name);
@@ -341,7 +350,12 @@ export function createRuntime(root, options, emit) {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return fault("Target coordinates must be finite numbers.");
     groundTarget({ x, z });
   });
-  elements.file.addEventListener("change", async () => { const file = elements.file.files[0]; if (file) await loadModule(file.name, new Uint8Array(await file.arrayBuffer())); elements.file.value = ""; });
+  elements.file.addEventListener("change", async () => {
+    const file = elements.file.files[0];
+    if (file?.size > MAX_MODULE_BYTES) fault(`Module exceeds the ${MAX_MODULE_BYTES} byte import limit.`);
+    else if (file) await loadModule(file.name, new Uint8Array(await file.arrayBuffer()));
+    elements.file.value = "";
+  });
   elements.svg.addEventListener("compositionstart", () => composing = true);
   elements.svg.addEventListener("compositionend", () => composing = false);
   elements.svg.addEventListener("keydown", event => {

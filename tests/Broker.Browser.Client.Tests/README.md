@@ -26,6 +26,11 @@ fixture's complete/stale/recovery/replacement lifecycle, records Chromium frame
 processing p95/max and artifact hashes, and accepts the independent native-zero
 qualification receipt only after clean companion teardown.
 
+A generated receiver can reuse the same journey against a fresh externally
+started product by setting `BARC_EXTERNAL_READY_FILE` to its private ready-file
+path. In that mode the receiver owns process teardown, archive hashes, message
+and credential isolation, and its native-zero receipt.
+
 The browser test server is loopback-only. Its synthetic WebSocket supplies the
 same frozen protobuf envelopes as the product gateway; the companion executable
 owns the joined production transport acceptance.

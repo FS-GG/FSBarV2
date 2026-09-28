@@ -67,7 +67,11 @@ async function rearm(page) {
 }
 
 async function selectAndKeyboardTarget(page) {
-  await page.locator('[data-unit-id="77"]').click();
+  const svg = page.getByLabel(/Tactical map/);
+  await svg.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await expect(page.locator(".selection")).toContainText("Selected 77");
   await page.getByLabel("Target X").fill("128.25");
   await page.getByLabel("Target Z").fill("-64.5");
   await page.getByRole("button", { name: "Preview target" }).press("Enter");
@@ -79,16 +83,19 @@ test("actual companion preserves the complete read-only product boundary", async
   test.setTimeout(45000);
   const temporary = await mkdtemp(join(tmpdir(), "barc-client-actual-"));
   await chmod(temporary, 0o700);
+  const externalReady = process.env.BARC_EXTERNAL_READY_FILE;
   const assets = join(temporary, "assets-root");
-  const readyPath = join(temporary, "ready.json");
+  const readyPath = externalReady || join(temporary, "ready.json");
   const receiptPath = join(temporary, "qualification.json");
-  await mkdir(assets);
-  await copyAssets(assets);
-  const [grpcPort, gatewayPort, staticPort] = await Promise.all([freePort(), freePort(), freePort()]);
-  const dll = source("src/Broker.Browser.Preview/bin/Release/net10.0/Broker.Browser.Preview.dll");
-  const child = spawn("dotnet", [dll, "--fixture", "--assets-root", assets, "--base-path", "/barc/", "--grpc-port", String(grpcPort), "--gateway-port", String(gatewayPort), "--static-port", String(staticPort), "--ready-file", readyPath, "--qualification-receipt", receiptPath], { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
+  let child = null;
   const output = [];
-  child.stdout.on("data", value => output.push(value)); child.stderr.on("data", value => output.push(value));
+  if (!externalReady) {
+    await mkdir(assets); await copyAssets(assets);
+    const [grpcPort, gatewayPort, staticPort] = await Promise.all([freePort(), freePort(), freePort()]);
+    const dll = source("src/Broker.Browser.Preview/bin/Release/net10.0/Broker.Browser.Preview.dll");
+    child = spawn("dotnet", [dll, "--fixture", "--assets-root", assets, "--base-path", "/barc/", "--grpc-port", String(grpcPort), "--gateway-port", String(gatewayPort), "--static-port", String(staticPort), "--ready-file", readyPath, "--qualification-receipt", receiptPath], { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
+    child.stdout.on("data", value => output.push(value)); child.stderr.on("data", value => output.push(value));
+  }
   let stopped = false;
   try {
     const ready = await waitForFile(readyPath);
@@ -102,6 +109,7 @@ test("actual companion preserves the complete read-only product boundary", async
     await expect(page.getByLabel("One-time credential")).toHaveValue("");
 
     await expect(page.locator('.unit.own[data-unit-id="77"]')).toBeVisible();
+    await expect(page.locator('.unit.own[data-unit-id="78"]')).toBeVisible();
     await expect(page.locator('.unit.visual[data-unit-id="88"]')).toBeVisible();
     await expect(page.locator('.unit.radar[data-unit-id="99"]')).toBeVisible();
     await expect(page.locator('.feature[data-feature-id="77"][data-definition-id="909"]')).toBeVisible();
@@ -111,6 +119,9 @@ test("actual companion preserves the complete read-only product boundary", async
     await chooseFile(page, "Import .wasm", source("tests/Broker.Browser.Wasm.Tests/generated/custom-preview.wasm"));
     await expect(page.locator(".module")).toContainText("custom-preview.wasm");
     await rearm(page);
+    await page.locator('[data-unit-id="78"]').click();
+    await page.getByLabel("Target X").fill("128.25"); await page.getByLabel("Target Z").fill("-64.5"); await page.getByRole("button", { name: "Preview target" }).click();
+    await expect(page.locator(".move-preview")).toHaveCount(0);
     await page.locator('[data-unit-id="77"]').click();
     await expect(page.locator(".selection")).toContainText("Selected 77");
     await expect(page.locator(".age")).toContainText("9007199254740994");
@@ -135,14 +146,18 @@ test("actual companion preserves the complete read-only product boundary", async
     await expect(page.locator(".age")).toContainText("9007199254740997");
     await expect(page.getByRole("status")).toContainText("current");
 
-    await page.getByRole("button", { name: "Manual guest" }).click(); await rearm(page); await selectAndKeyboardTarget(page);
-    await page.getByRole("button", { name: "Custom guest" }).click(); await rearm(page); await selectAndKeyboardTarget(page);
+    await page.getByRole("button", { name: "Manual guest" }).click(); await expect(page.locator(".module")).toContainText("manual-preview.wasm"); await rearm(page); await selectAndKeyboardTarget(page);
+    await page.getByRole("button", { name: "Custom guest" }).click(); await expect(page.locator(".module")).toContainText("custom-preview.wasm"); await rearm(page); await selectAndKeyboardTarget(page);
     await page.evaluate(() => window.dispatchEvent(new Event("blur")));
     await expect(page.locator(".diagnostic")).toContainText("disarmed");
     await rearm(page);
     await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, value: true }); document.dispatchEvent(new Event("visibilitychange")); Object.defineProperty(document, "hidden", { configurable: true, value: false }); });
     await expect(page.locator(".diagnostic")).toContainText("disarmed");
 
+    await chooseFile(page, "Import .wasm", source("tests/Broker.Browser.Wasm.Tests/generated/trap-process.wasm"));
+    await rearm(page); await page.locator('[data-unit-id="77"]').click();
+    await expect(page.locator(".module")).toContainText(/faulted|trap/i);
+    await expect(page.getByRole("button", { name: "Pair" })).toBeEnabled();
     await chooseFile(page, "Import .wasm", source("tests/Broker.Browser.Wasm.Tests/generated/hang-process.wasm"));
     await rearm(page); await page.locator('[data-unit-id="77"]').click();
     await page.getByLabel("Target X").fill("128.25"); await page.getByLabel("Target Z").fill("-64.5"); await page.getByRole("button", { name: "Preview target" }).click();
@@ -151,26 +166,31 @@ test("actual companion preserves the complete read-only product boundary", async
     await expect(page.getByLabel("Target X")).toBeEditable();
 
     await expect(page.getByRole("status")).toContainText("disconnected", { timeout: 15000 });
-    const durations = await page.evaluate(() => performance.getEntriesByName("barc-preview-frame").map(entry => entry.duration));
-    expect(durations.length).toBeGreaterThanOrEqual(4);
-    const ordered = durations.toSorted((left, right) => left - right);
-    const p95 = ordered[Math.ceil(ordered.length * 0.95) - 1], maximum = ordered.at(-1);
+    const timings = await page.evaluate(() => ({
+      frames: performance.getEntriesByName("barc-preview-frame").map(entry => entry.duration),
+      guests: performance.getEntriesByName("barc-preview-guest-process").map(entry => entry.duration),
+      userAgent: navigator.userAgent, platform: navigator.platform
+    }));
+    expect(timings.frames.length).toBeGreaterThanOrEqual(4); expect(timings.guests.length).toBeGreaterThan(0);
+    const summary = values => { const ordered = values.toSorted((left, right) => left - right); return { count: values.length, p95Milliseconds: Number(ordered[Math.ceil(ordered.length * 0.95) - 1].toFixed(3)), maxMilliseconds: Number(ordered.at(-1).toFixed(3)) }; };
     const evidence = {
-      chromium: browser.version(), frames: durations.length,
-      processingP95Milliseconds: Number(p95.toFixed(3)), processingMaxMilliseconds: Number(maximum.toFixed(3)),
-      bundleSha256: await sha256(join(assets, "assets/barc-preview.js")),
-      manualGuestSha256: await sha256(join(assets, "guests/manual-preview.wasm")), customGuestSha256: await sha256(join(assets, "guests/custom-preview.wasm"))
+      chromium: browser.version(), node: process.version, userAgent: timings.userAgent, platform: timings.platform,
+      serverFrameDecodeSemanticRender: summary(timings.frames), guestWorkerRoundTrip: summary(timings.guests),
+      bundleSha256: externalReady ? "external-receiver-owned" : await sha256(join(assets, "assets/barc-preview.js")),
+      manualGuestSha256: await sha256(source("tests/Broker.Browser.Wasm.Tests/generated/manual-preview.wasm")), customGuestSha256: await sha256(source("tests/Broker.Browser.Wasm.Tests/generated/custom-preview.wasm"))
     };
     console.log("BARC actual companion evidence", JSON.stringify(evidence));
 
-    await stop(child); stopped = true;
-    const receiptMode = (await stat(receiptPath)).mode & 0o777;
-    expect(receiptMode).toBe(0o600);
-    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
-    expect(receipt).toEqual({ schema: "barc.preview.qualification/v1", nativeSubmissionCount: 0, cleanShutdown: true });
-    await expect(readFile(readyPath, "utf8")).rejects.toThrow();
+    if (child) {
+      await stop(child); stopped = true;
+      const receiptMode = (await stat(receiptPath)).mode & 0o777;
+      expect(receiptMode).toBe(0o600);
+      const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+      expect(receipt).toEqual({ schema: "barc.preview.qualification/v1", nativeSubmissionCount: 0, cleanShutdown: true });
+      await expect(readFile(readyPath, "utf8")).rejects.toThrow();
+    }
   } finally {
-    if (!stopped && child.exitCode === null) child.kill("SIGKILL");
+    if (!stopped && child?.exitCode === null) child.kill("SIGKILL");
     await rm(temporary, { recursive: true, force: true });
   }
 });

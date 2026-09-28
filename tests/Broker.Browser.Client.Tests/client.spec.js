@@ -154,3 +154,12 @@ test("custom picker loads independent odd-identity policy bytes", async ({ page 
   await page.getByRole("button", { name: "Preview target" }).click();
   await expect(page.locator(".move-preview")).toHaveAttribute("data-unit-ids", "77");
 });
+
+test("oversized picker input is refused before reading module bytes", async ({ page }) => {
+  await page.goto(`http://127.0.0.1:${port}/`);
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import .wasm" }).click();
+  await (await chooser).setFiles({ name: "oversized.wasm", mimeType: "application/wasm", buffer: Buffer.alloc(8 * 1024 * 1024 + 1) });
+  await expect(page.locator(".module")).toContainText("exceeds the 8388608 byte import limit");
+  await expect(page.locator(".diagnostic")).toContainText("disarmed");
+});
