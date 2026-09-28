@@ -108,7 +108,7 @@ trap cleanup EXIT
 
 npm ci --ignore-scripts --prefix "$client_tests" > "$evidence/client-test-install.log"
 
-(cd "$receiver_publish" && exec dotnet Server.dll --urls "$receiver_origin" --BasePath=/barc) \
+(cd "$receiver_publish" && trap - INT && exec dotnet Server.dll --urls "$receiver_origin" --BasePath=/barc) \
   > "$evidence/receiver-server.log" 2>&1 &
 receiver_pid=$!
 ready_receiver=false
@@ -131,11 +131,11 @@ journey_pid=$!
 sleep 1
 kill -0 "$journey_pid" 2>/dev/null || { echo "actual receiver journey exited before companion startup" >&2; exit 1; }
 
-dotnet "$companion" --fixture \
+(trap - INT; exec dotnet "$companion" --fixture \
   --assets-root "$evidence/companion-assets" --base-path /barc/ \
   --grpc-port "$grpc_port" --gateway-port "$gateway_port" --static-port "$static_port" \
   --browser-origin "$receiver_origin" --ready-file "$ready" \
-  --qualification-receipt "$native_receipt" \
+  --qualification-receipt "$native_receipt") \
   > "$evidence/companion.log" 2>&1 &
 companion_pid=$!
 for _ in $(seq 1 200); do
