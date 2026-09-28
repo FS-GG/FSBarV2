@@ -97,10 +97,10 @@ index c8b2939..f327dfb 100644
 +  };
  });
 diff --git a/Server/Program.fs b/Server/Program.fs
-index dcfc260..f0c89fc 100644
+index dcfc260..ecd20a9 100644
 --- a/Server/Program.fs
 +++ b/Server/Program.fs
-@@ -182,6 +182,12 @@ module Program =
+@@ -182,6 +182,14 @@ module Program =
          builder.Services.AddHostedService<TickBroadcaster>() |> ignore
          let app = builder.Build()
 
@@ -109,6 +109,8 @@ index dcfc260..f0c89fc 100644
 +        | ""
 +        | "/" -> ()
 +        | value -> app.UsePathBase(PathString(value.TrimEnd('/'))) |> ignore
++
++        app.UseRouting() |> ignore
 +
          // The edge/container health probe deliberately exercises the real ASP.NET
          // pipeline without allocating a player session or disclosing authority state.

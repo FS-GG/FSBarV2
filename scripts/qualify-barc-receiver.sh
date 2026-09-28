@@ -89,7 +89,35 @@ if [[ "$scaffold_only" == false ]]; then
     BARC_BASE_PATH=/barc/ npm run build --prefix Client
     dotnet build BarcFableGame.slnx --no-restore
     dotnet test BarcFableGame.slnx --no-restore --no-build
+    dotnet publish Server/Server.fsproj --configuration Release --no-restore \
+      --output "$evidence/publish"
   ) > "$evidence/build-and-test.log" 2>&1
+
+  port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')"
+  (cd "$evidence/publish" && exec dotnet Server.dll --urls "http://127.0.0.1:$port" --BasePath=/barc) \
+    > "$evidence/server.log" 2>&1 &
+  server_pid=$!
+  stop_server() { kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true; }
+  trap stop_server EXIT
+  ready=false
+  for _ in $(seq 1 100); do
+    if curl -fsS "http://127.0.0.1:$port/barc/healthz" > "$evidence/health.json"; then
+      ready=true
+      break
+    fi
+    sleep 0.1
+  done
+  [[ "$ready" == true ]] || { echo "receiver production server did not become ready" >&2; exit 1; }
+  curl -fsS "http://127.0.0.1:$port/barc/" > "$evidence/index.html"
+  grep -F 'src="/barc/assets/' "$evidence/index.html" >/dev/null
+  curl -fsS "http://127.0.0.1:$port/barc/barc-preview/src/Broker.Browser.Wasm/guest-worker.js" \
+    > "$evidence/guest-worker.js"
+  curl -fsS "http://127.0.0.1:$port/barc/barc-preview/guests/manual-preview.wasm" \
+    > "$evidence/manual-preview.wasm"
+  cmp "$evidence/manual-preview.wasm" \
+    "$evidence/receiver/Client/public/barc-preview/guests/manual-preview.wasm"
+  stop_server
+  trap - EXIT
 fi
 
 jq -n \
@@ -102,7 +130,7 @@ jq -n \
     retainedReceiver:$receiver,selectedCachesInitialEntries:0,
     public:{templates:{version:"0.15.0",sha256:$templateSha},sdd:{version:"2.0.3",sha256:$sddSha},provider:{sha256:$providerSha}},
     preAdoptionHashes:"public-scaffold.SHA256",
-    finalJourney:(if $mode == "joined-archive" then "build-and-tests-passed; real browser journey evaluated separately" else "pending joined BARC-01.3c archive" end)}' \
+    finalJourney:(if $mode == "joined-archive" then "build-and-tests-passed; production server assets passed at /barc/; real browser journey evaluated separately" else "pending joined BARC-01.3c archive" end)}' \
   > "$evidence/qualification.json"
 
 echo "$evidence/qualification.json"
