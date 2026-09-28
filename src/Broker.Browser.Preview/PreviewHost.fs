@@ -147,6 +147,11 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
         own.Health <- 123.5f; own.MaxHealth <- 800.0f
         own.Position <- ValueSome(position ownX 403.5f -37.5f)
         snapshot.OwnUnits.Add own
+        let evenOwn = OwnUnit.empty()
+        evenOwn.UnitId <- 78u; evenOwn.DefId <- 503u; evenOwn.TeamId <- 7
+        evenOwn.Health <- 321.0f; evenOwn.MaxHealth <- 900.0f
+        evenOwn.Position <- ValueSome(position 26.75f 118.25f 44.5f)
+        snapshot.OwnUnits.Add evenOwn
         let enemy = EnemyUnit.empty()
         enemy.UnitId <- 88u; enemy.DefId <- 502u; enemy.TeamId <- 9
         enemy.Position <- ValueSome(position -19.5f 17.25f 61.75f)
