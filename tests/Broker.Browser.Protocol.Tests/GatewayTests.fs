@@ -215,6 +215,29 @@ let tests = testList "authenticated browser preview boundary" [
         do! host.StopAsync()
     }
 
+    testTask "peer withholding close acknowledgment cannot retain connection tasks" {
+        let hub, sessionId = setupHub()
+        let origin = "http://127.0.0.1:4173"
+        let port = freePort()
+        let httpUrl = sprintf "http://127.0.0.1:%d" port
+        let wsUrl = sprintf "ws://127.0.0.1:%d/barc-preview" port
+        let config =
+            { Gateway.defaultConfig httpUrl origin "secret" sessionId with
+                closeTimeout = TimeSpan.FromMilliseconds 250.0 }
+        let! (host: Microsoft.Extensions.Hosting.IHost) = Gateway.startAsync hub config CancellationToken.None
+        let! (socket: ClientWebSocket) = connect wsUrl origin (auth sessionId origin "secret")
+        let! (_: ServerEnvelope) = receive socket
+        let hostile = ClientEnvelope(Authenticate = auth sessionId origin "secret").ToByteArray()
+        do! socket.SendAsync(ReadOnlyMemory<byte>(hostile), WebSocketMessageType.Binary, true, CancellationToken.None).AsTask()
+        // Deliberately never receive or acknowledge the server's close frame.
+        do! Task.Delay 25
+        let stop = host.StopAsync()
+        let! completed = Task.WhenAny(stop, Task.Delay 2000)
+        Expect.isTrue (Object.ReferenceEquals(completed, stop)) "host teardown stays within bounded close deadline"
+        do! stop
+        socket.Abort(); socket.Dispose()
+    }
+
     testTask "malformed and oversized authentication frames are refused" {
         let hub, sessionId = setupHub()
         let origin = "http://127.0.0.1:4173"

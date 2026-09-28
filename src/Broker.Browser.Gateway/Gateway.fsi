@@ -16,6 +16,7 @@ module Gateway =
           credentialExpiresAt: DateTimeOffset
           perspectiveId: string
           authTimeout: TimeSpan
+          closeTimeout: TimeSpan
           maxFrameBytes: int
           maxEntities: int }
 

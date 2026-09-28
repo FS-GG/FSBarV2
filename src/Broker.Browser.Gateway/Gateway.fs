@@ -32,6 +32,7 @@ module Gateway =
           credentialExpiresAt: DateTimeOffset
           perspectiveId: string
           authTimeout: TimeSpan
+          closeTimeout: TimeSpan
           maxFrameBytes: int
           maxEntities: int }
 
@@ -40,6 +41,7 @@ module Gateway =
           credential = credential; credentialSessionId = sessionId
           credentialExpiresAt = DateTimeOffset.UtcNow.AddMinutes 5.0
           perspectiveId = ""; authTimeout = TimeSpan.FromSeconds 3.0
+          closeTimeout = TimeSpan.FromSeconds 1.0
           maxFrameBytes = 65536; maxEntities = 4096 }
 
     let private guidBytes (id: Guid) = ByteString.CopyFrom(id.ToByteArray())
@@ -99,13 +101,18 @@ module Gateway =
         else
             socket.SendAsync(ReadOnlyMemory<byte>(bytes), WebSocketMessageType.Binary, true, ct).AsTask()
 
-    let private close (socket: WebSocket) status detail ct = task {
+    let private close (socket: WebSocket) status detail (timeout: TimeSpan) = task {
+        use closeCts = new CancellationTokenSource(timeout)
         try
             if socket.State = WebSocketState.Open then
-                do! socket.CloseAsync(status, detail, ct)
+                // Send the close frame without waiting for an untrusted peer
+                // to acknowledge it. Connection task cancellation owns the
+                // receive/feed teardown immediately afterwards.
+                do! socket.CloseOutputAsync(status, detail, closeCts.Token)
         with
         | :? WebSocketException
-        | :? OperationCanceledException -> ()
+        | :? OperationCanceledException -> socket.Abort()
+        | _ -> socket.Abort()
     }
 
     let private receiveOne (socket: WebSocket) maxBytes ct = task {
@@ -166,17 +173,17 @@ module Gateway =
             try
                 let! received = receiveOne socket config.maxFrameBytes authCts.Token
                 match received with
-                | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail CancellationToken.None
+                | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
                 | Ok bytes ->
                     let parsed =
                         try Ok (ClientEnvelope.Parser.ParseFrom(bytes.ToArray()))
                         with :? InvalidProtocolBufferException -> Error "malformed authentication"
                     match parsed with
-                    | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail CancellationToken.None
-                    | Ok message when isNull message.Authenticate -> do! close socket WebSocketCloseStatus.PolicyViolation "authentication required" CancellationToken.None
+                    | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
+                    | Ok message when isNull message.Authenticate -> do! close socket WebSocketCloseStatus.PolicyViolation "authentication required" config.closeTimeout
                     | Ok message ->
                         match authenticate config origin message.Authenticate hub with
-                        | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail CancellationToken.None
+                        | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                         | Ok sessionId ->
                             use connectionCts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
                             let updates = Channel.CreateBounded<Snapshot.BrowserFeed>(BoundedChannelOptions(16, FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = false))
@@ -193,7 +200,7 @@ module Gateway =
                                 currentSessionId hub = Some sessionId
                                 && (latest |> Option.forall (fun value -> feedSession value = sessionId && entityCount value <= config.maxEntities))
                             if not initialIsValid then
-                                do! close socket WebSocketCloseStatus.PolicyViolation "authenticated session was replaced" CancellationToken.None
+                                do! close socket WebSocketCloseStatus.PolicyViolation "authenticated session was replaced" config.closeTimeout
                             else
                                 let initialValidity =
                                     match latest with
@@ -227,26 +234,26 @@ module Gateway =
                                 let observed = [| receiveObserved; feedObserved; sessionObserved |]
                                 let! completed = Task.WhenAny observed
                                 if Object.ReferenceEquals(completed, receiveObserved) then
-                                    do! close socket WebSocketCloseStatus.PolicyViolation "preview socket accepts authentication only" CancellationToken.None
+                                    do! close socket WebSocketCloseStatus.PolicyViolation "preview socket accepts authentication only" config.closeTimeout
                                 elif Object.ReferenceEquals(completed, sessionObserved) then
-                                    do! close socket WebSocketCloseStatus.PolicyViolation "authenticated session was replaced" CancellationToken.None
+                                    do! close socket WebSocketCloseStatus.PolicyViolation "authenticated session was replaced" config.closeTimeout
                                 elif feedTask.IsFaulted then
                                     let entityLimit =
                                         match feedTask.Exception with
                                         | null -> false
                                         | error -> error.GetBaseException() :? EntityLimitExceeded
                                     if entityLimit then
-                                        do! close socket WebSocketCloseStatus.MessageTooBig "browser preview entity bound exceeded" CancellationToken.None
+                                        do! close socket WebSocketCloseStatus.MessageTooBig "browser preview entity bound exceeded" config.closeTimeout
                                     else
-                                        do! close socket WebSocketCloseStatus.InternalServerError "browser feed unavailable" CancellationToken.None
+                                        do! close socket WebSocketCloseStatus.InternalServerError "browser feed unavailable" config.closeTimeout
                                 else
-                                    do! close socket WebSocketCloseStatus.InternalServerError "browser feed unavailable" CancellationToken.None
+                                    do! close socket WebSocketCloseStatus.InternalServerError "browser feed unavailable" config.closeTimeout
                                 connectionCts.Cancel()
                                 try do! Task.WhenAll observed with _ -> ()
             with
             | :? OperationCanceledException -> ()
-            | :? ChannelClosedException -> do! close socket WebSocketCloseStatus.InternalServerError "browser feed unavailable" CancellationToken.None
-            | :? InvalidOperationException -> do! close socket WebSocketCloseStatus.MessageTooBig "browser preview output exceeds negotiated frame bound" CancellationToken.None
+            | :? ChannelClosedException -> do! close socket WebSocketCloseStatus.InternalServerError "browser feed unavailable" config.closeTimeout
+            | :? InvalidOperationException -> do! close socket WebSocketCloseStatus.MessageTooBig "browser preview output exceeds negotiated frame bound" config.closeTimeout
     }
 
     let startAsync hub config cancellationToken = task {
@@ -270,7 +277,8 @@ module Gateway =
            || String.IsNullOrWhiteSpace config.path || not (config.path.StartsWith "/") || config.path.StartsWith("//")
            || config.path.Contains('?') || config.path.Contains('#')
            || String.IsNullOrWhiteSpace config.credential || config.credentialSessionId = Guid.Empty
-           || config.authTimeout <= TimeSpan.Zero || config.maxFrameBytes <= 0 || config.maxEntities <= 0 then
+           || config.authTimeout <= TimeSpan.Zero || config.closeTimeout <= TimeSpan.Zero
+           || config.maxFrameBytes <= 0 || config.maxEntities <= 0 then
             invalidArg "config" "browser preview requires loopback HTTP, an exact origin/path, session credential, and positive bounds"
         let builder = WebApplication.CreateBuilder()
         builder.WebHost.UseUrls(config.url) |> ignore
