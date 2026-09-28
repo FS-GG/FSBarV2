@@ -2,17 +2,28 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-toolchain_bin="/home/developer/.rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/bin"
+toolchain="1.90.0"
 expected_cargo="cargo 1.90.0 (840b83a10 2025-07-30)"
 output="$repo_root/tests/Broker.Browser.Wasm.Tests/generated"
-export PATH="$toolchain_bin:/home/developer/.cargo/bin:$PATH"
 
-if [[ "$(cargo --version)" != "$expected_cargo" ]]; then
-  echo "expected $expected_cargo; found $(cargo --version)" >&2
+if ! command -v rustup >/dev/null 2>&1; then
+  echo "rustup with the $toolchain toolchain is required" >&2
   exit 1
 fi
-rustup +1.90.0 target list --installed | grep -qx wasm32-unknown-unknown || {
-  echo "Rust 1.90.0 wasm32-unknown-unknown target is required" >&2
+
+if ! rustup run "$toolchain" rustc --print sysroot >/dev/null 2>&1; then
+  echo "rustup toolchain $toolchain is required" >&2
+  exit 1
+fi
+
+actual_cargo="$(rustup run "$toolchain" cargo --version)"
+if [[ "$actual_cargo" != "$expected_cargo" ]]; then
+  echo "expected $expected_cargo; found $actual_cargo" >&2
+  exit 1
+fi
+
+rustup target list --installed --toolchain "$toolchain" | grep -qx wasm32-unknown-unknown || {
+  echo "Rust $toolchain wasm32-unknown-unknown target is required" >&2
   exit 1
 }
 
@@ -23,7 +34,7 @@ build() {
   shift 2
   (
     cd "$repo_root/examples/barc-guests/$crate"
-    cargo build --target wasm32-unknown-unknown --release --locked "$@"
+    rustup run "$toolchain" cargo build --target wasm32-unknown-unknown --release --locked "$@"
   )
   install -m 0644 \
     "$repo_root/examples/barc-guests/$crate/target/wasm32-unknown-unknown/release/barc_${crate//-/_}.wasm" \
