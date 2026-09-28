@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { decodeServerFrame, projectGuestResponse, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
+import { correlateLiveGuestResponse, LiveQueue, validateLiveControllerState } from "../../src/Broker.Browser.Client/live-runtime.js";
 import { encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
 import { selectProductUrl } from "./product-topology.mjs";
 
@@ -81,4 +82,46 @@ test("observation coalescing never crosses an ordered input", async () => {
     await new Promise(resolve => setImmediate(resolve));
   }
   assert.deepEqual(calls, ["observation-1", "observation-2", "select", "observation-4"]);
+});
+
+const liveBasis = { token:"AQIDBAUGBwgJCgsMDQ4PEA==",stateSequence:"9007199254740993",nativeFrame:427,matchId:"qqqqqru7TMyN3e7u7u7u7g==",processIncarnation:"process-live-1",stateChannelIncarnation:"state-live-1" };
+const liveRequest = { inputId:"AQIDBA==",sessionId:bootstrap.sessionId,moduleGeneration:"9007199254740995",basis:liveBasis };
+
+test("live initialization requires an exact consumed acknowledgment without an action", () => {
+  const response = { ...liveRequest, acknowledgment:"GUEST_ACK_STATUS_CONSUMED" };
+  assert.equal(correlateLiveGuestResponse(encodeObject(v1.LiveGuestResponse,response),liveRequest,false).inputId,liveRequest.inputId);
+  assert.throws(() => correlateLiveGuestResponse(encodeObject(v1.LiveGuestResponse,{...response,moduleGeneration:"9007199254740996"}),liveRequest,false),/identity mismatch/);
+  assert.throws(() => correlateLiveGuestResponse(encodeObject(v1.LiveGuestResponse,{...response,intent:{actors:[{id:"7",lifetime:"9"}],stop:{}}}),liveRequest,false),/contained an action/);
+});
+
+test("live queue restarts new-epoch work after a delayed old process returns", async () => {
+  const calls=[],pending=[],results=[];let disarms=0;
+  const supervisor={disarm(){disarms++},process(value){calls.push(value);return new Promise(resolve=>pending.push(resolve))}};
+  const queue=new LiveQueue(supervisor,(item)=>results.push(item.bytes),reason=>assert.fail(reason));
+  queue.enqueue({kind:"input",bytes:"old"});queue.reset();queue.enqueue({kind:"input",bytes:"new"});
+  pending[0]({state:"completed",output:[]});await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(calls,["old","new"]);assert.deepEqual(results,[]);
+  pending[1]({state:"completed",output:[]});await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(results,["new"]);assert.equal(disarms,1);
+});
+
+test("live queue phase failure and overflow invoke authority failure exactly once", async () => {
+  const failures=[];let disarms=0,resolveFirst;
+  const supervisor={disarm(){disarms++},process(){return new Promise(resolve=>resolveFirst=resolve)}};
+  let queue;queue=new LiveQueue(supervisor,()=>assert.fail("failed work must not complete"),reason=>{failures.push(reason);queue.reset()});
+  queue.enqueue({kind:"input",bytes:"running"});for(let index=0;index<9;index++)queue.enqueue({kind:"input",bytes:`queued-${index}`});
+  assert.deepEqual(failures,["Live guest input queue overflowed; explicit rearm is required."]);assert.equal(disarms,1);
+  resolveFirst({state:"timed_out",reason:"old generation"});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(failures.length,1);
+  const phaseFailures=[];let phaseQueue;phaseQueue=new LiveQueue({disarm(){},process(){return Promise.resolve({state:"timed_out",reason:"watchdog"})}},()=>assert.fail("timed out work must not complete"),reason=>{phaseFailures.push(reason);phaseQueue.reset()});
+  phaseQueue.enqueue({kind:"input",bytes:"phase"});await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(phaseFailures,["Guest timed_out: watchdog"]);
+});
+
+test("live controller state requires the full controller and module identity", () => {
+  const controller={sessionId:bootstrap.sessionId,controllerId:"controller",controllerIncarnation:"incarnation",authorityEpoch:"7"};
+  const module={sha256:"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=",generation:"9"};
+  validateLiveControllerState({controller,module},{controller},module);
+  assert.throws(()=>validateLiveControllerState({controller:{...controller,sessionId:"wrong"},module},{controller},module),/identity mismatch/);
+  assert.throws(()=>validateLiveControllerState({controller,module:{...module,sha256:"Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0M="}},{controller},module),/identity mismatch/);
 });

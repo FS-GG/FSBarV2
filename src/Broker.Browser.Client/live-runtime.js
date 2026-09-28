@@ -78,18 +78,33 @@ function validateIntent(intent, observation, bootstrap) {
   } else if (intent.action !== "stop") throw new Error("guest live action is missing or unsupported");
 }
 
-class LiveQueue {
-  constructor(supervisor, result, fault) { this.supervisor = supervisor; this.result = result; this.fault = fault; this.items = []; this.running = false; this.epoch = 0; }
-  reset(reason) { this.epoch++; this.items.length = 0; this.supervisor.disarm(); this.fault(reason); }
+export function correlateLiveGuestResponse(bytes, request, allowIntent = true) {
+  const response = canonicalObject(v1.LiveGuestResponse, Uint8Array.from(bytes));
+  if (response.inputId !== request.inputId || response.sessionId !== request.sessionId || response.moduleGeneration !== request.moduleGeneration
+      || JSON.stringify(response.basis) !== JSON.stringify(request.basis) || response.acknowledgment !== "GUEST_ACK_STATUS_CONSUMED") throw new Error("Guest live response identity mismatch.");
+  if (!allowIntent && response.intent) throw new Error("Guest initialization acknowledgment contained an action.");
+  return response;
+}
+
+export function validateLiveControllerState(state, bootstrap, moduleIdentity) {
+  if (!bootstrap || !moduleIdentity || JSON.stringify(state?.controller) !== JSON.stringify(bootstrap.controller)
+      || JSON.stringify(state?.module) !== JSON.stringify(moduleIdentity)) throw new Error("controller state identity mismatch");
+}
+
+export class LiveQueue {
+  constructor(supervisor, result, failure) { this.supervisor = supervisor; this.result = result; this.failure = failure; this.items = []; this.running = false; this.epoch = 0; }
+  reset() { this.epoch++; this.items.length = 0; this.supervisor.disarm(); }
+  fail(reason) { this.failure(reason); }
   enqueue(item) {
     if (item.kind === "observation" && this.items.at(-1)?.kind === "observation") this.items[this.items.length - 1] = item; else this.items.push(item);
-    if (this.items.length > MAX_QUEUE) return this.reset("Live guest input queue overflowed; explicit rearm is required.");
+    if (this.items.length > MAX_QUEUE) return this.fail("Live guest input queue overflowed; explicit rearm is required.");
     void this.drain();
   }
-  async drain() { if (this.running) return; this.running = true; const epoch = this.epoch;
-    while (this.items.length && epoch === this.epoch) { const item = this.items.shift(); const result = await this.supervisor.process(item.bytes);
-      if (epoch !== this.epoch) break; if (result.state !== "completed") { this.reset(`Guest ${result.state}: ${result.reason}`); break; } this.result(item, result); }
-    this.running = false;
+  async drain() { if (this.running) return; this.running = true;
+    try {
+      while (this.items.length) { const item = this.items.shift(), epoch = this.epoch; const result = await this.supervisor.process(item.bytes);
+        if (epoch !== this.epoch) continue; if (result.state !== "completed") { this.fail(`Guest ${result.state}: ${result.reason}`); break; } this.result(item, result); }
+    } finally { this.running = false; if (this.items.length) void this.drain(); }
   }
 }
 
@@ -125,10 +140,8 @@ export function createLiveRuntime(root, options, emit) {
   };
   const queue = new LiveQueue(supervisor, (item, result) => {
     if (item.connection !== connectionGeneration || item.generation !== supervisor.generation || item.epoch !== lifecycleEpoch) return;
-    let response; try { response = canonicalObject(v1.LiveGuestResponse, Uint8Array.from(result.output)); }
+    let response; try { response = correlateLiveGuestResponse(result.output, item.request); }
     catch (error) { return revoke(`Guest live response malformed: ${error.message}`); }
-    if (response.inputId !== item.request.inputId || response.sessionId !== item.request.sessionId || response.moduleGeneration !== item.request.moduleGeneration
-        || JSON.stringify(response.basis) !== JSON.stringify(item.request.basis) || response.acknowledgment !== "GUEST_ACK_STATUS_CONSUMED") return revoke("Guest live response identity mismatch.");
     if (response.intent) {
       try { validateIntent(response.intent, observation, bootstrap); }
       catch (error) { return revoke(error.message); }
@@ -140,7 +153,7 @@ export function createLiveRuntime(root, options, emit) {
       catch (error) { pendingParents.delete(parentId); return revoke(`Live submission failed: ${error.message}`); }
       elements.result.textContent = `Submitted ${response.intent.action} · parent ${parentId}`;
     }
-  }, reason => { elements.diagnostic.textContent = reason; });
+  }, reason => revoke(reason));
 
   const guestRequest = (input, kind = "input", identity = {}) => {
     if (!moduleIdentity || !bootstrap || !observation) return;
@@ -165,6 +178,8 @@ export function createLiveRuntime(root, options, emit) {
     const initialized = await supervisor.initialize(encodeObject(v1.LiveGuestRequest, request));
     if (epoch !== lifecycleEpoch || connection !== connectionGeneration) return supervisor.disarm();
     if (initialized.state !== "completed") return revoke(`Live guest initialization ${initialized.state}: ${initialized.reason}`);
+    try { correlateLiveGuestResponse(initialized.output, request, false); }
+    catch (error) { return revoke(`Guest initialization acknowledgment refused: ${error.message}`); }
     controllerStage = "CONTROLLER_STAGE_ARM_REQUESTED"; send({ arm: { controller: bootstrap.controller, module: moduleIdentity } }); render();
     guestRequest({ observation }, "observation");
   }
@@ -172,7 +187,20 @@ export function createLiveRuntime(root, options, emit) {
   async function loadBundled(name) { const response = await fetch(new URL(`guests/${name}-preview.wasm`, assetBase), { cache:"no-store" }); if (!response.ok) return revoke(`Bundled ${name} guest unavailable.`); await loadModule(`${name}-preview.wasm`, new Uint8Array(await response.arrayBuffer())); }
 
   function handleEnvelope(envelope) {
-    if (envelope.body === "bootstrap") { validateBootstrap(envelope.bootstrap, pairedSession); bootstrap = envelope.bootstrap; controllerStage = "CONTROLLER_STAGE_UNSPECIFIED"; notify("streaming", "Authenticated live session; load a guest and request native authority."); render(); return; }
+    if (envelope.body === "bootstrap") {
+      const replacement = envelope.bootstrap, isReplacement = Boolean(bootstrap); validateBootstrap(replacement, pairedSession);
+      if (bootstrap) {
+        if (!["CONTROLLER_STAGE_REVOKE_NATIVE_CONFIRMED","CONTROLLER_STAGE_EXPIRED","CONTROLLER_STAGE_REFUSED","CONTROLLER_STAGE_UNAVAILABLE"].includes(controllerStage)
+            || JSON.stringify(replacement.preview) !== JSON.stringify(bootstrap.preview) || replacement.liveProfile !== bootstrap.liveProfile
+            || JSON.stringify(replacement.limits) !== JSON.stringify(bootstrap.limits) || JSON.stringify(replacement.capabilities) !== JSON.stringify(bootstrap.capabilities)
+            || replacement.controller.sessionId !== bootstrap.controller.sessionId
+            || BigInt(replacement.controller.authorityEpoch) <= BigInt(bootstrap.controller.authorityEpoch)
+            || replacement.controller.controllerId === bootstrap.controller.controllerId
+            || replacement.controller.controllerIncarnation === bootstrap.controller.controllerIncarnation) throw new Error("replacement live bootstrap identity or negotiation is invalid");
+        lifecycleEpoch++; queue.reset(); selected = []; attackTarget = null; observation = null; moduleIdentity = null; pendingParents.clear(); lastObservationSequence = 0n; lastResultSequence = 0n;
+      }
+      bootstrap = replacement; controllerStage = "CONTROLLER_STAGE_UNSPECIFIED"; notify("streaming", isReplacement ? "Fresh live authority identity received." : "Authenticated live session; load a guest and request native authority."); render(); return;
+    }
     if (envelope.body === "observation") {
       if (!bootstrap) throw new Error("live observation arrived before bootstrap"); validateObservation(envelope.observation, bootstrap);
       observation = envelope.observation; selected = selected.filter(actor => observation.units.some(unit => unit.observation === "OBSERVATION_KIND_OWN" && sameRef(unit.reference, actor)));
@@ -185,8 +213,7 @@ export function createLiveRuntime(root, options, emit) {
     }
     if (envelope.body === "controllerState") {
       const state = envelope.controllerState;
-      if (!bootstrap || state.controller?.controllerIncarnation !== bootstrap.controller.controllerIncarnation || state.controller?.authorityEpoch !== bootstrap.controller.authorityEpoch
-          || (moduleIdentity && state.module?.generation !== moduleIdentity.generation)) throw new Error("controller state identity mismatch");
+      validateLiveControllerState(state, bootstrap, moduleIdentity);
       controllerStage = state.stage; if (state.stage === "CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED") notify("armed", `Native authority confirmed for epoch ${state.controller.authorityEpoch}.`);
       if (["CONTROLLER_STAGE_REVOKE_NATIVE_CONFIRMED", "CONTROLLER_STAGE_EXPIRED", "CONTROLLER_STAGE_REFUSED", "CONTROLLER_STAGE_UNAVAILABLE"].includes(state.stage)) { queue.reset(state.reason || state.stage); notify("disarmed", state.reason || state.stage); }
       render(); return;

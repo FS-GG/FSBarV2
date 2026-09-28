@@ -18,16 +18,28 @@ const observation = refs => ({ preview:{ sessionId,sequence:basis.stateSequence,
   { id:"88",observation:"OBSERVATION_KIND_RADAR",position:{x:6144,z:6144} },
 ],features:[]},basis,units:refs.map(([reference,kind])=>({reference,observation:kind})) });
 const fullObservation = observation([[ref0,"OBSERVATION_KIND_OWN"],[ref31999,"OBSERVATION_KIND_OWN"],[visual77,"OBSERVATION_KIND_VISUAL"],[radar88,"OBSERVATION_KIND_RADAR"]]);
-let server, port, sockets, submissions, auth;
+let server, port, sockets, submissions, armRequests, auth;
 const routes=[["/client/","src/Broker.Browser.Client/dist/"],["/src/Broker.Browser.Wasm/","src/Broker.Browser.Wasm/"],["/guests/","tests/Broker.Browser.Wasm.Tests/generated/"]];
 
 test.beforeAll(async()=>{
   server=createServer(async(request,response)=>{try{if(request.url.startsWith("/?")){response.setHeader("content-type","text/html");response.end(await readFile(new URL("./harness.html",import.meta.url)));return}const route=routes.find(([prefix])=>request.url.startsWith(prefix));if(!route){response.statusCode=404;response.end();return}const path=resolve(root,route[1],request.url.slice(route[0].length));response.setHeader("content-type",extname(path)===".js"?"text/javascript":extname(path)===".css"?"text/css":"application/wasm");response.end(await readFile(path))}catch{response.statusCode=404;response.end()}});
   sockets=new WebSocketServer({noServer:true});server.on("upgrade",(request,socket,head)=>sockets.handleUpgrade(request,socket,head,ws=>sockets.emit("connection",ws)));
-  sockets.on("connection",ws=>{ws.once("message",raw=>{auth=canonicalObject(v1.LiveClientEnvelope,raw);ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:fullObservation}));ws.on("message",bytes=>{const message=canonicalObject(v1.LiveClientEnvelope,bytes);if(message.body==="arm")ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:"1",controller,module:message.arm.module,stage:"CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED"}}));else if(message.body==="submit"){submissions.push(message.submit);const intent=message.submit.intent;ws.send(encodeObject(v1.LiveServerEnvelope,{result:{resultSequence:String(submissions.length),parentId:message.submit.parentId,inputId:message.submit.inputId,module:message.submit.module,basis:message.submit.basis,controller,childIndex:0,childCount:intent.actors.length,actor:intent.actors[0],stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED",disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:430,commandChannelIncarnation:"command-live-1"}}))}else if(message.body==="revoke")ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:"2",controller,module:bootstrap.module,stage:"CONTROLLER_STAGE_REVOKE_NATIVE_CONFIRMED",reason:message.revoke.reason}}))})})});
+  sockets.on("connection",ws=>{ws.once("message",raw=>{
+    auth=canonicalObject(v1.LiveClientEnvelope,raw);let currentController=controller,activeModule=null,stateSequence=0;
+    ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...bootstrap,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:fullObservation}));
+    ws.on("message",bytes=>{const message=canonicalObject(v1.LiveClientEnvelope,bytes);
+      if(message.body==="arm"){armRequests.push(message.arm);activeModule=message.arm.module;ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:String(++stateSequence),controller:currentController,module:activeModule,stage:"CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED"}}))}
+      else if(message.body==="submit"){submissions.push(message.submit);const intent=message.submit.intent;ws.send(encodeObject(v1.LiveServerEnvelope,{result:{resultSequence:String(submissions.length),parentId:message.submit.parentId,inputId:message.submit.inputId,module:message.submit.module,basis:message.submit.basis,controller:currentController,childIndex:0,childCount:intent.actors.length,actor:intent.actors[0],stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED",disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:430,commandChannelIncarnation:"command-live-1"}}))}
+      else if(message.body==="revoke"){
+        ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:String(++stateSequence),controller:currentController,module:activeModule,stage:"CONTROLLER_STAGE_REVOKE_NATIVE_CONFIRMED",reason:message.revoke.reason}}));
+        const nextEpoch=(BigInt(currentController.authorityEpoch)+1n).toString();currentController={sessionId,controllerId:Buffer.alloc(16,Number(BigInt(nextEpoch)%251n)+1).toString("base64"),controllerIncarnation:`controller-live-${nextEpoch}`,authorityEpoch:nextEpoch};activeModule=null;
+        ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...bootstrap,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:fullObservation}));
+      }
+    })
+  })});
   await new Promise(resolveListen=>server.listen(0,"127.0.0.1",resolveListen));port=server.address().port;
 });
-test.beforeEach(()=>{submissions=[];auth=null});
+test.beforeEach(()=>{submissions=[];armRequests=[];auth=null});
 test.afterAll(()=>new Promise(resolveClose=>server.close(resolveClose)));
 
 async function arm(page, guest="Manual guest") {
@@ -54,6 +66,13 @@ test("custom imported policy filters ID0 and changes semantic Move policy",async
   expect(submissions[0].intent.actors).toEqual([ref31999]);expect(submissions[0].intent.move.policy).toBe("MOVE_POLICY_APPEND");
   // The host requested REPLACE; the independently compiled guest changed it to APPEND.
   expect(await page.getByLabel("Move policy").inputValue()).toBe("MOVE_POLICY_REPLACE");
+});
+
+test("explicit revoke receives a fresh broker identity before rearm",async({page})=>{
+  await arm(page);const first={...armRequests[0].controller};await page.getByRole("button",{name:"Revoke"}).click();
+  await expect(page.locator(".authority")).toContainText("unspecified");await expect(page.locator('[data-unit-id="0"]')).toBeVisible();
+  await page.getByRole("button",{name:"Arm live"}).click();await expect(page.locator(".authority")).toContainText("arm native confirmed");
+  expect(armRequests).toHaveLength(2);expect(BigInt(armRequests[1].controller.authorityEpoch)).toBeGreaterThan(BigInt(first.authorityEpoch));expect(armRequests[1].controller.controllerId).not.toBe(first.controllerId);
 });
 
 test("changed lifetimes, radar targets, stale state, and focus loss fail closed",async({page})=>{
