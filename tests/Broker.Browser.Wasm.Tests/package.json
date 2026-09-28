@@ -1,0 +1,11 @@
+{
+  "name": "fs-gg-barc-browser-wasm-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test *.test.mjs && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

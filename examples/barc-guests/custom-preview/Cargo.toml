@@ -1,0 +1,36 @@
+[package]
+name = "barc-custom-preview"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+barc-guest-sdk = { path = "../../../sdk/barc/barc-guest-sdk" }
+
+[features]
+default = []
+hang-alloc = []
+trap-alloc = []
+hang-init = []
+trap-init = []
+hang-process = []
+trap-process = []
+hang-free = []
+trap-free = []
+hang-shutdown = []
+trap-shutdown = []
+oob-descriptor = []
+overlap-output = []
+malformed-output = []
+oversized-output = []
+require-zero-descriptor = []
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
