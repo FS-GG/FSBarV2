@@ -339,40 +339,57 @@ module Gateway =
                                 use connectionCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
                                 do! send config.maxFrameBytes socket bootstrap connectionCts.Token
                                 let mutable provisionalControllerId = bytesGuid bootstrap.Bootstrap.Controller.ControllerId
-                                let feeds=Channel.CreateBounded<Snapshot.BrowserFeed>(16)
                                 let outputs=Channel.CreateBounded<LiveServerEnvelope>(int (LiveControl.maxRetainedResults state) + 16)
+                                let outputGate=obj()
+                                let mutable lastObservationSequence: uint64 option=None
+                                let enqueueLocked detail envelope =
+                                    if not (outputs.Writer.TryWrite envelope) then
+                                        outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore
+                                        false
+                                    else true
+                                let enqueueObservationLocked value =
+                                    match value with
+                                    | Snapshot.Current current when current.sessionId=sessionId ->
+                                        if lastObservationSequence<>Some current.sequence then
+                                            let preview=(observation current).Observation
+                                            match LiveBoundary.observation preview state with
+                                            | Ok envelope when enqueueLocked "live observation delivery capacity exhausted" envelope ->
+                                                lastObservationSequence<-Some current.sequence
+                                            | _ -> ()
+                                    | Snapshot.Stale _ -> outputs.Writer.TryComplete(SessionChanged) |> ignore
+                                    | _ -> outputs.Writer.TryComplete(SessionChanged) |> ignore
                                 let feedObserver =
                                     { new IObserver<Snapshot.BrowserFeed> with
-                                        member _.OnNext value = feeds.Writer.TryWrite value |> ignore
-                                        member _.OnError error = feeds.Writer.TryComplete error |> ignore
-                                        member _.OnCompleted() = feeds.Writer.TryComplete() |> ignore }
+                                        member _.OnNext value = lock outputGate (fun () -> enqueueObservationLocked value)
+                                        member _.OnError error = outputs.Writer.TryComplete error |> ignore
+                                        member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let metadataObserver =
                                     { new IObserver<uint64> with
                                         member _.OnNext sequence =
-                                            match BrokerState.browserLatest hub with
-                                            | Some(Snapshot.Current current as feed) when current.sequence=sequence -> feeds.Writer.TryWrite feed |> ignore
-                                            | _ -> ()
-                                        member _.OnError error = feeds.Writer.TryComplete error |> ignore
+                                            lock outputGate (fun () ->
+                                                match BrokerState.browserLatest hub with
+                                                | Some(Snapshot.Current current as feed) when current.sequence=sequence -> enqueueObservationLocked feed
+                                                | _ -> ())
+                                        member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = () }
                                 let resultObserver =
                                     { new IObserver<LiveControl.Feedback> with
-                                        member _.OnNext value =
-                                            if not (outputs.Writer.TryWrite(LiveBoundary.feedbackEnvelope value)) then
-                                                outputs.Writer.TryComplete(InvalidOperationException "live result delivery capacity exhausted") |> ignore
+                                        member _.OnNext value = lock outputGate (fun () -> enqueueLocked "live result delivery capacity exhausted" (LiveBoundary.feedbackEnvelope value) |> ignore)
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let controllerObserver =
                                     { new IObserver<LiveControl.ControllerUpdate> with
                                         member _.OnNext value =
-                                            if not (outputs.Writer.TryWrite(LiveBoundary.controllerEnvelope value)) then
-                                                outputs.Writer.TryComplete(InvalidOperationException "live controller delivery capacity exhausted") |> ignore
-                                            elif value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused then
-                                                match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
-                                                | Ok replacement ->
-                                                    provisionalControllerId <- bytesGuid replacement.Bootstrap.Controller.ControllerId
-                                                    if not (outputs.Writer.TryWrite replacement) then
-                                                        outputs.Writer.TryComplete(InvalidOperationException "live replacement bootstrap delivery capacity exhausted") |> ignore
-                                                | Error detail -> outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore
+                                            lock outputGate (fun () ->
+                                                if enqueueLocked "live controller delivery capacity exhausted" (LiveBoundary.controllerEnvelope value)
+                                                   && (value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused) then
+                                                    match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
+                                                    | Ok replacement when enqueueLocked "live replacement bootstrap delivery capacity exhausted" replacement ->
+                                                        provisionalControllerId <- bytesGuid replacement.Bootstrap.Controller.ControllerId
+                                                        lastObservationSequence<-None
+                                                        BrokerState.browserLatest hub |> Option.iter enqueueObservationLocked
+                                                    | Ok _ -> ()
+                                                    | Error detail -> outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore)
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let latest,feedSubscription=BrokerState.subscribeBrowserFeed feedObserver hub
@@ -381,18 +398,7 @@ module Gateway =
                                 use resultSubscription=(LiveControl.feedback state).Subscribe resultObserver
                                 use controllerSubscription=(LiveControl.controllerUpdates state).Subscribe controllerObserver
                                 let mutable ownedBinding: LiveBinding option = None
-                                let sendFeed value=task {
-                                    match value with
-                                    | Snapshot.Current current when current.sessionId=sessionId ->
-                                        let preview=(observation current).Observation
-                                        match LiveBoundary.observation preview state with
-                                        | Ok envelope -> do! send config.maxFrameBytes socket envelope connectionCts.Token
-                                        | Error _ -> ()
-                                    | Snapshot.Stale _ -> raise SessionChanged
-                                    | _ -> raise SessionChanged }
-                                match latest with
-                                | Some value -> do! sendFeed value
-                                | None -> ()
+                                latest |> Option.iter (fun value -> lock outputGate (fun () -> enqueueObservationLocked value))
                                 let receiveTask=task {
                                     while socket.State=WebSocketState.Open do
                                         let! frame=receiveOne socket config.maxFrameBytes connectionCts.Token
@@ -416,11 +422,7 @@ module Gateway =
                                                 | Ok _ -> ()
                                                 | Error detail -> raise(InvalidOperationException detail)
                                             | _ -> raise(InvalidOperationException "unsupported live client envelope") }
-                                let feedTask = task {
-                                    while true do
-                                        let! item = feeds.Reader.ReadAsync(connectionCts.Token).AsTask()
-                                        do! sendFeed item }
-                                let resultTask = task {
+                                let outputTask = task {
                                     while true do
                                         let! item = outputs.Reader.ReadAsync(connectionCts.Token).AsTask()
                                         do! send config.maxFrameBytes socket item connectionCts.Token }
@@ -433,7 +435,7 @@ module Gateway =
                                             | Some binding -> LiveControl.requestRenew binding 2000u DateTimeOffset.UtcNow state |> ignore
                                             | None -> ()
                                         | _ -> raise SessionChanged }
-                                let observed=[|receiveTask:>Task;feedTask:>Task;resultTask:>Task;renewTask:>Task|]
+                                let observed=[|receiveTask:>Task;outputTask:>Task;renewTask:>Task|]
                                 let! _=Task.WhenAny observed
                                 connectionCts.Cancel()
                                 try do! Task.WhenAll observed with _ -> ()

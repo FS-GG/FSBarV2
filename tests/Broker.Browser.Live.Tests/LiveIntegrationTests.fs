@@ -189,6 +189,8 @@ let tests = testList "production live boundary" [
         laterReport.Snapshot <- laterMetadata
         let! (laterAck: LiveStateReportAck) = live.ReportLiveStateAsync(laterReport).ResponseAsync
         Expect.equal laterAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "metadata arriving second is recorded"
+        LiveControl.noteMetadataReported laterBasis.StateSequence (BrokerState.liveControl handle.Hub)
+        LiveControl.noteMetadataReported laterBasis.StateSequence (BrokerState.liveControl handle.Hub)
         let! (pairedObservation: LiveServerEnvelope) = receive socket
         Expect.equal pairedObservation.Observation.Basis.StateSequence laterBasis.StateSequence "metadata arrival replays the exact already-materialized sequence"
 
@@ -245,9 +247,11 @@ let tests = testList "production live boundary" [
         let! (_: LiveControlAckResponse) = live.ReportLiveControlAckAsync(revokeAck).ResponseAsync
         let! (revoked: LiveServerEnvelope) = receive socket
         let! (replacement: LiveServerEnvelope) = receive socket
+        let! (replacementObservation: LiveServerEnvelope) = receive socket
         Expect.equal revoked.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.RevokeNativeConfirmed "old binding is confirmed revoked"
         Expect.isGreaterThan replacement.Bootstrap.Controller.AuthorityEpoch controller.AuthorityEpoch "replacement bootstrap carries a newer broker epoch"
         Expect.notEqual replacement.Bootstrap.Controller.ControllerId controller.ControllerId "replacement bootstrap carries a fresh controller identity"
+        Expect.equal replacementObservation.Observation.Basis.StateSequence laterBasis.StateSequence "replacement immediately replays the same truthful paired observation"
 
         BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow handle.Hub
         let closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)
