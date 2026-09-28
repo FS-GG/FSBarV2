@@ -5,6 +5,7 @@ open System.IO
 open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
+open System.Runtime.InteropServices
 open Broker.Core
 open Broker.Protocol
 open Broker.Browser.Gateway
@@ -19,6 +20,8 @@ module LiveHost =
         if not (OperatingSystem.IsWindows()) then File.SetUnixFileMode(privateDirectory, UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute)
         use lifetime = new CancellationTokenSource(TimeSpan.FromMinutes 30.)
         Console.CancelKeyPress.Add(fun args -> args.Cancel <- true; lifetime.Cancel())
+        use termination = PosixSignalRegistration.Create(PosixSignal.SIGTERM, fun context -> context.Cancel <- true; lifetime.Cancel())
+        let readyPath=Path.Combine(privateDirectory,"ready.json")
         let tracePath = Path.Combine(privateDirectory,"native-host.jsonl")
         use trace = new StreamWriter(new FileStream(tracePath,FileMode.CreateNew,FileAccess.Write,FileShare.Read))
         if not (OperatingSystem.IsWindows()) then File.SetUnixFileMode(tracePath, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
@@ -52,7 +55,6 @@ module LiveHost =
                     member _.OnError error = write(box {|kind="observation-stream-error";detail=error.Message|})
                     member _.OnCompleted() = write(box {|kind="observation-stream-completed"|})}) host.Hub
                 use feedSubscription=feedSubscription
-                let readyPath=Path.Combine(privateDirectory,"ready.json")
                 let ready={|schema="fsbar.barc-native-live-host/v1";sourceCommit=sourceSha;grpcAddress=grpcAddress;gatewayUrl=gatewayUrl.Replace("http://","ws://")+config.path;allowedOrigin=origin;sessionId=sessionId;credential=credential;nativeTracePath=tracePath;fixtureMode=false|}
                 let readyBytes=JsonSerializer.SerializeToUtf8Bytes ready
                 use readyFile = new FileStream(readyPath,FileMode.CreateNew,FileAccess.Write,FileShare.Read)
@@ -66,5 +68,6 @@ module LiveHost =
                 gateway.Dispose()
         finally
             lifetime.Cancel()
+            File.Delete readyPath
             (host :> IAsyncDisposable).DisposeAsync().AsTask().GetAwaiter().GetResult()
     }
