@@ -527,11 +527,16 @@ module BrokerState =
                 match hub.session with
                 | None -> None
                 | Some session ->
+                    let sessionId = Session.id session
                     let current =
-                        Snapshot.Current
-                            { observation with
-                                sessionId = Session.id session
-                                perspectiveId = perspectiveId }
+                        if observation.units.Length + observation.features.Length > 4096 then
+                            Snapshot.Stale(sessionId, observation.sequence, observation.sequence,
+                                           "complete snapshot exceeds the 4096-entity browser preview bound")
+                        else
+                            Snapshot.Current
+                                { observation with
+                                    sessionId = sessionId
+                                    perspectiveId = perspectiveId }
                     hub.browserLatest <- Some current
                     Some current)
         published |> Option.iter hub.browserBroadcaster.Push

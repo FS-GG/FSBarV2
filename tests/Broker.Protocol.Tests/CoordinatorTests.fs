@@ -246,7 +246,7 @@ let wireConvertTests =
             | other -> failtestf "expected invalidation, got %A" other
         }
 
-        test "browser preview entity bound invalidates instead of truncating" {
+        test "browser preview bound does not invalidate the legacy materializer" {
             let upd = mkStateUpdate 1UL 1u
             for id in 1u .. 4097u do
                 let feature = MapFeature.empty()
@@ -255,11 +255,17 @@ let wireConvertTests =
                 feature.Position <- ValueSome (position 1.0f 2.0f 3.0f)
                 upd.Snapshot.MapFeatures.Add feature
             let view, result = WireConvert.applyHighBarStateUpdate upd WireConvert.emptyRunningView
-            Expect.isFalse (WireConvert.hasValidBaseline view) "oversized materialization cannot become current"
+            Expect.isTrue (WireConvert.hasValidBaseline view) "legacy baseline remains valid"
             match result with
-            | WireConvert.Invalidated (_, _, detail) ->
-                Expect.stringContains detail "4096-entity" "declared bound is explicit"
-            | other -> failtestf "expected bounded invalidation, got %A" other
+            | WireConvert.NewSnapshot (legacy, browser) ->
+                Expect.equal legacy.features.Length 4097 "legacy snapshot is complete"
+                let hub, _ = mkHubWithAudit ()
+                Expect.isOk (BrokerState.openGuestSession DateTimeOffset.UtcNow hub) "session opens"
+                BrokerState.applyBrowserObservation "fixture" browser hub
+                match BrokerState.browserLatest hub with
+                | Some (Snapshot.Stale(_, _, _, detail)) -> Expect.stringContains detail "4096-entity" "browser feed refuses oversize"
+                | other -> failtestf "expected browser-only stale marker, got %A" other
+            | other -> failtestf "expected complete legacy snapshot, got %A" other
         }
     ]
 

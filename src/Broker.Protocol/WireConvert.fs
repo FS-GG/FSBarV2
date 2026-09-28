@@ -511,12 +511,7 @@ module WireConvert =
                         | Error e, _ -> Error e
                         | _, Error e -> Error e) (Ok [])
                     |> Result.map List.rev
-                let entityCount =
-                    ss.OwnUnits.Count + ss.VisibleEnemies.Count + ss.RadarEnemies.Count + ss.MapFeatures.Count
                 let converted =
-                    if entityCount > 4096 then
-                        Error "complete snapshot exceeds the 4096-entity browser preview bound"
-                    else
                     match collect ss.OwnUnits ownUnitToCoreUnit,
                           collect ss.VisibleEnemies enemyUnitToCoreUnit,
                           collect ss.MapFeatures mapFeatureToCoreFeature,

@@ -220,4 +220,62 @@ let tests = testList "authenticated browser preview boundary" [
         malformed.Dispose(); oversized.Dispose()
         do! host.StopAsync()
     }
+
+    testTask "connection and credential are fenced when the native session is replaced" {
+        let hub, sessionId = setupHub()
+        let origin = "http://127.0.0.1:4173"
+        let port = freePort()
+        let httpUrl = sprintf "http://127.0.0.1:%d" port
+        let wsUrl = sprintf "ws://127.0.0.1:%d/barc-preview" port
+        let! (host: Microsoft.Extensions.Hosting.IHost) =
+            Gateway.startAsync hub (Gateway.defaultConfig httpUrl origin "secret" sessionId) CancellationToken.None
+        let! (socket: ClientWebSocket) = connect wsUrl origin (auth sessionId origin "secret")
+        let! (_: ServerEnvelope) = receive socket
+        BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow hub
+        let now = DateTimeOffset.UtcNow
+        Expect.isOk (BrokerState.openGuestSession now hub) "replacement session opens"
+        let replacement : Session.ProxyAiLink =
+            { attachedAt = now; protocolVersion = System.Version(1, 0); lastSnapshotAt = None
+              keepAliveIntervalMs = 1000; pluginId = "replacement"; schemaVersion = "1.0.0"
+              engineSha256 = "replacement"; lastHeartbeatAt = now; lastSeq = 0UL }
+        Expect.isOk (BrokerState.attachCoordinator replacement hub) "replacement coordinator attaches"
+        let closeBytes = Array.zeroCreate<byte> 128
+        let! (closed: ValueWebSocketReceiveResult) = socket.ReceiveAsync(Memory<byte>(closeBytes), CancellationToken.None).AsTask()
+        Expect.equal closed.MessageType WebSocketMessageType.Close "old authenticated connection is closed"
+        let! (oldCredential: ClientWebSocket) = connect wsUrl origin (auth sessionId origin "secret")
+        let! (oldClosed: ValueWebSocketReceiveResult) = oldCredential.ReceiveAsync(Memory<byte>(closeBytes), CancellationToken.None).AsTask()
+        Expect.equal oldClosed.MessageType WebSocketMessageType.Close "old session credential cannot authenticate replacement"
+        socket.Dispose(); oldCredential.Dispose()
+        do! host.StopAsync()
+    }
+
+    testTask "configured entity bound closes delivery without truncation" {
+        let hub, sessionId = setupHub()
+        let origin = "http://127.0.0.1:4173"
+        let port = freePort()
+        let httpUrl = sprintf "http://127.0.0.1:%d" port
+        let wsUrl = sprintf "ws://127.0.0.1:%d/barc-preview" port
+        let config = { Gateway.defaultConfig httpUrl origin "secret" sessionId with maxEntities = 1 }
+        let! (host: Microsoft.Extensions.Hosting.IHost) = Gateway.startAsync hub config CancellationToken.None
+        let! (socket: ClientWebSocket) = connect wsUrl origin (auth sessionId origin "secret")
+        let! (_: ServerEnvelope) = receive socket
+        BrokerState.applyBrowserObservation "team-7" (observation sessionId 4UL) hub
+        let closeBytes = Array.zeroCreate<byte> 128
+        let! (closed: ValueWebSocketReceiveResult) = socket.ReceiveAsync(Memory<byte>(closeBytes), CancellationToken.None).AsTask()
+        Expect.equal closed.MessageType WebSocketMessageType.Close "oversized entity set is refused"
+        Expect.equal socket.CloseStatus (Nullable WebSocketCloseStatus.MessageTooBig) "close reason identifies configured bound"
+        socket.Dispose()
+        do! host.StopAsync()
+    }
+
+    testTask "non-loopback listener configuration is refused" {
+        let hub, sessionId = setupHub()
+        let config = Gateway.defaultConfig "http://0.0.0.0:12345" "http://127.0.0.1:4173" "secret" sessionId
+        let mutable refused = false
+        try
+            let! (host: Microsoft.Extensions.Hosting.IHost) = Gateway.startAsync hub config CancellationToken.None
+            do! host.StopAsync()
+        with :? ArgumentException -> refused <- true
+        Expect.isTrue refused "preview listener is loopback-only"
+    }
 ]
