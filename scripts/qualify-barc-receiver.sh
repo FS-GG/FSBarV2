@@ -77,6 +77,7 @@ bash "$repo_root/tests/Broker.Browser.Receiver.Tests/package-archive.test.sh" \
   > "$evidence/package-test.log"
 
 if [[ "$scaffold_only" == false ]]; then
+  archive_sha="$(sha256sum "$archive" | cut -d' ' -f1)"
   bash "$repo_root/tests/Broker.Browser.Receiver.Tests/adoption.test.sh" "$evidence/receiver" \
     > "$evidence/adoption-test.log"
   "$repo_root/scripts/adopt-barc-preview.sh" "$archive" "$evidence/receiver" \
@@ -110,14 +111,25 @@ if [[ "$scaffold_only" == false ]]; then
   [[ "$ready" == true ]] || { echo "receiver production server did not become ready" >&2; exit 1; }
   curl -fsS "http://127.0.0.1:$port/barc/" > "$evidence/index.html"
   grep -F 'src="/barc/assets/' "$evidence/index.html" >/dev/null
-  curl -fsS "http://127.0.0.1:$port/barc/barc-preview/src/Broker.Browser.Wasm/guest-worker.js" \
-    > "$evidence/guest-worker.js"
-  curl -fsS "http://127.0.0.1:$port/barc/barc-preview/guests/manual-preview.wasm" \
-    > "$evidence/manual-preview.wasm"
-  cmp "$evidence/manual-preview.wasm" \
-    "$evidence/receiver/Client/public/barc-preview/guests/manual-preview.wasm"
+  for asset in \
+    src/Broker.Browser.Client/dist/assets/barc-preview.js \
+    src/Broker.Browser.Client/dist/assets/barc-preview.css \
+    src/Broker.Browser.Wasm/guest-worker.js \
+    guests/manual-preview.wasm \
+    guests/custom-preview.wasm; do
+    served="$evidence/served-${asset//\//_}"
+    curl -fsS "http://127.0.0.1:$port/barc/barc-preview/$asset" > "$served"
+    cmp "$served" "$evidence/receiver/Client/public/barc-preview/$asset"
+  done
   stop_server
   trap - EXIT
+
+  manifest="$evidence/receiver/Client/public/barc-preview/BARC-PREVIEW.SHA256"
+  client_js_sha="$(awk '$2 == "src/Broker.Browser.Client/dist/assets/barc-preview.js" { print $1 }' "$manifest")"
+  client_css_sha="$(awk '$2 == "src/Broker.Browser.Client/dist/assets/barc-preview.css" { print $1 }' "$manifest")"
+  worker_sha="$(awk '$2 == "src/Broker.Browser.Wasm/guest-worker.js" { print $1 }' "$manifest")"
+  manual_sha="$(awk '$2 == "guests/manual-preview.wasm" { print $1 }' "$manifest")"
+  custom_sha="$(awk '$2 == "guests/custom-preview.wasm" { print $1 }' "$manifest")"
 fi
 
 jq -n \
@@ -126,10 +138,17 @@ jq -n \
   --arg templateSha "$template_sha" \
   --arg sddSha "$sdd_sha" \
   --arg providerSha "$provider_sha" \
+  --arg archiveSha "${archive_sha:-}" \
+  --arg clientJsSha "${client_js_sha:-}" \
+  --arg clientCssSha "${client_css_sha:-}" \
+  --arg workerSha "${worker_sha:-}" \
+  --arg manualSha "${manual_sha:-}" \
+  --arg customSha "${custom_sha:-}" \
   '{schema:"fsbar.barc-receiver-qualification/v1",result:"passed",mode:$mode,
     retainedReceiver:$receiver,selectedCachesInitialEntries:0,
     public:{templates:{version:"0.15.0",sha256:$templateSha},sdd:{version:"2.0.3",sha256:$sddSha},provider:{sha256:$providerSha}},
     preAdoptionHashes:"public-scaffold.SHA256",
+    consumed:(if $mode == "joined-archive" then {archiveSha256:$archiveSha,assets:{clientJs:$clientJsSha,clientCss:$clientCssSha,worker:$workerSha,manualGuest:$manualSha,customGuest:$customSha}} else null end),
     finalJourney:(if $mode == "joined-archive" then "build-and-tests-passed; production server assets passed at /barc/; real browser journey evaluated separately" else "pending joined BARC-01.3c archive" end)}' \
   > "$evidence/qualification.json"
 
