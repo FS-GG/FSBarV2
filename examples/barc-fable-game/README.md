@@ -10,7 +10,7 @@ directory.
 `receiver.patch` is the explicit receiver-owned change over that verified public
 tree. It adds non-root base-path support and the opt-in BAR mount without changing
 the SVG Player, typed-SDD lifecycle, arena authority, or product BAR implementation.
-`adapter/Client/public/barc-receiver.js` imports the joined product's stable
+`adapter/Client/barc-receiver.js` imports the joined product's stable
 `barc-preview.js` mount directly. `scripts/adopt-barc-preview.sh` installs an immutable
 hash-manifested archive beneath `Client/public/barc-preview/` and refuses collisions.
 
@@ -20,5 +20,26 @@ Run the public-only scaffold checkpoint with:
 scripts/qualify-barc-receiver.sh --evidence /an/empty/evidence/directory --scaffold-only
 ```
 
-Final qualification adds `--archive /path/to/barc-preview.tar.gz`. It is intentionally
-pending until the joined BARC-01.3c source can produce that archive.
+Retain that untouched evidence directory as the public-generation authority. Each
+candidate archive can then use a checked copy without downloading public inputs
+again; the qualifier validates the scaffold-only receipt, provenance and every
+pre-adoption hash before applying the archive:
+
+```console
+scripts/qualify-barc-receiver.sh \
+  --evidence /a/new/candidate-evidence \
+  --baseline /the/scaffold-only-evidence \
+  --archive /path/to/barc-preview.tar.gz
+```
+
+After the generated receiver and actual companion are built, run the real browser
+journey at the receiver's production `/barc/` URL. The wrapper passes that exact
+loopback Origin to the companion, keeps the ready handoff private, owns both process
+lifetimes, and accepts the native-zero receipt only after clean teardown:
+
+```console
+scripts/qualify-barc-receiver-journey.sh \
+  --product-root /path/to/the/joined/fsbar/source \
+  --receiver-evidence /a/qualified/candidate-evidence \
+  --evidence /a/new/journey-evidence
+```
