@@ -222,7 +222,10 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
         let staticOrigin = http config.staticPort
         let! gateway = Gateway.startAsync protocol.Hub
                            { Gateway.defaultConfig (http config.gatewayPort) staticOrigin credential sessionId with
-                               credentialExpiresAt = expires; perspectiveId = "barc-fixture" } linked.Token
+                               credentialExpiresAt = expires
+                               perspectiveId = "barc-fixture"
+                               maxFrameBytes = 65536
+                               maxEntities = 64 } linked.Token
         let! staticHost = startStatic root config.basePath config.staticPort linked.Token
         let fixtureCall = coordinator.PushStateAsync(cancellationToken = linked.Token)
         let nativeCount = ref 0

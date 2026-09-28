@@ -134,6 +134,8 @@ let tests = testList "BARC preview companion" [
         Expect.equal (Guid(initial.Observation.SessionId.ToByteArray()).ToString()) sessionId "observation matches authenticated session"
         Expect.equal initial.Observation.Sequence 9007199254740993UL "uint64 sequence stays exact"
         Expect.equal bootstrap.Bootstrap.SessionId initial.Observation.SessionId "bootstrap and observation session agree"
+        Expect.equal bootstrap.Bootstrap.Limits.MaxEntities 64u "companion advertises the guest entity bound"
+        Expect.equal bootstrap.Bootstrap.Limits.MaxFrameBytes 65536u "companion advertises the encoded frame bound"
         let units = initial.Observation.Units
         Expect.equal units.Count 3 "own, visible, and radar units cross the public path"
         Expect.equal units.[0].Observation ObservationKind.Own "own provenance is retained"
