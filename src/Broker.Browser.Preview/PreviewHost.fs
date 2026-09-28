@@ -193,9 +193,16 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
         let options = FileStreamOptions(Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None)
         if not (OperatingSystem.IsWindows()) then
             options.UnixCreateMode <- UnixFileMode.UserRead ||| UnixFileMode.UserWrite
-        use stream = new FileStream(path, options)
-        stream.Write(bytes, 0, bytes.Length)
-        stream.Flush true
+        let mutable created = false
+        try
+            use stream = new FileStream(path, options)
+            created <- true
+            stream.Write(bytes, 0, bytes.Length)
+            stream.Flush true
+        with error ->
+            if created then
+                try File.Delete path with _ -> ()
+            raise error
 
     let private writeQualification path nativeSubmissionCount =
         let payload =
@@ -328,7 +335,6 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
             match protocolResource with
             | Some host -> try do! (host :> IAsyncDisposable).DisposeAsync().AsTask() with _ -> ()
             | None -> ()
-            try File.Delete readyPath with _ -> ()
             linked.Dispose()
             return raise error
     }
