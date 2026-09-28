@@ -1,0 +1,25 @@
+{
+  "observation": {
+    "units": [
+      {
+        "id": "77",
+        "definitionId": 501,
+        "observation": "OBSERVATION_KIND_RADAR",
+        "position": {
+          "x": 11.25,
+          "z": -37.5
+        }
+      }
+    ],
+    "features": [],
+    "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+    "sequence": "9007199254740993",
+    "capturedAtUnixMs": "1770000000123",
+    "perspectiveId": "team-7",
+    "validity": {
+      "status": "VALIDITY_STATUS_CURRENT",
+      "lastSequence": "9007199254740993"
+    }
+  },
+  "body": "observation"
+}

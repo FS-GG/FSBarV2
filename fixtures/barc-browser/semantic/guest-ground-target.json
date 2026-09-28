@@ -1,0 +1,13 @@
+{
+  "requestId": "9007199254740994",
+  "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+  "observationSequence": "9007199254740993",
+  "groundTarget": {
+    "position": {
+      "x": 123.25,
+      "elevation": 456.5,
+      "z": -789.75
+    }
+  },
+  "input": "groundTarget"
+}

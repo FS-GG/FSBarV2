@@ -1,0 +1,131 @@
+{
+  "schema": "barc.browser.corpus/v1",
+  "protoPackage": "barc.browser.v1",
+  "protocolVersion": "1.0.0",
+  "profile": "barc-preview-v1",
+  "generator": {
+    "protobufjs": "8.8.0",
+    "protobufjsCli": "2.7.0",
+    "long": "5.3.2"
+  },
+  "maxFrameBytes": 65536,
+  "protoSha256": "9b616848238b6f2a6cae0b015c4d73bb048f526eb504d02fb4fe7dc9c3dcbd60",
+  "orderedBundleSha256": "e5b427af0b81348dd5857b3628adcb6150f6bed0a04547aec95f37f705e7bf3d",
+  "cases": [
+    {
+      "name": "auth-incomplete",
+      "wire": "wire/auth-incomplete.bin",
+      "semantic": "semantic/auth-incomplete.json",
+      "expected": "semantic-refusal:incomplete-metadata",
+      "sha256": "03fa9a9328073cda74d86dbf1a220186dda3447715b7ed213b4c8ccb8e7cb6a1"
+    },
+    {
+      "name": "auth-stale-credential",
+      "wire": "wire/auth-stale-credential.bin",
+      "semantic": "semantic/auth-stale-credential.json",
+      "expected": "semantic-refusal:stale-credential",
+      "sha256": "f9b1e01aea145bd81127a945e58406b507a1f870ec06cae3efb0ad157c9e0d02"
+    },
+    {
+      "name": "auth-wrong-game",
+      "wire": "wire/auth-wrong-game.bin",
+      "semantic": "semantic/auth-wrong-game.json",
+      "expected": "semantic-refusal:wrong-game",
+      "sha256": "720928e3e85134f7fb12c24568266fefd9ae791020e0cadc96b6968b05daa94b"
+    },
+    {
+      "name": "auth-wrong-origin",
+      "wire": "wire/auth-wrong-origin.bin",
+      "semantic": "semantic/auth-wrong-origin.json",
+      "expected": "semantic-refusal:wrong-origin",
+      "sha256": "c9269c2046aaa97855e8de100beb0a91f0fb23248a83248d4439406f19ac94d9"
+    },
+    {
+      "name": "auth-wrong-session",
+      "wire": "wire/auth-wrong-session.bin",
+      "semantic": "semantic/auth-wrong-session.json",
+      "expected": "semantic-refusal:wrong-session",
+      "sha256": "f1ddd1814ed1bc1a7b181de19ec63d1d7fae1219f2e666885f99b37c32ce3f6e"
+    },
+    {
+      "name": "guest-ground-target",
+      "wire": "wire/guest-ground-target.bin",
+      "semantic": "semantic/guest-ground-target.json",
+      "expected": "decode",
+      "sha256": "322ca9f97d08b3a92886e9e1d4a84329ee8cdf226f169a3ec655ce17b0275f3e"
+    },
+    {
+      "name": "guest-move-preview",
+      "wire": "wire/guest-move-preview.bin",
+      "semantic": "semantic/guest-move-preview.json",
+      "expected": "decode",
+      "sha256": "a2c156608cab6ba9e873a14230c958e833a3be32e4c19f5eacf5a6174aaecc0a"
+    },
+    {
+      "name": "guest-select",
+      "wire": "wire/guest-select.bin",
+      "semantic": "semantic/guest-select.json",
+      "expected": "decode",
+      "sha256": "a3661344e5222e02700f4c49ce5b0945d467fca15af704a010ca2bbf901db3ec"
+    },
+    {
+      "name": "malformed-varint",
+      "wire": "wire/malformed-varint.bin",
+      "expected": "decode-refusal",
+      "sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+    },
+    {
+      "name": "observation-asymmetric",
+      "wire": "wire/observation-asymmetric.bin",
+      "semantic": "semantic/observation-asymmetric.json",
+      "expected": "decode",
+      "sha256": "87569b7f367a891ad6f6c578bed30a21af9c5f77519b0de33baa00366cf09a38"
+    },
+    {
+      "name": "observation-optional-absent",
+      "wire": "wire/observation-optional-absent.bin",
+      "semantic": "semantic/observation-optional-absent.json",
+      "expected": "decode",
+      "sha256": "36be1b9895a74dcb6a7e06520cb87bdaf06b58bae39738235d3eda0522895dd4"
+    },
+    {
+      "name": "observation-optional-present-zero",
+      "wire": "wire/observation-optional-present-zero.bin",
+      "semantic": "semantic/observation-optional-present-zero.json",
+      "expected": "decode",
+      "sha256": "dd775d3ab39538ddf5a420a974df7d33e2eb37f039cef8b930ebd091a1cd6e3f"
+    },
+    {
+      "name": "observation-unknown-enum",
+      "wire": "wire/observation-unknown-enum.bin",
+      "semantic": "semantic/observation-unknown-enum.json",
+      "expected": "semantic-refusal:unknown-enum",
+      "sha256": "84c6bb04facbf284e2c2f63bbb7c258fd619ee17debc40551381c49c731d5561"
+    },
+    {
+      "name": "observation-unknown-field",
+      "wire": "wire/observation-unknown-field.bin",
+      "semantic": "semantic/observation-unknown-field.json",
+      "expected": "decode-and-drop-unknown-on-reencode",
+      "sha256": "21f7791fb08174cb781a0042eaf0b038dfc55e2ca6eae626e1340fb1445b7a8c"
+    },
+    {
+      "name": "oversized-frame",
+      "wire": "wire/oversized-frame.bin",
+      "expected": "size-refusal:max-65536",
+      "sha256": "3266304f31be278d06c3bd3eb9aa3e00c59bedec0a890de466568b0b90b0e01f"
+    },
+    {
+      "name": "truncated-observation",
+      "wire": "wire/truncated-observation.bin",
+      "expected": "decode-refusal",
+      "sha256": "35a49d7f33bd69a98c8ab4d951cc41f5baaeffbd8aac89d691cc5156eb03920a"
+    },
+    {
+      "name": "unknown-envelope-wire",
+      "wire": "wire/unknown-envelope-wire.bin",
+      "expected": "semantic-refusal:unknown-envelope-body",
+      "sha256": "bc1aefbdddfd2b537f3f96e4c82a29c636362acf12bcc1d8cfc5e2432277b5a8"
+    }
+  ]
+}
