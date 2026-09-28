@@ -82,6 +82,19 @@ module BrokerState =
                     member _.Dispose() =
                         lock lock' (fun () -> observers.Remove observer |> ignore) }
 
+    type BrowserBroadcaster() =
+        let observers = ResizeArray<IObserver<Snapshot.BrowserFeed>>()
+        let lock' = obj ()
+        member _.Push(value: Snapshot.BrowserFeed) =
+            let copy = lock lock' (fun () -> observers.ToArray())
+            for observer in copy do
+                try observer.OnNext(value) with _ -> ()
+        interface IObservable<Snapshot.BrowserFeed> with
+            member _.Subscribe(observer: IObserver<Snapshot.BrowserFeed>) =
+                lock lock' (fun () -> observers.Add observer)
+                { new IDisposable with
+                    member _.Dispose() = lock lock' (fun () -> observers.Remove observer |> ignore) }
+
     type OwnerRule =
         | FirstAttached
         | Pinned of pluginId:string
@@ -114,7 +127,9 @@ module BrokerState =
           feedbackReservations: Dictionary<ScriptingClientId, int>
           clients: System.Collections.Concurrent.ConcurrentDictionary<ScriptingClientId, ClientChannel>
           stateLock: obj
-          snapshotBroadcaster: SnapshotBroadcaster }
+          snapshotBroadcaster: SnapshotBroadcaster
+          mutable browserLatest: Snapshot.BrowserFeed option
+          browserBroadcaster: BrowserBroadcaster }
 
     let create
         (brokerVersion: Version)
@@ -145,7 +160,9 @@ module BrokerState =
           feedbackReservations = Dictionary()
           clients = System.Collections.Concurrent.ConcurrentDictionary<ScriptingClientId, ClientChannel>()
           stateLock = obj()
-          snapshotBroadcaster = SnapshotBroadcaster() }
+          snapshotBroadcaster = SnapshotBroadcaster()
+          browserLatest = None
+          browserBroadcaster = BrowserBroadcaster() }
 
     let brokerVersion (hub: Hub) = hub.brokerVersion
     let auditEmitter (hub: Hub) = hub.auditEmitter
@@ -441,6 +458,7 @@ module BrokerState =
                 hub.telemetryGap <- false
                 hub.telemetryValid <- false
                 hub.invalidity <- None
+                hub.browserLatest <- None
                 if prevMode <> hub.mode then
                     hub.auditEmitter (Audit.AuditEvent.ModeChanged (at, prevMode, hub.mode)))
 
@@ -459,6 +477,7 @@ module BrokerState =
                 let prevMode = hub.mode
                 hub.session <- Some newSession
                 hub.mode <- mode
+                hub.browserLatest <- None
                 hub.coordinatorOutbound
                 |> Option.iter (fun outbound ->
                     outbound.channel.Writer.TryComplete() |> ignore
@@ -497,6 +516,52 @@ module BrokerState =
 
     let snapshots (hub: Hub) : IObservable<Snapshot.GameStateSnapshot> =
         hub.snapshotBroadcaster :> IObservable<Snapshot.GameStateSnapshot>
+
+    let applyBrowserObservation
+        (perspectiveId: string)
+        (observation: Snapshot.BrowserObservation)
+        (hub: Hub)
+        : unit =
+        let published =
+            withLock hub (fun () ->
+                match hub.session with
+                | None -> None
+                | Some session ->
+                    let current =
+                        Snapshot.Current
+                            { observation with
+                                sessionId = Session.id session
+                                perspectiveId = perspectiveId }
+                    hub.browserLatest <- Some current
+                    Some current)
+        published |> Option.iter hub.browserBroadcaster.Push
+
+    let invalidateBrowserFeed
+        (lastSequence: uint64)
+        (receivedSequence: uint64)
+        (detail: string)
+        (hub: Hub)
+        : unit =
+        let published =
+            withLock hub (fun () ->
+                match hub.session with
+                | None -> None
+                | Some session ->
+                    let stale = Snapshot.Stale(Session.id session, lastSequence, receivedSequence, detail)
+                    hub.browserLatest <- Some stale
+                    Some stale)
+        published |> Option.iter hub.browserBroadcaster.Push
+
+    let browserLatest (hub: Hub) = withLock hub (fun () -> hub.browserLatest)
+
+    let browserFeed (hub: Hub) : IObservable<Snapshot.BrowserFeed> =
+        hub.browserBroadcaster :> IObservable<Snapshot.BrowserFeed>
+
+    let subscribeBrowserFeed (observer: IObserver<Snapshot.BrowserFeed>) (hub: Hub) =
+        withLock hub (fun () ->
+            let subscription =
+                (hub.browserBroadcaster :> IObservable<Snapshot.BrowserFeed>).Subscribe(observer)
+            hub.browserLatest, subscription)
 
     let togglePause (hub: Hub) : Result<unit, string> =
         withLock hub (fun () ->

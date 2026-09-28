@@ -322,7 +322,10 @@ module WireConvert =
           lastSeq: uint64 option
           baselineValid: bool
           units: Map<uint32, Snapshot.Unit>
+          browserUnits: Snapshot.ObservedUnit list
           features: Map<uint32, Snapshot.Feature>
+          browserFeatures: Snapshot.ObservedFeature list
+          teamEconomy: Snapshot.TeamEconomy option
           mapMeta: Snapshot.MapMeta option
           lastFrame: int64 }
 
@@ -331,7 +334,10 @@ module WireConvert =
           lastSeq = None
           baselineValid = false
           units = Map.empty
+          browserUnits = []
           features = Map.empty
+          browserFeatures = []
+          teamEconomy = None
           mapMeta = None
           lastFrame = 0L }
 
@@ -340,7 +346,7 @@ module WireConvert =
     let hasValidBaseline (view: RunningView) : bool = view.baselineValid
 
     type ApplyResult =
-        | NewSnapshot of Snapshot.GameStateSnapshot
+        | NewSnapshot of Snapshot.GameStateSnapshot * Snapshot.BrowserObservation
         | Gap of lastSeq:uint64 * receivedSeq:uint64
         | Invalidated of lastSeq:uint64 * receivedSeq:uint64 * detail:string
         | KeepAliveOnly
@@ -351,6 +357,9 @@ module WireConvert =
         // Recoil uses X/Z as its ground plane; Y is elevation. The legacy
         // broker Vec2 therefore carries (X,Z), not (X,Y).
         { x = v.X; y = v.Z }
+
+    let private vec3 (v: Highbar.V1.Vector3) : Snapshot.Vec3 =
+        { x = v.X; elevation = Some v.Y; z = v.Z }
 
     let private requirePosition (entity: string) (id: uint32) (v: ValueOption<Highbar.V1.Vector3>) : Result<Snapshot.Vec2, string> =
         match v with
@@ -389,6 +398,69 @@ module WireConvert =
                   outline = sm.Heightmap.ToByteArray() }
         | ValueNone -> None
 
+    let private ownUnitToObserved (u: Highbar.V1.OwnUnit) =
+        match u.Position with
+        | ValueNone -> Error (sprintf "own unit %u is missing position" u.UnitId)
+        | ValueSome p ->
+            Ok ({ id = uint64 u.UnitId
+                  definitionId = Some u.DefId
+                  teamId = Some u.TeamId
+                  observation = Snapshot.Own
+                  position = vec3 p
+                  health = Some u.Health
+                  maxHealth = Some u.MaxHealth
+                  generation = None } : Snapshot.ObservedUnit)
+
+    let private enemyUnitToObserved (u: Highbar.V1.EnemyUnit) =
+        match u.Position with
+        | ValueNone -> Error (sprintf "enemy unit %u is missing position" u.UnitId)
+        | ValueSome p ->
+            Ok ({ id = uint64 u.UnitId
+                  definitionId = Some u.DefId
+                  teamId = Some u.TeamId
+                  observation = Snapshot.Visual
+                  position = vec3 p
+                  health = Some u.Health
+                  maxHealth = Some u.MaxHealth
+                  generation = None } : Snapshot.ObservedUnit)
+
+    let private radarToObserved (u: Highbar.V1.RadarBlip) =
+        match u.Position with
+        | ValueNone -> Error (sprintf "radar blip %u is missing position" u.BlipId)
+        | ValueSome p ->
+            Ok ({ id = uint64 u.BlipId
+                  definitionId = (if u.SuspectedDefId = 0u then None else Some u.SuspectedDefId)
+                  teamId = None
+                  observation = Snapshot.Radar
+                  position = vec3 p
+                  health = None
+                  maxHealth = None
+                  generation = None } : Snapshot.ObservedUnit)
+
+    let private featureToObserved (f: Highbar.V1.MapFeature) =
+        match f.Position with
+        | ValueNone -> Error (sprintf "map feature %u is missing position" f.FeatureId)
+        | ValueSome p ->
+            Ok ({ id = uint64 f.FeatureId
+                  definitionId = f.DefId
+                  position = vec3 p } : Snapshot.ObservedFeature)
+
+    let private economyToObserved (e: ValueOption<Highbar.V1.TeamEconomy>) =
+        match e with
+        | ValueNone -> None
+        | ValueSome e ->
+            let metal : Snapshot.ResourceAmount =
+                { current = Some (float e.Metal)
+                  storage = Some (float e.MetalStorage)
+                  income = Some (float e.MetalIncome)
+                  expenditure = None }
+            let energy : Snapshot.ResourceAmount =
+                { current = Some (float e.Energy)
+                  storage = Some (float e.EnergyStorage)
+                  income = Some (float e.EnergyIncome)
+                  expenditure = None }
+            Some ({ teamId = None; metal = metal; energy = energy } : Snapshot.TeamEconomy)
+
     let private snapshotFromView (view: RunningView) : Snapshot.GameStateSnapshot =
         let unitList = view.units |> Map.toList |> List.map snd
         let featureList = view.features |> Map.toList |> List.map snd
@@ -403,6 +475,15 @@ module WireConvert =
           buildings = []
           features = featureList
           mapMeta = view.mapMeta }
+
+    let private browserObservationFromView (view: RunningView) : Snapshot.BrowserObservation =
+        { sessionId = view.sessionId
+          sequence = view.lastSeq |> Option.defaultValue 0UL
+          capturedAt = DateTimeOffset.UtcNow
+          perspectiveId = ""
+          units = view.browserUnits
+          features = view.browserFeatures
+          teamEconomy = view.teamEconomy }
 
     let applyHighBarStateUpdate
         (update: Highbar.V1.StateUpdate)
@@ -430,15 +511,25 @@ module WireConvert =
                         | Error e, _ -> Error e
                         | _, Error e -> Error e) (Ok [])
                     |> Result.map List.rev
+                let entityCount =
+                    ss.OwnUnits.Count + ss.VisibleEnemies.Count + ss.RadarEnemies.Count + ss.MapFeatures.Count
                 let converted =
+                    if entityCount > 4096 then
+                        Error "complete snapshot exceeds the 4096-entity browser preview bound"
+                    else
                     match collect ss.OwnUnits ownUnitToCoreUnit,
                           collect ss.VisibleEnemies enemyUnitToCoreUnit,
-                          collect ss.MapFeatures mapFeatureToCoreFeature with
-                    | Ok ownUnits, Ok enemies, Ok features ->
-                        Ok (ownUnits, enemies, features)
-                    | Error e, _, _
-                    | _, Error e, _
-                    | _, _, Error e -> Error e
+                          collect ss.MapFeatures mapFeatureToCoreFeature,
+                          collect ss.OwnUnits ownUnitToObserved,
+                          collect ss.VisibleEnemies enemyUnitToObserved,
+                          collect ss.RadarEnemies radarToObserved,
+                          collect ss.MapFeatures featureToObserved with
+                    | Ok ownUnits, Ok enemies, Ok features, Ok observedOwn, Ok observedEnemies, Ok radar, Ok observedFeatures ->
+                        Ok (ownUnits, enemies, features, observedOwn @ observedEnemies @ radar, observedFeatures)
+                    | Error e, _, _, _, _, _, _ | _, Error e, _, _, _, _, _
+                    | _, _, Error e, _, _, _, _ | _, _, _, Error e, _, _, _
+                    | _, _, _, _, Error e, _, _ | _, _, _, _, _, Error e, _
+                    | _, _, _, _, _, _, Error e -> Error e
                 match converted with
                 | Error detail ->
                     let invalid =
@@ -446,7 +537,7 @@ module WireConvert =
                             lastSeq = Some recvSeq
                             baselineValid = false }
                     invalid, Invalidated (previousSeq, recvSeq, detail)
-                | Ok (ownUnits, enemies, features) ->
+                | Ok (ownUnits, enemies, features, observedUnits, observedFeatures) ->
                     let units =
                         Seq.append ownUnits enemies
                         |> Seq.map (fun unit -> unit.id, unit)
@@ -463,10 +554,13 @@ module WireConvert =
                             lastSeq = Some recvSeq
                             baselineValid = true
                             units = units
+                            browserUnits = observedUnits
                             features = featureMap
+                            browserFeatures = observedFeatures
+                            teamEconomy = economyToObserved ss.Economy
                             mapMeta = staticMapToCoreMapMeta ss.StaticMap
                             lastFrame = int64 update.Frame }
-                    view', NewSnapshot (snapshotFromView view')
+                    view', NewSnapshot (snapshotFromView view', browserObservationFromView view')
             | _ when hasGap ->
                 let invalid =
                     { view with
