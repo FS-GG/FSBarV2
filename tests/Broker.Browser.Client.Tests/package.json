@@ -8,6 +8,7 @@
     "pretest:boundary": "npm --prefix ../../src/Broker.Browser.Contracts ci --ignore-scripts",
     "test:boundary": "node --test boundary.test.mjs",
     "test:browser": "playwright test",
+    "test:actual": "BARC_RUN_ACTUAL_COMPANION=1 playwright test actual-companion.spec.js",
     "test": "npm run test:state && npm run test:boundary && npm run test:browser"
   },
   "dependencies": {

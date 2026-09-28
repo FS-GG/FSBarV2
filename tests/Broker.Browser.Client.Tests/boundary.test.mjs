@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { decodeServerFrame } from "../../src/Broker.Browser.Client/runtime.js";
+import { decodeServerFrame, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
 
 const wire = name => readFile(`../../fixtures/barc-browser/wire/${name}.bin`);
 const bootstrap = {
@@ -32,4 +32,23 @@ for (const [name, message] of [
 ]) test(`${name} is refused before state`, async () => {
   const bytes = await wire(name);
   assert.throws(() => decodeServerFrame(bytes, { bootstrap, negotiatedMaxFrameBytes: 65536 }), message);
+});
+
+test("observation coalescing never crosses an ordered input", async () => {
+  const calls = [], pending = [];
+  const supervisor = {
+    disarm() {},
+    process(bytes) { calls.push(bytes); return new Promise(resolve => pending.push(resolve)); }
+  };
+  const queue = new SerialGuestQueue(supervisor, () => {}, error => { throw new Error(error); });
+  queue.enqueue({ kind: "observation", bytes: "observation-1" });
+  queue.enqueue({ kind: "observation", bytes: "observation-2" });
+  queue.enqueue({ kind: "input", bytes: "select" });
+  queue.enqueue({ kind: "observation", bytes: "observation-3" });
+  queue.enqueue({ kind: "observation", bytes: "observation-4" });
+  for (let index = 0; index < 4; index++) {
+    pending[index]({ state: "completed", output: [] });
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  assert.deepEqual(calls, ["observation-1", "observation-2", "select", "observation-4"]);
 });

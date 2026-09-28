@@ -104,7 +104,7 @@ export function decodeServerFrame(bytesLike, context = {}) {
   return envelope;
 }
 
-class SerialGuestQueue {
+export class SerialGuestQueue {
   constructor(supervisor, onResult, onFault) {
     this.supervisor = supervisor;
     this.onResult = onResult;
@@ -121,8 +121,8 @@ class SerialGuestQueue {
   }
   enqueue(item) {
     if (item.kind === "observation") {
-      const pending = this.items.findIndex(candidate => candidate.kind === "observation");
-      if (pending >= 0) this.items[pending] = item;
+      const pending = this.items.length - 1;
+      if (pending >= 0 && this.items[pending].kind === "observation") this.items[pending] = item;
       else this.items.push(item);
     } else this.items.push(item);
     if (this.items.length > MAX_QUEUE) return this.reset("Guest input queue overflowed; explicit rearm is required.");
@@ -172,6 +172,8 @@ export function createRuntime(root, options, emit) {
   let pointerId = null;
   let pointerUnitId = null;
   let protocolRefused = false;
+  let lifecycleEpoch = 0;
+  let frameMeasureCount = 0;
 
   root.classList.add("barc-preview");
   root.innerHTML = `<section class="barc-shell" aria-label="BARC tactical preview">
@@ -179,13 +181,15 @@ export function createRuntime(root, options, emit) {
     <form class="pairing"><label>Gateway <input name="gateway" type="url" spellcheck="false" autocomplete="off"></label><label>Session UUID <input name="session" spellcheck="false" autocomplete="off"></label><label>One-time credential <input name="credential" type="password" autocomplete="off"></label><button>Pair</button></form>
     <div class="toolbar"><button data-guest="manual">Manual guest</button><button data-guest="custom">Custom guest</button><button data-action="import">Import .wasm</button><input data-file type="file" accept=".wasm,application/wasm" hidden><button data-action="rearm">Rearm</button><button data-action="disarm">Disarm</button></div>
     <div class="module" aria-live="polite"></div>
-    <div class="stage"><svg viewBox="0 0 800 520" tabindex="0" aria-label="Tactical map. Tab selects an own unit; arrows move the target; Enter confirms."><g class="grid"></g><g class="features"></g><g class="units"></g><g class="preview"></g></svg><aside><div class="age"></div><div class="selection"></div><div class="target"></div><div class="economy"></div><div class="diagnostic"></div></aside></div>
+    <div class="target-controls"><label>Target X <input name="target-x" type="number" step="0.25" value="0"></label><label>Target Z <input name="target-z" type="number" step="0.25" value="0"></label><button data-action="target">Preview target</button></div>
+    <div class="stage"><svg viewBox="0 0 800 520" tabindex="0" aria-label="Tactical map. Tab selects an own unit; arrows move the target; Enter confirms."><g class="grid"></g><g class="features"></g><g class="units"></g><g class="preview"></g></svg><aside><div class="age"></div><div class="selection"></div><div class="target"></div><div class="preview-detail"></div><div class="economy"></div><div class="diagnostic"></div></aside></div>
   </section>`;
   const elements = {
     form: root.querySelector("form"), gateway: root.querySelector("[name=gateway]"), session: root.querySelector("[name=session]"), credential: root.querySelector("[name=credential]"),
     status: root.querySelector(".status"), module: root.querySelector(".module"), svg: root.querySelector("svg"), units: root.querySelector(".units"),
     features: root.querySelector(".features"), preview: root.querySelector(".preview"), age: root.querySelector(".age"), selection: root.querySelector(".selection"),
-    target: root.querySelector(".target"), economy: root.querySelector(".economy"), diagnostic: root.querySelector(".diagnostic"), file: root.querySelector("[data-file]")
+    target: root.querySelector(".target"), previewDetail: root.querySelector(".preview-detail"), economy: root.querySelector(".economy"), diagnostic: root.querySelector(".diagnostic"), file: root.querySelector("[data-file]"),
+    targetX: root.querySelector("[name=target-x]"), targetZ: root.querySelector("[name=target-z]")
   };
   elements.gateway.value = options.initialGatewayUrl ?? "";
   elements.session.value = options.initialExpectedSessionId ?? "";
@@ -199,10 +203,8 @@ export function createRuntime(root, options, emit) {
   const clearInteraction = () => { selected = []; target = { x: 0, z: 0 }; pointerId = null; pointerUnitId = null; };
   const disarm = (reason) => {
     queue.reset(reason);
-    clearInteraction();
-    notify("disarmed", reason);
   };
-  const fault = (reason) => { clearInteraction(); notify("disarmed", reason); };
+  const fault = (reason) => { lifecycleEpoch++; clearInteraction(); notify("disarmed", reason); };
 
   const queue = new SerialGuestQueue(supervisor, (item, result) => {
     if (!projection.armed || item.connectionGeneration !== connectionGeneration || item.guestGeneration !== supervisor.generation) return;
@@ -244,13 +246,17 @@ export function createRuntime(root, options, emit) {
     if (!moduleBytes || !bootstrap || !snapshot || snapshot.validity.status !== "VALIDITY_STATUS_CURRENT") return fault("A current snapshot and loaded guest are required to rearm.");
     if (snapshot.units.length > MAX_GUEST_ENTITIES) return fault("Snapshot exceeds the 64-unit guest preview limit; no units were truncated.");
     queue.reset("Guest generation replaced for explicit rearm.");
+    const epoch = lifecycleEpoch;
+    const connection = connectionGeneration;
     let loaded;
     try { loaded = await supervisor.load(moduleBytes); }
     catch (error) { return fault(`Module load failed: ${error.message}`); }
+    if (epoch !== lifecycleEpoch || connection !== connectionGeneration || snapshot?.validity?.status !== "VALIDITY_STATUS_CURRENT") { supervisor.disarm(); return; }
     if (loaded.state !== "completed") return fault(`Module refused during ${loaded.phase}: ${loaded.reason}`);
     requestId += 1n;
     const init = encodeObject(v1.GuestRequest, { requestId: requestId.toString(), sessionId: bootstrap.sessionId, contextSequence: "0", initialize: bootstrap });
     const initialized = await supervisor.initialize(init);
+    if (epoch !== lifecycleEpoch || connection !== connectionGeneration || snapshot?.validity?.status !== "VALIDITY_STATUS_CURRENT") { supervisor.disarm(); return; }
     if (initialized.state !== "completed") return fault(`Module initialization ${initialized.state}: ${initialized.reason}`);
     notify("armed", `${moduleName} armed at guest generation ${supervisor.generation}.`);
     queueMicrotask(() => sendObservation(snapshot));
@@ -296,21 +302,32 @@ export function createRuntime(root, options, emit) {
     try { expectedSession = uuidBytesBase64(expectedSessionId); }
     catch (error) { notify("refused", error.message); return; }
     pairedSession = expectedSession;
-    socket = new WebSocket(candidate);
-    socket.binaryType = "arraybuffer";
-    socket.onopen = () => {
+    const generation = connectionGeneration;
+    const candidateSocket = new WebSocket(candidate);
+    socket = candidateSocket;
+    candidateSocket.binaryType = "arraybuffer";
+    const current = () => socket === candidateSocket && connectionGeneration === generation;
+    candidateSocket.onopen = () => {
+      if (!current()) { candidateSocket.close(); return; }
       const auth = encodeObject(v1.ClientEnvelope, { authenticate: { game: GAME, protocolVersion: PROTOCOL, profile: PROFILE, credential, origin: location.origin, expectedSessionId: expectedSession } });
-      socket.send(auth);
+      candidateSocket.send(auth);
       credential = "";
       elements.credential.value = "";
     };
-    socket.onmessage = event => {
+    candidateSocket.onmessage = event => {
+      if (!current()) return;
+      const started = performance.now();
       if (!(event.data instanceof ArrayBuffer)) return disarm("Text server frames are not accepted.");
       try { handleEnvelope(decodeServerFrame(event.data, { bootstrap, negotiatedMaxFrameBytes: bootstrap?.limits?.maxFrameBytes })); }
-      catch (error) { protocolRefused = true; disarm(`Server frame refused: ${error.message}`); notify("refused", error.message); socket.close(1008, "invalid preview frame"); }
+      catch (error) { protocolRefused = true; disarm(`Server frame refused: ${error.message}`); notify("refused", error.message); candidateSocket.close(1008, "invalid preview frame"); }
+      finally {
+        performance.measure("barc-preview-frame", { start: started, end: performance.now() });
+        frameMeasureCount++;
+        if (frameMeasureCount > 128) { performance.clearMeasures("barc-preview-frame"); frameMeasureCount = 0; }
+      }
     };
-    socket.onerror = () => notify("refused", "Gateway connection failed.");
-    socket.onclose = () => { if (!disposed && !protocolRefused) { disarm("Gateway disconnected; pair again and explicitly rearm."); notify("disconnected", "Gateway disconnected."); } };
+    candidateSocket.onerror = () => { if (current()) notify("refused", "Gateway connection failed."); };
+    candidateSocket.onclose = () => { if (current() && !disposed && !protocolRefused) { disarm("Gateway disconnected; pair again and explicitly rearm."); notify("disconnected", "Gateway disconnected."); } };
   }
 
   elements.form.addEventListener("submit", event => { event.preventDefault(); connect(elements.gateway.value, elements.session.value, elements.credential.value); });
@@ -319,6 +336,11 @@ export function createRuntime(root, options, emit) {
   root.querySelector("[data-action=import]").addEventListener("click", () => { disarm("Opening a file dialog disarmed the guest."); elements.file.click(); });
   root.querySelector("[data-action=rearm]").addEventListener("click", initializeGuest);
   root.querySelector("[data-action=disarm]").addEventListener("click", () => disarm("Guest explicitly disarmed."));
+  root.querySelector("[data-action=target]").addEventListener("click", () => {
+    const x = elements.targetX.valueAsNumber, z = elements.targetZ.valueAsNumber;
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return fault("Target coordinates must be finite numbers.");
+    groundTarget({ x, z });
+  });
   elements.file.addEventListener("change", async () => { const file = elements.file.files[0]; if (file) await loadModule(file.name, new Uint8Array(await file.arrayBuffer())); elements.file.value = ""; });
   elements.svg.addEventListener("compositionstart", () => composing = true);
   elements.svg.addEventListener("compositionend", () => composing = false);
@@ -330,7 +352,7 @@ export function createRuntime(root, options, emit) {
     if (event.key === "Tab" && own.length) {
       event.preventDefault(); const index = Math.max(0, own.findIndex(unit => selected.includes(unit.id))); const next = own[(index + (event.shiftKey ? own.length - 1 : 1)) % own.length]; select([next.id]);
     } else if (known(event.key, ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"])) {
-      event.preventDefault(); const step = event.shiftKey ? 1 : 10; if (event.key === "ArrowLeft") target.x -= step; if (event.key === "ArrowRight") target.x += step; if (event.key === "ArrowUp") target.z -= step; if (event.key === "ArrowDown") target.z += step; render(projection);
+      event.preventDefault(); const step = event.shiftKey ? 0.25 : 10; if (event.key === "ArrowLeft") target.x -= step; if (event.key === "ArrowRight") target.x += step; if (event.key === "ArrowUp") target.z -= step; if (event.key === "ArrowDown") target.z += step; render(projection);
     } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); groundTarget({ x: target.x, z: target.z }); }
   });
   elements.svg.addEventListener("pointerdown", event => { if (!projection.armed) return; pointerId = event.pointerId; pointerUnitId = event.target.closest("[data-unit-id]")?.dataset.unitId ?? null; elements.svg.setPointerCapture(pointerId); });
@@ -358,21 +380,24 @@ export function createRuntime(root, options, emit) {
     const observation = model.snapshot;
     elements.units.replaceChildren(); elements.features.replaceChildren(); elements.preview.replaceChildren();
     if (observation) {
-      for (const feature of observation.features) { const p = coordinates(feature.position); elements.features.append(svgElement("rect", { x: p.x - 5, y: p.y - 5, width: 10, height: 10, class: "feature" })); }
+      for (const feature of observation.features) { const p = coordinates(feature.position); const shape = svgElement("rect", { x: p.x - 5, y: p.y - 5, width: 10, height: 10, class: "feature" }); shape.dataset.featureId = feature.id; shape.dataset.definitionId = feature.definitionId; elements.features.append(shape); }
       for (const unit of observation.units) {
         const p = coordinates(unit.position); const own = unit.observation === "OBSERVATION_KIND_OWN";
         const shape = unit.observation === "OBSERVATION_KIND_RADAR" ? svgElement("rect", { x: p.x - 7, y: p.y - 7, width: 14, height: 14 }) : svgElement("circle", { cx: p.x, cy: p.y, r: own ? 10 : 8 });
         shape.setAttribute("class", `unit ${own ? "own" : unit.observation === "OBSERVATION_KIND_RADAR" ? "radar" : "visual"}${selected.includes(unit.id) ? " selected" : ""}`);
         shape.dataset.unitId = unit.id; shape.dataset.own = String(own); const title = svgElement("title"); title.textContent = `${unit.observation.replace("OBSERVATION_KIND_", "").toLowerCase()} unit ${unit.id}${Object.hasOwn(unit, "definitionId") ? ` type ${unit.definitionId}` : " type unknown"}`; shape.append(title); elements.units.append(shape);
       }
-      elements.age.textContent = `Snapshot ${observation.sequence} · captured ${new Date(Number(observation.capturedAtUnixMs)).toISOString()}`;
+      const captured = Object.hasOwn(observation, "capturedAtUnixMs") ? ` · captured ${new Date(Number(observation.capturedAtUnixMs)).toISOString()}` : " · capture time unavailable";
+      elements.age.textContent = `Snapshot ${observation.sequence}${captured}`;
       elements.selection.textContent = selected.length ? `Selected ${selected.join(", ")}` : "No own unit selected";
       elements.target.textContent = `Target X ${target.x.toFixed(2)} · Z ${target.z.toFixed(2)}`;
       const economy = observation.teamEconomy; elements.economy.textContent = economy ? `Metal ${economy.metal?.current ?? "—"} · Energy ${economy.energy?.current ?? "—"}` : "Economy unavailable";
     } else { elements.age.textContent = "No snapshot"; elements.selection.textContent = "No selection"; elements.target.textContent = "No target"; elements.economy.textContent = "Economy unavailable"; }
     if (model.preview?.groundTarget) {
-      const p = coordinates(model.preview.groundTarget); elements.preview.append(svgElement("path", { d: `M ${p.x - 12} ${p.y} H ${p.x + 12} M ${p.x} ${p.y - 12} V ${p.y + 12}`, class: "move-preview" }));
-    }
+      const p = coordinates(model.preview.groundTarget); const shape = svgElement("path", { d: `M ${p.x - 12} ${p.y} H ${p.x + 12} M ${p.x} ${p.y - 12} V ${p.y + 12}`, class: "move-preview" });
+      shape.dataset.x = String(model.preview.groundTarget.x); shape.dataset.z = String(model.preview.groundTarget.z); shape.dataset.unitIds = model.preview.unitIds.join(","); elements.preview.append(shape);
+      elements.previewDetail.textContent = `Guest Move · units ${model.preview.unitIds.join(", ")} · X ${model.preview.groundTarget.x.toFixed(2)} · Z ${model.preview.groundTarget.z.toFixed(2)}`;
+    } else elements.previewDetail.textContent = "No guest preview";
     for (const control of root.querySelectorAll("[data-action=rearm], [data-action=disarm], [data-guest], svg")) control.toggleAttribute("aria-disabled", model.connection !== "current");
   }
 

@@ -1,7 +1,7 @@
 .barc-preview { color: #e7edf5; background: #101820; font: 14px/1.45 system-ui, sans-serif; min-height: 100%; }
 .barc-preview * { box-sizing: border-box; }
 .barc-shell { max-width: 1120px; margin: auto; padding: 1rem; }
-.barc-shell header, .pairing, .toolbar { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.barc-shell header, .pairing, .toolbar, .target-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
 .barc-shell header { justify-content: space-between; }
 .readonly { margin-left: .6rem; padding: .15rem .45rem; color: #9bd5ff; border: 1px solid #36769f; border-radius: 2rem; }
 .status[data-state=current] { color: #8be3ad; }
@@ -12,6 +12,8 @@ input, button { padding: .48rem .65rem; color: inherit; background: #0d151c; bor
 button { cursor: pointer; }
 button:hover { border-color: #79b8e4; }
 .module { margin: .5rem 0; color: #b8cad9; }
+.target-controls label { display: flex; align-items: center; gap: .35rem; }
+.target-controls input { width: 8rem; }
 .stage { display: grid; grid-template-columns: minmax(0, 1fr) 18rem; gap: 1rem; }
 svg { width: 100%; min-height: 28rem; background: #0b141a; border: 1px solid #2d4558; touch-action: none; }
 .grid path { stroke: #172b37; stroke-width: 1; }
