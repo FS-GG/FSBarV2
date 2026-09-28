@@ -163,11 +163,20 @@ let coordinatorE2ETests =
                     SyntheticCoordinator.connect channel "ai-1" "1.0.0" |> Async.AwaitTask
                 let sid1Opt = BrokerState.activePluginId handle.Hub
                 Expect.equal sid1Opt (Some "ai-1") "session 1 owner"
+                // Start the client-streaming RPC before completing it. A
+                // header-only Grpc.Net.Client call may remain lazy until its
+                // first message and therefore has no server stream to close.
+                do! coord1.PushKeepAliveAsync() |> Async.AwaitTask
                 do! coord1.CompleteAsync() |> Async.AwaitTask
                 (coord1 :> IDisposable).Dispose()
-                // Allow closeSession to land; the watchdog is per-attach so the
-                // graceful close must propagate quickly.
-                do! Async.Sleep 300
+                // The client-stream completion and server PushAck run on
+                // separate HTTP/2 continuations. Wait for the observable
+                // generation teardown instead of assuming a scheduler delay.
+                let closeDeadline = DateTimeOffset.UtcNow.AddSeconds 2.0
+                while BrokerState.activePluginId handle.Hub |> Option.isSome do
+                    if DateTimeOffset.UtcNow > closeDeadline then
+                        failtest "graceful coordinator close did not clear ownership"
+                    do! Async.Sleep 20
 
                 Expect.equal (BrokerState.activePluginId handle.Hub) None "post-close: no active plugin"
 

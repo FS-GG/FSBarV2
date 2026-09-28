@@ -18,9 +18,6 @@
     <Compile Include="Sc003LatencyTests.fs" />
     <Compile Include="Sc005RecoveryTests.fs" />
     <Compile Include="GameProcessTests.fs" />
-    <Compile Include="VizSceneBuilderTests.fs" />
-    <Compile Include="VizHostProbeTests.fs" />
-    <Compile Include="VizSc008Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -30,7 +27,6 @@
     <ProjectReference Include="..\..\src\Broker.Core\Broker.Core.fsproj" />
     <ProjectReference Include="..\..\src\Broker.Tui\Broker.Tui.fsproj" />
     <ProjectReference Include="..\..\src\Broker.App\Broker.App.fsproj" />
-    <ProjectReference Include="..\..\src\Broker.Viz\Broker.Viz.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

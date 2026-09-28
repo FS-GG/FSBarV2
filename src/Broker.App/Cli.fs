@@ -4,14 +4,12 @@ module Cli =
 
     type Args =
         { listen: string
-          noViz: bool
           showVersion: bool
           printSchemaVersion: bool
           expectedSchemaVersion: string option }
 
     let defaults : Args =
         { listen = "127.0.0.1:5021"
-          noViz = false
           showVersion = false
           printSchemaVersion = false
           expectedSchemaVersion = None }
@@ -22,7 +20,6 @@ module Cli =
             ""
             "Options:"
             "  --listen HOST:PORT             gRPC server listen address (default 127.0.0.1:5021)"
-            "  --no-viz                       disable the optional 2D visualization subsystem"
             "  --version                      print the broker version and exit"
             "  --print-schema-version         print the expected coordinator schema version and exit"
             "  --expected-schema-version V    override the expected coordinator schema version (default 1.0.0)"
@@ -41,7 +38,6 @@ module Cli =
         let rec loop (acc: Args) (argv: string list) : Result<Args, string> =
             match argv with
             | [] -> Ok acc
-            | "--no-viz" :: rest          -> loop { acc with noViz = true } rest
             | "--version" :: rest         -> loop { acc with showVersion = true } rest
             | "--print-schema-version" :: rest ->
                 loop { acc with printSchemaVersion = true } rest

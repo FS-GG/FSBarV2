@@ -19,7 +19,6 @@ module HotkeyMap =
         /// Operator pressed `X` to terminate the active session.
         /// Maps to `Session.EndReason.OperatorTerminated` at wire-up.
         | EndSession
-        | ToggleViz
         | NoAction
 
     /// Map a single key (with modifiers) to an Action in the current

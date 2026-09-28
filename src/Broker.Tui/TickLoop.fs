@@ -12,10 +12,6 @@ module TickLoop =
         | Dashboard
         | Lobby of draft:Lobby.LobbyConfig
 
-    type VizController =
-        abstract Toggle : unit -> unit
-        abstract Status : unit -> string option
-
     let private defaultDraft : Lobby.LobbyConfig =
         { mapName = "Tabula"
           gameMode = "Skirmish"
@@ -81,11 +77,9 @@ module TickLoop =
             | _ -> ()
             uiMode
 
-        | HotkeyMap.ToggleViz, _ -> uiMode
 
     let run
         (core: Session.CoreFacade)
-        (viz: VizController option)
         (tickIntervalMs: int)
         (cancellationToken: CancellationToken)
         : Task<unit> =
@@ -108,17 +102,12 @@ module TickLoop =
                     now
                     staleThreshold
 
-            let vizStatus () =
-                match viz with
-                | Some v -> v.Status()
-                | None   -> None
-
             let mutable uiMode : UiMode = Dashboard
             let mutable lobbyDraft : Lobby.LobbyConfig = defaultDraft
 
             let renderCurrent () : Spectre.Console.Layout =
                 match uiMode with
-                | Dashboard  -> DashboardView.renderWithViz (buildReading ()) (vizStatus ())
+                | Dashboard  -> DashboardView.render (buildReading ())
                 | Lobby draft ->
                     lobbyDraft <- draft
                     LobbyView.render draft
@@ -146,10 +135,6 @@ module TickLoop =
                                 | Dashboard -> ()
                                 match HotkeyMap.map key (core.Mode()) with
                                 | HotkeyMap.Quit -> shouldQuit <- true
-                                | HotkeyMap.ToggleViz ->
-                                    match viz with
-                                    | Some v -> try v.Toggle() with _ -> ()
-                                    | None   -> ()
                                 | other -> uiMode <- dispatch core uiMode other
                             // Re-render the dashboard / lobby from current state.
                             let layout = renderCurrent ()

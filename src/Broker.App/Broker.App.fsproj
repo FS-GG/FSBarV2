@@ -14,8 +14,6 @@
     <Compile Include="Logging.fs" />
     <Compile Include="GameProcess.fsi" />
     <Compile Include="GameProcess.fs" />
-    <Compile Include="VizControllerImpl.fsi" />
-    <Compile Include="VizControllerImpl.fs" />
     <Compile Include="Program.fsi" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -24,7 +22,6 @@
     <ProjectReference Include="..\Broker.Core\Broker.Core.fsproj" />
     <ProjectReference Include="..\Broker.Protocol\Broker.Protocol.fsproj" />
     <ProjectReference Include="..\Broker.Tui\Broker.Tui.fsproj" />
-    <ProjectReference Include="..\Broker.Viz\Broker.Viz.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -175,9 +175,4 @@ let dispatchTests =
             Expect.equal recorder.Calls.Count 0 "multiple clients require explicit selection — pending UI"
         }
 
-        test "ToggleViz_does not call any operator action" {
-            let recorder = RecorderFacade()
-            let _ = TickLoop.dispatch (recorder :> Session.CoreFacade) TickLoop.Dashboard HotkeyMap.ToggleViz
-            Expect.equal recorder.Calls.Count 0 "viz toggle is local to the TUI"
-        }
     ]

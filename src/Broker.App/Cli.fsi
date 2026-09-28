@@ -4,7 +4,6 @@ module Cli =
 
     type Args =
         { listen: string
-          noViz: bool
           showVersion: bool
           /// Print the broker's expected coordinator schema version and
           /// exit (FR-014). Used as a pre-flight before launching the

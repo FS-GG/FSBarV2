@@ -19,9 +19,11 @@
   F Broker.Protocol.BrokerState.Hub.brokerVersion : Version
   F Broker.Protocol.BrokerState.Hub.clients : ConcurrentDictionary<ScriptingClientId,ClientChannel>
   F Broker.Protocol.BrokerState.Hub.commandQueueCapacity : Int32
+  F Broker.Protocol.BrokerState.Hub.completedNativeResultOrder : Queue<ValueTuple`3>
   F Broker.Protocol.BrokerState.Hub.completedNativeResults : HashSet<ValueTuple`3>
   F Broker.Protocol.BrokerState.Hub.coordinatorOutbound : FSharpOption<CoordinatorOutbound>
   F Broker.Protocol.BrokerState.Hub.expectedSchemaVersion : String
+  F Broker.Protocol.BrokerState.Hub.feedbackReservations : Dictionary<ScriptingClientId,Int32>
   F Broker.Protocol.BrokerState.Hub.invalidity : FSharpOption<Tuple`3>
   F Broker.Protocol.BrokerState.Hub.lastHeartbeatAt : DateTimeOffset
   F Broker.Protocol.BrokerState.Hub.mode : Mode
