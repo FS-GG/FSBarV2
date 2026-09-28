@@ -1,7 +1,0 @@
-schemaVersion: 1
-project:
-  id: scaffold
-  defaultWorkRoot: work
-sdd:
-  config: .fsgg/sdd.yml
-  agents: .fsgg/agents.yml

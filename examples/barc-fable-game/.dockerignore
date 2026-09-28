@@ -1,6 +1,0 @@
-**
-!artifacts/
-!artifacts/releases/
-!artifacts/releases/**
-!deploy/
-!deploy/authority.Dockerfile

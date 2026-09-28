@@ -1,0 +1,115 @@
+diff --git a/Client/Api.fs b/Client/Api.fs
+index e1f9541..f8910a4 100644
+--- a/Client/Api.fs
++++ b/Client/Api.fs
+@@ -25,7 +25,7 @@ module Api =
+                         "body" ==> BootstrapV1.encodeRequest request
+                     ]
+ 
+-            let! response = fetch ("/api/bootstrap", options) |> Async.AwaitPromise
++            let! response = fetch (BaseUrl.resolve "api/bootstrap", options) |> Async.AwaitPromise
+             let! text = response?text () |> Async.AwaitPromise
+ 
+             match BootstrapV1.responseFromJson (text: string) with
+diff --git a/Client/App.fs b/Client/App.fs
+index c352545..bc5a8ed 100644
+--- a/Client/App.fs
++++ b/Client/App.fs
+@@ -70,7 +70,7 @@ module App =
+     let private connectSub (capability: string) (dispatch: Msg -> unit) : unit =
+         // The URL contains neither player identity nor capability. The latter is sent
+         // only after the transport opens, in a versioned protocol message.
+-        let conn = SignalR.build "/hub/game"
++        let conn = SignalR.build (BaseUrl.resolve "hub/game")
+ 
+         conn.on (
+             "Message",
+diff --git a/Client/BaseUrl.fs b/Client/BaseUrl.fs
+new file mode 100644
+index 0000000..fb84e79
+--- /dev/null
++++ b/Client/BaseUrl.fs
+@@ -0,0 +1,9 @@
++namespace BarcFableGame.Client
++
++open Browser.Dom
++
++[<RequireQualifiedAccess>]
++module BaseUrl =
++
++    let resolve (relative: string) : string =
++        document.baseURI.TrimEnd('/') + "/" + relative.TrimStart('/')
+diff --git a/Client/Client.fsproj b/Client/Client.fsproj
+index 86e58ec..7b9d753 100644
+--- a/Client/Client.fsproj
++++ b/Client/Client.fsproj
+@@ -12,6 +12,7 @@
+          ../Protocol/Protocol.fsproj's comment for why. -->
+     <Compile Include="../Protocol/Http.fs" />
+     <Compile Include="../Protocol/Realtime.fs" />
++    <Compile Include="BaseUrl.fs" />
+     <Compile Include="SignalR.fs" />
+     <Compile Include="Api.fs" />
+     <Compile Include="Movement.fs" />
+diff --git a/Client/index.html b/Client/index.html
+index c94fadd..2585b85 100644
+--- a/Client/index.html
++++ b/Client/index.html
+@@ -27,7 +27,12 @@
+       </p>
+       <p id="player-id" hidden></p>
+       <div id="arena" aria-busy="true"></div>
++      <section aria-labelledby="barc-preview-heading">
++        <h2 id="barc-preview-heading">BAR preview</h2>
++        <div id="barc-preview-root"></div>
++      </section>
+     </main>
+     <script type="module" src="./output/Program.js"></script>
++    <script type="module" src="./barc-receiver.js"></script>
+   </body>
+ </html>
+diff --git a/Client/vite.config.ts b/Client/vite.config.ts
+index c8b2939..f327dfb 100644
+--- a/Client/vite.config.ts
++++ b/Client/vite.config.ts
+@@ -1,12 +1,16 @@
+-import { defineConfig } from "vite";
++import { defineConfig, loadEnv } from "vite";
+ 
+ // Development requests to /api and the SignalR hub stay same-origin and are forwarded
+ // to ASP.NET Core; the hub's WebSocket upgrade needs `ws: true` explicitly.
+-export default defineConfig({
+-  server: {
+-    proxy: {
+-      "/api": "http://localhost:5000",
+-      "/hub": { target: "http://localhost:5000", ws: true }
++export default defineConfig(({ mode }) => {
++  const env = loadEnv(mode, "", "BARC_");
++  return {
++    base: env.BARC_BASE_PATH || "/",
++    server: {
++      proxy: {
++        "/api": "http://localhost:5000",
++        "/hub": { target: "http://localhost:5000", ws: true }
++      }
+     }
+-  }
++  };
+ });
+diff --git a/Server/Program.fs b/Server/Program.fs
+index dcfc260..f0c89fc 100644
+--- a/Server/Program.fs
++++ b/Server/Program.fs
+@@ -182,6 +182,12 @@ module Program =
+         builder.Services.AddHostedService<TickBroadcaster>() |> ignore
+         let app = builder.Build()
+ 
++        match builder.Configuration["BasePath"] with
++        | null
++        | ""
++        | "/" -> ()
++        | value -> app.UsePathBase(PathString(value.TrimEnd('/'))) |> ignore
++
+         // The edge/container health probe deliberately exercises the real ASP.NET
+         // pipeline without allocating a player session or disclosing authority state.
+         app.MapGet(

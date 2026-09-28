@@ -37,6 +37,10 @@ for guest in manual-preview custom-preview; do
     echo "refusing non-WASM guest $file" >&2
     exit 1
   }
+  [[ "$(stat -c '%s' "$file")" -gt 8 ]] || {
+    echo "refusing empty WASM shell $file; package the independently built guest" >&2
+    exit 1
+  }
 done
 
 stage="$(mktemp -d "${TMPDIR:-/tmp}/barc-preview-package.XXXXXX")"

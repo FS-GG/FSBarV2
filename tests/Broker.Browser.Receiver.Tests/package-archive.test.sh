@@ -15,8 +15,8 @@ printf '%s\n' 'module Broker.Browser.Client.BarcPreview' > "$work/source/src/Bro
 printf '%s\n' 'built-client' > "$work/source/src/Broker.Browser.Client/dist/index.js"
 printf '%s\n' 'generated-codec' > "$work/source/src/Broker.Browser.Contracts/generated/barc_browser.js"
 printf '%s\n' 'self.onmessage = () => {};' > "$work/source/src/Broker.Browser.Wasm/guest-worker.js"
-printf '\x00\x61\x73\x6d\x01\x00\x00\x00' > "$work/source/tests/Broker.Browser.Wasm.Tests/generated/manual-preview.wasm"
-printf '\x00\x61\x73\x6d\x01\x00\x00\x00' > "$work/source/tests/Broker.Browser.Wasm.Tests/generated/custom-preview.wasm"
+printf '\x00\x61\x73\x6d\x01\x00\x00\x00\x00\x00' > "$work/source/tests/Broker.Browser.Wasm.Tests/generated/manual-preview.wasm"
+printf '\x00\x61\x73\x6d\x01\x00\x00\x00\x00\x00' > "$work/source/tests/Broker.Browser.Wasm.Tests/generated/custom-preview.wasm"
 
 "$repo_root/scripts/package-barc-preview.sh" "$work/source" "$work/first.tar.gz" >/dev/null
 "$repo_root/scripts/package-barc-preview.sh" "$work/source" "$work/second.tar.gz" >/dev/null
