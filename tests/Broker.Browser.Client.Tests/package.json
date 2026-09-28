@@ -1,0 +1,22 @@
+{
+  "name": "fs-gg-barc-browser-client-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile-state": "dotnet fable Broker.Browser.Client.Tests.fsproj --outDir output --noCache",
+    "test:state": "npm run compile-state && node output/Program.js",
+    "pretest:boundary": "npm --prefix ../../src/Broker.Browser.Contracts ci --ignore-scripts",
+    "test:boundary": "node --test boundary.test.mjs",
+    "test:browser": "playwright test",
+    "test": "npm run test:state && npm run test:boundary && npm run test:browser"
+  },
+  "dependencies": {
+    "@fable-org/fable-library-js": "2.8.0",
+    "long": "5.3.2",
+    "protobufjs": "8.8.0",
+    "ws": "8.19.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
