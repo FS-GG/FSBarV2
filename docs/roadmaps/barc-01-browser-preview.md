@@ -1,7 +1,7 @@
 # BARC-01.3 browser and custom-WASM preview
 
-**Draft, 2026-09-28.** Owner: `FS-GG/FSBarV2`. Proposed durable path:
-`docs/roadmaps/barc-01-browser-preview.md`. This is a bounded continuation of
+**Implementation candidate, 2026-09-28.** Owner: `FS-GG/FSBarV2`.
+The first `.3a/.3b` window is locally qualified; native source delivery remains pending. This is a bounded continuation of
 **BARC-01 — Fable BAR client and custom WASM control**, not a new feature.
 
 Programme: [Unified §9.8](https://github.com/FS-GG/.github/blob/main/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md#98-feature-parts-and-subroadmap-index).
@@ -227,7 +227,7 @@ upstream 403, absent hosted configuration and product publication are explicit
 independent limits. Replan only if the single broker projection, explicit codec,
 qualified generated receiver or guest isolation assumptions fail materially.
 
-This draft creates no issue, claim, PR, implementation, publication or activation.
+The first implementation candidate creates the optional gateway, shared wire contract, trusted Worker and Rust SDK; it enables no browser-to-native command route.
 After source delivery, the integrator records authoritative `.3` closure only
 after `.3e` and lands the required asynchronous Unified §0 progress update before
 selecting the next dependent `.4` acceptance. Independent ready work may continue.
@@ -242,6 +242,15 @@ document has landed:
 , [FSBarV2 browser/WASM preview — BARC-01.3](https://github.com/FS-GG/FSBarV2/blob/main/docs/roadmaps/barc-01-browser-preview.md)
 ```
 
-Until then, the actual draft is `/tmp/barc-01.3-browser-preview-plan.md`; do not
-publish a nonexistent default-branch link. Link maintenance may join existing
+Until source delivery, the owning document is on `routine/barc-browser-preview-20260928`; do not publish a nonexistent default-branch link. Link maintenance may join existing
 cross-repository work and does not require a planning-only PR.
+
+## First-window qualification
+
+The integrator joined the gateway, optional-fact contract, Worker and real Fable
+compatibility slice on `routine/barc-browser-preview-20260928`. The
+[bounded evidence and commands](evidence/barc-01.3ab-browser-boundary.md) record
+the final combined-tree checks and existing failure classification.
+`.3a/.3b` remain unchecked above until the native merge is read back.
+The complete `.3` preview still needs `.3c–.3e`; no product UI, generated BAR
+receiver, release, installation or native browser control is accepted here.

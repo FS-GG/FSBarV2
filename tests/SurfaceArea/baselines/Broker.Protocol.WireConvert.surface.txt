@@ -1,13 +1,16 @@
   C Broker.Protocol.WireConvert.ApplyResult.Gap(lastSeq:UInt64, receivedSeq:UInt64)
   C Broker.Protocol.WireConvert.ApplyResult.Invalidated(lastSeq:UInt64, receivedSeq:UInt64, detail:String)
   C Broker.Protocol.WireConvert.ApplyResult.KeepAliveOnly()
-  C Broker.Protocol.WireConvert.ApplyResult.NewSnapshot(Item:GameStateSnapshot)
+  C Broker.Protocol.WireConvert.ApplyResult.NewSnapshot(Item1:GameStateSnapshot, Item2:BrowserObservation)
   F Broker.Protocol.WireConvert.RunningView.baselineValid : Boolean
+  F Broker.Protocol.WireConvert.RunningView.browserFeatures : FSharpList<ObservedFeature>
+  F Broker.Protocol.WireConvert.RunningView.browserUnits : FSharpList<ObservedUnit>
   F Broker.Protocol.WireConvert.RunningView.features : FSharpMap<UInt32,Feature>
   F Broker.Protocol.WireConvert.RunningView.lastFrame : Int64
   F Broker.Protocol.WireConvert.RunningView.lastSeq : FSharpOption<UInt64>
   F Broker.Protocol.WireConvert.RunningView.mapMeta : FSharpOption<MapMeta>
   F Broker.Protocol.WireConvert.RunningView.sessionId : Guid
+  F Broker.Protocol.WireConvert.RunningView.teamEconomy : FSharpOption<TeamEconomy>
   F Broker.Protocol.WireConvert.RunningView.units : FSharpMap<UInt32,Unit>
 M Broker.Protocol.WireConvert.applyHighBarStateUpdate(update:StateUpdate, view:RunningView) : Tuple<RunningView,ApplyResult>
 M Broker.Protocol.WireConvert.fromCoreSnapshot(snapshot:GameStateSnapshot) : GameStateSnapshot
