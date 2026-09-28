@@ -1,0 +1,29 @@
+.barc-preview { color: #e7edf5; background: #101820; font: 14px/1.45 system-ui, sans-serif; min-height: 100%; }
+.barc-preview * { box-sizing: border-box; }
+.barc-shell { max-width: 1120px; margin: auto; padding: 1rem; }
+.barc-shell header, .pairing, .toolbar, .target-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.barc-shell header { justify-content: space-between; }
+.readonly { margin-left: .6rem; padding: .15rem .45rem; color: #9bd5ff; border: 1px solid #36769f; border-radius: 2rem; }
+.status[data-state=current] { color: #8be3ad; }
+.status[data-state=stale], .status[data-state=refused] { color: #ffca77; }
+.pairing { padding: .75rem; background: #172430; border: 1px solid #2d4558; }
+.pairing label { display: grid; gap: .2rem; flex: 1 1 15rem; }
+input, button { padding: .48rem .65rem; color: inherit; background: #0d151c; border: 1px solid #46647a; border-radius: .25rem; }
+button { cursor: pointer; }
+button:hover { border-color: #79b8e4; }
+.module { margin: .5rem 0; color: #b8cad9; }
+.target-controls label { display: flex; align-items: center; gap: .35rem; }
+.target-controls input { width: 8rem; }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 18rem; gap: 1rem; }
+svg { width: 100%; min-height: 28rem; background: #0b141a; border: 1px solid #2d4558; touch-action: none; }
+.grid path { stroke: #172b37; stroke-width: 1; }
+.unit { stroke-width: 2; cursor: crosshair; }
+.unit.own { fill: #3fb47b; stroke: #a6f4cc; }
+.unit.visual { fill: #d46e65; stroke: #ffc1b9; }
+.unit.radar { fill: none; stroke: #d3a85d; stroke-dasharray: 3 2; }
+.unit.selected { stroke: #fff; stroke-width: 4; }
+.feature { fill: #777f89; stroke: #d2d6db; }
+.move-preview { fill: none; stroke: #78c8ff; stroke-width: 3; }
+aside { display: grid; align-content: start; gap: .65rem; }
+aside > div { padding: .65rem; background: #172430; border-left: 3px solid #365a72; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .stage { grid-template-columns: 1fr; } svg { min-height: 20rem; } }

@@ -1,0 +1,14 @@
+{
+  "name": "fs-gg-barc-browser-receiver-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "long": "5.3.2",
+    "protobufjs": "8.8.0",
+    "ws": "8.19.0"
+  }
+}

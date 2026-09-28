@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Domain.fs" />
+    <Compile Include="BarcPreview.fs" />
+    <PackageReference Include="Fable.Core" Version="[5.3.0]" />
+    <PackageReference Include="Fable.Elmish" Version="[5.0.2]" />
+  </ItemGroup>
+</Project>

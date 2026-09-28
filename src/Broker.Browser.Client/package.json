@@ -1,0 +1,19 @@
+{
+  "name": "@fs-gg/barc-browser-client",
+  "version": "0.0.0-preview.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "dotnet fable Broker.Browser.Client.fsproj --outDir output --noCache",
+    "build": "npm run compile && vite build",
+    "dev": "npm run compile && vite --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@fable-org/fable-library-js": "2.8.0",
+    "long": "5.3.2",
+    "protobufjs": "8.8.0"
+  },
+  "devDependencies": {
+    "vite": "7.3.6"
+  }
+}

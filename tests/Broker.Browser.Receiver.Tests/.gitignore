@@ -1,0 +1,4 @@
+node_modules/
+.receiver-codec-*/
+playwright-report/
+test-results/
