@@ -33,6 +33,7 @@ module PreviewHost =
           gatewayPort: int
           staticPort: int
           readyFile: string
+          qualificationReceipt: string option
           fixtureMode: bool
           credentialLifetime: TimeSpan
           fixtureTiming: FixtureTiming }
@@ -65,6 +66,15 @@ module PreviewHost =
         let relativeReady = Path.GetRelativePath(fullRoot, ready)
         if relativeReady <> ".." && not (relativeReady.StartsWith(".." + string Path.DirectorySeparatorChar)) then
             invalidArg "readyFile" "ready file must be outside the public asset root"
+        let qualificationReceipt = config.qualificationReceipt |> Option.map Path.GetFullPath
+        qualificationReceipt |> Option.iter (fun receipt ->
+            if String.IsNullOrWhiteSpace receipt || File.Exists receipt || Directory.Exists receipt then
+                invalidArg "qualificationReceipt" "qualification receipt must be a new caller-owned path"
+            if receipt = ready then
+                invalidArg "qualificationReceipt" "qualification receipt and ready file must be distinct"
+            let relativeReceipt = Path.GetRelativePath(fullRoot, receipt)
+            if relativeReceipt <> ".." && not (relativeReceipt.StartsWith(".." + string Path.DirectorySeparatorChar)) then
+                invalidArg "qualificationReceipt" "qualification receipt must be outside the public asset root")
         if config.credentialLifetime <= TimeSpan.Zero then invalidArg "credentialLifetime" "credential lifetime must be positive"
         let required =
             [ "assets/barc-preview.js"
@@ -84,7 +94,7 @@ module PreviewHost =
             if stream.Read(header, 0, header.Length) <> header.Length
                || header <> [| 0uy; 97uy; 115uy; 109uy |] then
                 invalidArg "assetsRoot" (relative + " is not a WebAssembly module")
-        fullRoot, ready
+        fullRoot, ready, qualificationReceipt
 
     let private token () =
         let bytes = RandomNumberGenerator.GetBytes 32
@@ -172,26 +182,45 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
         return response
     }
 
+    let private writePrivate path (bytes: byte array) =
+        let options = FileStreamOptions(Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None)
+        if not (OperatingSystem.IsWindows()) then
+            options.UnixCreateMode <- UnixFileMode.UserRead ||| UnixFileMode.UserWrite
+        use stream = new FileStream(path, options)
+        stream.Write(bytes, 0, bytes.Length)
+        stream.Flush true
+
+    let private writeQualification path nativeSubmissionCount =
+        let payload =
+            {| schema = "barc.preview.qualification/v1"
+               nativeSubmissionCount = nativeSubmissionCount
+               cleanShutdown = true |}
+        writePrivate path (JsonSerializer.SerializeToUtf8Bytes(payload, JsonSerializerOptions(WriteIndented = true)))
+
     type Handle internal
         (protocol: ServerHost.ServerHandle, gateway: IHost, staticHost: IHost,
          grpcChannel: GrpcChannel, fixtureCall: Grpc.Core.AsyncClientStreamingCall<StateUpdate, PushAck>,
          commandCall: Grpc.Core.AsyncServerStreamingCall<CommandBatch>, lifetime: CancellationTokenSource,
-         fixtureTask: Task, commandTask: Task, readyFile: string, nativeCount: int ref) =
+         fixtureTask: Task, commandTask: Task, readyFile: string, qualificationReceipt: string option,
+         nativeCount: int ref) =
+        let mutable disposed = 0
         member _.Hub = protocol.Hub
         member _.ReadyFile = readyFile
         member _.FixtureTask = fixtureTask
         member _.NativeSubmissionCount = nativeCount.Value
         interface IAsyncDisposable with
             member _.DisposeAsync() = ValueTask(task {
-                lifetime.Cancel()
-                try do! fixtureCall.RequestStream.CompleteAsync() with _ -> ()
-                fixtureCall.Dispose(); commandCall.Dispose(); grpcChannel.Dispose()
-                try do! Task.WhenAll(fixtureTask, commandTask) with _ -> ()
-                do! gateway.StopAsync()
-                do! staticHost.StopAsync()
-                do! (protocol :> IAsyncDisposable).DisposeAsync().AsTask()
-                try File.Delete readyFile with _ -> ()
-                lifetime.Dispose() })
+                if Interlocked.Exchange(&disposed, 1) = 0 then
+                    lifetime.Cancel()
+                    try do! fixtureCall.RequestStream.CompleteAsync() with _ -> ()
+                    fixtureCall.Dispose(); commandCall.Dispose(); grpcChannel.Dispose()
+                    try do! Task.WhenAll(fixtureTask, commandTask) with _ -> ()
+                    do! gateway.StopAsync()
+                    do! staticHost.StopAsync()
+                    do! (protocol :> IAsyncDisposable).DisposeAsync().AsTask()
+                    try File.Delete readyFile with _ -> ()
+                    lifetime.Dispose()
+                    qualificationReceipt |> Option.iter (fun path -> writeQualification path nativeCount.Value) })
 
     let private writeReady path staticBase gatewayUrl sessionId credential (expires: DateTimeOffset) grpcEndpoint fixture =
         let payload =
@@ -203,16 +232,10 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
                credentialExpiresAtUtc = expires.ToString("O")
                grpcEndpoint = grpcEndpoint
                fixtureMode = fixture |}
-        let bytes = JsonSerializer.SerializeToUtf8Bytes(payload, JsonSerializerOptions(WriteIndented = true))
-        let options = FileStreamOptions(Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None)
-        if not (OperatingSystem.IsWindows()) then
-            options.UnixCreateMode <- UnixFileMode.UserRead ||| UnixFileMode.UserWrite
-        use stream = new FileStream(path, options)
-        stream.Write bytes
-        stream.Flush true
+        writePrivate path (JsonSerializer.SerializeToUtf8Bytes(payload, JsonSerializerOptions(WriteIndented = true)))
 
     let start (config: Config) (ct: CancellationToken) = task {
-        let root, readyPath = validate config
+        let root, readyPath, qualificationReceipt = validate config
         let linked = CancellationTokenSource.CreateLinkedTokenSource(ct)
         let! protocol = ServerHost.start { ServerHost.defaultOptions with listenAddress = loopback config.grpcPort } (Version(1, 0)) ignore linked.Token
         let grpcChannel = GrpcChannel.ForAddress(http config.grpcPort)
@@ -262,5 +285,6 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
                 with :? OperationCanceledException -> () }
         let staticBase = staticOrigin + config.basePath
         writeReady readyPath staticBase (ws config.gatewayPort) sessionId credential expires (http config.grpcPort) config.fixtureMode
-        return Handle(protocol, gateway, staticHost, grpcChannel, fixtureCall, commandCall, linked, fixtureTask, commandTask, readyPath, nativeCount)
+        return Handle(protocol, gateway, staticHost, grpcChannel, fixtureCall, commandCall, linked, fixtureTask, commandTask,
+                      readyPath, qualificationReceipt, nativeCount)
     }

@@ -6,7 +6,7 @@ open System.Threading.Tasks
 open Broker.Browser.Preview
 
 let private usage () =
-    "usage: Broker.Browser.Preview --fixture --assets-root PATH --base-path /barc/ --grpc-port N --gateway-port N --static-port N --ready-file PATH"
+    "usage: Broker.Browser.Preview --fixture --assets-root PATH --base-path /barc/ --grpc-port N --gateway-port N --static-port N --ready-file PATH [--qualification-receipt PATH]"
 
 let private parse (argv: string array) : PreviewHost.Config =
     let mutable fixture = false
@@ -26,6 +26,7 @@ let private parse (argv: string array) : PreviewHost.Config =
       gatewayPort = port "--gateway-port"
       staticPort = port "--static-port"
       readyFile = required "--ready-file"
+      qualificationReceipt = match values.TryGetValue "--qualification-receipt" with true, value -> Some value | _ -> None
       fixtureMode = fixture
       credentialLifetime = TimeSpan.FromMinutes 5.0
       fixtureTiming = PreviewHost.defaultFixtureTiming }

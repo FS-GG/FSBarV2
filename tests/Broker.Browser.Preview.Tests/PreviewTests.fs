@@ -56,6 +56,7 @@ let private config (root: string) (ready: string) (lifetime: TimeSpan) (timing: 
       gatewayPort = freePort()
       staticPort = freePort()
       readyFile = ready
+      qualificationReceipt = None
       fixtureMode = true
       credentialLifetime = lifetime
       fixtureTiming = timing }
@@ -98,12 +99,13 @@ let tests = testList "BARC preview companion" [
         createAssets root
         let privateRoot = tempDirectory()
         let ready = Path.Combine(privateRoot, "ready.json")
+        let receipt = Path.Combine(privateRoot, "qualification.json")
         let timing : PreviewHost.FixtureTiming =
             { secondSnapshot = TimeSpan.FromMilliseconds 600.0
               gap = TimeSpan.FromMilliseconds 100.0
               recovery = TimeSpan.FromMilliseconds 100.0
               replacement = TimeSpan.FromMilliseconds 250.0 }
-        let settings = config root ready (TimeSpan.FromSeconds 10.0) timing
+        let settings = { config root ready (TimeSpan.FromSeconds 10.0) timing with qualificationReceipt = Some receipt }
         let timeout = new CancellationTokenSource(TimeSpan.FromSeconds 10.0)
         let! (handle: PreviewHost.Handle) = PreviewHost.start settings timeout.Token
         Expect.isTrue (File.Exists ready) "ready handoff exists"
@@ -165,6 +167,14 @@ let tests = testList "BARC preview companion" [
         Expect.equal handle.NativeSubmissionCount 0 "preview composition submits no native command"
         socket.Dispose()
         do! (handle :> IAsyncDisposable).DisposeAsync().AsTask()
+        Expect.isTrue (File.Exists receipt) "normal teardown writes the qualification receipt"
+        if not (OperatingSystem.IsWindows()) then
+            Expect.equal (File.GetUnixFileMode receipt) (UnixFileMode.UserRead ||| UnixFileMode.UserWrite) "qualification receipt is mode 0600"
+        let qualification = JsonDocument.Parse(File.ReadAllBytes receipt)
+        Expect.equal (getString "schema" qualification.RootElement) "barc.preview.qualification/v1" "qualification schema is versioned"
+        Expect.equal (qualification.RootElement.GetProperty("nativeSubmissionCount").GetInt32()) 0 "qualification independently records zero native submissions"
+        Expect.isTrue (qualification.RootElement.GetProperty("cleanShutdown").GetBoolean()) "receipt is written only after clean shutdown"
+        qualification.Dispose()
         http.Dispose()
         document.Dispose()
         timeout.Dispose()
