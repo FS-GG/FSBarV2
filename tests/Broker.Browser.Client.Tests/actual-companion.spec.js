@@ -5,6 +5,7 @@ import { createServer } from "node:net";
 import { chmod, cp, mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { selectProductUrl } from "./product-topology.mjs";
 
 const enabled = process.env.BARC_RUN_ACTUAL_COMPANION === "1";
 test.skip(!enabled, "set BARC_RUN_ACTUAL_COMPANION=1 after building the production client, guests, and companion");
@@ -100,7 +101,7 @@ test("actual companion preserves the complete read-only product boundary", async
   try {
     const ready = await waitForFile(readyPath);
     expect(ready.schema).toBe("barc.preview.ready/v1"); expect(ready.fixtureMode).toBe(true);
-    await page.goto(ready.staticBaseUrl);
+    await page.goto(selectProductUrl(ready));
     await page.getByLabel("Gateway").fill(ready.gatewayWebSocketUrl);
     await page.getByLabel("Session UUID").fill(ready.sessionId);
     await page.getByLabel("One-time credential").fill(ready.credential);

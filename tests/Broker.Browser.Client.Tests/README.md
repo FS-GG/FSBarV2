@@ -26,10 +26,14 @@ fixture's complete/stale/recovery/replacement lifecycle, records Chromium frame
 processing p95/max and artifact hashes, and accepts the independent native-zero
 qualification receipt only after clean companion teardown.
 
-A generated receiver can reuse the same journey against a fresh externally
-started product by setting `BARC_EXTERNAL_READY_FILE` to its private ready-file
-path. In that mode the receiver owns process teardown, archive hashes, message
-and credential isolation, and its native-zero receipt.
+A generated receiver reuses the same journey by starting the companion with
+`--browser-origin http://127.0.0.1:<receiver-port>`, then setting
+`BARC_EXTERNAL_READY_FILE` to the unmodified companion private ready file and
+`BARC_EXTERNAL_PRODUCT_URL` to its published
+`http://127.0.0.1:<receiver-port>/barc/`. The journey navigates the receiver URL
+while consuming the actual ready gateway/session/credential fields unchanged.
+The receiver wrapper owns companion teardown, archive hashes, message and
+credential isolation, and the native-zero qualification receipt.
 
 The browser test server is loopback-only. Its synthetic WebSocket supplies the
 same frozen protobuf envelopes as the product gateway; the companion executable

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { decodeServerFrame, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
 import { encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
+import { selectProductUrl } from "./product-topology.mjs";
 
 const wire = name => readFile(`../../fixtures/barc-browser/wire/${name}.bin`);
 const bootstrap = {
@@ -32,6 +33,16 @@ test("legitimate stale envelopes omit current-only perspective and capture field
   assert.equal(decoded.observation.validity.status, "VALIDITY_STATUS_STALE");
   assert.equal(Object.hasOwn(decoded.observation, "perspectiveId"), false);
   assert.equal(Object.hasOwn(decoded.observation, "capturedAtUnixMs"), false);
+});
+
+test("external receiver URL selection preserves the private ready handoff", () => {
+  const ready = Object.freeze({ staticBaseUrl: "http://127.0.0.1:4100/barc/", gatewayWebSocketUrl: "ws://127.0.0.1:4200/barc-preview", sessionId: "session", credential: "secret" });
+  assert.equal(selectProductUrl(ready, {}), ready.staticBaseUrl);
+  assert.equal(selectProductUrl(ready, { BARC_EXTERNAL_READY_FILE: "/private/ready.json", BARC_EXTERNAL_PRODUCT_URL: "http://127.0.0.1:4300/barc/" }), "http://127.0.0.1:4300/barc/");
+  assert.equal(ready.gatewayWebSocketUrl, "ws://127.0.0.1:4200/barc-preview");
+  assert.equal(ready.sessionId, "session"); assert.equal(ready.credential, "secret");
+  assert.throws(() => selectProductUrl(ready, { BARC_EXTERNAL_PRODUCT_URL: "http://127.0.0.1:4300/barc/" }), /requires BARC_EXTERNAL_READY_FILE/);
+  assert.throws(() => selectProductUrl(ready, { BARC_EXTERNAL_READY_FILE: "/private/ready.json", BARC_EXTERNAL_PRODUCT_URL: "file:///tmp/barc/" }), /HTTP or HTTPS/);
 });
 
 for (const [name, message] of [
