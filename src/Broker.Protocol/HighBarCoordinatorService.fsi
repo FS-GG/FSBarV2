@@ -54,3 +54,9 @@ module HighBarCoordinatorService =
     type Impl =
         inherit HighBarCoordinator.HighBarCoordinatorBase
         new : service:Service -> Impl
+
+    /// Additive live-control service hosted on the same authenticated native
+    /// listener. Ordinary coordinator RPCs remain byte-compatible.
+    type LiveImpl =
+        inherit HighBarLiveControl.HighBarLiveControlBase
+        new : service:Service -> LiveImpl

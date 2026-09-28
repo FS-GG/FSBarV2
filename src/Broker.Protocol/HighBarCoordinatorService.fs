@@ -338,7 +338,8 @@ module HighBarCoordinatorService =
                                             for event in delta.Events do
                                                 match event.Kind with
                                                 | ValueSome (DeltaEvent.Types.Kind.CommandDispatch dispatch) ->
-                                                    BrokerState.noteNativeDispatch dispatch service.hub |> ignore
+                                                    if not (LiveControl.noteDispatch dispatch (BrokerState.liveControl service.hub)) then
+                                                        BrokerState.noteNativeDispatch dispatch service.hub |> ignore
                                                 | _ -> ()
                                         | _ -> ()
                                         let pid =
@@ -493,7 +494,11 @@ module HighBarCoordinatorService =
                     | ValueSome result -> result
                     | ValueNone -> raise (rpcException Grpc.Core.StatusCode.InvalidArgument "result must be present")
                 let disposition =
-                    BrokerState.reportNativeResult request.PluginId request.ChannelIncarnation result service.hub
+                    match LiveControl.reportNativeAdmission request.PluginId request.ChannelIncarnation result (BrokerState.liveControl service.hub) with
+                    | LiveControl.NativeRecorded -> BrokerState.Recorded
+                    | LiveControl.NativeDuplicate -> BrokerState.Duplicate
+                    | LiveControl.NativeNotOwned ->
+                        BrokerState.reportNativeResult request.PluginId request.ChannelIncarnation result service.hub
                 let reply = CommandBatchResultReportAck.empty()
                 reply.Disposition <-
                     match disposition with
@@ -501,4 +506,96 @@ module HighBarCoordinatorService =
                     | BrokerState.Duplicate -> CommandBatchResultReportDisposition.CommandBatchResultDuplicate
                     | BrokerState.Late -> CommandBatchResultReportDisposition.CommandBatchResultLate
                 return reply
+            }
+
+    type LiveImpl(service: Service) =
+        inherit HighBarLiveControl.HighBarLiveControlBase()
+
+        let state = BrokerState.liveControl service.hub
+
+        let requireOwner pluginId =
+            let owner = BrokerState.activePluginId service.hub |> Option.defaultValue ""
+            if String.IsNullOrWhiteSpace pluginId || pluginId <> owner then
+                raise (rpcException Grpc.Core.StatusCode.PermissionDenied
+                    (sprintf "not owner attempted=%s owner=%s" pluginId owner))
+
+        let requireSchema schema =
+            if schema <> service.config.expectedSchemaVersion then
+                raise (rpcException Grpc.Core.StatusCode.FailedPrecondition
+                    (sprintf "schema mismatch expected=%s received=%s" service.config.expectedSchemaVersion schema))
+
+        override _.OpenLiveControlChannel request responseStream context =
+            task {
+                requireSchema request.SchemaVersion
+                requireOwner request.PluginId
+                match LiveControl.claimControl request state with
+                | LiveControl.Unavailable detail ->
+                    return raise (rpcException Grpc.Core.StatusCode.FailedPrecondition detail)
+                | LiveControl.AlreadyClaimed ->
+                    return raise (rpcException Grpc.Core.StatusCode.AlreadyExists "live control reader already claimed")
+                | LiveControl.Claimed lease ->
+                    try
+                        try
+                            let mutable running = true
+                            while running && not context.CancellationToken.IsCancellationRequested do
+                                let! ready = lease.reader.WaitToReadAsync(context.CancellationToken).AsTask()
+                                running <- ready
+                                let mutable directive = Unchecked.defaultof<LiveControlDirective>
+                                while running && lease.reader.TryRead(&directive) do
+                                    do! responseStream.WriteAsync directive
+                        with :? OperationCanceledException -> ()
+                    finally
+                        LiveControl.releaseControl lease.incarnation state
+            } :> Task
+
+        override _.OpenLiveCommandChannel request responseStream context =
+            task {
+                requireSchema request.SchemaVersion
+                match request.Binding with
+                | ValueNone -> return raise (rpcException Grpc.Core.StatusCode.InvalidArgument "binding must be present")
+                | ValueSome binding -> requireOwner binding.PluginId
+                match LiveControl.claimCommands request state with
+                | LiveControl.Unavailable detail ->
+                    return raise (rpcException Grpc.Core.StatusCode.FailedPrecondition detail)
+                | LiveControl.AlreadyClaimed ->
+                    return raise (rpcException Grpc.Core.StatusCode.AlreadyExists "live command reader already claimed")
+                | LiveControl.Claimed lease ->
+                    try
+                        try
+                            let mutable running = true
+                            while running && not context.CancellationToken.IsCancellationRequested do
+                                let! ready = lease.reader.WaitToReadAsync(context.CancellationToken).AsTask()
+                                running <- ready
+                                let mutable delivery = Unchecked.defaultof<LiveControl.CommandDelivery>
+                                while running && lease.reader.TryRead(&delivery) do
+                                    for batch in delivery.batches do
+                                        do! responseStream.WriteAsync batch
+                        with :? OperationCanceledException -> ()
+                    finally
+                        LiveControl.releaseCommands lease.incarnation state
+            } :> Task
+
+        override _.ReportLiveControlAck request context =
+            ignore context
+            task {
+                match request.Binding with
+                | ValueNone -> raise (rpcException Grpc.Core.StatusCode.InvalidArgument "binding must be present")
+                | ValueSome binding -> requireOwner binding.PluginId
+                let response = LiveControlAckResponse.empty()
+                response.Disposition <- LiveControl.reportControlAck request DateTimeOffset.UtcNow state
+                return response
+            }
+
+        override _.ReportLiveState request context =
+            ignore context
+            task {
+                match request.Reporter with
+                | ValueNone -> raise (rpcException Grpc.Core.StatusCode.InvalidArgument "reporter must be present")
+                | ValueSome reporter ->
+                    requireSchema reporter.SchemaVersion
+                    requireOwner reporter.PluginId
+                let response = LiveStateReportAck.empty()
+                response.ReportSequence <- request.ReportSequence
+                response.Disposition <- LiveControl.reportState request DateTimeOffset.UtcNow state
+                return response
             }

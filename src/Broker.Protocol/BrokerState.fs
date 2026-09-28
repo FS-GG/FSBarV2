@@ -129,7 +129,8 @@ module BrokerState =
           stateLock: obj
           snapshotBroadcaster: SnapshotBroadcaster
           mutable browserLatest: Snapshot.BrowserFeed option
-          browserBroadcaster: BrowserBroadcaster }
+          browserBroadcaster: BrowserBroadcaster
+          liveControl: LiveControl.State }
 
     let create
         (brokerVersion: Version)
@@ -162,7 +163,8 @@ module BrokerState =
           stateLock = obj()
           snapshotBroadcaster = SnapshotBroadcaster()
           browserLatest = None
-          browserBroadcaster = BrowserBroadcaster() }
+          browserBroadcaster = BrowserBroadcaster()
+          liveControl = LiveControl.create commandQueueCapacity }
 
     let brokerVersion (hub: Hub) = hub.brokerVersion
     let auditEmitter (hub: Hub) = hub.auditEmitter
@@ -170,6 +172,7 @@ module BrokerState =
     let roster (hub: Hub) = hub.roster
     let slots (hub: Hub) = hub.slots
     let session (hub: Hub) = hub.session
+    let liveControl (hub: Hub) = hub.liveControl
 
     let private withLock (hub: Hub) (f: unit -> 'a) : 'a =
         lock hub.stateLock f
@@ -459,6 +462,7 @@ module BrokerState =
                 hub.telemetryValid <- false
                 hub.invalidity <- None
                 hub.browserLatest <- None
+                LiveControl.reset "coordinator session closed" hub.liveControl
                 if prevMode <> hub.mode then
                     hub.auditEmitter (Audit.AuditEvent.ModeChanged (at, prevMode, hub.mode)))
 
@@ -478,6 +482,7 @@ module BrokerState =
                 hub.session <- Some newSession
                 hub.mode <- mode
                 hub.browserLatest <- None
+                LiveControl.reset "coordinator session replaced" hub.liveControl
                 hub.coordinatorOutbound
                 |> Option.iter (fun outbound ->
                     outbound.channel.Writer.TryComplete() |> ignore
@@ -849,7 +854,11 @@ module BrokerState =
         | _ -> Error (CommandPipeline.InvalidPayload "no active coordinator command channel")
 
     let sendToCoordinator (command: CommandPipeline.Command) (hub: Hub) =
-        let result = withLock hub (fun () -> admitOutboundLocked command hub)
+        let result =
+            match command.kind with
+            | CommandPipeline.Gameplay _ when LiveControl.blocksLegacyGameplay hub.liveControl ->
+                Error (CommandPipeline.InvalidPayload "legacy gameplay writer fenced while live authority is active")
+            | _ -> withLock hub (fun () -> admitOutboundLocked command hub)
         match result with
         | Ok () -> ()
         | Error reason ->
@@ -864,7 +873,11 @@ module BrokerState =
         (hub: Hub)
         : BackpressureGate.CommandAck =
         withLock hub (fun () ->
-            if not hub.telemetryValid then
+            if LiveControl.blocksLegacyGameplay hub.liveControl then
+                { commandId = command.commandId
+                  accepted = false
+                  reject = Some (CommandPipeline.InvalidPayload "legacy gameplay writer fenced while live authority is active") }
+            elif not hub.telemetryValid then
                 { commandId = command.commandId
                   accepted = false
                   reject =

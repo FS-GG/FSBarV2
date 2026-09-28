@@ -6,5 +6,6 @@
     <ProjectReference Include="..\Broker.Core\Broker.Core.fsproj" />
     <ProjectReference Include="..\Broker.Protocol\Broker.Protocol.fsproj" />
     <ProjectReference Include="..\Broker.Browser.Contracts\Broker.Browser.Contracts.csproj" />
+    <ProjectReference Include="..\Broker.Browser.Live\Broker.Browser.Live.fsproj" />
   </ItemGroup>
 </Project>

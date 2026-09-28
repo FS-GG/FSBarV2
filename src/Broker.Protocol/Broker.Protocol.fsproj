@@ -16,6 +16,8 @@
     <Compile Include="BackpressureGate.fs" />
     <Compile Include="WireConvert.fsi" />
     <Compile Include="WireConvert.fs" />
+    <Compile Include="LiveControl.fsi" />
+    <Compile Include="LiveControl.fs" />
     <Compile Include="BrokerState.fsi" />
     <Compile Include="BrokerState.fs" />
     <Compile Include="HighBarCoordinatorService.fsi" />

@@ -22,3 +22,18 @@ module Gateway =
 
     val defaultConfig : url:string -> origin:string -> credential:string -> sessionId:Guid -> Config
     val startAsync : hub:BrokerState.Hub -> config:Config -> cancellationToken:CancellationToken -> Task<IHost>
+
+    type LiveConfig =
+        { url: string
+          path: string
+          allowedOrigin: string
+          credential: string
+          credentialSessionId: Guid
+          credentialExpiresAt: DateTimeOffset
+          perspectiveId: string
+          authTimeout: TimeSpan
+          closeTimeout: TimeSpan
+          maxFrameBytes: int }
+
+    val defaultLiveConfig : url:string -> origin:string -> credential:string -> sessionId:Guid -> LiveConfig
+    val startLiveAsync : hub:BrokerState.Hub -> config:LiveConfig -> cancellationToken:CancellationToken -> Task<IHost>

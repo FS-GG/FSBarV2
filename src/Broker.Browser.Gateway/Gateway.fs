@@ -14,6 +14,8 @@ open Microsoft.Extensions.Hosting
 open Broker.Core
 open Broker.Protocol
 open Broker.Browser.Contracts
+open Broker.Browser.Live
+open Highbar.V1
 
 module Gateway =
     [<Literal>]
@@ -43,6 +45,17 @@ module Gateway =
           perspectiveId = ""; authTimeout = TimeSpan.FromSeconds 3.0
           closeTimeout = TimeSpan.FromSeconds 1.0
           maxFrameBytes = 65536; maxEntities = 4096 }
+
+    type LiveConfig =
+        { url: string; path: string; allowedOrigin: string; credential: string
+          credentialSessionId: Guid; credentialExpiresAt: DateTimeOffset; perspectiveId: string
+          authTimeout: TimeSpan; closeTimeout: TimeSpan; maxFrameBytes: int }
+
+    let defaultLiveConfig url origin credential sessionId =
+        { url=url; path="/barc-live"; allowedOrigin=origin; credential=credential
+          credentialSessionId=sessionId; credentialExpiresAt=DateTimeOffset.UtcNow.AddMinutes 5.0
+          perspectiveId=""; authTimeout=TimeSpan.FromSeconds 3.0
+          closeTimeout=TimeSpan.FromSeconds 1.0; maxFrameBytes=65536 }
 
     let private guidBytes (id: Guid) = ByteString.CopyFrom(id.ToByteArray())
     let private bytesGuid (value: ByteString) = if value.Length = 16 then Some(Guid(value.ToByteArray())) else None
@@ -160,7 +173,7 @@ module Gateway =
     let private currentSessionId hub =
         BrokerState.session hub |> Option.map Session.id
 
-    let private runSocket hub config (context: HttpContext) = task {
+    let private runSocket hub (config: Config) (context: HttpContext) = task {
         let origin = context.Request.Headers.Origin.ToString()
         if origin <> config.allowedOrigin then
             context.Response.StatusCode <- StatusCodes.Status403Forbidden
@@ -256,7 +269,7 @@ module Gateway =
             | :? InvalidOperationException -> do! close socket WebSocketCloseStatus.MessageTooBig "browser preview output exceeds negotiated frame bound" config.closeTimeout
     }
 
-    let startAsync hub config cancellationToken = task {
+    let startAsync hub (config: Config) cancellationToken = task {
         let mutable listenUri = Unchecked.defaultof<Uri>
         let mutable originUri = Unchecked.defaultof<Uri>
         let validListen = Uri.TryCreate(config.url, UriKind.Absolute, &listenUri)
@@ -287,4 +300,159 @@ module Gateway =
         app.Map(config.path, Func<HttpContext, Task>(fun context -> runSocket hub config context :> Task)) |> ignore
         do! app.StartAsync(cancellationToken)
         return app :> IHost
+    }
+
+    let private authenticateLive (config: LiveConfig) origin (auth: ClientAuth) hub =
+        match BrokerState.session hub, bytesGuid auth.ExpectedSessionId with
+        | Some session, Some expected
+            when origin=config.allowedOrigin && auth.Origin=origin && auth.Game=Game
+              && auth.ProtocolVersion=ProtocolVersion && auth.Profile="barc-live-v1"
+              && auth.Credential=config.credential && DateTimeOffset.UtcNow<=config.credentialExpiresAt
+              && expected=config.credentialSessionId && expected=Session.id session -> Ok expected
+        | _ -> Error "live browser credential, origin, protocol, or session refused"
+
+    let private runLiveSocket hub (config: LiveConfig) (context: HttpContext) = task {
+        let origin=context.Request.Headers.Origin.ToString()
+        if origin<>config.allowedOrigin then context.Response.StatusCode<-StatusCodes.Status403Forbidden
+        elif not context.WebSockets.IsWebSocketRequest then context.Response.StatusCode<-StatusCodes.Status400BadRequest
+        else
+            use! socket=context.WebSockets.AcceptWebSocketAsync()
+            use authCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
+            authCts.CancelAfter config.authTimeout
+            try
+                let! received=receiveOne socket config.maxFrameBytes authCts.Token
+                match received with
+                | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
+                | Ok bytes ->
+                    let parsed=try Ok(LiveClientEnvelope.Parser.ParseFrom(bytes.ToArray())) with :? InvalidProtocolBufferException -> Error "malformed live authentication"
+                    match parsed with
+                    | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
+                    | Ok message when isNull message.Authenticate -> do! close socket WebSocketCloseStatus.PolicyViolation "live authentication required" config.closeTimeout
+                    | Ok message ->
+                        match authenticateLive config origin message.Authenticate hub with
+                        | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
+                        | Ok sessionId ->
+                            let state=BrokerState.liveControl hub
+                            match LiveBoundary.bootstrap sessionId config.perspectiveId state with
+                            | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
+                            | Ok bootstrap ->
+                                use connectionCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
+                                do! send config.maxFrameBytes socket bootstrap connectionCts.Token
+                                let feeds=Channel.CreateBounded<Snapshot.BrowserFeed>(16)
+                                let outputs=Channel.CreateBounded<LiveServerEnvelope>(int (LiveControl.maxRetainedResults state) + 16)
+                                let feedObserver =
+                                    { new IObserver<Snapshot.BrowserFeed> with
+                                        member _.OnNext value = feeds.Writer.TryWrite value |> ignore
+                                        member _.OnError error = feeds.Writer.TryComplete error |> ignore
+                                        member _.OnCompleted() = feeds.Writer.TryComplete() |> ignore }
+                                let resultObserver =
+                                    { new IObserver<LiveControl.Feedback> with
+                                        member _.OnNext value =
+                                            if not (outputs.Writer.TryWrite(LiveBoundary.feedbackEnvelope value)) then
+                                                outputs.Writer.TryComplete(InvalidOperationException "live result delivery capacity exhausted") |> ignore
+                                        member _.OnError error = outputs.Writer.TryComplete error |> ignore
+                                        member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
+                                let controllerObserver =
+                                    { new IObserver<LiveControl.ControllerUpdate> with
+                                        member _.OnNext value =
+                                            if not (outputs.Writer.TryWrite(LiveBoundary.controllerEnvelope value)) then
+                                                outputs.Writer.TryComplete(InvalidOperationException "live controller delivery capacity exhausted") |> ignore
+                                        member _.OnError error = outputs.Writer.TryComplete error |> ignore
+                                        member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
+                                let latest,feedSubscription=BrokerState.subscribeBrowserFeed feedObserver hub
+                                use feedSubscription=feedSubscription
+                                use resultSubscription=(LiveControl.feedback state).Subscribe resultObserver
+                                use controllerSubscription=(LiveControl.controllerUpdates state).Subscribe controllerObserver
+                                let mutable ownedBinding: LiveBinding option = None
+                                let sendFeed value=task {
+                                    match value with
+                                    | Snapshot.Current current when current.sessionId=sessionId ->
+                                        let preview=(observation current).Observation
+                                        match LiveBoundary.observation preview state with
+                                        | Ok envelope -> do! send config.maxFrameBytes socket envelope connectionCts.Token
+                                        | Error _ -> ()
+                                    | Snapshot.Stale _ -> ()
+                                    | _ -> raise SessionChanged }
+                                match latest with
+                                | Some value -> do! sendFeed value
+                                | None -> ()
+                                let receiveTask=task {
+                                    while socket.State=WebSocketState.Open do
+                                        let! frame=receiveOne socket config.maxFrameBytes connectionCts.Token
+                                        match frame with
+                                        | Error detail -> raise(InvalidOperationException detail)
+                                        | Ok payload ->
+                                            let request=LiveClientEnvelope.Parser.ParseFrom(payload.ToArray())
+                                            match request.BodyCase with
+                                            | LiveClientEnvelope.BodyOneofCase.Arm ->
+                                                match LiveBoundary.arm sessionId request.Arm DateTimeOffset.UtcNow state with
+                                                | Ok () -> ownedBinding <- LiveControl.currentBinding state
+                                                | Error detail -> raise(InvalidOperationException detail)
+                                            | LiveClientEnvelope.BodyOneofCase.Revoke ->
+                                                match LiveBoundary.revoke sessionId request.Revoke DateTimeOffset.UtcNow state with
+                                                | Ok () -> ownedBinding <- None
+                                                | Error detail -> raise(InvalidOperationException detail)
+                                            | LiveClientEnvelope.BodyOneofCase.Submit ->
+                                                match LiveBoundary.submit sessionId request.Submit DateTimeOffset.UtcNow state with
+                                                | Ok _ -> ()
+                                                | Error detail -> raise(InvalidOperationException detail)
+                                            | _ -> raise(InvalidOperationException "unsupported live client envelope") }
+                                let feedTask = task {
+                                    while true do
+                                        let! item = feeds.Reader.ReadAsync(connectionCts.Token).AsTask()
+                                        do! sendFeed item }
+                                let resultTask = task {
+                                    while true do
+                                        let! item = outputs.Reader.ReadAsync(connectionCts.Token).AsTask()
+                                        do! send config.maxFrameBytes socket item connectionCts.Token }
+                                let renewTask = task {
+                                    while true do
+                                        do! Task.Delay(TimeSpan.FromMilliseconds 500.0, connectionCts.Token)
+                                        match ownedBinding with
+                                        | Some binding -> LiveControl.requestRenew binding 2000u DateTimeOffset.UtcNow state |> ignore
+                                        | None -> () }
+                                let observed=[|receiveTask:>Task;feedTask:>Task;resultTask:>Task;renewTask:>Task|]
+                                let! _=Task.WhenAny observed
+                                connectionCts.Cancel()
+                                try do! Task.WhenAll observed with _ -> ()
+                                ownedBinding
+                                |> Option.iter (fun binding -> LiveControl.requestRevoke binding "browser connection ended" DateTimeOffset.UtcNow state |> ignore)
+                                do! close socket WebSocketCloseStatus.NormalClosure "live session ended" config.closeTimeout
+            with
+            | :? OperationCanceledException -> ()
+            | :? InvalidOperationException as ex -> do! close socket WebSocketCloseStatus.PolicyViolation ex.Message config.closeTimeout
+            | :? InvalidProtocolBufferException -> do! close socket WebSocketCloseStatus.InvalidPayloadData "malformed live frame" config.closeTimeout
+    }
+
+    let startLiveAsync hub (config: LiveConfig) cancellationToken = task {
+        let mutable listenUri = Unchecked.defaultof<Uri>
+        let mutable originUri = Unchecked.defaultof<Uri>
+        let validListen = Uri.TryCreate(config.url, UriKind.Absolute, &listenUri)
+        let validOrigin = Uri.TryCreate(config.allowedOrigin, UriKind.Absolute, &originUri)
+        let loopback =
+            validListen
+            && listenUri.Scheme = Uri.UriSchemeHttp
+            && (listenUri.Host = "localhost"
+                || listenUri.Host = IPAddress.Loopback.ToString()
+                || listenUri.Host = IPAddress.IPv6Loopback.ToString())
+        if not loopback
+           || not validOrigin
+           || (originUri.Scheme <> Uri.UriSchemeHttp && originUri.Scheme <> Uri.UriSchemeHttps)
+           || not (String.IsNullOrEmpty listenUri.AbsolutePath || listenUri.AbsolutePath = "/")
+           || not (String.IsNullOrEmpty listenUri.Query && String.IsNullOrEmpty listenUri.Fragment && String.IsNullOrEmpty listenUri.UserInfo)
+           || originUri.AbsolutePath <> "/"
+           || not (String.IsNullOrEmpty originUri.Query && String.IsNullOrEmpty originUri.Fragment && String.IsNullOrEmpty originUri.UserInfo)
+           || String.IsNullOrWhiteSpace config.path || not (config.path.StartsWith "/") || config.path.StartsWith("//")
+           || config.path.Contains('?') || config.path.Contains('#')
+           || String.IsNullOrWhiteSpace config.credential || config.credentialSessionId = Guid.Empty
+           || config.authTimeout <= TimeSpan.Zero || config.closeTimeout <= TimeSpan.Zero
+           || config.maxFrameBytes <= 0 then
+            invalidArg "config" "live browser requires loopback HTTP, an exact origin/path, session credential, and positive bounds"
+        let builder=WebApplication.CreateBuilder()
+        builder.WebHost.UseUrls(config.url)|>ignore
+        let app=builder.Build()
+        app.UseWebSockets()|>ignore
+        app.Map(config.path,Func<HttpContext,Task>(fun context->runLiveSocket hub config context:>Task))|>ignore
+        do! app.StartAsync(cancellationToken)
+        return app:>IHost
     }

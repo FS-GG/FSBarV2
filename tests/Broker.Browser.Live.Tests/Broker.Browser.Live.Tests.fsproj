@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><IsPackable>false</IsPackable><GenerateProgramFile>false</GenerateProgramFile></PropertyGroup>
+  <ItemGroup><Compile Include="LiveTests.fs" /><Compile Include="LiveIntegrationTests.fs" /><Compile Include="Program.fs" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Broker.Browser.Live\Broker.Browser.Live.fsproj" />
+    <ProjectReference Include="..\..\src\Broker.Browser.Gateway\Broker.Browser.Gateway.fsproj" />
+    <ProjectReference Include="..\..\src\Broker.Browser.Contracts\Broker.Browser.Contracts.csproj" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+    <PackageReference Include="Expecto" Version="10.2.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.3" />
+  </ItemGroup>
+</Project>
