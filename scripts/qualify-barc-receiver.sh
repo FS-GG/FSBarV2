@@ -121,6 +121,12 @@ if [[ "$scaffold_only" == false ]]; then
     curl -fsS "http://127.0.0.1:$port/barc/barc-preview/$asset" > "$served"
     cmp "$served" "$evidence/receiver/Client/public/barc-preview/$asset"
   done
+  npm ci --ignore-scripts --prefix "$repo_root/tests/Broker.Browser.Receiver.Tests" \
+    > "$evidence/receiver-browser-install.log"
+  BARC_RECEIVER_URL="http://127.0.0.1:$port/barc/" \
+  BARC_RECEIVER_ROOT="$evidence/receiver" \
+    npm test --prefix "$repo_root/tests/Broker.Browser.Receiver.Tests" \
+    > "$evidence/receiver-browser.log"
   stop_server
   trap - EXIT
 
@@ -149,7 +155,7 @@ jq -n \
     public:{templates:{version:"0.15.0",sha256:$templateSha},sdd:{version:"2.0.3",sha256:$sddSha},provider:{sha256:$providerSha}},
     preAdoptionHashes:"public-scaffold.SHA256",
     consumed:(if $mode == "joined-archive" then {archiveSha256:$archiveSha,assets:{clientJs:$clientJsSha,clientCss:$clientCssSha,worker:$workerSha,manualGuest:$manualSha,customGuest:$customSha}} else null end),
-    finalJourney:(if $mode == "joined-archive" then "build-and-tests-passed; production server assets passed at /barc/; real browser journey evaluated separately" else "pending joined BARC-01.3c archive" end)}' \
+    finalJourney:(if $mode == "joined-archive" then "build-and-tests-passed; production assets and receiver arena-isolation browser passed at /barc/; actual companion journey evaluated separately" else "pending joined BARC-01.3c archive" end)}' \
   > "$evidence/qualification.json"
 
 echo "$evidence/qualification.json"
