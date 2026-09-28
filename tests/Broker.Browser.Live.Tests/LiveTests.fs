@@ -116,9 +116,10 @@ let tests=testList "live broker boundary" [
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 8 now
         let session=Guid.NewGuid()
-        let controller=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let controller=provisional.controllerId
         let moduleHash=Array.create 32 0x42uy
-        Expect.isOk (LiveControl.requestBrowserArm session controller "browser-1" 9007199254741007UL moduleHash 9007199254741009UL 2000u now state) "arm requested"
+        Expect.isOk (LiveControl.requestBrowserArm session controller provisional.controllerIncarnation provisional.authorityEpoch moduleHash 9007199254741009UL 2000u now state) "arm requested"
         let mutable directive=Unchecked.defaultof<LiveControlDirective>
         Expect.isTrue (controlLease.reader.TryRead(&directive)) "priority control directive available"
         let ack=LiveControlAckReport.empty()
@@ -136,8 +137,8 @@ let tests=testList "live broker boundary" [
         ack.Kind <- directive.Kind
         Expect.equal (LiveControl.reportControlAck ack (now.AddMilliseconds 510) state) LiveControlAckDisposition.LiveControlAckRecorded "renewal takes effect only after native ACK"
         let submission : LiveControl.Submission =
-            { parentId=Guid.NewGuid();inputId=Guid.NewGuid();sessionId=session;controllerId=controller;controllerIncarnation="browser-1"
-              authorityEpoch=binding.AuthorityEpoch;moduleSha256=moduleHash;moduleGeneration=binding.ModuleGeneration;basisToken=basis.Token.ToByteArray()
+            { parentId=Guid.NewGuid();inputId=Guid.NewGuid();sessionId=session;controllerId=controller;controllerIncarnation=provisional.controllerIncarnation
+              authorityEpoch=binding.AuthorityEpoch;moduleSha256=moduleHash;moduleGeneration=binding.ModuleGeneration;basis=basis.Clone()
               actors=[nativeRef 0u 9007199254740999UL;nativeRef 78u 9007199254741001UL];action=LiveControl.Move(12f,34f,true) }
         let admitted = Expect.wantOk (LiveControl.admit submission now state) "all children admitted"
         Expect.equal admitted.Length 2 "broker feedback reserved for both children"
@@ -167,9 +168,10 @@ let tests=testList "live broker boundary" [
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 1 now
         let session=Guid.NewGuid()
-        let controller=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let controller=provisional.controllerId
         let moduleHash=Array.create 32 0x24uy
-        Expect.isOk (LiveControl.requestBrowserArm session controller "browser" 9UL moduleHash 7UL 2000u now state) "arm"
+        Expect.isOk (LiveControl.requestBrowserArm session controller provisional.controllerIncarnation provisional.authorityEpoch moduleHash 7UL 2000u now state) "arm"
         let mutable directive=Unchecked.defaultof<LiveControlDirective>
         controlLease.reader.TryRead(&directive)|>ignore
         let ack=LiveControlAckReport.empty()
@@ -178,7 +180,7 @@ let tests=testList "live broker boundary" [
         ack.Kind<-directive.Kind
         ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
         LiveControl.reportControlAck ack now state|>ignore
-        let submission : LiveControl.Submission={parentId=Guid.NewGuid();inputId=Guid.NewGuid();sessionId=session;controllerId=controller;controllerIncarnation="browser";authorityEpoch=9UL;moduleSha256=moduleHash;moduleGeneration=7UL;basisToken=basis.Token.ToByteArray();actors=[nativeRef 0u 9007199254740999UL];action=LiveControl.Stop}
+        let submission : LiveControl.Submission={parentId=Guid.NewGuid();inputId=Guid.NewGuid();sessionId=session;controllerId=controller;controllerIncarnation=provisional.controllerIncarnation;authorityEpoch=provisional.authorityEpoch;moduleSha256=moduleHash;moduleGeneration=7UL;basis=basis.Clone();actors=[nativeRef 0u 9007199254740999UL];action=LiveControl.Stop}
         Expect.isError (LiveControl.admit {submission with actors=[nativeRef 0u 0UL]} now state) "zero lifetime refused"
         Expect.isError (LiveControl.admit submission (now.AddMilliseconds 2001) state) "stale basis refused despite other traffic"
         let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
@@ -186,7 +188,17 @@ let tests=testList "live broker boundary" [
         Expect.isOk (LiveControl.admit submission now state) "first parent reserves its complete result capacity"
         Expect.isError (LiveControl.admit {submission with parentId=Guid.NewGuid();inputId=Guid.NewGuid()} now state) "next parent is refused before emission at the declared bound"
         Expect.isTrue (commandLease.reader.TryRead(&delivery)) "only the fully reserved first parent is emitted"
+        let firstDelivery=delivery
         Expect.isFalse (commandLease.reader.TryRead(&delivery)) "capacity refusal emits no partial second parent"
+        let rejected=CommandBatchResult.empty()
+        rejected.BatchSeq<-firstDelivery.batches.Head.Batch.Value.BatchSeq
+        rejected.ClientCommandId<-firstDelivery.batches.Head.Batch.Value.ClientCommandId.Value
+        rejected.Status<-CommandBatchStatus.CommandBatchRejectedInvalid
+        Expect.equal (LiveControl.reportNativeAdmission "highbar" directive.Binding.Value.CommandChannelIncarnation rejected state) LiveControl.NativeRecorded "native rejection terminates the child"
+        Expect.isError (LiveControl.admit submission now state) "completed parent replay is refused from bounded history"
+        let pending={submission with parentId=Guid.NewGuid();inputId=Guid.NewGuid()}
+        Expect.isOk (LiveControl.admit pending now state) "released capacity accepts a distinct parent"
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "distinct parent is emitted"
         let terminal = ResizeArray<LiveControl.Feedback>()
         use _subscription =
             (LiveControl.feedback state).Subscribe
@@ -204,9 +216,10 @@ let tests=testList "live broker boundary" [
         let state=BrokerState.liveControl hub
         let _,controlLease,_,_=setupState state now
         let session=Guid.NewGuid()
-        let controller=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let controller=provisional.controllerId
         let moduleHash=Array.create 32 0x33uy
-        Expect.isOk (LiveControl.requestBrowserArm session controller "browser" 11UL moduleHash 13UL 2000u now state) "arm"
+        Expect.isOk (LiveControl.requestBrowserArm session controller provisional.controllerIncarnation provisional.authorityEpoch moduleHash 13UL 2000u now state) "arm"
         let mutable directive=Unchecked.defaultof<LiveControlDirective>
         Expect.isTrue (controlLease.reader.TryRead(&directive)) "arm directive"
         let ack=LiveControlAckReport.empty()
@@ -222,4 +235,32 @@ let tests=testList "live broker boundary" [
         match BrokerState.sendToCoordinator command hub with
         | Error(CommandPipeline.InvalidPayload detail) -> Expect.stringContains detail "fenced" "legacy writer is explicitly fenced"
         | other -> failtestf "expected live authority fence, got %A" other
+    testCase "pending-arm revoke fences late ACK and delayed arm ACK expires" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
+        let state,controlLease,_,_=setup 4 now
+        let session=Guid.NewGuid()
+        let first=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x55uy
+        Expect.isOk (LiveControl.requestBrowserArm session first.controllerId first.controllerIncarnation first.authorityEpoch moduleHash 1UL 2000u now state) "pending arm"
+        let binding=LiveControl.currentBinding state |> Option.get
+        Expect.isOk (LiveControl.requestRevoke binding "browser canceled pending arm" now state) "pending arm can be synchronously revoked"
+        let mutable arm=Unchecked.defaultof<LiveControlDirective>
+        let mutable revoke=Unchecked.defaultof<LiveControlDirective>
+        Expect.isTrue (controlLease.reader.TryRead(&arm)) "arm directive exists"
+        Expect.isTrue (controlLease.reader.TryRead(&revoke)) "higher-sequence revoke follows"
+        let late=LiveControlAckReport.empty()
+        late.Binding<-arm.Binding
+        late.ControlSequence<-arm.ControlSequence
+        late.Kind<-arm.Kind
+        late.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        Expect.equal (LiveControl.reportControlAck late (now.AddMilliseconds 10) state) LiveControlAckDisposition.LiveControlAckStale "late ARM ACK cannot resurrect canceled UI"
+
+        let isolated,isolatedControl,_,_=setup 4 now
+        let second=LiveControl.provisionController session isolated
+        Expect.isOk (LiveControl.requestBrowserArm session second.controllerId second.controllerIncarnation second.authorityEpoch moduleHash 1UL 100u now isolated) "short arm"
+        Expect.isTrue (isolatedControl.reader.TryRead(&arm)) "short arm directive"
+        late.Binding<-arm.Binding
+        late.ControlSequence<-arm.ControlSequence
+        late.Kind<-arm.Kind
+        Expect.equal (LiveControl.reportControlAck late (now.AddMilliseconds 101) isolated) LiveControlAckDisposition.LiveControlAckRefused "ACK cannot extend an already-expired native lease window"
 ]

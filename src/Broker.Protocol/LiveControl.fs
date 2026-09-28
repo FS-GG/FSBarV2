@@ -11,17 +11,20 @@ module LiveControl =
     type Submission =
         { parentId: Guid; inputId: Guid; sessionId: Guid; controllerId: Guid
           controllerIncarnation: string; authorityEpoch: uint64; moduleSha256: byte[]
-          moduleGeneration: uint64; basisToken: byte[]; actors: NativeUnitReference list; action: Action }
+          moduleGeneration: uint64; basis: NativeObservationBasis; actors: NativeUnitReference list; action: Action }
     type FeedbackStage = BrokerAdmission | NativeAdmission | NativeDispatch | Unknown
     type FeedbackStatus = Accepted | Rejected | Applied | Skipped | Expired | UnknownStatus
     type Feedback =
-        { resultSequence: uint64; parentId: Guid; inputId: Guid; moduleGeneration: uint64
-          authorityEpoch: uint64; batchSequence: uint64; correlationId: uint64
+        { resultSequence: uint64; parentId: Guid; inputId: Guid; sessionId: Guid
+          controllerId: Guid; controllerIncarnation: string; moduleGeneration: uint64
+          moduleSha256: byte[]; authorityEpoch: uint64; basis: NativeObservationBasis
+          batchSequence: uint64; correlationId: uint64
           childIndex: int; childCount: int; actor: NativeUnitReference
           stage: FeedbackStage; status: FeedbackStatus; detail: string
           nativeFrame: uint32 option; commandChannelIncarnation: string }
-    type ControllerStage = ArmRequested | NativeConfirmed | RevokeRequested | Revoked | ControllerExpired
+    type ControllerStage = ArmRequested | NativeConfirmed | RevokeRequested | Revoked | ControllerExpired | ControllerRefused
     type ControllerUpdate = { stateSequence: uint64; binding: LiveBinding; stage: ControllerStage; reason: string }
+    type ProvisionalController = { sessionId: Guid; controllerId: Guid; controllerIncarnation: string; authorityEpoch: uint64 }
     type ControlLease = { incarnation: string; reader: ChannelReader<LiveControlDirective> }
     type CommandDelivery = { batches: LiveCommandBatch list }
     type CommandLease = { incarnation: string; reader: ChannelReader<CommandDelivery> }
@@ -31,7 +34,7 @@ module LiveControl =
     type Controller =
         { binding: LiveBinding; mutable stage: ControllerStage; mutable controlSequence: uint64
           mutable leaseExpiresAt: DateTimeOffset; mutable moduleGeneration: uint64
-          mutable renewPending: bool; mutable pendingLeaseMs: uint32 }
+          mutable renewPending: bool; mutable pendingLeaseMs: uint32; mutable pendingDeadline: DateTimeOffset }
     type Identity =
         { feedback: Feedback; mutable admissionSeen: bool; mutable dispatchSeen: bool }
     type Broadcaster() =
@@ -54,6 +57,16 @@ module LiveControl =
             member _.Subscribe observer =
                 lock gate (fun () -> observers.Add observer)
                 { new IDisposable with member _.Dispose() = lock gate (fun () -> observers.Remove observer |> ignore) }
+    type MetadataBroadcaster() =
+        let observers = ResizeArray<IObserver<uint64>>()
+        let gate = obj()
+        member _.Push value =
+            let copy = lock gate (fun () -> observers.ToArray())
+            for observer in copy do try observer.OnNext value with _ -> ()
+        interface IObservable<uint64> with
+            member _.Subscribe observer =
+                lock gate (fun () -> observers.Add observer)
+                { new IDisposable with member _.Dispose() = lock gate (fun () -> observers.Remove observer |> ignore) }
 
     type State =
         { gate: obj; parentCapacity: int; controlChannel: Channel<LiveControlDirective>
@@ -64,8 +77,10 @@ module LiveControl =
           mutable nextControlSequence: uint64; mutable nextBatchSequence: uint64
           mutable nextCorrelation: uint64; mutable nextResultSequence: uint64; mutable nextControllerStateSequence: uint64
           parents: HashSet<Guid>; identities: Dictionary<struct(string * uint64 * uint64), Identity>
+          completedParents: HashSet<Guid>; completedParentOrder: Queue<Guid>
           completed: HashSet<struct(string * uint64 * uint64)>; completedOrder: Queue<struct(string * uint64 * uint64)>
-          broadcaster: Broadcaster; controllerBroadcaster: ControllerBroadcaster }
+          provisionalControllers: Dictionary<Guid, ProvisionalController>; provisionalOrder: Queue<Guid>; mutable nextAuthorityEpoch: uint64
+          broadcaster: Broadcaster; controllerBroadcaster: ControllerBroadcaster; metadataBroadcaster: MetadataBroadcaster }
 
     let private bounded<'a> capacity =
         Channel.CreateBounded<'a>(BoundedChannelOptions(capacity, FullMode=BoundedChannelFullMode.Wait, SingleReader=true, SingleWriter=false))
@@ -75,8 +90,9 @@ module LiveControl =
           controlClaim=None; commandClaim=None; reporter=None; capabilities=None; snapshot=None
           snapshotReceivedAt=DateTimeOffset.MinValue; lastReportSequence=0UL; controller=None; nextControlSequence=1UL
           nextBatchSequence=1UL; nextCorrelation=1UL; nextResultSequence=1UL; nextControllerStateSequence=1UL
-          parents=HashSet(); identities=Dictionary(); completed=HashSet(); completedOrder=Queue()
-          broadcaster=Broadcaster(); controllerBroadcaster=ControllerBroadcaster() }
+          parents=HashSet(); identities=Dictionary(); completedParents=HashSet(); completedParentOrder=Queue()
+          completed=HashSet(); completedOrder=Queue(); provisionalControllers=Dictionary(); provisionalOrder=Queue(); nextAuthorityEpoch=1UL
+          broadcaster=Broadcaster(); controllerBroadcaster=ControllerBroadcaster(); metadataBroadcaster=MetadataBroadcaster() }
 
     let private bytesEqual (a: ByteString) (b: ByteString) = a.Span.SequenceEqual b.Span
     let private validReporter (reporter: LiveStateReporter) =
@@ -139,6 +155,10 @@ module LiveControl =
                 | _ -> LiveStateReportDisposition.LiveStateReportRefused
             | _ -> LiveStateReportDisposition.LiveStateReportRefused)
 
+    let private controllerUpdate stage reason (controller: Controller) state =
+        let sequence = state.nextControllerStateSequence
+        state.nextControllerStateSequence <- sequence + 1UL
+        { stateSequence=sequence; binding=controller.binding; stage=stage; reason=reason }
     let claimControl (subscribe: LiveControlSubscribe) state = lock state.gate (fun () ->
         if subscribe.Protocol<>LiveControlProtocol.V1 || String.IsNullOrWhiteSpace subscribe.ControlChannelIncarnation then Unavailable "invalid live control subscription"
         else match state.controlClaim with
@@ -146,7 +166,17 @@ module LiveControl =
              | None ->
                  state.controlClaim <- Some subscribe.ControlChannelIncarnation
                  Claimed ({ incarnation = subscribe.ControlChannelIncarnation; reader = state.controlChannel.Reader } : ControlLease))
-    let releaseControl incarnation state = lock state.gate (fun () -> if state.controlClaim=Some incarnation then state.controlClaim<-None)
+    let releaseControl incarnation state =
+        let mutable update=None
+        lock state.gate (fun () ->
+            if state.controlClaim=Some incarnation then
+                state.controlClaim<-None
+                match state.controller with
+                | Some controller when controller.binding.ControlChannelIncarnation=incarnation && controller.stage<>Revoked && controller.stage<>ControllerExpired && controller.stage<>ControllerRefused ->
+                    controller.stage<-ControllerExpired
+                    update<-Some(controllerUpdate ControllerExpired "native control channel ended" controller state)
+                | _ -> ())
+        update |> Option.iter state.controllerBroadcaster.Push
     let claimCommands (subscribe: LiveCommandSubscribe) state = lock state.gate (fun () ->
         match subscribe.Binding with
         | ValueNone -> Unavailable "invalid live command subscription"
@@ -157,7 +187,17 @@ module LiveControl =
             | None ->
                 state.commandClaim <- Some binding.CommandChannelIncarnation
                 Claimed ({ incarnation = binding.CommandChannelIncarnation; reader = state.commandChannel.Reader } : CommandLease))
-    let releaseCommands incarnation state = lock state.gate (fun () -> if state.commandClaim=Some incarnation then state.commandClaim<-None)
+    let releaseCommands incarnation state =
+        let mutable update=None
+        lock state.gate (fun () ->
+            if state.commandClaim=Some incarnation then
+                state.commandClaim<-None
+                match state.controller with
+                | Some controller when controller.binding.CommandChannelIncarnation=incarnation && controller.stage<>Revoked && controller.stage<>ControllerExpired && controller.stage<>ControllerRefused ->
+                    controller.stage<-ControllerExpired
+                    update<-Some(controllerUpdate ControllerExpired "native command channel ended" controller state)
+                | _ -> ())
+        update |> Option.iter state.controllerBroadcaster.Push
 
     let private bindingValid (binding: LiveBinding) =
         binding.BrokerSessionId.Length=16 && binding.ControllerId.Length=16
@@ -185,20 +225,32 @@ module LiveControl =
         value.LeaseDurationMs <- lease
         value.Reason <- reason
         value
-    let private controllerUpdate stage reason (controller: Controller) state =
-        let sequence = state.nextControllerStateSequence
-        state.nextControllerStateSequence <- sequence + 1UL
-        { stateSequence=sequence; binding=controller.binding; stage=stage; reason=reason }
+    let provisionController sessionId state = lock state.gate (fun () ->
+        while state.provisionalOrder.Count > 0 && not (state.provisionalControllers.ContainsKey(state.provisionalOrder.Peek())) do
+            state.provisionalOrder.Dequeue() |> ignore
+        while state.provisionalControllers.Count >= state.parentCapacity && state.provisionalOrder.Count > 0 do
+            state.provisionalControllers.Remove(state.provisionalOrder.Dequeue()) |> ignore
+        let epoch = state.nextAuthorityEpoch
+        state.nextAuthorityEpoch <- epoch + 1UL
+        let provisional =
+            { sessionId=sessionId; controllerId=Guid.NewGuid()
+              controllerIncarnation=Guid.NewGuid().ToString("N"); authorityEpoch=epoch }
+        state.provisionalControllers[provisional.controllerId] <- provisional
+        state.provisionalOrder.Enqueue provisional.controllerId
+        provisional)
+    let releaseProvisionalController controllerId state =
+        lock state.gate (fun () -> state.provisionalControllers.Remove controllerId |> ignore)
     let requestArm (binding: LiveBinding) leaseDurationMs (now: DateTimeOffset) state =
         let mutable update = None
         let result = lock state.gate (fun () ->
             if not (bindingValid binding) || leaseDurationMs=0u || state.capabilities.IsNone || state.snapshot.IsNone then Error "live capability, snapshot, or binding unavailable"
             elif state.controlClaim<>Some binding.ControlChannelIncarnation || state.commandClaim<>Some binding.CommandChannelIncarnation then Error "native live channels do not match binding"
-            elif state.controller |> Option.exists (fun c -> c.stage<>Revoked && c.stage<>ControllerExpired) then Error "a live controller is already active"
+            elif state.controller |> Option.exists (fun c -> c.stage<>Revoked && c.stage<>ControllerExpired && c.stage<>ControllerRefused) then Error "a live controller is already active"
             else
                 let seq=state.nextControlSequence
                 state.nextControlSequence<-seq+1UL
-                let c={binding=binding;stage=ArmRequested;controlSequence=seq;leaseExpiresAt=now.AddMilliseconds(float leaseDurationMs);moduleGeneration=binding.ModuleGeneration;renewPending=false;pendingLeaseMs=leaseDurationMs}
+                let deadline=now.AddMilliseconds(float leaseDurationMs)
+                let c={binding=binding;stage=ArmRequested;controlSequence=seq;leaseExpiresAt=deadline;moduleGeneration=binding.ModuleGeneration;renewPending=false;pendingLeaseMs=leaseDurationMs;pendingDeadline=deadline}
                 if state.controlChannel.Writer.TryWrite(directive LiveControlDirectiveKind.Arm binding seq leaseDurationMs "") then
                     state.controller<-Some c
                     update <- Some(controllerUpdate ArmRequested "native arm requested" c state)
@@ -210,8 +262,11 @@ module LiveControl =
                           (authorityEpoch: uint64) (moduleSha256: byte[]) (moduleGeneration: uint64)
                           (leaseDurationMs: uint32) (now: DateTimeOffset) state =
         let binding = lock state.gate (fun () ->
-            match state.reporter, state.controlClaim, state.commandClaim with
-            | Some reporter, Some controlChannel, Some commandChannel ->
+            match state.reporter, state.controlClaim, state.commandClaim, state.provisionalControllers.TryGetValue controllerId with
+            | Some reporter, Some controlChannel, Some commandChannel, (true, provisional)
+                when provisional.sessionId=sessionId
+                     && provisional.controllerIncarnation=controllerIncarnation
+                     && provisional.authorityEpoch=authorityEpoch ->
                 let value = LiveBinding.empty()
                 value.PluginId <- reporter.PluginId
                 value.ProcessIncarnation <- reporter.ProcessIncarnation
@@ -227,8 +282,13 @@ module LiveControl =
                 Some value
             | _ -> None)
         match binding with
-        | Some value -> requestArm value leaseDurationMs now state
-        | None -> Error "native live channels are unavailable"
+        | Some value ->
+            match requestArm value leaseDurationMs now state with
+            | Ok () as accepted ->
+                releaseProvisionalController controllerId state
+                accepted
+            | Error _ as refused -> refused
+        | None -> Error "broker-issued live controller reservation is unavailable or mismatched"
     let requestRenew binding leaseDurationMs (now: DateTimeOffset) state =
         let mutable update = None
         let result = lock state.gate (fun () ->
@@ -244,6 +304,7 @@ module LiveControl =
                     c.controlSequence<-seq
                     c.renewPending<-true
                     c.pendingLeaseMs<-leaseDurationMs
+                    c.pendingDeadline<-now.AddMilliseconds(float leaseDurationMs)
                     Ok ()
                 else Error "live control channel is full"
             | Some c when c.renewPending -> Error "live renewal acknowledgment is pending"
@@ -255,12 +316,13 @@ module LiveControl =
         let mutable update = None
         let result = lock state.gate (fun () ->
             match state.controller with
-            | Some c when sameBinding c.binding binding && c.stage=NativeConfirmed ->
+            | Some c when sameBinding c.binding binding && (c.stage=ArmRequested || c.stage=NativeConfirmed) ->
                 let seq=state.nextControlSequence
                 state.nextControlSequence<-seq+1UL
                 if state.controlChannel.Writer.TryWrite(directive LiveControlDirectiveKind.Revoke binding seq 0u reason) then
                     c.controlSequence<-seq
                     c.stage<-RevokeRequested
+                    c.renewPending<-false
                     update <- Some(controllerUpdate RevokeRequested reason c state)
                     Ok ()
                 else Error "live control channel is full"
@@ -274,17 +336,30 @@ module LiveControl =
             | Some c when report.ControlSequence = c.controlSequence
                            && report.Binding |> ValueOption.exists (sameBinding c.binding) ->
                 match report.Disposition, report.Kind, c.stage with
+                | LiveControlAckDisposition.LiveControlAckRecorded, LiveControlDirectiveKind.Arm, ArmRequested when now >= c.pendingDeadline ->
+                    c.stage<-ControllerExpired
+                    update <- Some(controllerUpdate ControllerExpired "native arm acknowledgment missed the lease deadline" c state)
+                    LiveControlAckDisposition.LiveControlAckRefused
                 | LiveControlAckDisposition.LiveControlAckRecorded, LiveControlDirectiveKind.Arm, ArmRequested ->
                     c.stage<-NativeConfirmed
                     update <- Some(controllerUpdate NativeConfirmed report.Detail c state)
                     LiveControlAckDisposition.LiveControlAckRecorded
+                | LiveControlAckDisposition.LiveControlAckRefused, LiveControlDirectiveKind.Arm, ArmRequested ->
+                    c.stage<-ControllerRefused
+                    update <- Some(controllerUpdate ControllerRefused report.Detail c state)
+                    LiveControlAckDisposition.LiveControlAckRefused
                 | LiveControlAckDisposition.LiveControlAckRecorded, LiveControlDirectiveKind.Revoke, RevokeRequested ->
                     c.stage<-Revoked
                     update <- Some(controllerUpdate Revoked report.Detail c state)
                     LiveControlAckDisposition.LiveControlAckRecorded
+                | LiveControlAckDisposition.LiveControlAckRecorded, LiveControlDirectiveKind.Renew, NativeConfirmed when c.renewPending && now >= c.pendingDeadline ->
+                    c.renewPending <- false
+                    c.stage <- ControllerExpired
+                    update <- Some(controllerUpdate ControllerExpired "native renewal acknowledgment missed the lease deadline" c state)
+                    LiveControlAckDisposition.LiveControlAckRefused
                 | LiveControlAckDisposition.LiveControlAckRecorded, LiveControlDirectiveKind.Renew, NativeConfirmed when c.renewPending ->
                     c.renewPending <- false
-                    c.leaseExpiresAt <- now.AddMilliseconds(float c.pendingLeaseMs)
+                    c.leaseExpiresAt <- c.pendingDeadline
                     LiveControlAckDisposition.LiveControlAckRecorded
                 | LiveControlAckDisposition.LiveControlAckDuplicate, _, _ -> LiveControlAckDisposition.LiveControlAckDuplicate
                 | _ -> LiveControlAckDisposition.LiveControlAckStale
@@ -293,6 +368,11 @@ module LiveControl =
         result
 
     let private sameRef (a: NativeUnitReference) (b: NativeUnitReference) = a.Id=b.Id && a.Lifetime=b.Lifetime
+    let private sameBasis (a: NativeObservationBasis) (b: NativeObservationBasis) =
+        bytesEqual a.Token b.Token && a.StateSequence=b.StateSequence && a.Frame=b.Frame
+        && bytesEqual a.MatchIncarnation b.MatchIncarnation
+        && a.ProcessIncarnation=b.ProcessIncarnation
+        && a.StateChannelIncarnation=b.StateChannelIncarnation
     let private uuidBytes (id:Guid) = ByteString.CopyFrom(id.ToByteArray())
     let private cloneRef (value:NativeUnitReference) =
         let copy = NativeUnitReference.empty()
@@ -311,7 +391,10 @@ module LiveControl =
         rememberCompleted key state
         if state.identities.Values |> Seq.exists (fun item -> item.feedback.parentId = identity.feedback.parentId) |> not then
             state.parents.Remove identity.feedback.parentId |> ignore
-    let admit submission now state =
+            if state.completedParents.Add identity.feedback.parentId then state.completedParentOrder.Enqueue identity.feedback.parentId
+            while state.completedParentOrder.Count > state.parentCapacity do
+                state.completedParents.Remove(state.completedParentOrder.Dequeue()) |> ignore
+    let admit (submission: Submission) now state =
         let mutable published = []
         let result = lock state.gate (fun () ->
             match state.controller, state.capabilities, state.snapshot with
@@ -325,7 +408,7 @@ module LiveControl =
                     || submission.authorityEpoch <> controller.binding.AuthorityEpoch
                     || submission.moduleGeneration <> controller.binding.ModuleGeneration
                     || not (submission.moduleSha256.AsSpan().SequenceEqual(controller.binding.ModuleSha256.Span))
-                    || not (submission.basisToken.AsSpan().SequenceEqual(basis.Token.Span))
+                    || not (sameBasis submission.basis basis)
                 if identityMismatch then
                     Error "live submission identity or basis mismatch"
                 elif submission.actors.Length < 1 || submission.actors.Length > 64
@@ -335,7 +418,8 @@ module LiveControl =
                     Error "live actors must be distinct"
                 elif now - state.snapshotReceivedAt > TimeSpan.FromMilliseconds(float caps.MaxObservationAgeMs) then
                     Error "live observation basis expired"
-                elif state.parents.Contains submission.parentId || state.parents.Count >= state.parentCapacity
+                elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId
+                     || state.parents.Count >= state.parentCapacity
                      || state.identities.Count + submission.actors.Length > state.parentCapacity * 64 then
                     Error "live parent or result capacity exhausted"
                 else
@@ -422,7 +506,10 @@ module LiveControl =
                                     let feedback =
                                         { resultSequence = state.nextResultSequence + uint64 index
                                           parentId = submission.parentId; inputId = submission.inputId
-                                          moduleGeneration = submission.moduleGeneration; authorityEpoch = submission.authorityEpoch
+                                          sessionId = submission.sessionId; controllerId = submission.controllerId
+                                          controllerIncarnation = submission.controllerIncarnation
+                                          moduleGeneration = submission.moduleGeneration; moduleSha256 = Array.copy submission.moduleSha256
+                                          authorityEpoch = submission.authorityEpoch; basis = basis.Clone()
                                           batchSequence = batchSeq; correlationId = correlation; childIndex = index; childCount = count
                                           actor = cloneRef actor; stage = BrokerAdmission; status = Accepted
                                           detail = "broker admitted live child"; nativeFrame = None
@@ -489,6 +576,8 @@ module LiveControl =
         handled
     let feedback state = state.broadcaster :> IObservable<Feedback>
     let controllerUpdates state = state.controllerBroadcaster :> IObservable<ControllerUpdate>
+    let noteMetadataReported sequence state = state.metadataBroadcaster.Push sequence
+    let metadataReports state = state.metadataBroadcaster :> IObservable<uint64>
     let blocksLegacyGameplay state =
         lock state.gate (fun () ->
             state.controller
@@ -521,9 +610,13 @@ module LiveControl =
             state.lastReportSequence <- 0UL
             state.controller <- None
             state.parents.Clear()
+            state.completedParents.Clear()
+            state.completedParentOrder.Clear()
             state.identities.Clear()
             state.completed.Clear()
             state.completedOrder.Clear()
+            state.provisionalControllers.Clear()
+            state.provisionalOrder.Clear()
             state.controlClaim <- None
             state.commandClaim <- None
             pending)

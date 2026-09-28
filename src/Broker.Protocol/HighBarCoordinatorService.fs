@@ -597,5 +597,10 @@ module HighBarCoordinatorService =
                 let response = LiveStateReportAck.empty()
                 response.ReportSequence <- request.ReportSequence
                 response.Disposition <- LiveControl.reportState request DateTimeOffset.UtcNow state
+                if response.Disposition = LiveStateReportDisposition.LiveStateReportRecorded then
+                    match request.Body with
+                    | ValueSome (LiveStateReport.Types.Body.Snapshot snapshot) when snapshot.Basis.IsSome ->
+                        LiveControl.noteMetadataReported snapshot.Basis.Value.StateSequence state
+                    | _ -> ()
                 return response
             }

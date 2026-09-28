@@ -21,7 +21,7 @@ module LiveControl =
           authorityEpoch: uint64
           moduleSha256: byte[]
           moduleGeneration: uint64
-          basisToken: byte[]
+          basis: NativeObservationBasis
           actors: NativeUnitReference list
           action: Action }
 
@@ -32,8 +32,13 @@ module LiveControl =
         { resultSequence: uint64
           parentId: Guid
           inputId: Guid
+          sessionId: Guid
+          controllerId: Guid
+          controllerIncarnation: string
           moduleGeneration: uint64
+          moduleSha256: byte[]
           authorityEpoch: uint64
+          basis: NativeObservationBasis
           batchSequence: uint64
           correlationId: uint64
           childIndex: int
@@ -45,12 +50,18 @@ module LiveControl =
           nativeFrame: uint32 option
           commandChannelIncarnation: string }
 
-    type ControllerStage = ArmRequested | NativeConfirmed | RevokeRequested | Revoked | ControllerExpired
+    type ControllerStage = ArmRequested | NativeConfirmed | RevokeRequested | Revoked | ControllerExpired | ControllerRefused
     type ControllerUpdate =
         { stateSequence: uint64
           binding: LiveBinding
           stage: ControllerStage
           reason: string }
+
+    type ProvisionalController =
+        { sessionId: Guid
+          controllerId: Guid
+          controllerIncarnation: string
+          authorityEpoch: uint64 }
 
     type ControlLease =
         { incarnation: string
@@ -72,6 +83,8 @@ module LiveControl =
     val releaseCommands : incarnation:string -> state:State -> unit
     val requestArm : binding:LiveBinding -> leaseDurationMs:uint32 -> now:DateTimeOffset -> state:State -> Result<unit,string>
     val requestBrowserArm : sessionId:Guid -> controllerId:Guid -> controllerIncarnation:string -> authorityEpoch:uint64 -> moduleSha256:byte[] -> moduleGeneration:uint64 -> leaseDurationMs:uint32 -> now:DateTimeOffset -> state:State -> Result<unit,string>
+    val provisionController : sessionId:Guid -> state:State -> ProvisionalController
+    val releaseProvisionalController : controllerId:Guid -> state:State -> unit
     val requestRenew : binding:LiveBinding -> leaseDurationMs:uint32 -> now:DateTimeOffset -> state:State -> Result<unit,string>
     val requestRevoke : binding:LiveBinding -> reason:string -> now:DateTimeOffset -> state:State -> Result<unit,string>
     val reportControlAck : report:LiveControlAckReport -> now:DateTimeOffset -> state:State -> LiveControlAckDisposition
@@ -83,6 +96,8 @@ module LiveControl =
     val maxRetainedResults : state:State -> uint32
     val feedback : state:State -> IObservable<Feedback>
     val controllerUpdates : state:State -> IObservable<ControllerUpdate>
+    val noteMetadataReported : sequence:uint64 -> state:State -> unit
+    val metadataReports : state:State -> IObservable<uint64>
     val latestCapabilities : state:State -> LiveNativeCapabilities option
     val latestSnapshotMetadata : state:State -> LiveSnapshotMetadata option
     val currentBinding : state:State -> LiveBinding option

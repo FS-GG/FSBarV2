@@ -10,5 +10,5 @@ module LiveBoundary =
     val submit : sessionId:Guid -> request:SubmitLiveIntent -> now:DateTimeOffset -> state:LiveControl.State -> Result<LiveResult list,string>
     val feedbackEnvelope : feedback:LiveControl.Feedback -> LiveServerEnvelope
     val controllerEnvelope : update:LiveControl.ControllerUpdate -> LiveServerEnvelope
-    val bootstrap : sessionId:Guid -> perspectiveId:string -> state:LiveControl.State -> Result<LiveServerEnvelope,string>
+    val provisionBootstrap : sessionId:Guid -> perspectiveId:string -> state:LiveControl.State -> Result<LiveServerEnvelope,string>
     val observation : value:Observation -> state:LiveControl.State -> Result<LiveServerEnvelope,string>

@@ -333,11 +333,12 @@ module Gateway =
                         | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                         | Ok sessionId ->
                             let state=BrokerState.liveControl hub
-                            match LiveBoundary.bootstrap sessionId config.perspectiveId state with
+                            match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
                             | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                             | Ok bootstrap ->
                                 use connectionCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
                                 do! send config.maxFrameBytes socket bootstrap connectionCts.Token
+                                let mutable provisionalControllerId = bytesGuid bootstrap.Bootstrap.Controller.ControllerId
                                 let feeds=Channel.CreateBounded<Snapshot.BrowserFeed>(16)
                                 let outputs=Channel.CreateBounded<LiveServerEnvelope>(int (LiveControl.maxRetainedResults state) + 16)
                                 let feedObserver =
@@ -345,6 +346,14 @@ module Gateway =
                                         member _.OnNext value = feeds.Writer.TryWrite value |> ignore
                                         member _.OnError error = feeds.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = feeds.Writer.TryComplete() |> ignore }
+                                let metadataObserver =
+                                    { new IObserver<uint64> with
+                                        member _.OnNext sequence =
+                                            match BrokerState.browserLatest hub with
+                                            | Some(Snapshot.Current current as feed) when current.sequence=sequence -> feeds.Writer.TryWrite feed |> ignore
+                                            | _ -> ()
+                                        member _.OnError error = feeds.Writer.TryComplete error |> ignore
+                                        member _.OnCompleted() = () }
                                 let resultObserver =
                                     { new IObserver<LiveControl.Feedback> with
                                         member _.OnNext value =
@@ -357,10 +366,18 @@ module Gateway =
                                         member _.OnNext value =
                                             if not (outputs.Writer.TryWrite(LiveBoundary.controllerEnvelope value)) then
                                                 outputs.Writer.TryComplete(InvalidOperationException "live controller delivery capacity exhausted") |> ignore
+                                            elif value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused then
+                                                match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
+                                                | Ok replacement ->
+                                                    provisionalControllerId <- bytesGuid replacement.Bootstrap.Controller.ControllerId
+                                                    if not (outputs.Writer.TryWrite replacement) then
+                                                        outputs.Writer.TryComplete(InvalidOperationException "live replacement bootstrap delivery capacity exhausted") |> ignore
+                                                | Error detail -> outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let latest,feedSubscription=BrokerState.subscribeBrowserFeed feedObserver hub
                                 use feedSubscription=feedSubscription
+                                use metadataSubscription=(LiveControl.metadataReports state).Subscribe metadataObserver
                                 use resultSubscription=(LiveControl.feedback state).Subscribe resultObserver
                                 use controllerSubscription=(LiveControl.controllerUpdates state).Subscribe controllerObserver
                                 let mutable ownedBinding: LiveBinding option = None
@@ -371,7 +388,7 @@ module Gateway =
                                         match LiveBoundary.observation preview state with
                                         | Ok envelope -> do! send config.maxFrameBytes socket envelope connectionCts.Token
                                         | Error _ -> ()
-                                    | Snapshot.Stale _ -> ()
+                                    | Snapshot.Stale _ -> raise SessionChanged
                                     | _ -> raise SessionChanged }
                                 match latest with
                                 | Some value -> do! sendFeed value
@@ -386,7 +403,9 @@ module Gateway =
                                             match request.BodyCase with
                                             | LiveClientEnvelope.BodyOneofCase.Arm ->
                                                 match LiveBoundary.arm sessionId request.Arm DateTimeOffset.UtcNow state with
-                                                | Ok () -> ownedBinding <- LiveControl.currentBinding state
+                                                | Ok () ->
+                                                    provisionalControllerId <- None
+                                                    ownedBinding <- LiveControl.currentBinding state
                                                 | Error detail -> raise(InvalidOperationException detail)
                                             | LiveClientEnvelope.BodyOneofCase.Revoke ->
                                                 match LiveBoundary.revoke sessionId request.Revoke DateTimeOffset.UtcNow state with
@@ -408,15 +427,19 @@ module Gateway =
                                 let renewTask = task {
                                     while true do
                                         do! Task.Delay(TimeSpan.FromMilliseconds 500.0, connectionCts.Token)
-                                        match ownedBinding with
-                                        | Some binding -> LiveControl.requestRenew binding 2000u DateTimeOffset.UtcNow state |> ignore
-                                        | None -> () }
+                                        match BrokerState.session hub with
+                                        | Some current when Session.id current=sessionId ->
+                                            match ownedBinding with
+                                            | Some binding -> LiveControl.requestRenew binding 2000u DateTimeOffset.UtcNow state |> ignore
+                                            | None -> ()
+                                        | _ -> raise SessionChanged }
                                 let observed=[|receiveTask:>Task;feedTask:>Task;resultTask:>Task;renewTask:>Task|]
                                 let! _=Task.WhenAny observed
                                 connectionCts.Cancel()
                                 try do! Task.WhenAll observed with _ -> ()
                                 ownedBinding
                                 |> Option.iter (fun binding -> LiveControl.requestRevoke binding "browser connection ended" DateTimeOffset.UtcNow state |> ignore)
+                                provisionalControllerId |> Option.iter (fun controllerId -> LiveControl.releaseProvisionalController controllerId state)
                                 do! close socket WebSocketCloseStatus.NormalClosure "live session ended" config.closeTimeout
             with
             | :? OperationCanceledException -> ()

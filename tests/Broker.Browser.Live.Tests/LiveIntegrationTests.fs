@@ -164,7 +164,35 @@ let tests = testList "production live boundary" [
         Expect.equal observation.Observation.Basis.StateSequence basis.StateSequence "production observation pairs with native metadata"
         Expect.equal observation.Observation.Units[0].Reference.Id 0UL "legal unit zero crosses WebSocket as a present reference"
 
-        let controller = ControllerIdentity(SessionId=ByteString.CopyFrom(sessionId.ToByteArray()),ControllerId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),ControllerIncarnation="browser-live",AuthorityEpoch=9007199254741003UL)
+        let laterBasis = basis.Clone()
+        laterBasis.Token <- ByteString.CopyFrom(Array.init 16 (fun index -> byte (index + 16)))
+        laterBasis.StateSequence <- basis.StateSequence + 2UL
+        laterBasis.Frame <- basis.Frame + 1u
+        laterBasis.SnapshotSendMonotonicNs <- basis.SnapshotSendMonotonicNs + 2UL
+        let laterUpdate = StateUpdate.empty()
+        laterUpdate.Seq <- laterBasis.StateSequence
+        laterUpdate.Frame <- laterBasis.Frame
+        laterUpdate.Snapshot <- snapshot.Clone()
+        do! push.RequestStream.WriteAsync laterUpdate
+        let laterDeadline = DateTimeOffset.UtcNow.AddSeconds 3.0
+        while (match BrokerState.browserLatest handle.Hub with
+               | Some(Snapshot.Current current) -> current.sequence <> laterBasis.StateSequence
+               | _ -> true) do
+            if DateTimeOffset.UtcNow > laterDeadline then failtest "state-first production observation did not materialize"
+            do! Task.Delay 10
+        let laterMetadata = LiveSnapshotMetadata.empty()
+        laterMetadata.Basis <- ValueSome laterBasis
+        laterMetadata.Units.Add(actor.Clone())
+        let laterReport = LiveStateReport.empty()
+        laterReport.Reporter <- ValueSome source
+        laterReport.ReportSequence <- stateReport.ReportSequence + 2UL
+        laterReport.Snapshot <- laterMetadata
+        let! (laterAck: LiveStateReportAck) = live.ReportLiveStateAsync(laterReport).ResponseAsync
+        Expect.equal laterAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "metadata arriving second is recorded"
+        let! (pairedObservation: LiveServerEnvelope) = receive socket
+        Expect.equal pairedObservation.Observation.Basis.StateSequence laterBasis.StateSequence "metadata arrival replays the exact already-materialized sequence"
+
+        let controller = bootstrap.Bootstrap.Controller.Clone()
         let moduleId = LiveModuleIdentity(Sha256=ByteString.CopyFrom(Array.create 32 0x42uy),Generation=9007199254741005UL)
         do! send socket (LiveClientEnvelope(Arm=ArmController(Controller=controller,Module=moduleId)))
         let! hasControl = controlCall.ResponseStream.MoveNext(CancellationToken.None)
@@ -182,13 +210,16 @@ let tests = testList "production live boundary" [
         Expect.equal requested.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.ArmRequested "browser sees requested state without assuming authority"
         Expect.equal confirmed.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.ArmNativeConfirmed "browser enables submission only after native ACK"
 
-        let submit = SubmitLiveIntent(ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Controller=controller,Module=moduleId,Basis=observation.Observation.Basis)
+        let submit = SubmitLiveIntent(ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Controller=controller,Module=moduleId,Basis=pairedObservation.Observation.Basis)
         submit.Intent <- LiveIntent(Stop=StopAction())
         submit.Intent.Actors.Add(UnitReference(Id=0UL,Lifetime=actorRef.Lifetime))
         do! send socket (LiveClientEnvelope(Submit=submit))
         let! (brokerResult: LiveServerEnvelope) = receive socket
         Expect.equal brokerResult.Result.Stage LiveResultStage.BrokerAdmission "broker admission has one observable result path"
         Expect.equal brokerResult.Result.ChildCount 1u "result capacity is reserved per expanded child"
+        Expect.equal brokerResult.Result.Basis.StateSequence laterBasis.StateSequence "result preserves the exact observation basis"
+        Expect.equal brokerResult.Result.Controller.ControllerId controller.ControllerId "result preserves the exact controller"
+        Expect.equal brokerResult.Result.Module.Sha256 moduleId.Sha256 "result preserves the exact module hash"
         let! hasCommand = commandCall.ResponseStream.MoveNext(CancellationToken.None)
         Expect.isTrue hasCommand "native live gameplay stream receives admitted child"
         let child: LiveCommandBatch = commandCall.ResponseStream.Current
@@ -196,7 +227,39 @@ let tests = testList "production live boundary" [
         Expect.equal child.Actor.Value.Lifetime actorRef.Lifetime "native child preserves >2^53 lifetime"
         Expect.equal child.Batch.Value.Commands.Count 1 "live wrapper carries exactly one matching command"
 
-        socket.Abort()
+        do! send socket (LiveClientEnvelope(Revoke=RevokeController(Controller=controller,Reason="test rearm")))
+        let! (revokeRequested: LiveServerEnvelope) = receive socket
+        Expect.equal revokeRequested.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.RevokeRequested "browser disarms while native revoke is pending"
+        let mutable revokeDirective = Unchecked.defaultof<LiveControlDirective>
+        let mutable foundRevoke = false
+        while not foundRevoke do
+            let! more = controlCall.ResponseStream.MoveNext(CancellationToken.None)
+            Expect.isTrue more "control stream remains available for revoke"
+            revokeDirective <- controlCall.ResponseStream.Current
+            foundRevoke <- revokeDirective.Kind=LiveControlDirectiveKind.Revoke
+        let revokeAck = LiveControlAckReport.empty()
+        revokeAck.Binding<-revokeDirective.Binding
+        revokeAck.ControlSequence<-revokeDirective.ControlSequence
+        revokeAck.Kind<-revokeDirective.Kind
+        revokeAck.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        let! (_: LiveControlAckResponse) = live.ReportLiveControlAckAsync(revokeAck).ResponseAsync
+        let! (revoked: LiveServerEnvelope) = receive socket
+        let! (replacement: LiveServerEnvelope) = receive socket
+        Expect.equal revoked.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.RevokeNativeConfirmed "old binding is confirmed revoked"
+        Expect.isGreaterThan replacement.Bootstrap.Controller.AuthorityEpoch controller.AuthorityEpoch "replacement bootstrap carries a newer broker epoch"
+        Expect.notEqual replacement.Bootstrap.Controller.ControllerId controller.ControllerId "replacement bootstrap carries a fresh controller identity"
+
+        BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow handle.Hub
+        let closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)
+        let closeBuffer = Array.zeroCreate<byte> 128
+        let mutable closed = false
+        try
+            while not closed do
+                let! (received: ValueWebSocketReceiveResult) = socket.ReceiveAsync(Memory<byte>(closeBuffer), closeTimeout.Token).AsTask()
+                closed <- received.MessageType=WebSocketMessageType.Close
+        with :? WebSocketException -> closed <- true
+        Expect.isTrue closed "session replacement closes the authenticated live socket"
+        closeTimeout.Dispose()
         socket.Dispose()
         do! gateway.StopAsync()
         (gateway :> IDisposable).Dispose()
