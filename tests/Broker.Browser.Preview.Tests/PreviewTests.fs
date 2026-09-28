@@ -57,6 +57,7 @@ let private config (root: string) (ready: string) (lifetime: TimeSpan) (timing: 
       staticPort = freePort()
       readyFile = ready
       qualificationReceipt = None
+      browserOrigin = None
       fixtureMode = true
       credentialLifetime = lifetime
       fixtureTiming = timing }
@@ -89,6 +90,14 @@ let private authenticate (url: string) (origin: string) (sessionId: string) (cre
     return socket
 }
 
+let private authenticationRefused url origin sessionId credential ct = task {
+    try
+        let! socket = authenticate url origin sessionId credential ct
+        socket.Dispose()
+        return false
+    with _ -> return true
+}
+
 let private getString (name: string) (json: JsonElement) =
     json.GetProperty(name).GetString() |> Option.ofObj |> Option.defaultWith (fun () -> failwithf "%s is null" name)
 
@@ -100,12 +109,16 @@ let tests = testList "BARC preview companion" [
         let privateRoot = tempDirectory()
         let ready = Path.Combine(privateRoot, "ready.json")
         let receipt = Path.Combine(privateRoot, "qualification.json")
+        let receiverOrigin = sprintf "http://127.0.0.1:%d" (freePort())
         let timing : PreviewHost.FixtureTiming =
             { secondSnapshot = TimeSpan.FromMilliseconds 600.0
               gap = TimeSpan.FromMilliseconds 100.0
               recovery = TimeSpan.FromMilliseconds 100.0
               replacement = TimeSpan.FromMilliseconds 250.0 }
-        let settings = { config root ready (TimeSpan.FromSeconds 10.0) timing with qualificationReceipt = Some receipt }
+        let settings =
+            { config root ready (TimeSpan.FromSeconds 10.0) timing with
+                qualificationReceipt = Some receipt
+                browserOrigin = Some receiverOrigin }
         let timeout = new CancellationTokenSource(TimeSpan.FromSeconds 10.0)
         let! (handle: PreviewHost.Handle) = PreviewHost.start settings timeout.Token
         Expect.isTrue (File.Exists ready) "ready handoff exists"
@@ -129,8 +142,16 @@ let tests = testList "BARC preview companion" [
         Expect.stringContains page "assets/barc-preview.js" "stable client entry is imported"
         Expect.isFalse (page.Contains credential) "credential is absent from served HTML"
         Expect.equal (response.Headers.GetValues("Cache-Control") |> Seq.exactlyOne) "no-store" "static responses are private"
-        let origin = sprintf "http://127.0.0.1:%d" settings.staticPort
+        let origin = receiverOrigin
         let! (socket: ClientWebSocket) = authenticate gatewayUrl origin sessionId credential timeout.Token
+        let companionOrigin = sprintf "http://127.0.0.1:%d" settings.staticPort
+        let unselectedOrigin = sprintf "http://127.0.0.1:%d" (freePort())
+        let! companionRefused = authenticationRefused gatewayUrl companionOrigin sessionId credential timeout.Token
+        let! unselectedRefused = authenticationRefused gatewayUrl unselectedOrigin sessionId credential timeout.Token
+        let! arenaRefused = authenticationRefused gatewayUrl "https://arena.invalid" sessionId credential timeout.Token
+        Expect.isTrue companionRefused "companion static origin is refused when receiver origin is selected"
+        Expect.isTrue unselectedRefused "another loopback origin is refused"
+        Expect.isTrue arenaRefused "arena origin is refused"
         let! (bootstrap: ServerEnvelope) = receive socket timeout.Token
         let! (initial: ServerEnvelope) = receive socket timeout.Token
         Expect.equal (Guid(initial.Observation.SessionId.ToByteArray()).ToString()) sessionId "observation matches authenticated session"
@@ -231,6 +252,25 @@ let tests = testList "BARC preview companion" [
         createAssets root
         let privateRoot = tempDirectory()
         let ready = Path.Combine(privateRoot, "ready.json")
+        let invalidReady = Path.Combine(privateRoot, "invalid-origin-ready.json")
+        for invalidOrigin in
+            [ "*"
+              "https://127.0.0.1:4100"
+              "http://0.0.0.0:4100"
+              "http://127.0.0.1:4100/path"
+              "http://127.0.0.1:4100/?query=1"
+              "http://user@127.0.0.1:4100" ] do
+            let mutable originRefused = false
+            try
+                let! handle =
+                    PreviewHost.start
+                        { config root invalidReady (TimeSpan.FromSeconds 1.0) PreviewHost.defaultFixtureTiming with
+                            browserOrigin = Some invalidOrigin }
+                        CancellationToken.None
+                do! (handle :> IAsyncDisposable).DisposeAsync().AsTask()
+            with :? ArgumentException -> originRefused <- true
+            Expect.isTrue originRefused ("invalid browser origin is refused: " + invalidOrigin)
+            Expect.isFalse (File.Exists invalidReady) "origin refusal creates no credential handoff"
         File.WriteAllText(ready, "occupied")
         let settings = config root ready (TimeSpan.FromSeconds 1.0) PreviewHost.defaultFixtureTiming
         let mutable existingRefused = false

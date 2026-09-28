@@ -34,6 +34,7 @@ module PreviewHost =
           staticPort: int
           readyFile: string
           qualificationReceipt: string option
+          browserOrigin: string option
           fixtureMode: bool
           credentialLifetime: TimeSpan
           fixtureTiming: FixtureTiming }
@@ -47,6 +48,22 @@ module PreviewHost =
     let private loopback port = sprintf "127.0.0.1:%d" port
     let private http port = sprintf "http://127.0.0.1:%d" port
     let private ws port = sprintf "ws://127.0.0.1:%d/barc-preview" port
+
+    let private browserOrigin staticPort configured =
+        match configured with
+        | None -> http staticPort
+        | Some value ->
+            let mutable uri = Unchecked.defaultof<Uri>
+            if not (Uri.TryCreate(value, UriKind.Absolute, &uri))
+               || uri.Scheme <> Uri.UriSchemeHttp
+               || not uri.IsLoopback
+               || uri.AbsolutePath <> "/"
+               || not (String.IsNullOrEmpty uri.Query)
+               || not (String.IsNullOrEmpty uri.Fragment)
+               || not (String.IsNullOrEmpty uri.UserInfo)
+               || value <> uri.GetLeftPart(UriPartial.Authority) then
+                invalidArg "browserOrigin" "browser origin must be one absolute HTTP loopback origin without path, query, fragment, or userinfo"
+            value
 
     let private validate (config: Config) =
         let fullRoot = Path.GetFullPath config.assetsRoot
@@ -96,7 +113,7 @@ module PreviewHost =
             if stream.Read(header, 0, header.Length) <> header.Length
                || header <> [| 0uy; 97uy; 115uy; 109uy |] then
                 invalidArg "assetsRoot" (relative + " is not a WebAssembly module")
-        fullRoot, ready, qualificationReceipt
+        fullRoot, ready, qualificationReceipt, browserOrigin config.staticPort config.browserOrigin
 
     let private token () =
         let bytes = RandomNumberGenerator.GetBytes 32
@@ -249,7 +266,7 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
         writePrivate path (JsonSerializer.SerializeToUtf8Bytes(payload, JsonSerializerOptions(WriteIndented = true)))
 
     let start (config: Config) (ct: CancellationToken) = task {
-        let root, readyPath, qualificationReceipt = validate config
+        let root, readyPath, qualificationReceipt, allowedBrowserOrigin = validate config
         let linked = CancellationTokenSource.CreateLinkedTokenSource(ct)
         let mutable protocolResource : ServerHost.ServerHandle option = None
         let mutable gatewayResource : IHost option = None
@@ -271,7 +288,7 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
             let expires = DateTimeOffset.UtcNow.Add config.credentialLifetime
             let staticOrigin = http config.staticPort
             let! gateway = Gateway.startAsync protocol.Hub
-                               { Gateway.defaultConfig (http config.gatewayPort) staticOrigin credential sessionId with
+                               { Gateway.defaultConfig (http config.gatewayPort) allowedBrowserOrigin credential sessionId with
                                    credentialExpiresAt = expires
                                    perspectiveId = "barc-fixture"
                                    maxFrameBytes = 65536

@@ -6,7 +6,7 @@ open System.Threading.Tasks
 open Broker.Browser.Preview
 
 let private usage () =
-    "usage: Broker.Browser.Preview --fixture --assets-root PATH --base-path /barc/ --grpc-port N --gateway-port N --static-port N --ready-file PATH [--qualification-receipt PATH]"
+    "usage: Broker.Browser.Preview --fixture --assets-root PATH --base-path /barc/ --grpc-port N --gateway-port N --static-port N --ready-file PATH [--browser-origin HTTP_LOOPBACK_ORIGIN] [--qualification-receipt PATH]"
 
 let private parse (argv: string array) : PreviewHost.Config =
     let mutable fixture = false
@@ -16,6 +16,7 @@ let private parse (argv: string array) : PreviewHost.Config =
         match argv.[index] with
         | "--fixture" -> fixture <- true; index <- index + 1
         | key when key.StartsWith("--") && index + 1 < argv.Length ->
+            if values.ContainsKey key then invalidArg "argv" (key + " may be specified only once")
             values[key] <- argv.[index + 1]; index <- index + 2
         | value -> invalidArg "argv" ("unexpected argument " + value + "\n" + usage())
     let required key = match values.TryGetValue key with true, value -> value | _ -> invalidArg "argv" (key + " is required\n" + usage())
@@ -27,6 +28,7 @@ let private parse (argv: string array) : PreviewHost.Config =
       staticPort = port "--static-port"
       readyFile = required "--ready-file"
       qualificationReceipt = match values.TryGetValue "--qualification-receipt" with true, value -> Some value | _ -> None
+      browserOrigin = match values.TryGetValue "--browser-origin" with true, value -> Some value | _ -> None
       fixtureMode = fixture
       credentialLifetime = TimeSpan.FromMinutes 5.0
       fixtureTiming = PreviewHost.defaultFixtureTiming }
