@@ -7,6 +7,7 @@ open Fable.Core.JsInterop
 [<AllowNullLiteral>]
 type MountOptions =
     abstract assetBaseUrl: string
+    abstract profile: string option
     abstract initialGatewayUrl: string option
     abstract initialExpectedSessionId: string option
     abstract initialCredential: string option

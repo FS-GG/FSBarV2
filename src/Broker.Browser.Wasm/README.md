@@ -17,3 +17,8 @@ The supervision shape was informed by the product-specific worker in
 FS-GG/SC2.Client at `0abaa74eaeab6fa8dd2b6274269726e31538bf48`, then tightened
 for BARC's ABI and threat boundary. No SC2 protocol or command authority is
 shared here.
+
+ABI version 1 also carries the opt-in `barc-live-v1` protobuf profile. The
+Worker verifies input/session/module/basis echoes and bounded semantic Stop,
+Move and visible-unit Attack output. Native option bits and command envelopes
+remain unavailable to guests.
