@@ -1,0 +1,11 @@
+{
+  "name": "fs-gg-barc-browser-codec-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node output/Program.js"
+  },
+  "dependencies": {
+    "@fable-org/fable-library-js": "2.8.0"
+  }
+}
