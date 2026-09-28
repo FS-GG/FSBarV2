@@ -9,8 +9,8 @@
     "long": "5.3.2"
   },
   "maxFrameBytes": 65536,
-  "protoSha256": "9b616848238b6f2a6cae0b015c4d73bb048f526eb504d02fb4fe7dc9c3dcbd60",
-  "orderedBundleSha256": "e5b427af0b81348dd5857b3628adcb6150f6bed0a04547aec95f37f705e7bf3d",
+  "protoSha256": "7daddc92b3e4cff062920dff37d23ef6ec881844335c578273b2f19647a9f975",
+  "orderedBundleSha256": "df3d4a7a9f0cb06498331b685818d7feb4c169e5a7ffe9f12d3d3eea9f3264ae",
   "cases": [
     {
       "name": "auth-incomplete",
@@ -52,21 +52,56 @@
       "wire": "wire/guest-ground-target.bin",
       "semantic": "semantic/guest-ground-target.json",
       "expected": "decode",
-      "sha256": "322ca9f97d08b3a92886e9e1d4a84329ee8cdf226f169a3ec655ce17b0275f3e"
+      "sha256": "6f595abad0a93c446c66b8c5b3ec7184496755ce2dd802594bb258402b2a3103"
+    },
+    {
+      "name": "guest-initialize",
+      "wire": "wire/guest-initialize.bin",
+      "semantic": "semantic/guest-initialize.json",
+      "expected": "decode",
+      "sha256": "9d7bba130e776ddffce3e508137b9035213ba6f94e5b2031b615ac7ca480d3b0"
+    },
+    {
+      "name": "guest-invalid-context",
+      "wire": "wire/guest-invalid-context.bin",
+      "semantic": "semantic/guest-invalid-context.json",
+      "expected": "semantic-refusal:stale-context-sequence",
+      "sha256": "3f37037ea0d9037c365e8a2b01627fae1efbb5670f3d1f393c6fcd121140295e"
+    },
+    {
+      "name": "guest-invalid-session",
+      "wire": "wire/guest-invalid-session.bin",
+      "semantic": "semantic/guest-invalid-session.json",
+      "expected": "semantic-refusal:wrong-session",
+      "sha256": "f9e34e31bca94fe68992054b91a473a2212ec219925a98410598fe19a2a39965"
     },
     {
       "name": "guest-move-preview",
       "wire": "wire/guest-move-preview.bin",
       "semantic": "semantic/guest-move-preview.json",
       "expected": "decode",
-      "sha256": "a2c156608cab6ba9e873a14230c958e833a3be32e4c19f5eacf5a6174aaecc0a"
+      "sha256": "f03196a9d72243dbc3f0adc6cf1e141864ceb3b4b327ef1f5f34db91de2034ed"
+    },
+    {
+      "name": "guest-no-action-ack",
+      "wire": "wire/guest-no-action-ack.bin",
+      "semantic": "semantic/guest-no-action-ack.json",
+      "expected": "decode:no-action-ack",
+      "sha256": "9be09cfc7284cc29dec3e2ece441edacaf36b3bc94d228f210957dda7479be40"
+    },
+    {
+      "name": "guest-observation",
+      "wire": "wire/guest-observation.bin",
+      "semantic": "semantic/guest-observation.json",
+      "expected": "decode",
+      "sha256": "ff9c0d7c9deced9044977271c25c22db1940b8900e4c778ed7e82965ba046ae3"
     },
     {
       "name": "guest-select",
       "wire": "wire/guest-select.bin",
       "semantic": "semantic/guest-select.json",
       "expected": "decode",
-      "sha256": "a3661344e5222e02700f4c49ce5b0945d467fca15af704a010ca2bbf901db3ec"
+      "sha256": "ea9f48d149142dd3bf73670f56b903007a3f9a19e1c5766388c73d13578cb686"
     },
     {
       "name": "malformed-varint",

@@ -97,6 +97,22 @@ export const barc = $root.barc = (() => {
                 return values;
             })();
 
+            /**
+             * GuestAckStatus enum.
+             * @name barc.browser.v1.GuestAckStatus
+             * @enum {number}
+             * @property {number} GUEST_ACK_STATUS_UNSPECIFIED=0 GUEST_ACK_STATUS_UNSPECIFIED value
+             * @property {number} GUEST_ACK_STATUS_CONSUMED=1 GUEST_ACK_STATUS_CONSUMED value
+             * @property {number} GUEST_ACK_STATUS_REFUSED=2 GUEST_ACK_STATUS_REFUSED value
+             */
+            v1.GuestAckStatus = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "GUEST_ACK_STATUS_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "GUEST_ACK_STATUS_CONSUMED"] = 1;
+                values[valuesById[2] = "GUEST_ACK_STATUS_REFUSED"] = 2;
+                return values;
+            })();
+
             v1.Limits = (function() {
 
                 /**
@@ -4265,10 +4281,12 @@ export const barc = $root.barc = (() => {
                  * @typedef {Object} barc.browser.v1.GuestRequest.$Properties
                  * @property {Long|null} [requestId] GuestRequest requestId
                  * @property {Uint8Array|null} [sessionId] GuestRequest sessionId
-                 * @property {Long|null} [observationSequence] GuestRequest observationSequence
+                 * @property {Long|null} [contextSequence] GuestRequest contextSequence
+                 * @property {barc.browser.v1.Bootstrap.$Properties|null} [initialize] GuestRequest initialize
+                 * @property {barc.browser.v1.Observation.$Properties|null} [observation] GuestRequest observation
                  * @property {barc.browser.v1.SelectInput.$Properties|null} [select] GuestRequest select
                  * @property {barc.browser.v1.GroundTargetInput.$Properties|null} [groundTarget] GuestRequest groundTarget
-                 * @property {"select"|"groundTarget"} [input] GuestRequest input
+                 * @property {"initialize"|"observation"|"select"|"groundTarget"} [input] GuestRequest input
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -4285,12 +4303,14 @@ export const barc = $root.barc = (() => {
                  * @typedef {{
                  *   requestId?: Long|null;
                  *   sessionId?: Uint8Array|null;
-                 *   observationSequence?: Long|null;
+                 *   contextSequence?: Long|null;
+                 *   initialize?: barc.browser.v1.Bootstrap.$Shape|null;
+                 *   observation?: barc.browser.v1.Observation.$Shape|null;
                  *   select?: barc.browser.v1.SelectInput.$Shape|null;
                  *   groundTarget?: barc.browser.v1.GroundTargetInput.$Shape|null;
                  *   $unknowns?: Array.<Uint8Array>;
                  * } & (
-                 *   ({ input?: undefined; select?: null; groundTarget?: null }|{ input?: "select"; select: barc.browser.v1.SelectInput.$Shape; groundTarget?: null }|{ input?: "groundTarget"; select?: null; groundTarget: barc.browser.v1.GroundTargetInput.$Shape })
+                 *   ({ input?: undefined; initialize?: null; observation?: null; select?: null; groundTarget?: null }|{ input?: "initialize"; initialize: barc.browser.v1.Bootstrap.$Shape; observation?: null; select?: null; groundTarget?: null }|{ input?: "observation"; initialize?: null; observation: barc.browser.v1.Observation.$Shape; select?: null; groundTarget?: null }|{ input?: "select"; initialize?: null; observation?: null; select: barc.browser.v1.SelectInput.$Shape; groundTarget?: null }|{ input?: "groundTarget"; initialize?: null; observation?: null; select?: null; groundTarget: barc.browser.v1.GroundTargetInput.$Shape })
                  * )} barc.browser.v1.GuestRequest.$Shape
                  */
 
@@ -4326,12 +4346,28 @@ export const barc = $root.barc = (() => {
                 GuestRequest.prototype.sessionId = $util.newBuffer([]);
 
                 /**
-                 * GuestRequest observationSequence.
-                 * @member {Long} observationSequence
+                 * GuestRequest contextSequence.
+                 * @member {Long} contextSequence
                  * @memberof barc.browser.v1.GuestRequest
                  * @instance
                  */
-                GuestRequest.prototype.observationSequence = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+                GuestRequest.prototype.contextSequence = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * GuestRequest initialize.
+                 * @member {barc.browser.v1.Bootstrap.$Properties|null|undefined} initialize
+                 * @memberof barc.browser.v1.GuestRequest
+                 * @instance
+                 */
+                GuestRequest.prototype.initialize = null;
+
+                /**
+                 * GuestRequest observation.
+                 * @member {barc.browser.v1.Observation.$Properties|null|undefined} observation
+                 * @memberof barc.browser.v1.GuestRequest
+                 * @instance
+                 */
+                GuestRequest.prototype.observation = null;
 
                 /**
                  * GuestRequest select.
@@ -4354,12 +4390,12 @@ export const barc = $root.barc = (() => {
 
                 /**
                  * GuestRequest input.
-                 * @member {"select"|"groundTarget"|undefined} input
+                 * @member {"initialize"|"observation"|"select"|"groundTarget"|undefined} input
                  * @memberof barc.browser.v1.GuestRequest
                  * @instance
                  */
                 $Object.defineProperty(GuestRequest.prototype, "input", {
-                    get: $util.oneOfGetter($oneOfFields = ["select", "groundTarget"]),
+                    get: $util.oneOfGetter($oneOfFields = ["initialize", "observation", "select", "groundTarget"]),
                     set: $util.oneOfSetter($oneOfFields)
                 });
 
@@ -4383,12 +4419,16 @@ export const barc = $root.barc = (() => {
                         writer.uint32(/* id 1, wireType 0 =*/8).uint64(message.requestId);
                     if (message.sessionId != null && $Object.hasOwnProperty.call(message, "sessionId") && message.sessionId.length)
                         writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.sessionId);
-                    if (message.observationSequence != null && $Object.hasOwnProperty.call(message, "observationSequence") && (typeof message.observationSequence === "object" ? message.observationSequence.low || message.observationSequence.high : message.observationSequence !== 0))
-                        writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.observationSequence);
+                    if (message.contextSequence != null && $Object.hasOwnProperty.call(message, "contextSequence") && (typeof message.contextSequence === "object" ? message.contextSequence.low || message.contextSequence.high : message.contextSequence !== 0))
+                        writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.contextSequence);
+                    if (message.initialize != null && $Object.hasOwnProperty.call(message, "initialize"))
+                        $root.barc.browser.v1.Bootstrap.encode(message.initialize, writer.uint32(/* id 10, wireType 2 =*/82).fork(), _depth + 1).ldelim();
+                    if (message.observation != null && $Object.hasOwnProperty.call(message, "observation"))
+                        $root.barc.browser.v1.Observation.encode(message.observation, writer.uint32(/* id 11, wireType 2 =*/90).fork(), _depth + 1).ldelim();
                     if (message.select != null && $Object.hasOwnProperty.call(message, "select"))
-                        $root.barc.browser.v1.SelectInput.encode(message.select, writer.uint32(/* id 10, wireType 2 =*/82).fork(), _depth + 1).ldelim();
+                        $root.barc.browser.v1.SelectInput.encode(message.select, writer.uint32(/* id 12, wireType 2 =*/98).fork(), _depth + 1).ldelim();
                     if (message.groundTarget != null && $Object.hasOwnProperty.call(message, "groundTarget"))
-                        $root.barc.browser.v1.GroundTargetInput.encode(message.groundTarget, writer.uint32(/* id 11, wireType 2 =*/90).fork(), _depth + 1).ldelim();
+                        $root.barc.browser.v1.GroundTargetInput.encode(message.groundTarget, writer.uint32(/* id 13, wireType 2 =*/106).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -4468,19 +4508,33 @@ export const barc = $root.barc = (() => {
                                 if (wireType !== 0)
                                     break;
                                 if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
-                                    message.observationSequence = value;
+                                    message.contextSequence = value;
                                 else
-                                    delete message.observationSequence;
+                                    delete message.contextSequence;
                                 continue;
                             }
                         case 10: {
+                                if (wireType !== 2)
+                                    break;
+                                message.initialize = $root.barc.browser.v1.Bootstrap.decode(reader, reader.uint32(), $undefined, _depth + 1, message.initialize);
+                                message.input = "initialize";
+                                continue;
+                            }
+                        case 11: {
+                                if (wireType !== 2)
+                                    break;
+                                message.observation = $root.barc.browser.v1.Observation.decode(reader, reader.uint32(), $undefined, _depth + 1, message.observation);
+                                message.input = "observation";
+                                continue;
+                            }
+                        case 12: {
                                 if (wireType !== 2)
                                     break;
                                 message.select = $root.barc.browser.v1.SelectInput.decode(reader, reader.uint32(), $undefined, _depth + 1, message.select);
                                 message.input = "select";
                                 continue;
                             }
-                        case 11: {
+                        case 13: {
                                 if (wireType !== 2)
                                     break;
                                 message.groundTarget = $root.barc.browser.v1.GroundTargetInput.decode(reader, reader.uint32(), $undefined, _depth + 1, message.groundTarget);
@@ -4554,16 +4608,26 @@ export const barc = $root.barc = (() => {
                                 $util.base64.decode(object.sessionId, message.sessionId = $util.newBuffer($util.base64.length(object.sessionId)), 0);
                             else if (object.sessionId.length >= 0)
                                 message.sessionId = object.sessionId;
-                    if (object.observationSequence != null)
-                        if (typeof object.observationSequence === "object" ? object.observationSequence.low || object.observationSequence.high : $Number(object.observationSequence) !== 0)
+                    if (object.contextSequence != null)
+                        if (typeof object.contextSequence === "object" ? object.contextSequence.low || object.contextSequence.high : $Number(object.contextSequence) !== 0)
                             if ($util.Long)
-                                message.observationSequence = $util.Long.fromValue(object.observationSequence, true);
-                            else if (typeof object.observationSequence === "string")
-                                message.observationSequence = $parseInt(object.observationSequence, 10);
-                            else if (typeof object.observationSequence === "number")
-                                message.observationSequence = object.observationSequence;
-                            else if (typeof object.observationSequence === "object")
-                                message.observationSequence = new $util.LongBits(object.observationSequence.low >>> 0, object.observationSequence.high >>> 0).toNumber(true);
+                                message.contextSequence = $util.Long.fromValue(object.contextSequence, true);
+                            else if (typeof object.contextSequence === "string")
+                                message.contextSequence = $parseInt(object.contextSequence, 10);
+                            else if (typeof object.contextSequence === "number")
+                                message.contextSequence = object.contextSequence;
+                            else if (typeof object.contextSequence === "object")
+                                message.contextSequence = new $util.LongBits(object.contextSequence.low >>> 0, object.contextSequence.high >>> 0).toNumber(true);
+                    if (object.initialize != null) {
+                        if (!$util.isObject(object.initialize))
+                            throw $TypeError(".barc.browser.v1.GuestRequest.initialize: object expected");
+                        message.initialize = $root.barc.browser.v1.Bootstrap.fromObject(object.initialize, _depth + 1);
+                    }
+                    if (object.observation != null) {
+                        if (!$util.isObject(object.observation))
+                            throw $TypeError(".barc.browser.v1.GuestRequest.observation: object expected");
+                        message.observation = $root.barc.browser.v1.Observation.fromObject(object.observation, _depth + 1);
+                    }
                     if (object.select != null) {
                         if (!$util.isObject(object.select))
                             throw $TypeError(".barc.browser.v1.GuestRequest.select: object expected");
@@ -4609,9 +4673,9 @@ export const barc = $root.barc = (() => {
                         }
                         if ($util.Long) {
                             let long = new $util.Long(0, 0, true);
-                            object.observationSequence = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                            object.contextSequence = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
                         } else
-                            object.observationSequence = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                            object.contextSequence = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
                     }
                     if (message.requestId != null && $Object.hasOwnProperty.call(message, "requestId"))
                         if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
@@ -4622,13 +4686,23 @@ export const barc = $root.barc = (() => {
                             object.requestId = options.longs === $String ? $util.Long.prototype.toString.call(message.requestId) : options.longs === $Number ? new $util.LongBits(message.requestId.low >>> 0, message.requestId.high >>> 0).toNumber(true) : message.requestId;
                     if (message.sessionId != null && $Object.hasOwnProperty.call(message, "sessionId"))
                         object.sessionId = options.bytes === $String ? $util.base64.encode(message.sessionId, 0, message.sessionId.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.sessionId) : message.sessionId;
-                    if (message.observationSequence != null && $Object.hasOwnProperty.call(message, "observationSequence"))
+                    if (message.contextSequence != null && $Object.hasOwnProperty.call(message, "contextSequence"))
                         if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
-                            object.observationSequence = typeof message.observationSequence === "number" ? $BigInt(message.observationSequence) : $util.Long.fromBits(message.observationSequence.low >>> 0, message.observationSequence.high >>> 0, true).toBigInt();
-                        else if (typeof message.observationSequence === "number")
-                            object.observationSequence = options.longs === $String ? $String(message.observationSequence) : message.observationSequence;
+                            object.contextSequence = typeof message.contextSequence === "number" ? $BigInt(message.contextSequence) : $util.Long.fromBits(message.contextSequence.low >>> 0, message.contextSequence.high >>> 0, true).toBigInt();
+                        else if (typeof message.contextSequence === "number")
+                            object.contextSequence = options.longs === $String ? $String(message.contextSequence) : message.contextSequence;
                         else
-                            object.observationSequence = options.longs === $String ? $util.Long.prototype.toString.call(message.observationSequence) : options.longs === $Number ? new $util.LongBits(message.observationSequence.low >>> 0, message.observationSequence.high >>> 0).toNumber(true) : message.observationSequence;
+                            object.contextSequence = options.longs === $String ? $util.Long.prototype.toString.call(message.contextSequence) : options.longs === $Number ? new $util.LongBits(message.contextSequence.low >>> 0, message.contextSequence.high >>> 0).toNumber(true) : message.contextSequence;
+                    if (message.initialize != null && $Object.hasOwnProperty.call(message, "initialize")) {
+                        object.initialize = $root.barc.browser.v1.Bootstrap.toObject(message.initialize, options, _depth + 1);
+                        if (options.oneofs)
+                            object.input = "initialize";
+                    }
+                    if (message.observation != null && $Object.hasOwnProperty.call(message, "observation")) {
+                        object.observation = $root.barc.browser.v1.Observation.toObject(message.observation, options, _depth + 1);
+                        if (options.oneofs)
+                            object.input = "observation";
+                    }
                     if (message.select != null && $Object.hasOwnProperty.call(message, "select")) {
                         object.select = $root.barc.browser.v1.SelectInput.toObject(message.select, options, _depth + 1);
                         if (options.oneofs)
@@ -4966,6 +5040,9 @@ export const barc = $root.barc = (() => {
                  * @typedef {Object} barc.browser.v1.GuestResponse.$Properties
                  * @property {Long|null} [requestId] GuestResponse requestId
                  * @property {Uint8Array|null} [sessionId] GuestResponse sessionId
+                 * @property {Long|null} [consumedSequence] GuestResponse consumedSequence
+                 * @property {barc.browser.v1.GuestAckStatus|null} [acknowledgment] GuestResponse acknowledgment
+                 * @property {string|null} [refusalDetail] GuestResponse refusalDetail
                  * @property {barc.browser.v1.IntentKind|null} [kind] GuestResponse kind
                  * @property {barc.browser.v1.MovePreview.$Properties|null} [move] GuestResponse move
                  * @property {"move"} [preview] GuestResponse preview
@@ -4985,6 +5062,9 @@ export const barc = $root.barc = (() => {
                  * @typedef {{
                  *   requestId?: Long|null;
                  *   sessionId?: Uint8Array|null;
+                 *   consumedSequence?: Long|null;
+                 *   acknowledgment?: barc.browser.v1.GuestAckStatus|null;
+                 *   refusalDetail?: string|null;
                  *   kind?: barc.browser.v1.IntentKind|null;
                  *   move?: barc.browser.v1.MovePreview.$Shape|null;
                  *   $unknowns?: Array.<Uint8Array>;
@@ -5023,6 +5103,30 @@ export const barc = $root.barc = (() => {
                  * @instance
                  */
                 GuestResponse.prototype.sessionId = $util.newBuffer([]);
+
+                /**
+                 * GuestResponse consumedSequence.
+                 * @member {Long} consumedSequence
+                 * @memberof barc.browser.v1.GuestResponse
+                 * @instance
+                 */
+                GuestResponse.prototype.consumedSequence = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * GuestResponse acknowledgment.
+                 * @member {barc.browser.v1.GuestAckStatus} acknowledgment
+                 * @memberof barc.browser.v1.GuestResponse
+                 * @instance
+                 */
+                GuestResponse.prototype.acknowledgment = 0;
+
+                /**
+                 * GuestResponse refusalDetail.
+                 * @member {string} refusalDetail
+                 * @memberof barc.browser.v1.GuestResponse
+                 * @instance
+                 */
+                GuestResponse.prototype.refusalDetail = "";
 
                 /**
                  * GuestResponse kind.
@@ -5074,8 +5178,14 @@ export const barc = $root.barc = (() => {
                         writer.uint32(/* id 1, wireType 0 =*/8).uint64(message.requestId);
                     if (message.sessionId != null && $Object.hasOwnProperty.call(message, "sessionId") && message.sessionId.length)
                         writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.sessionId);
+                    if (message.consumedSequence != null && $Object.hasOwnProperty.call(message, "consumedSequence") && (typeof message.consumedSequence === "object" ? message.consumedSequence.low || message.consumedSequence.high : message.consumedSequence !== 0))
+                        writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.consumedSequence);
+                    if (message.acknowledgment != null && $Object.hasOwnProperty.call(message, "acknowledgment") && message.acknowledgment !== 0)
+                        writer.uint32(/* id 4, wireType 0 =*/32).int32(message.acknowledgment);
+                    if (message.refusalDetail != null && $Object.hasOwnProperty.call(message, "refusalDetail") && message.refusalDetail !== "")
+                        writer.uint32(/* id 5, wireType 2 =*/42).string(message.refusalDetail);
                     if (message.kind != null && $Object.hasOwnProperty.call(message, "kind") && message.kind !== 0)
-                        writer.uint32(/* id 3, wireType 0 =*/24).int32(message.kind);
+                        writer.uint32(/* id 6, wireType 0 =*/48).int32(message.kind);
                     if (message.move != null && $Object.hasOwnProperty.call(message, "move"))
                         $root.barc.browser.v1.MovePreview.encode(message.move, writer.uint32(/* id 10, wireType 2 =*/82).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
@@ -5154,6 +5264,33 @@ export const barc = $root.barc = (() => {
                                 continue;
                             }
                         case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.consumedSequence = value;
+                                else
+                                    delete message.consumedSequence;
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.acknowledgment = value;
+                                else
+                                    delete message.acknowledgment;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.refusalDetail = value;
+                                else
+                                    delete message.refusalDetail;
+                                continue;
+                            }
+                        case 6: {
                                 if (wireType !== 0)
                                     break;
                                 if (value = reader.int32())
@@ -5236,6 +5373,37 @@ export const barc = $root.barc = (() => {
                                 $util.base64.decode(object.sessionId, message.sessionId = $util.newBuffer($util.base64.length(object.sessionId)), 0);
                             else if (object.sessionId.length >= 0)
                                 message.sessionId = object.sessionId;
+                    if (object.consumedSequence != null)
+                        if (typeof object.consumedSequence === "object" ? object.consumedSequence.low || object.consumedSequence.high : $Number(object.consumedSequence) !== 0)
+                            if ($util.Long)
+                                message.consumedSequence = $util.Long.fromValue(object.consumedSequence, true);
+                            else if (typeof object.consumedSequence === "string")
+                                message.consumedSequence = $parseInt(object.consumedSequence, 10);
+                            else if (typeof object.consumedSequence === "number")
+                                message.consumedSequence = object.consumedSequence;
+                            else if (typeof object.consumedSequence === "object")
+                                message.consumedSequence = new $util.LongBits(object.consumedSequence.low >>> 0, object.consumedSequence.high >>> 0).toNumber(true);
+                    if (object.acknowledgment !== 0 && (typeof object.acknowledgment !== "string" || $root.barc.browser.v1.GuestAckStatus[object.acknowledgment] !== 0))
+                        switch (object.acknowledgment) {
+                        case "GUEST_ACK_STATUS_UNSPECIFIED":
+                        case 0:
+                            message.acknowledgment = 0;
+                            break;
+                        case "GUEST_ACK_STATUS_CONSUMED":
+                        case 1:
+                            message.acknowledgment = 1;
+                            break;
+                        case "GUEST_ACK_STATUS_REFUSED":
+                        case 2:
+                            message.acknowledgment = 2;
+                            break;
+                        default:
+                            if (typeof object.acknowledgment === "number" && (object.acknowledgment | 0) === object.acknowledgment)
+                                message.acknowledgment = object.acknowledgment;
+                        }
+                    if (object.refusalDetail != null)
+                        if (typeof object.refusalDetail !== "string" || object.refusalDetail.length)
+                            message.refusalDetail = $String(object.refusalDetail);
                     if (object.kind !== 0 && (typeof object.kind !== "string" || $root.barc.browser.v1.IntentKind[object.kind] !== 0))
                         switch (object.kind) {
                         case "INTENT_KIND_UNSPECIFIED":
@@ -5288,6 +5456,13 @@ export const barc = $root.barc = (() => {
                             if (options.bytes !== $Array)
                                 object.sessionId = $util.newBuffer(object.sessionId);
                         }
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.consumedSequence = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.consumedSequence = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                        object.acknowledgment = options.enums === $String ? "GUEST_ACK_STATUS_UNSPECIFIED" : 0;
+                        object.refusalDetail = "";
                         object.kind = options.enums === $String ? "INTENT_KIND_UNSPECIFIED" : 0;
                     }
                     if (message.requestId != null && $Object.hasOwnProperty.call(message, "requestId"))
@@ -5299,6 +5474,17 @@ export const barc = $root.barc = (() => {
                             object.requestId = options.longs === $String ? $util.Long.prototype.toString.call(message.requestId) : options.longs === $Number ? new $util.LongBits(message.requestId.low >>> 0, message.requestId.high >>> 0).toNumber(true) : message.requestId;
                     if (message.sessionId != null && $Object.hasOwnProperty.call(message, "sessionId"))
                         object.sessionId = options.bytes === $String ? $util.base64.encode(message.sessionId, 0, message.sessionId.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.sessionId) : message.sessionId;
+                    if (message.consumedSequence != null && $Object.hasOwnProperty.call(message, "consumedSequence"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.consumedSequence = typeof message.consumedSequence === "number" ? $BigInt(message.consumedSequence) : $util.Long.fromBits(message.consumedSequence.low >>> 0, message.consumedSequence.high >>> 0, true).toBigInt();
+                        else if (typeof message.consumedSequence === "number")
+                            object.consumedSequence = options.longs === $String ? $String(message.consumedSequence) : message.consumedSequence;
+                        else
+                            object.consumedSequence = options.longs === $String ? $util.Long.prototype.toString.call(message.consumedSequence) : options.longs === $Number ? new $util.LongBits(message.consumedSequence.low >>> 0, message.consumedSequence.high >>> 0).toNumber(true) : message.consumedSequence;
+                    if (message.acknowledgment != null && $Object.hasOwnProperty.call(message, "acknowledgment"))
+                        object.acknowledgment = options.enums === $String ? $root.barc.browser.v1.GuestAckStatus[message.acknowledgment] === $undefined ? message.acknowledgment : $root.barc.browser.v1.GuestAckStatus[message.acknowledgment] : message.acknowledgment;
+                    if (message.refusalDetail != null && $Object.hasOwnProperty.call(message, "refusalDetail"))
+                        object.refusalDetail = message.refusalDetail;
                     if (message.kind != null && $Object.hasOwnProperty.call(message, "kind"))
                         object.kind = options.enums === $String ? $root.barc.browser.v1.IntentKind[message.kind] === $undefined ? message.kind : $root.barc.browser.v1.IntentKind[message.kind] : message.kind;
                     if (message.move != null && $Object.hasOwnProperty.call(message, "move")) {

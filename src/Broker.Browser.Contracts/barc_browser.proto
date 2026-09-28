@@ -26,6 +26,12 @@ enum IntentKind {
   INTENT_KIND_MOVE = 1;
 }
 
+enum GuestAckStatus {
+  GUEST_ACK_STATUS_UNSPECIFIED = 0;
+  GUEST_ACK_STATUS_CONSUMED = 1;
+  GUEST_ACK_STATUS_REFUSED = 2;
+}
+
 message Limits {
   uint32 max_frame_bytes = 1;
   uint32 auth_timeout_ms = 2;
@@ -117,10 +123,14 @@ message GroundTargetInput {
 message GuestRequest {
   uint64 request_id = 1;
   bytes session_id = 2;
-  uint64 observation_sequence = 3;
+  // The observation sequence whose state the guest must use for this input.
+  // Initialization uses zero; observation input uses its own sequence.
+  uint64 context_sequence = 3;
   oneof input {
-    SelectInput select = 10;
-    GroundTargetInput ground_target = 11;
+    Bootstrap initialize = 10;
+    Observation observation = 11;
+    SelectInput select = 12;
+    GroundTargetInput ground_target = 13;
   }
 }
 
@@ -132,7 +142,12 @@ message MovePreview {
 message GuestResponse {
   uint64 request_id = 1;
   bytes session_id = 2;
-  IntentKind kind = 3;
+  // Every successful guest call acknowledges the exact input identity, even
+  // when it proposes no preview.
+  uint64 consumed_sequence = 3;
+  GuestAckStatus acknowledgment = 4;
+  string refusal_detail = 5;
+  IntentKind kind = 6;
   oneof preview {
     MovePreview move = 10;
   }

@@ -59,6 +59,19 @@ export namespace barc {
                 INTENT_KIND_MOVE = 1
             }
 
+            /** GuestAckStatus enum. */
+            enum GuestAckStatus {
+
+                /** GUEST_ACK_STATUS_UNSPECIFIED value */
+                GUEST_ACK_STATUS_UNSPECIFIED = 0,
+
+                /** GUEST_ACK_STATUS_CONSUMED value */
+                GUEST_ACK_STATUS_CONSUMED = 1,
+
+                /** GUEST_ACK_STATUS_REFUSED value */
+                GUEST_ACK_STATUS_REFUSED = 2
+            }
+
             /**
              * Properties of a Limits.
              * @deprecated Use barc.browser.v1.Limits.$Properties instead.
@@ -1548,8 +1561,14 @@ export namespace barc {
                 /** GuestRequest sessionId. */
                 sessionId: Uint8Array;
 
-                /** GuestRequest observationSequence. */
-                observationSequence: Long;
+                /** GuestRequest contextSequence. */
+                contextSequence: Long;
+
+                /** GuestRequest initialize. */
+                initialize?: (barc.browser.v1.Bootstrap.$Properties|null);
+
+                /** GuestRequest observation. */
+                observation?: (barc.browser.v1.Observation.$Properties|null);
 
                 /** GuestRequest select. */
                 select?: (barc.browser.v1.SelectInput.$Properties|null);
@@ -1558,7 +1577,7 @@ export namespace barc {
                 groundTarget?: (barc.browser.v1.GroundTargetInput.$Properties|null);
 
                 /** GuestRequest input. */
-                input?: ("select"|"groundTarget");
+                input?: ("initialize"|"observation"|"select"|"groundTarget");
 
                 /**
                  * Encodes the specified GuestRequest message. Does not implicitly {@link barc.browser.v1.GuestRequest.verify|verify} messages.
@@ -1635,8 +1654,14 @@ export namespace barc {
                     /** GuestRequest sessionId */
                     sessionId?: (Uint8Array|null);
 
-                    /** GuestRequest observationSequence */
-                    observationSequence?: (Long|null);
+                    /** GuestRequest contextSequence */
+                    contextSequence?: (Long|null);
+
+                    /** GuestRequest initialize */
+                    initialize?: (barc.browser.v1.Bootstrap.$Properties|null);
+
+                    /** GuestRequest observation */
+                    observation?: (barc.browser.v1.Observation.$Properties|null);
 
                     /** GuestRequest select */
                     select?: (barc.browser.v1.SelectInput.$Properties|null);
@@ -1645,7 +1670,7 @@ export namespace barc {
                     groundTarget?: (barc.browser.v1.GroundTargetInput.$Properties|null);
 
                     /** GuestRequest input */
-                    input?: ("select"|"groundTarget");
+                    input?: ("initialize"|"observation"|"select"|"groundTarget");
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];
@@ -1655,12 +1680,14 @@ export namespace barc {
                 type $Shape = {
                   requestId?: Long|null;
                   sessionId?: Uint8Array|null;
-                  observationSequence?: Long|null;
+                  contextSequence?: Long|null;
+                  initialize?: barc.browser.v1.Bootstrap.$Shape|null;
+                  observation?: barc.browser.v1.Observation.$Shape|null;
                   select?: barc.browser.v1.SelectInput.$Shape|null;
                   groundTarget?: barc.browser.v1.GroundTargetInput.$Shape|null;
                   $unknowns?: Uint8Array[];
                 } & (
-                  ({ input?: undefined; select?: null; groundTarget?: null }|{ input?: "select"; select: barc.browser.v1.SelectInput.$Shape; groundTarget?: null }|{ input?: "groundTarget"; select?: null; groundTarget: barc.browser.v1.GroundTargetInput.$Shape })
+                  ({ input?: undefined; initialize?: null; observation?: null; select?: null; groundTarget?: null }|{ input?: "initialize"; initialize: barc.browser.v1.Bootstrap.$Shape; observation?: null; select?: null; groundTarget?: null }|{ input?: "observation"; initialize?: null; observation: barc.browser.v1.Observation.$Shape; select?: null; groundTarget?: null }|{ input?: "select"; initialize?: null; observation?: null; select: barc.browser.v1.SelectInput.$Shape; groundTarget?: null }|{ input?: "groundTarget"; initialize?: null; observation?: null; select?: null; groundTarget: barc.browser.v1.GroundTargetInput.$Shape })
                 );
             }
 
@@ -1797,6 +1824,15 @@ export namespace barc {
                 /** GuestResponse sessionId. */
                 sessionId: Uint8Array;
 
+                /** GuestResponse consumedSequence. */
+                consumedSequence: Long;
+
+                /** GuestResponse acknowledgment. */
+                acknowledgment: barc.browser.v1.GuestAckStatus;
+
+                /** GuestResponse refusalDetail. */
+                refusalDetail: string;
+
                 /** GuestResponse kind. */
                 kind: barc.browser.v1.IntentKind;
 
@@ -1881,6 +1917,15 @@ export namespace barc {
                     /** GuestResponse sessionId */
                     sessionId?: (Uint8Array|null);
 
+                    /** GuestResponse consumedSequence */
+                    consumedSequence?: (Long|null);
+
+                    /** GuestResponse acknowledgment */
+                    acknowledgment?: (barc.browser.v1.GuestAckStatus|null);
+
+                    /** GuestResponse refusalDetail */
+                    refusalDetail?: (string|null);
+
                     /** GuestResponse kind */
                     kind?: (barc.browser.v1.IntentKind|null);
 
@@ -1898,6 +1943,9 @@ export namespace barc {
                 type $Shape = {
                   requestId?: Long|null;
                   sessionId?: Uint8Array|null;
+                  consumedSequence?: Long|null;
+                  acknowledgment?: barc.browser.v1.GuestAckStatus|null;
+                  refusalDetail?: string|null;
                   kind?: barc.browser.v1.IntentKind|null;
                   move?: barc.browser.v1.MovePreview.$Shape|null;
                   $unknowns?: Uint8Array[];

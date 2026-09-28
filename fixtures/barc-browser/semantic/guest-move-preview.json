@@ -1,6 +1,8 @@
 {
   "requestId": "9007199254740994",
   "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+  "consumedSequence": "9007199254740993",
+  "acknowledgment": "GUEST_ACK_STATUS_CONSUMED",
   "kind": "INTENT_KIND_MOVE",
   "move": {
     "unitIds": [

@@ -1,0 +1,12 @@
+{
+  "requestId": "4",
+  "sessionId": "7u7u7u7u7u7u7u7u7u7u7g==",
+  "contextSequence": "9007199254740993",
+  "groundTarget": {
+    "position": {
+      "x": 1,
+      "z": 2
+    }
+  },
+  "input": "groundTarget"
+}
