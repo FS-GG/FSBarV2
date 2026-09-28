@@ -35,6 +35,8 @@
     "basis-mismatch",
     "input-id-mismatch",
     "module-generation-mismatch",
-    "non-visual-attack-target"
+    "non-visual-attack-target",
+    "live-wrapper-with-zero-or-multiple-native-commands",
+    "unreserved-worst-case-child-results"
   ]
 }

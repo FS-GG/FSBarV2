@@ -2223,6 +2223,19 @@ export namespace barc {
                 MOVE_POLICY_APPEND = 2
             }
 
+            /** LiveInputSource enum. */
+            enum LiveInputSource {
+
+                /** LIVE_INPUT_SOURCE_UNSPECIFIED value */
+                LIVE_INPUT_SOURCE_UNSPECIFIED = 0,
+
+                /** LIVE_INPUT_SOURCE_POINTER value */
+                LIVE_INPUT_SOURCE_POINTER = 1,
+
+                /** LIVE_INPUT_SOURCE_KEYBOARD value */
+                LIVE_INPUT_SOURCE_KEYBOARD = 2
+            }
+
             /** ControllerStage enum. */
             enum ControllerStage {
 
@@ -3988,6 +4001,356 @@ export namespace barc {
             }
 
             /**
+             * Properties of a LiveInputModifiers.
+             * @deprecated Use barc.browser.v1.LiveInputModifiers.$Properties instead.
+             */
+            interface ILiveInputModifiers extends barc.browser.v1.LiveInputModifiers.$Properties {
+            }
+
+            /** Represents a LiveInputModifiers. */
+            class LiveInputModifiers {
+
+                /**
+                 * Constructs a new LiveInputModifiers.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.LiveInputModifiers.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** LiveInputModifiers shift. */
+                shift: boolean;
+
+                /** LiveInputModifiers control. */
+                control: boolean;
+
+                /** LiveInputModifiers alt. */
+                alt: boolean;
+
+                /**
+                 * Encodes the specified LiveInputModifiers message. Does not implicitly {@link barc.browser.v1.LiveInputModifiers.verify|verify} messages.
+                 * @param message LiveInputModifiers message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.LiveInputModifiers.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified LiveInputModifiers message, length delimited. Does not implicitly {@link barc.browser.v1.LiveInputModifiers.verify|verify} messages.
+                 * @param message LiveInputModifiers message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.LiveInputModifiers.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a LiveInputModifiers message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.LiveInputModifiers & barc.browser.v1.LiveInputModifiers.$Shape} LiveInputModifiers
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.LiveInputModifiers & barc.browser.v1.LiveInputModifiers.$Shape;
+
+                /**
+                 * Decodes a LiveInputModifiers message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.LiveInputModifiers & barc.browser.v1.LiveInputModifiers.$Shape} LiveInputModifiers
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.LiveInputModifiers & barc.browser.v1.LiveInputModifiers.$Shape;
+
+                /**
+                 * Creates a LiveInputModifiers message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns LiveInputModifiers
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.LiveInputModifiers;
+
+                /**
+                 * Creates a plain object from a LiveInputModifiers message. Also converts values to other types if specified.
+                 * @param message LiveInputModifiers
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.LiveInputModifiers, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this LiveInputModifiers to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for LiveInputModifiers
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace LiveInputModifiers {
+
+                /** Properties of a LiveInputModifiers. */
+                interface $Properties {
+
+                    /** LiveInputModifiers shift */
+                    shift?: (boolean|null);
+
+                    /** LiveInputModifiers control */
+                    control?: (boolean|null);
+
+                    /** LiveInputModifiers alt */
+                    alt?: (boolean|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a LiveInputModifiers. */
+                type $Shape = barc.browser.v1.LiveInputModifiers.$Properties;
+            }
+
+            /**
+             * Properties of a LiveActorSelection.
+             * @deprecated Use barc.browser.v1.LiveActorSelection.$Properties instead.
+             */
+            interface ILiveActorSelection extends barc.browser.v1.LiveActorSelection.$Properties {
+            }
+
+            /** Represents a LiveActorSelection. */
+            class LiveActorSelection {
+
+                /**
+                 * Constructs a new LiveActorSelection.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.LiveActorSelection.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** LiveActorSelection actors. */
+                actors: barc.browser.v1.UnitReference.$Properties[];
+
+                /**
+                 * Encodes the specified LiveActorSelection message. Does not implicitly {@link barc.browser.v1.LiveActorSelection.verify|verify} messages.
+                 * @param message LiveActorSelection message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.LiveActorSelection.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified LiveActorSelection message, length delimited. Does not implicitly {@link barc.browser.v1.LiveActorSelection.verify|verify} messages.
+                 * @param message LiveActorSelection message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.LiveActorSelection.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a LiveActorSelection message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.LiveActorSelection & barc.browser.v1.LiveActorSelection.$Shape} LiveActorSelection
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.LiveActorSelection & barc.browser.v1.LiveActorSelection.$Shape;
+
+                /**
+                 * Decodes a LiveActorSelection message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.LiveActorSelection & barc.browser.v1.LiveActorSelection.$Shape} LiveActorSelection
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.LiveActorSelection & barc.browser.v1.LiveActorSelection.$Shape;
+
+                /**
+                 * Creates a LiveActorSelection message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns LiveActorSelection
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.LiveActorSelection;
+
+                /**
+                 * Creates a plain object from a LiveActorSelection message. Also converts values to other types if specified.
+                 * @param message LiveActorSelection
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.LiveActorSelection, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this LiveActorSelection to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for LiveActorSelection
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace LiveActorSelection {
+
+                /** Properties of a LiveActorSelection. */
+                interface $Properties {
+
+                    /** LiveActorSelection actors */
+                    actors?: (barc.browser.v1.UnitReference.$Properties[]|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a LiveActorSelection. */
+                type $Shape = barc.browser.v1.LiveActorSelection.$Properties;
+            }
+
+            /**
+             * Properties of a LiveManualInput.
+             * @deprecated Use barc.browser.v1.LiveManualInput.$Properties instead.
+             */
+            interface ILiveManualInput extends barc.browser.v1.LiveManualInput.$Properties {
+            }
+
+            /** Represents a LiveManualInput. */
+            class LiveManualInput {
+
+                /**
+                 * Constructs a new LiveManualInput.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.LiveManualInput.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** LiveManualInput source. */
+                source: barc.browser.v1.LiveInputSource;
+
+                /** LiveManualInput modifiers. */
+                modifiers?: (barc.browser.v1.LiveInputModifiers.$Properties|null);
+
+                /** LiveManualInput select. */
+                select?: (barc.browser.v1.LiveActorSelection.$Properties|null);
+
+                /** LiveManualInput action. */
+                action?: (barc.browser.v1.LiveIntent.$Properties|null);
+
+                /** LiveManualInput input. */
+                input?: ("select"|"action");
+
+                /**
+                 * Encodes the specified LiveManualInput message. Does not implicitly {@link barc.browser.v1.LiveManualInput.verify|verify} messages.
+                 * @param message LiveManualInput message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.LiveManualInput.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified LiveManualInput message, length delimited. Does not implicitly {@link barc.browser.v1.LiveManualInput.verify|verify} messages.
+                 * @param message LiveManualInput message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.LiveManualInput.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a LiveManualInput message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.LiveManualInput & barc.browser.v1.LiveManualInput.$Shape} LiveManualInput
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.LiveManualInput & barc.browser.v1.LiveManualInput.$Shape;
+
+                /**
+                 * Decodes a LiveManualInput message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.LiveManualInput & barc.browser.v1.LiveManualInput.$Shape} LiveManualInput
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.LiveManualInput & barc.browser.v1.LiveManualInput.$Shape;
+
+                /**
+                 * Creates a LiveManualInput message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns LiveManualInput
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.LiveManualInput;
+
+                /**
+                 * Creates a plain object from a LiveManualInput message. Also converts values to other types if specified.
+                 * @param message LiveManualInput
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.LiveManualInput, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this LiveManualInput to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for LiveManualInput
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace LiveManualInput {
+
+                /** Properties of a LiveManualInput. */
+                interface $Properties {
+
+                    /** LiveManualInput source */
+                    source?: (barc.browser.v1.LiveInputSource|null);
+
+                    /** LiveManualInput modifiers */
+                    modifiers?: (barc.browser.v1.LiveInputModifiers.$Properties|null);
+
+                    /** LiveManualInput select */
+                    select?: (barc.browser.v1.LiveActorSelection.$Properties|null);
+
+                    /** LiveManualInput action */
+                    action?: (barc.browser.v1.LiveIntent.$Properties|null);
+
+                    /** LiveManualInput input */
+                    input?: ("select"|"action");
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Narrowed shape of a LiveManualInput. */
+                type $Shape = {
+                  source?: barc.browser.v1.LiveInputSource|null;
+                  modifiers?: barc.browser.v1.LiveInputModifiers.$Shape|null;
+                  select?: barc.browser.v1.LiveActorSelection.$Shape|null;
+                  action?: barc.browser.v1.LiveIntent.$Shape|null;
+                  $unknowns?: Uint8Array[];
+                } & (
+                  ({ input?: undefined; select?: null; action?: null }|{ input?: "select"; select: barc.browser.v1.LiveActorSelection.$Shape; action?: null }|{ input?: "action"; select?: null; action: barc.browser.v1.LiveIntent.$Shape })
+                );
+            }
+
+            /**
              * Properties of a LiveResult.
              * @deprecated Use barc.browser.v1.LiveResult.$Properties instead.
              */
@@ -4225,8 +4588,11 @@ export namespace barc {
                 /** LiveGuestRequest result. */
                 result?: (barc.browser.v1.LiveResult.$Properties|null);
 
+                /** LiveGuestRequest manualInput. */
+                manualInput?: (barc.browser.v1.LiveManualInput.$Properties|null);
+
                 /** LiveGuestRequest input. */
-                input?: ("initialize"|"observation"|"result");
+                input?: ("initialize"|"observation"|"result"|"manualInput");
 
                 /**
                  * Encodes the specified LiveGuestRequest message. Does not implicitly {@link barc.browser.v1.LiveGuestRequest.verify|verify} messages.
@@ -4318,8 +4684,11 @@ export namespace barc {
                     /** LiveGuestRequest result */
                     result?: (barc.browser.v1.LiveResult.$Properties|null);
 
+                    /** LiveGuestRequest manualInput */
+                    manualInput?: (barc.browser.v1.LiveManualInput.$Properties|null);
+
                     /** LiveGuestRequest input */
-                    input?: ("initialize"|"observation"|"result");
+                    input?: ("initialize"|"observation"|"result"|"manualInput");
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];
@@ -4334,9 +4703,10 @@ export namespace barc {
                   initialize?: barc.browser.v1.LiveBootstrap.$Shape|null;
                   observation?: barc.browser.v1.LiveObservation.$Shape|null;
                   result?: barc.browser.v1.LiveResult.$Shape|null;
+                  manualInput?: barc.browser.v1.LiveManualInput.$Shape|null;
                   $unknowns?: Uint8Array[];
                 } & (
-                  ({ input?: undefined; initialize?: null; observation?: null; result?: null }|{ input?: "initialize"; initialize: barc.browser.v1.LiveBootstrap.$Shape; observation?: null; result?: null }|{ input?: "observation"; initialize?: null; observation: barc.browser.v1.LiveObservation.$Shape; result?: null }|{ input?: "result"; initialize?: null; observation?: null; result: barc.browser.v1.LiveResult.$Shape })
+                  ({ input?: undefined; initialize?: null; observation?: null; result?: null; manualInput?: null }|{ input?: "initialize"; initialize: barc.browser.v1.LiveBootstrap.$Shape; observation?: null; result?: null; manualInput?: null }|{ input?: "observation"; initialize?: null; observation: barc.browser.v1.LiveObservation.$Shape; result?: null; manualInput?: null }|{ input?: "result"; initialize?: null; observation?: null; result: barc.browser.v1.LiveResult.$Shape; manualInput?: null }|{ input?: "manualInput"; initialize?: null; observation?: null; result?: null; manualInput: barc.browser.v1.LiveManualInput.$Shape })
                 );
             }
 

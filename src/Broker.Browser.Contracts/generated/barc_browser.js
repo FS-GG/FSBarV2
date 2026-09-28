@@ -6141,6 +6141,22 @@ export const barc = $root.barc = (() => {
             })();
 
             /**
+             * LiveInputSource enum.
+             * @name barc.browser.v1.LiveInputSource
+             * @enum {number}
+             * @property {number} LIVE_INPUT_SOURCE_UNSPECIFIED=0 LIVE_INPUT_SOURCE_UNSPECIFIED value
+             * @property {number} LIVE_INPUT_SOURCE_POINTER=1 LIVE_INPUT_SOURCE_POINTER value
+             * @property {number} LIVE_INPUT_SOURCE_KEYBOARD=2 LIVE_INPUT_SOURCE_KEYBOARD value
+             */
+            v1.LiveInputSource = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "LIVE_INPUT_SOURCE_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "LIVE_INPUT_SOURCE_POINTER"] = 1;
+                values[valuesById[2] = "LIVE_INPUT_SOURCE_KEYBOARD"] = 2;
+                return values;
+            })();
+
+            /**
              * ControllerStage enum.
              * @name barc.browser.v1.ControllerStage
              * @enum {number}
@@ -10773,6 +10789,904 @@ export const barc = $root.barc = (() => {
                 return LiveIntent;
             })();
 
+            v1.LiveInputModifiers = (function() {
+
+                /**
+                 * Properties of a LiveInputModifiers.
+                 * @typedef {Object} barc.browser.v1.LiveInputModifiers.$Properties
+                 * @property {boolean|null} [shift] LiveInputModifiers shift
+                 * @property {boolean|null} [control] LiveInputModifiers control
+                 * @property {boolean|null} [alt] LiveInputModifiers alt
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a LiveInputModifiers.
+                 * @memberof barc.browser.v1
+                 * @interface ILiveInputModifiers
+                 * @augments barc.browser.v1.LiveInputModifiers.$Properties
+                 * @deprecated Use barc.browser.v1.LiveInputModifiers.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a LiveInputModifiers.
+                 * @typedef {barc.browser.v1.LiveInputModifiers.$Properties} barc.browser.v1.LiveInputModifiers.$Shape
+                 */
+
+                /**
+                 * Constructs a new LiveInputModifiers.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a LiveInputModifiers.
+                 * @constructor
+                 * @param {barc.browser.v1.LiveInputModifiers.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const LiveInputModifiers = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * LiveInputModifiers shift.
+                 * @member {boolean} shift
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @instance
+                 */
+                LiveInputModifiers.prototype.shift = false;
+
+                /**
+                 * LiveInputModifiers control.
+                 * @member {boolean} control
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @instance
+                 */
+                LiveInputModifiers.prototype.control = false;
+
+                /**
+                 * LiveInputModifiers alt.
+                 * @member {boolean} alt
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @instance
+                 */
+                LiveInputModifiers.prototype.alt = false;
+
+                /**
+                 * Encodes the specified LiveInputModifiers message. Does not implicitly {@link barc.browser.v1.LiveInputModifiers.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {barc.browser.v1.LiveInputModifiers.$Properties} message LiveInputModifiers message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                LiveInputModifiers.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.shift != null && $Object.hasOwnProperty.call(message, "shift") && message.shift !== false)
+                        writer.uint32(/* id 1, wireType 0 =*/8).bool(message.shift);
+                    if (message.control != null && $Object.hasOwnProperty.call(message, "control") && message.control !== false)
+                        writer.uint32(/* id 2, wireType 0 =*/16).bool(message.control);
+                    if (message.alt != null && $Object.hasOwnProperty.call(message, "alt") && message.alt !== false)
+                        writer.uint32(/* id 3, wireType 0 =*/24).bool(message.alt);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified LiveInputModifiers message, length delimited. Does not implicitly {@link barc.browser.v1.LiveInputModifiers.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {barc.browser.v1.LiveInputModifiers.$Properties} message LiveInputModifiers message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                LiveInputModifiers.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a LiveInputModifiers message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.LiveInputModifiers & barc.browser.v1.LiveInputModifiers.$Shape} LiveInputModifiers
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                LiveInputModifiers.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.LiveInputModifiers();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.bool())
+                                    message.shift = value;
+                                else
+                                    delete message.shift;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.bool())
+                                    message.control = value;
+                                else
+                                    delete message.control;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.bool())
+                                    message.alt = value;
+                                else
+                                    delete message.alt;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a LiveInputModifiers message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.LiveInputModifiers & barc.browser.v1.LiveInputModifiers.$Shape} LiveInputModifiers
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                LiveInputModifiers.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a LiveInputModifiers message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.LiveInputModifiers} LiveInputModifiers
+                 */
+                LiveInputModifiers.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.LiveInputModifiers)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.LiveInputModifiers: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.LiveInputModifiers();
+                    if (object.shift != null)
+                        if (object.shift)
+                            message.shift = $Boolean(object.shift);
+                    if (object.control != null)
+                        if (object.control)
+                            message.control = $Boolean(object.control);
+                    if (object.alt != null)
+                        if (object.alt)
+                            message.alt = $Boolean(object.alt);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a LiveInputModifiers message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {barc.browser.v1.LiveInputModifiers} message LiveInputModifiers
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                LiveInputModifiers.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.shift = false;
+                        object.control = false;
+                        object.alt = false;
+                    }
+                    if (message.shift != null && $Object.hasOwnProperty.call(message, "shift"))
+                        object.shift = message.shift;
+                    if (message.control != null && $Object.hasOwnProperty.call(message, "control"))
+                        object.control = message.control;
+                    if (message.alt != null && $Object.hasOwnProperty.call(message, "alt"))
+                        object.alt = message.alt;
+                    return object;
+                };
+
+                /**
+                 * Converts this LiveInputModifiers to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                LiveInputModifiers.prototype.toJSON = function() {
+                    return LiveInputModifiers.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for LiveInputModifiers
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.LiveInputModifiers
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                LiveInputModifiers.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.LiveInputModifiers";
+                };
+
+                return LiveInputModifiers;
+            })();
+
+            v1.LiveActorSelection = (function() {
+
+                /**
+                 * Properties of a LiveActorSelection.
+                 * @typedef {Object} barc.browser.v1.LiveActorSelection.$Properties
+                 * @property {Array.<barc.browser.v1.UnitReference.$Properties>|null} [actors] LiveActorSelection actors
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a LiveActorSelection.
+                 * @memberof barc.browser.v1
+                 * @interface ILiveActorSelection
+                 * @augments barc.browser.v1.LiveActorSelection.$Properties
+                 * @deprecated Use barc.browser.v1.LiveActorSelection.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a LiveActorSelection.
+                 * @typedef {barc.browser.v1.LiveActorSelection.$Properties} barc.browser.v1.LiveActorSelection.$Shape
+                 */
+
+                /**
+                 * Constructs a new LiveActorSelection.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a LiveActorSelection.
+                 * @constructor
+                 * @param {barc.browser.v1.LiveActorSelection.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const LiveActorSelection = function (properties) {
+                    this.actors = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * LiveActorSelection actors.
+                 * @member {Array.<barc.browser.v1.UnitReference.$Properties>} actors
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @instance
+                 */
+                LiveActorSelection.prototype.actors = $util.emptyArray;
+
+                /**
+                 * Encodes the specified LiveActorSelection message. Does not implicitly {@link barc.browser.v1.LiveActorSelection.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {barc.browser.v1.LiveActorSelection.$Properties} message LiveActorSelection message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                LiveActorSelection.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.actors != null && message.actors.length)
+                        for (let i = 0; i < message.actors.length; ++i)
+                            $root.barc.browser.v1.UnitReference.encode(message.actors[i], writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified LiveActorSelection message, length delimited. Does not implicitly {@link barc.browser.v1.LiveActorSelection.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {barc.browser.v1.LiveActorSelection.$Properties} message LiveActorSelection message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                LiveActorSelection.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a LiveActorSelection message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.LiveActorSelection & barc.browser.v1.LiveActorSelection.$Shape} LiveActorSelection
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                LiveActorSelection.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.LiveActorSelection();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.actors && message.actors.length))
+                                    message.actors = [];
+                                message.actors.push($root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a LiveActorSelection message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.LiveActorSelection & barc.browser.v1.LiveActorSelection.$Shape} LiveActorSelection
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                LiveActorSelection.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a LiveActorSelection message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.LiveActorSelection} LiveActorSelection
+                 */
+                LiveActorSelection.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.LiveActorSelection)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.LiveActorSelection: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.LiveActorSelection();
+                    if (object.actors) {
+                        if (!$Array.isArray(object.actors))
+                            throw $TypeError(".barc.browser.v1.LiveActorSelection.actors: array expected");
+                        message.actors = $Array(object.actors.length);
+                        for (let i = 0; i < object.actors.length; ++i) {
+                            if (!$util.isObject(object.actors[i]))
+                                throw $TypeError(".barc.browser.v1.LiveActorSelection.actors: object expected");
+                            message.actors[i] = $root.barc.browser.v1.UnitReference.fromObject(object.actors[i], _depth + 1);
+                        }
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a LiveActorSelection message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {barc.browser.v1.LiveActorSelection} message LiveActorSelection
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                LiveActorSelection.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults)
+                        object.actors = [];
+                    if (message.actors && message.actors.length) {
+                        object.actors = $Array(message.actors.length);
+                        for (let j = 0; j < message.actors.length; ++j)
+                            object.actors[j] = $root.barc.browser.v1.UnitReference.toObject(message.actors[j], options, _depth + 1);
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this LiveActorSelection to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                LiveActorSelection.prototype.toJSON = function() {
+                    return LiveActorSelection.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for LiveActorSelection
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.LiveActorSelection
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                LiveActorSelection.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.LiveActorSelection";
+                };
+
+                return LiveActorSelection;
+            })();
+
+            v1.LiveManualInput = (function() {
+
+                /**
+                 * Properties of a LiveManualInput.
+                 * @typedef {Object} barc.browser.v1.LiveManualInput.$Properties
+                 * @property {barc.browser.v1.LiveInputSource|null} [source] LiveManualInput source
+                 * @property {barc.browser.v1.LiveInputModifiers.$Properties|null} [modifiers] LiveManualInput modifiers
+                 * @property {barc.browser.v1.LiveActorSelection.$Properties|null} [select] LiveManualInput select
+                 * @property {barc.browser.v1.LiveIntent.$Properties|null} [action] LiveManualInput action
+                 * @property {"select"|"action"} [input] LiveManualInput input
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a LiveManualInput.
+                 * @memberof barc.browser.v1
+                 * @interface ILiveManualInput
+                 * @augments barc.browser.v1.LiveManualInput.$Properties
+                 * @deprecated Use barc.browser.v1.LiveManualInput.$Properties instead.
+                 */
+
+                /**
+                 * Narrowed shape of a LiveManualInput.
+                 * @typedef {{
+                 *   source?: barc.browser.v1.LiveInputSource|null;
+                 *   modifiers?: barc.browser.v1.LiveInputModifiers.$Shape|null;
+                 *   select?: barc.browser.v1.LiveActorSelection.$Shape|null;
+                 *   action?: barc.browser.v1.LiveIntent.$Shape|null;
+                 *   $unknowns?: Array.<Uint8Array>;
+                 * } & (
+                 *   ({ input?: undefined; select?: null; action?: null }|{ input?: "select"; select: barc.browser.v1.LiveActorSelection.$Shape; action?: null }|{ input?: "action"; select?: null; action: barc.browser.v1.LiveIntent.$Shape })
+                 * )} barc.browser.v1.LiveManualInput.$Shape
+                 */
+
+                /**
+                 * Constructs a new LiveManualInput.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a LiveManualInput.
+                 * @constructor
+                 * @param {barc.browser.v1.LiveManualInput.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const LiveManualInput = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * LiveManualInput source.
+                 * @member {barc.browser.v1.LiveInputSource} source
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @instance
+                 */
+                LiveManualInput.prototype.source = 0;
+
+                /**
+                 * LiveManualInput modifiers.
+                 * @member {barc.browser.v1.LiveInputModifiers.$Properties|null|undefined} modifiers
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @instance
+                 */
+                LiveManualInput.prototype.modifiers = null;
+
+                /**
+                 * LiveManualInput select.
+                 * @member {barc.browser.v1.LiveActorSelection.$Properties|null|undefined} select
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @instance
+                 */
+                LiveManualInput.prototype.select = null;
+
+                /**
+                 * LiveManualInput action.
+                 * @member {barc.browser.v1.LiveIntent.$Properties|null|undefined} action
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @instance
+                 */
+                LiveManualInput.prototype.action = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                /**
+                 * LiveManualInput input.
+                 * @member {"select"|"action"|undefined} input
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @instance
+                 */
+                $Object.defineProperty(LiveManualInput.prototype, "input", {
+                    get: $util.oneOfGetter($oneOfFields = ["select", "action"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified LiveManualInput message. Does not implicitly {@link barc.browser.v1.LiveManualInput.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {barc.browser.v1.LiveManualInput.$Properties} message LiveManualInput message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                LiveManualInput.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.source != null && $Object.hasOwnProperty.call(message, "source") && message.source !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.source);
+                    if (message.modifiers != null && $Object.hasOwnProperty.call(message, "modifiers"))
+                        $root.barc.browser.v1.LiveInputModifiers.encode(message.modifiers, writer.uint32(/* id 2, wireType 2 =*/18).fork(), _depth + 1).ldelim();
+                    if (message.select != null && $Object.hasOwnProperty.call(message, "select"))
+                        $root.barc.browser.v1.LiveActorSelection.encode(message.select, writer.uint32(/* id 10, wireType 2 =*/82).fork(), _depth + 1).ldelim();
+                    if (message.action != null && $Object.hasOwnProperty.call(message, "action"))
+                        $root.barc.browser.v1.LiveIntent.encode(message.action, writer.uint32(/* id 11, wireType 2 =*/90).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified LiveManualInput message, length delimited. Does not implicitly {@link barc.browser.v1.LiveManualInput.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {barc.browser.v1.LiveManualInput.$Properties} message LiveManualInput message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                LiveManualInput.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a LiveManualInput message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.LiveManualInput & barc.browser.v1.LiveManualInput.$Shape} LiveManualInput
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                LiveManualInput.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.LiveManualInput();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.source = value;
+                                else
+                                    delete message.source;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 2)
+                                    break;
+                                message.modifiers = $root.barc.browser.v1.LiveInputModifiers.decode(reader, reader.uint32(), $undefined, _depth + 1, message.modifiers);
+                                continue;
+                            }
+                        case 10: {
+                                if (wireType !== 2)
+                                    break;
+                                message.select = $root.barc.browser.v1.LiveActorSelection.decode(reader, reader.uint32(), $undefined, _depth + 1, message.select);
+                                message.input = "select";
+                                continue;
+                            }
+                        case 11: {
+                                if (wireType !== 2)
+                                    break;
+                                message.action = $root.barc.browser.v1.LiveIntent.decode(reader, reader.uint32(), $undefined, _depth + 1, message.action);
+                                message.input = "action";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a LiveManualInput message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.LiveManualInput & barc.browser.v1.LiveManualInput.$Shape} LiveManualInput
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                LiveManualInput.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a LiveManualInput message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.LiveManualInput} LiveManualInput
+                 */
+                LiveManualInput.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.LiveManualInput)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.LiveManualInput: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.LiveManualInput();
+                    if (object.source !== 0 && (typeof object.source !== "string" || $root.barc.browser.v1.LiveInputSource[object.source] !== 0))
+                        switch (object.source) {
+                        case "LIVE_INPUT_SOURCE_UNSPECIFIED":
+                        case 0:
+                            message.source = 0;
+                            break;
+                        case "LIVE_INPUT_SOURCE_POINTER":
+                        case 1:
+                            message.source = 1;
+                            break;
+                        case "LIVE_INPUT_SOURCE_KEYBOARD":
+                        case 2:
+                            message.source = 2;
+                            break;
+                        default:
+                            if (typeof object.source === "number" && (object.source | 0) === object.source)
+                                message.source = object.source;
+                        }
+                    if (object.modifiers != null) {
+                        if (!$util.isObject(object.modifiers))
+                            throw $TypeError(".barc.browser.v1.LiveManualInput.modifiers: object expected");
+                        message.modifiers = $root.barc.browser.v1.LiveInputModifiers.fromObject(object.modifiers, _depth + 1);
+                    }
+                    if (object.select != null) {
+                        if (!$util.isObject(object.select))
+                            throw $TypeError(".barc.browser.v1.LiveManualInput.select: object expected");
+                        message.select = $root.barc.browser.v1.LiveActorSelection.fromObject(object.select, _depth + 1);
+                    }
+                    if (object.action != null) {
+                        if (!$util.isObject(object.action))
+                            throw $TypeError(".barc.browser.v1.LiveManualInput.action: object expected");
+                        message.action = $root.barc.browser.v1.LiveIntent.fromObject(object.action, _depth + 1);
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a LiveManualInput message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {barc.browser.v1.LiveManualInput} message LiveManualInput
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                LiveManualInput.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.source = options.enums === $String ? "LIVE_INPUT_SOURCE_UNSPECIFIED" : 0;
+                        object.modifiers = null;
+                    }
+                    if (message.source != null && $Object.hasOwnProperty.call(message, "source"))
+                        object.source = options.enums === $String ? $root.barc.browser.v1.LiveInputSource[message.source] === $undefined ? message.source : $root.barc.browser.v1.LiveInputSource[message.source] : message.source;
+                    if (message.modifiers != null && $Object.hasOwnProperty.call(message, "modifiers"))
+                        object.modifiers = $root.barc.browser.v1.LiveInputModifiers.toObject(message.modifiers, options, _depth + 1);
+                    if (message.select != null && $Object.hasOwnProperty.call(message, "select")) {
+                        object.select = $root.barc.browser.v1.LiveActorSelection.toObject(message.select, options, _depth + 1);
+                        if (options.oneofs)
+                            object.input = "select";
+                    }
+                    if (message.action != null && $Object.hasOwnProperty.call(message, "action")) {
+                        object.action = $root.barc.browser.v1.LiveIntent.toObject(message.action, options, _depth + 1);
+                        if (options.oneofs)
+                            object.input = "action";
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this LiveManualInput to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                LiveManualInput.prototype.toJSON = function() {
+                    return LiveManualInput.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for LiveManualInput
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.LiveManualInput
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                LiveManualInput.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.LiveManualInput";
+                };
+
+                return LiveManualInput;
+            })();
+
             v1.LiveResult = (function() {
 
                 /**
@@ -11580,7 +12494,8 @@ export const barc = $root.barc = (() => {
                  * @property {barc.browser.v1.LiveBootstrap.$Properties|null} [initialize] LiveGuestRequest initialize
                  * @property {barc.browser.v1.LiveObservation.$Properties|null} [observation] LiveGuestRequest observation
                  * @property {barc.browser.v1.LiveResult.$Properties|null} [result] LiveGuestRequest result
-                 * @property {"initialize"|"observation"|"result"} [input] LiveGuestRequest input
+                 * @property {barc.browser.v1.LiveManualInput.$Properties|null} [manualInput] LiveGuestRequest manualInput
+                 * @property {"initialize"|"observation"|"result"|"manualInput"} [input] LiveGuestRequest input
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -11602,9 +12517,10 @@ export const barc = $root.barc = (() => {
                  *   initialize?: barc.browser.v1.LiveBootstrap.$Shape|null;
                  *   observation?: barc.browser.v1.LiveObservation.$Shape|null;
                  *   result?: barc.browser.v1.LiveResult.$Shape|null;
+                 *   manualInput?: barc.browser.v1.LiveManualInput.$Shape|null;
                  *   $unknowns?: Array.<Uint8Array>;
                  * } & (
-                 *   ({ input?: undefined; initialize?: null; observation?: null; result?: null }|{ input?: "initialize"; initialize: barc.browser.v1.LiveBootstrap.$Shape; observation?: null; result?: null }|{ input?: "observation"; initialize?: null; observation: barc.browser.v1.LiveObservation.$Shape; result?: null }|{ input?: "result"; initialize?: null; observation?: null; result: barc.browser.v1.LiveResult.$Shape })
+                 *   ({ input?: undefined; initialize?: null; observation?: null; result?: null; manualInput?: null }|{ input?: "initialize"; initialize: barc.browser.v1.LiveBootstrap.$Shape; observation?: null; result?: null; manualInput?: null }|{ input?: "observation"; initialize?: null; observation: barc.browser.v1.LiveObservation.$Shape; result?: null; manualInput?: null }|{ input?: "result"; initialize?: null; observation?: null; result: barc.browser.v1.LiveResult.$Shape; manualInput?: null }|{ input?: "manualInput"; initialize?: null; observation?: null; result?: null; manualInput: barc.browser.v1.LiveManualInput.$Shape })
                  * )} barc.browser.v1.LiveGuestRequest.$Shape
                  */
 
@@ -11679,17 +12595,25 @@ export const barc = $root.barc = (() => {
                  */
                 LiveGuestRequest.prototype.result = null;
 
+                /**
+                 * LiveGuestRequest manualInput.
+                 * @member {barc.browser.v1.LiveManualInput.$Properties|null|undefined} manualInput
+                 * @memberof barc.browser.v1.LiveGuestRequest
+                 * @instance
+                 */
+                LiveGuestRequest.prototype.manualInput = null;
+
                 // OneOf field names bound to virtual getters and setters
                 let $oneOfFields;
 
                 /**
                  * LiveGuestRequest input.
-                 * @member {"initialize"|"observation"|"result"|undefined} input
+                 * @member {"initialize"|"observation"|"result"|"manualInput"|undefined} input
                  * @memberof barc.browser.v1.LiveGuestRequest
                  * @instance
                  */
                 $Object.defineProperty(LiveGuestRequest.prototype, "input", {
-                    get: $util.oneOfGetter($oneOfFields = ["initialize", "observation", "result"]),
+                    get: $util.oneOfGetter($oneOfFields = ["initialize", "observation", "result", "manualInput"]),
                     set: $util.oneOfSetter($oneOfFields)
                 });
 
@@ -11723,6 +12647,8 @@ export const barc = $root.barc = (() => {
                         $root.barc.browser.v1.LiveObservation.encode(message.observation, writer.uint32(/* id 11, wireType 2 =*/90).fork(), _depth + 1).ldelim();
                     if (message.result != null && $Object.hasOwnProperty.call(message, "result"))
                         $root.barc.browser.v1.LiveResult.encode(message.result, writer.uint32(/* id 12, wireType 2 =*/98).fork(), _depth + 1).ldelim();
+                    if (message.manualInput != null && $Object.hasOwnProperty.call(message, "manualInput"))
+                        $root.barc.browser.v1.LiveManualInput.encode(message.manualInput, writer.uint32(/* id 13, wireType 2 =*/106).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -11834,6 +12760,13 @@ export const barc = $root.barc = (() => {
                                 message.input = "result";
                                 continue;
                             }
+                        case 13: {
+                                if (wireType !== 2)
+                                    break;
+                                message.manualInput = $root.barc.browser.v1.LiveManualInput.decode(reader, reader.uint32(), $undefined, _depth + 1, message.manualInput);
+                                message.input = "manualInput";
+                                continue;
+                            }
                         }
                         reader.skipType(wireType, _depth, tag);
                         if (!reader.discardUnknown) {
@@ -11927,6 +12860,11 @@ export const barc = $root.barc = (() => {
                             throw $TypeError(".barc.browser.v1.LiveGuestRequest.result: object expected");
                         message.result = $root.barc.browser.v1.LiveResult.fromObject(object.result, _depth + 1);
                     }
+                    if (object.manualInput != null) {
+                        if (!$util.isObject(object.manualInput))
+                            throw $TypeError(".barc.browser.v1.LiveGuestRequest.manualInput: object expected");
+                        message.manualInput = $root.barc.browser.v1.LiveManualInput.fromObject(object.manualInput, _depth + 1);
+                    }
                     return message;
                 };
 
@@ -11996,6 +12934,11 @@ export const barc = $root.barc = (() => {
                         object.result = $root.barc.browser.v1.LiveResult.toObject(message.result, options, _depth + 1);
                         if (options.oneofs)
                             object.input = "result";
+                    }
+                    if (message.manualInput != null && $Object.hasOwnProperty.call(message, "manualInput")) {
+                        object.manualInput = $root.barc.browser.v1.LiveManualInput.toObject(message.manualInput, options, _depth + 1);
+                        if (options.oneofs)
+                            object.input = "manualInput";
                     }
                     return object;
                 };

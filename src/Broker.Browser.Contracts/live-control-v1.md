@@ -29,6 +29,18 @@ deltas, and keepalives cannot refresh a basis. The broker and native producer
 bind a basis token to exact match/process/channel, state sequence, frame, native
 snapshot monotonic stamp, and a server-side monotonic deadline.
 
+The native producer reports capabilities and snapshot metadata through
+`HighBarLiveControl.ReportLiveState`. The coordinator client calls it only for
+the exact periodic snapshot emitted by the engine thread. The report binds the
+plugin, process, match and state-channel incarnations, state sequence, frame,
+native monotonic stamp, effective cadence, perspective team, and bounded unit
+metadata. Owned actors and currently VISUAL targets carry producer-authored
+lifetimes; hidden and radar-only enemies are excluded. The broker joins this
+report to the production snapshot by the exact incarnation/sequence/frame
+tuple. It never derives a lifetime from observation order and never treats a
+browser echo as authority. Capability reports use the same authenticated
+reporter binding and must arrive before live arm.
+
 Move exposes only REPLACE and APPEND. The native adapter maps APPEND to the
 installed engine SHIFT bit (`32`); no raw engine option bits cross this API.
 Stop and Move REPLACE use `COMMAND_CONFLICT_REPLACE_CURRENT`; Move APPEND uses
@@ -46,3 +58,12 @@ native admission, native dispatch, and unknown outcomes remain separate.
 `APPLIED` is a native-dispatch status only. Result sequence supplies a replay
 cursor, and the same `LiveResult` reaches UI consumers and a later bounded
 `LiveGuestRequest` so guest policy can consume outcomes.
+
+One guest intent expands atomically into one child per actor with exact child
+index/count. Every native `LiveCommandBatch` child contains exactly one actor
+reference, one semantic action, and exactly one matching legacy command;
+`max_batch_commands` is therefore `1` for this profile. An extra embedded
+legacy command is refused rather than inheriting the actor fence. Admission
+reserves the worst-case terminal events for every child and stage. Parent and
+result bounds are independent: a parent slot is refused when its full child
+result reservation would exceed retained or pending-result capacity.

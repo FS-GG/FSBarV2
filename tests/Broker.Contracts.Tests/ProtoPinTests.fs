@@ -17,7 +17,7 @@ let private expectedHashes : (string * string) list =
       "common.proto",      "15072451c53f4428bc3c1c1c35e21be5f79a2461c451fa1be523ce26667826b1" ]
 
 let private expectedLiveControlHash =
-    "532ebc1f73f6bc76a5d9b49efc0a0588d760d3f5f85230b4e4aac6538c22ccd7"
+    "34e37fd62bcac2758cb6383deae34d3523cb40ce3470034b1fb2ee2ba3bbc240"
 
 /// Vendored protos live next to the Broker.Contracts project. Test runner
 /// sits at `tests/Broker.Contracts.Tests/bin/Debug/net10.0/`; walk up to

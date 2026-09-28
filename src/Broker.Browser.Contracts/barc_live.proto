@@ -20,6 +20,12 @@ enum MovePolicy {
   MOVE_POLICY_APPEND = 2;
 }
 
+enum LiveInputSource {
+  LIVE_INPUT_SOURCE_UNSPECIFIED = 0;
+  LIVE_INPUT_SOURCE_POINTER = 1;
+  LIVE_INPUT_SOURCE_KEYBOARD = 2;
+}
+
 enum ControllerStage {
   CONTROLLER_STAGE_UNSPECIFIED = 0;
   CONTROLLER_STAGE_ARM_REQUESTED = 1;
@@ -156,6 +162,28 @@ message LiveIntent {
   }
 }
 
+message LiveInputModifiers {
+  bool shift = 1;
+  bool control = 2;
+  bool alt = 3;
+}
+
+message LiveActorSelection {
+  repeated UnitReference actors = 1;
+}
+
+// Normalized, bounded manual input delivered to the guest. A selection input
+// updates policy context without issuing an action. An action carries the
+// complete actor set and semantic Stop/Move/Attack intent for that basis.
+message LiveManualInput {
+  LiveInputSource source = 1;
+  LiveInputModifiers modifiers = 2;
+  oneof input {
+    LiveActorSelection select = 10;
+    LiveIntent action = 11;
+  }
+}
+
 message LiveResult {
   uint64 result_sequence = 1;
   bytes parent_id = 2;
@@ -185,6 +213,7 @@ message LiveGuestRequest {
     LiveBootstrap initialize = 10;
     LiveObservation observation = 11;
     LiveResult result = 12;
+    LiveManualInput manual_input = 13;
   }
 }
 
