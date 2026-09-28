@@ -37,6 +37,7 @@
       "receivedSequence": "0"
     },
     "teamEconomy": {
+      "teamId": 0,
       "metal": {
         "current": 0,
         "storage": 0,

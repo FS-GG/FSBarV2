@@ -719,7 +719,7 @@ export namespace barc {
                 id: Long;
 
                 /** ObservedUnit definitionId. */
-                definitionId: number;
+                definitionId?: (number|null);
 
                 /** ObservedUnit teamId. */
                 teamId?: (number|null);
@@ -1094,7 +1094,7 @@ export namespace barc {
                 $unknowns?: Uint8Array[];
 
                 /** TeamEconomy teamId. */
-                teamId: number;
+                teamId?: (number|null);
 
                 /** TeamEconomy metal. */
                 metal?: (barc.browser.v1.ResourceAmount.$Properties|null);

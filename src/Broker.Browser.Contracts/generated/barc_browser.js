@@ -1936,11 +1936,11 @@ export const barc = $root.barc = (() => {
 
                 /**
                  * ObservedUnit definitionId.
-                 * @member {number} definitionId
+                 * @member {number|null|undefined} definitionId
                  * @memberof barc.browser.v1.ObservedUnit
                  * @instance
                  */
-                ObservedUnit.prototype.definitionId = 0;
+                ObservedUnit.prototype.definitionId = null;
 
                 /**
                  * ObservedUnit teamId.
@@ -1994,6 +1994,12 @@ export const barc = $root.barc = (() => {
                 let $oneOfFields;
 
                 // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(ObservedUnit.prototype, "_definitionId", {
+                    get: $util.oneOfGetter($oneOfFields = ["definitionId"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
                 $Object.defineProperty(ObservedUnit.prototype, "_teamId", {
                     get: $util.oneOfGetter($oneOfFields = ["teamId"]),
                     set: $util.oneOfSetter($oneOfFields)
@@ -2035,7 +2041,7 @@ export const barc = $root.barc = (() => {
                         throw $Error("max depth exceeded");
                     if (message.id != null && $Object.hasOwnProperty.call(message, "id") && (typeof message.id === "object" ? message.id.low || message.id.high : message.id !== 0))
                         writer.uint32(/* id 1, wireType 0 =*/8).uint64(message.id);
-                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId") && message.definitionId !== 0)
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
                         writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.definitionId);
                     if (message.teamId != null && $Object.hasOwnProperty.call(message, "teamId"))
                         writer.uint32(/* id 3, wireType 0 =*/24).int32(message.teamId);
@@ -2118,10 +2124,8 @@ export const barc = $root.barc = (() => {
                         case 2: {
                                 if (wireType !== 0)
                                     break;
-                                if (value = reader.uint32())
-                                    message.definitionId = value;
-                                else
-                                    delete message.definitionId;
+                                message.definitionId = reader.uint32();
+                                message._definitionId = "definitionId";
                                 continue;
                             }
                         case 3: {
@@ -2229,8 +2233,7 @@ export const barc = $root.barc = (() => {
                             else if (typeof object.id === "object")
                                 message.id = new $util.LongBits(object.id.low >>> 0, object.id.high >>> 0).toNumber(true);
                     if (object.definitionId != null)
-                        if ($Number(object.definitionId) !== 0)
-                            message.definitionId = object.definitionId >>> 0;
+                        message.definitionId = object.definitionId >>> 0;
                     if (object.teamId != null)
                         message.teamId = object.teamId | 0;
                     if (object.observation !== 0 && (typeof object.observation !== "string" || $root.barc.browser.v1.ObservationKind[object.observation] !== 0))
@@ -2299,7 +2302,6 @@ export const barc = $root.barc = (() => {
                             object.id = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
                         } else
                             object.id = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
-                        object.definitionId = 0;
                         object.observation = options.enums === $String ? "OBSERVATION_KIND_UNSPECIFIED" : 0;
                         object.position = null;
                     }
@@ -3033,11 +3035,11 @@ export const barc = $root.barc = (() => {
 
                 /**
                  * TeamEconomy teamId.
-                 * @member {number} teamId
+                 * @member {number|null|undefined} teamId
                  * @memberof barc.browser.v1.TeamEconomy
                  * @instance
                  */
-                TeamEconomy.prototype.teamId = 0;
+                TeamEconomy.prototype.teamId = null;
 
                 /**
                  * TeamEconomy metal.
@@ -3055,6 +3057,15 @@ export const barc = $root.barc = (() => {
                  */
                 TeamEconomy.prototype.energy = null;
 
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TeamEconomy.prototype, "_teamId", {
+                    get: $util.oneOfGetter($oneOfFields = ["teamId"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
                 /**
                  * Encodes the specified TeamEconomy message. Does not implicitly {@link barc.browser.v1.TeamEconomy.verify|verify} messages.
                  * @function encode
@@ -3071,7 +3082,7 @@ export const barc = $root.barc = (() => {
                         _depth = 0;
                     if (_depth > $util.recursionLimit)
                         throw $Error("max depth exceeded");
-                    if (message.teamId != null && $Object.hasOwnProperty.call(message, "teamId") && message.teamId !== 0)
+                    if (message.teamId != null && $Object.hasOwnProperty.call(message, "teamId"))
                         writer.uint32(/* id 1, wireType 0 =*/8).int32(message.teamId);
                     if (message.metal != null && $Object.hasOwnProperty.call(message, "metal"))
                         $root.barc.browser.v1.ResourceAmount.encode(message.metal, writer.uint32(/* id 2, wireType 2 =*/18).fork(), _depth + 1).ldelim();
@@ -3137,10 +3148,8 @@ export const barc = $root.barc = (() => {
                         case 1: {
                                 if (wireType !== 0)
                                     break;
-                                if (value = reader.int32())
-                                    message.teamId = value;
-                                else
-                                    delete message.teamId;
+                                message.teamId = reader.int32();
+                                message._teamId = "teamId";
                                 continue;
                             }
                         case 2: {
@@ -3207,8 +3216,7 @@ export const barc = $root.barc = (() => {
                         throw $Error("max depth exceeded");
                     let message = new $root.barc.browser.v1.TeamEconomy();
                     if (object.teamId != null)
-                        if ($Number(object.teamId) !== 0)
-                            message.teamId = object.teamId | 0;
+                        message.teamId = object.teamId | 0;
                     if (object.metal != null) {
                         if (!$util.isObject(object.metal))
                             throw $TypeError(".barc.browser.v1.TeamEconomy.metal: object expected");
@@ -3240,7 +3248,6 @@ export const barc = $root.barc = (() => {
                         throw $Error("max depth exceeded");
                     let object = {};
                     if (options.defaults) {
-                        object.teamId = 0;
                         object.metal = null;
                         object.energy = null;
                     }

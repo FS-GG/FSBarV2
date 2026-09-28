@@ -27,6 +27,7 @@
       },
       {
         "id": "99",
+        "definitionId": 0,
         "observation": "OBSERVATION_KIND_RADAR",
         "position": {
           "x": 73.25,

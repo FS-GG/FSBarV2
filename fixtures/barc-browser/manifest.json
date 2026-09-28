@@ -9,8 +9,8 @@
     "long": "5.3.2"
   },
   "maxFrameBytes": 65536,
-  "protoSha256": "7daddc92b3e4cff062920dff37d23ef6ec881844335c578273b2f19647a9f975",
-  "orderedBundleSha256": "df3d4a7a9f0cb06498331b685818d7feb4c169e5a7ffe9f12d3d3eea9f3264ae",
+  "protoSha256": "752ef84e8631de6e08f5ef94851fcbd918e451ebfb5d446a705baa317f65ea0f",
+  "orderedBundleSha256": "0cd8abc6beaa7f92425c6e56ba7faa3ff7d62d30989a6ab95134a72d4e420bbf",
   "cases": [
     {
       "name": "auth-incomplete",
@@ -114,7 +114,7 @@
       "wire": "wire/observation-asymmetric.bin",
       "semantic": "semantic/observation-asymmetric.json",
       "expected": "decode",
-      "sha256": "87569b7f367a891ad6f6c578bed30a21af9c5f77519b0de33baa00366cf09a38"
+      "sha256": "d684878476a93a2277b7ebc30be475c868fb69503c14d8a9488beb3c6411c80b"
     },
     {
       "name": "observation-optional-absent",
@@ -128,7 +128,7 @@
       "wire": "wire/observation-optional-present-zero.bin",
       "semantic": "semantic/observation-optional-present-zero.json",
       "expected": "decode",
-      "sha256": "dd775d3ab39538ddf5a420a974df7d33e2eb37f039cef8b930ebd091a1cd6e3f"
+      "sha256": "88d2f4b70ade6d10a7c38964e6c94e0483c78855b3c4a7e81fe7a05bc4d33ad2"
     },
     {
       "name": "observation-unknown-enum",
@@ -142,7 +142,7 @@
       "wire": "wire/observation-unknown-field.bin",
       "semantic": "semantic/observation-unknown-field.json",
       "expected": "decode-and-drop-unknown-on-reencode",
-      "sha256": "21f7791fb08174cb781a0042eaf0b038dfc55e2ca6eae626e1340fb1445b7a8c"
+      "sha256": "1aeeaf1f44e6cc72dc2c12ce88318b54a66919d7e9cecbdd2db1e632f0005e0f"
     },
     {
       "name": "oversized-frame",
@@ -154,7 +154,7 @@
       "name": "truncated-observation",
       "wire": "wire/truncated-observation.bin",
       "expected": "decode-refusal",
-      "sha256": "35a49d7f33bd69a98c8ab4d951cc41f5baaeffbd8aac89d691cc5156eb03920a"
+      "sha256": "6d0df8368a322026455217debcd36b5b8b3f723cb17c9948b71590cbb7c636db"
     },
     {
       "name": "unknown-envelope-wire",

@@ -73,7 +73,7 @@ message Position3 {
 
 message ObservedUnit {
   uint64 id = 1;
-  uint32 definition_id = 2;
+  optional uint32 definition_id = 2;
   optional int32 team_id = 3;
   ObservationKind observation = 4;
   Position3 position = 5;
@@ -96,7 +96,7 @@ message ResourceAmount {
 }
 
 message TeamEconomy {
-  int32 team_id = 1;
+  optional int32 team_id = 1;
   ResourceAmount metal = 2;
   ResourceAmount energy = 3;
 }
