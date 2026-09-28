@@ -12,6 +12,16 @@ module Audit =
         | Unknown
         | NotAttempted
 
+    type NativeAdmissionOutcome =
+        | Accepted
+        | RejectedInvalid
+        | RejectedQueueFull
+        | NativeUnknown
+
+    type NativeDispatchOutcome =
+        | Applied
+        | Skipped of nativeStatus:uint32
+
     type AuditEvent =
         | ClientConnected of at:DateTimeOffset * id:ScriptingClientId * version:Version
         | ClientDisconnected of at:DateTimeOffset * id:ScriptingClientId * reason:string
@@ -31,6 +41,9 @@ module Audit =
         | CoordinatorCommandChannelOpened of at:DateTimeOffset * pluginId:string
         | CoordinatorCommandChannelClosed of at:DateTimeOffset * pluginId:string * reason:string
         | CoordinatorCommandDelivery of at:DateTimeOffset * sessionId:Guid * originatingClient:ScriptingClientId * parentCommandId:Guid * childIndex:int * childCount:int * actingUnit:uint32 * batchSeq:uint64 * correlation:uint64 * outcome:CoordinatorDeliveryOutcome * detail:string
+        | CoordinatorNativeCommandResult of at:DateTimeOffset * sessionId:Guid * originatingClient:ScriptingClientId * parentCommandId:Guid * childIndex:int * childCount:int * actingUnit:uint32 * batchSeq:uint64 * correlation:uint64 * channelIncarnation:string * outcome:NativeAdmissionOutcome * acceptedCommandCount:uint32 * detail:string
+        | CoordinatorNativeCommandDispatch of at:DateTimeOffset * sessionId:Guid * originatingClient:ScriptingClientId * parentCommandId:Guid * childIndex:int * childCount:int * commandIndex:uint32 * actingUnit:uint32 * batchSeq:uint64 * correlation:uint64 * channelIncarnation:string * outcome:NativeDispatchOutcome * frame:uint32 * detail:string
+        | CoordinatorTerminalFeedbackUnavailable of at:DateTimeOffset * originatingClient:ScriptingClientId * parentCommandId:Guid * stage:string * detail:string
         | CoordinatorStateGap of at:DateTimeOffset * pluginId:string * lastSeq:uint64 * receivedSeq:uint64
         | CoordinatorStateInvalidated of at:DateTimeOffset * pluginId:string * lastSeq:uint64 * receivedSeq:uint64 * detail:string
 

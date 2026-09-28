@@ -1,6 +1,8 @@
 namespace Broker.Protocol
 
 open System
+open System.Collections.Generic
+open System.Threading.Tasks
 open System.Threading.Channels
 open Broker.Core
 open FSBarV2.Broker.Contracts
@@ -9,7 +11,8 @@ module BrokerState =
 
     type ClientChannel =
         { id: ScriptingClientId
-          mutable subscriber: Channel<StateMsg> option }
+          mutable subscriber: Channel<StateMsg> option
+          feedbackBacklog: Queue<StateMsg> }
 
     type OutboundDelivery =
         { sessionId: Guid
@@ -20,6 +23,8 @@ module BrokerState =
     type CoordinatorCommandLease =
         { sessionId: Guid
           leaseId: Guid
+          pluginId: string
+          channelIncarnation: string
           reader: ChannelReader<OutboundDelivery> }
 
     type CoordinatorCommandClaim =
@@ -31,7 +36,36 @@ module BrokerState =
         { sessionId: Guid
           leaseId: Guid
           channel: Channel<OutboundDelivery>
-          mutable readerClaimed: bool }
+          mutable readerClaimed: bool
+          mutable pluginId: string
+          mutable channelIncarnation: string }
+
+    type NativeResultDisposition =
+        | Recorded
+        | Duplicate
+        | Late
+
+    type NativeIdentity =
+        { sessionId: Guid
+          leaseId: Guid
+          pluginId: string
+          channelIncarnation: string
+          parentCommandId: Guid
+          originatingClient: ScriptingClientId
+          childIndex: int
+          childCount: int
+          targetUnitId: uint32
+          batchSeq: uint64
+          correlation: uint64
+          expectedDispatches: uint32
+          feedbackReserved: bool
+          mutable resultPublished: bool
+          mutable acceptedCommandCount: uint32 option
+          mutable dispatchesSeen: uint32 }
+
+    type PendingNativeResult =
+        { identity: NativeIdentity
+          completion: TaskCompletionSource<Highbar.V1.CommandBatchResult> }
 
     type SnapshotBroadcaster() =
         let observers = ResizeArray<IObserver<Snapshot.GameStateSnapshot>>()
@@ -73,6 +107,11 @@ module BrokerState =
           // can refresh the timestamp without rebuilding the session record.
           mutable activePluginId: string option
           mutable lastHeartbeatAt: DateTimeOffset
+          pendingNativeResults: Dictionary<struct(string * uint64 * uint64), PendingNativeResult>
+          completedNativeResults: HashSet<struct(string * uint64 * uint64)>
+          completedNativeResultOrder: Queue<struct(string * uint64 * uint64)>
+          nativeIdentities: Dictionary<struct(string * uint64 * uint64), NativeIdentity>
+          feedbackReservations: Dictionary<ScriptingClientId, int>
           clients: System.Collections.Concurrent.ConcurrentDictionary<ScriptingClientId, ClientChannel>
           stateLock: obj
           snapshotBroadcaster: SnapshotBroadcaster }
@@ -99,6 +138,11 @@ module BrokerState =
           invalidity = None
           activePluginId = None
           lastHeartbeatAt = DateTimeOffset.MinValue
+          pendingNativeResults = Dictionary()
+          completedNativeResults = HashSet()
+          completedNativeResultOrder = Queue()
+          nativeIdentities = Dictionary()
+          feedbackReservations = Dictionary()
           clients = System.Collections.Concurrent.ConcurrentDictionary<ScriptingClientId, ClientChannel>()
           stateLock = obj()
           snapshotBroadcaster = SnapshotBroadcaster() }
@@ -122,7 +166,9 @@ module BrokerState =
         { sessionId = sessionId
           leaseId = Guid.NewGuid()
           channel = Channel.CreateBounded<OutboundDelivery>(opts)
-          readerClaimed = false }
+          readerClaimed = false
+          pluginId = ""
+          channelIncarnation = "" }
 
     let openHostSession
         (config: Lobby.LobbyConfig)
@@ -208,17 +254,175 @@ module BrokerState =
                  delivery.parentCommandId, index, delivery.batches.Length, batch.TargetUnitId,
                  batch.BatchSeq, correlation, outcome, detail))
 
+    let private nativeKey incarnation batchSeq correlation =
+        struct (incarnation, batchSeq, correlation)
+
+    // Each parent queue slot may expand to several native children. Keep a
+    // finite correlated-result window without making a valid multi-unit
+    // parent depend on the parent-envelope queue depth.
+    let private retentionCapacity (hub: Hub) = max 16 (hub.commandQueueCapacity * 16)
+    let private maxRetainedIssues = 4
+    let private maxRetainedFieldChars = 128
+    let private maxRetainedDetailChars = 512
+
+    let private truncateText maxChars (value: string) =
+        if value.Length <= maxChars then value
+        else value.Substring(0, maxChars)
+
+    let private feedbackReservationCountLocked (hub: Hub) clientId =
+        match hub.feedbackReservations.TryGetValue clientId with
+        | true, count -> count
+        | false, _ -> 0
+
+    let private changeFeedbackReservationLocked (hub: Hub) clientId delta =
+        let count = feedbackReservationCountLocked hub clientId + delta
+        if count > 0 then hub.feedbackReservations[clientId] <- count
+        else hub.feedbackReservations.Remove clientId |> ignore
+
+    let private enqueueFeedbackLocked (hub: Hub) (clientId: ScriptingClientId) parentId stage reserved (message: StateMsg) =
+        match reserved, hub.clients.TryGetValue clientId with
+        | false, _ ->
+            hub.auditEmitter
+                (Audit.AuditEvent.CoordinatorTerminalFeedbackUnavailable
+                    (DateTimeOffset.UtcNow, clientId, parentId, stage,
+                     "originating scripting client was not registered at admission; typed audit retained"))
+        | true, (true, client) ->
+            match client.subscriber with
+            | Some channel when channel.Writer.TryWrite message ->
+                changeFeedbackReservationLocked hub clientId -1
+            | _ ->
+                // Admission reserved this exact terminal-result slot before
+                // forwarding, so this enqueue cannot exceed the declared cap.
+                client.feedbackBacklog.Enqueue message
+                changeFeedbackReservationLocked hub clientId -1
+        | true, (false, _) ->
+            changeFeedbackReservationLocked hub clientId -1
+            hub.auditEmitter
+                (Audit.AuditEvent.CoordinatorTerminalFeedbackUnavailable
+                    (DateTimeOffset.UtcNow, clientId, parentId, stage,
+                     "originating scripting client is no longer registered; typed audit retained"))
+
+    let private resultDetail (result: Highbar.V1.CommandBatchResult) =
+        result.Issues
+        |> Seq.truncate maxRetainedIssues
+        |> Seq.map (fun issue ->
+            if String.IsNullOrWhiteSpace issue.Detail then string issue.Code else issue.Detail)
+        |> String.concat "; "
+        |> truncateText maxRetainedDetailChars
+
+    let private publishNativeResultLocked
+        (hub: Hub)
+        (identity: NativeIdentity)
+        (outcome: Audit.NativeAdmissionOutcome)
+        (acceptedCount: uint32)
+        (issues: seq<Highbar.V1.CommandIssue>)
+        (detail: string) =
+        let detail = truncateText maxRetainedDetailChars detail
+        hub.auditEmitter
+            (Audit.AuditEvent.CoordinatorNativeCommandResult
+                (DateTimeOffset.UtcNow, identity.sessionId, identity.originatingClient,
+                 identity.parentCommandId, identity.childIndex, identity.childCount,
+                 identity.targetUnitId, identity.batchSeq, identity.correlation,
+                 identity.channelIncarnation, outcome, acceptedCount, detail))
+        let result = NativeCommandResult.empty()
+        result.ParentCommandId <- Google.Protobuf.ByteString.CopyFrom(identity.parentCommandId.ToByteArray())
+        let (ScriptingClientId clientName) = identity.originatingClient
+        result.OriginatingClient <- clientName
+        result.ChildIndex <- uint32 identity.childIndex
+        result.ChildCount <- uint32 identity.childCount
+        result.TargetUnitId <- identity.targetUnitId
+        result.BatchSeq <- identity.batchSeq
+        result.ClientCommandId <- identity.correlation
+        result.Status <-
+            match outcome with
+            | Audit.Accepted -> NativeCommandResultStatus.NativeCommandAccepted
+            | Audit.RejectedInvalid -> NativeCommandResultStatus.NativeCommandRejectedInvalid
+            | Audit.RejectedQueueFull -> NativeCommandResultStatus.NativeCommandRejectedQueueFull
+            | Audit.NativeUnknown -> NativeCommandResultStatus.NativeCommandUnknown
+        result.AcceptedCommandCount <- acceptedCount
+        for source in issues |> Seq.truncate maxRetainedIssues do
+            let issue = NativeCommandIssue.empty()
+            issue.Code <- int source.Code
+            issue.CommandIndex <- source.CommandIndex
+            issue.FieldPath <- truncateText maxRetainedFieldChars source.FieldPath
+            issue.Detail <- truncateText maxRetainedDetailChars source.Detail
+            issue.RetryHint <- int source.RetryHint
+            result.Issues.Add issue
+        result.Detail <- detail
+        result.ChannelIncarnation <- identity.channelIncarnation
+        let message = StateMsg.empty()
+        message.NativeCommandResult <- result
+        enqueueFeedbackLocked hub identity.originatingClient identity.parentCommandId "native-admission" identity.feedbackReserved message
+        identity.resultPublished <- true
+
+    let private completePendingUnknownLocked (hub: Hub) (pending: PendingNativeResult) detail =
+        let key = nativeKey pending.identity.channelIncarnation pending.identity.batchSeq pending.identity.correlation
+        if hub.pendingNativeResults.Remove key then
+            publishNativeResultLocked hub pending.identity Audit.NativeUnknown 0u Seq.empty detail
+            pending.completion.TrySetCanceled() |> ignore
+
+    let private completeIdentityUnknownLocked (hub: Hub) (identity: NativeIdentity) detail =
+        if not identity.resultPublished then
+            publishNativeResultLocked hub identity Audit.NativeUnknown 0u Seq.empty detail
+
+    let private releaseDispatchReservationsLocked (hub: Hub) (identity: NativeIdentity) count =
+        if identity.feedbackReserved && count > 0u then
+            changeFeedbackReservationLocked hub identity.originatingClient -(int count)
+
+    let private rememberCompletedLocked (hub: Hub) key =
+        if hub.completedNativeResults.Add key then
+            hub.completedNativeResultOrder.Enqueue key
+            while hub.completedNativeResultOrder.Count > retentionCapacity hub do
+                hub.completedNativeResults.Remove(hub.completedNativeResultOrder.Dequeue()) |> ignore
+
+    let private completePendingForLeaseLocked (hub: Hub) leaseId detail =
+        hub.pendingNativeResults.Values
+        |> Seq.filter (fun pending -> pending.identity.leaseId = leaseId)
+        |> Seq.toArray
+        |> Array.iter (fun pending -> completePendingUnknownLocked hub pending detail)
+
+    let private completeIdentitiesForLeaseLocked (hub: Hub) leaseId detail =
+        hub.nativeIdentities.Values
+        |> Seq.filter (fun identity -> identity.leaseId = leaseId)
+        |> Seq.toArray
+        |> Array.iter (fun identity -> completeIdentityUnknownLocked hub identity detail)
+
+    let private clearNativeTrackingLocked (hub: Hub) detail =
+        hub.pendingNativeResults.Values
+        |> Seq.toArray
+        |> Array.iter (fun pending -> completePendingUnknownLocked hub pending detail)
+        hub.nativeIdentities.Values
+        |> Seq.toArray
+        |> Array.iter (fun identity ->
+            completeIdentityUnknownLocked hub identity detail
+            let remaining =
+                if identity.expectedDispatches > identity.dispatchesSeen then
+                    identity.expectedDispatches - identity.dispatchesSeen
+                else 0u
+            releaseDispatchReservationsLocked hub identity remaining)
+        hub.completedNativeResults.Clear()
+        hub.completedNativeResultOrder.Clear()
+        hub.nativeIdentities.Clear()
+        hub.feedbackReservations.Clear()
+
     let private discardQueuedDeliveries (hub: Hub) (outbound: CoordinatorOutbound) detail =
         let mutable delivery = Unchecked.defaultof<OutboundDelivery>
         while outbound.channel.Reader.TryRead(&delivery) do
             delivery.batches
-            |> List.iteri (fun index _ -> recordDeliveryOutcome hub delivery index Audit.NotAttempted detail)
+            |> List.iteri (fun index batch ->
+                recordDeliveryOutcome hub delivery index Audit.NotAttempted detail
+                let correlation = batch.ClientCommandId |> ValueOption.defaultValue 0UL
+                let key = nativeKey outbound.channelIncarnation batch.BatchSeq correlation
+                match hub.nativeIdentities.TryGetValue key with
+                | true, identity -> completeIdentityUnknownLocked hub identity detail
+                | false, _ -> ())
 
     let closeSession (reason: Session.EndReason) (at: DateTimeOffset) (hub: Hub) : unit =
         withLock hub (fun () ->
             match hub.session with
             | None -> ()
             | Some s ->
+                clearNativeTrackingLocked hub "coordinator session closed after command forwarding; native result is unknown"
                 broadcastSessionEnd hub (Session.id s) reason
                 hub.auditEmitter (Audit.AuditEvent.SessionEnded (at, Session.id s, reason))
                 let prevMode = hub.mode
@@ -259,6 +463,7 @@ module BrokerState =
                 |> Option.iter (fun outbound ->
                     outbound.channel.Writer.TryComplete() |> ignore
                     discardQueuedDeliveries hub outbound "coordinator session was replaced before transport write")
+                clearNativeTrackingLocked hub "coordinator session was replaced after command forwarding; native result is unknown"
                 let sessionId = Session.id newSession
                 hub.coordinatorOutbound <- Some (newProxyOutbound sessionId hub.commandQueueCapacity)
                 hub.nextBatchSeq <- 1UL
@@ -309,12 +514,19 @@ module BrokerState =
                 hub.session <- Some (Session.stepSpeed delta s)
                 Ok ())
 
-    let tryClaimCoordinatorCommandChannel (hub: Hub) =
+    let tryClaimCoordinatorCommandChannel pluginId channelIncarnation (hub: Hub) =
         withLock hub (fun () ->
             match hub.coordinatorOutbound with
             | Some outbound when not outbound.readerClaimed ->
                 outbound.readerClaimed <- true
-                Claimed { sessionId = outbound.sessionId; leaseId = outbound.leaseId; reader = outbound.channel.Reader }
+                outbound.pluginId <- pluginId
+                outbound.channelIncarnation <- channelIncarnation
+                Claimed
+                    { sessionId = outbound.sessionId
+                      leaseId = outbound.leaseId
+                      pluginId = pluginId
+                      channelIncarnation = channelIncarnation
+                      reader = outbound.channel.Reader }
             | Some _ -> AlreadyClaimed
             | None -> NoCoordinator)
 
@@ -335,6 +547,8 @@ module BrokerState =
         withLock hub (fun () ->
             match hub.coordinatorOutbound with
             | Some outbound when outbound.leaseId = leaseId ->
+                completePendingForLeaseLocked hub leaseId reason
+                completeIdentitiesForLeaseLocked hub leaseId reason
                 outbound.channel.Writer.TryComplete() |> ignore
                 discardQueuedDeliveries hub outbound reason
                 hub.coordinatorOutbound <- None
@@ -344,6 +558,8 @@ module BrokerState =
         withLock hub (fun () ->
             match hub.coordinatorOutbound with
             | Some outbound when outbound.sessionId = sessionId ->
+                completePendingForLeaseLocked hub outbound.leaseId reason
+                completeIdentitiesForLeaseLocked hub outbound.leaseId reason
                 outbound.channel.Writer.TryComplete() |> ignore
                 discardQueuedDeliveries hub outbound reason
                 hub.coordinatorOutbound <- None
@@ -356,6 +572,123 @@ module BrokerState =
             && hub.coordinatorOutbound
                |> Option.exists (fun outbound -> outbound.sessionId = delivery.sessionId))
 
+    let registerPendingNativeResult
+        (lease: CoordinatorCommandLease)
+        (delivery: OutboundDelivery)
+        childIndex
+        (hub: Hub) =
+        withLock hub (fun () ->
+            let batch = delivery.batches[childIndex]
+            let correlation = batch.ClientCommandId |> ValueOption.defaultValue 0UL
+            let key = nativeKey lease.channelIncarnation batch.BatchSeq correlation
+            match hub.coordinatorOutbound, hub.nativeIdentities.TryGetValue key with
+            | Some outbound
+              , (true, identity)
+                when outbound.sessionId = lease.sessionId
+                     && outbound.leaseId = lease.leaseId
+                     && outbound.pluginId = lease.pluginId
+                     && outbound.channelIncarnation = lease.channelIncarnation
+                     && not (hub.pendingNativeResults.ContainsKey key)
+                     && identity.leaseId = lease.leaseId
+                     && identity.parentCommandId = delivery.parentCommandId ->
+                let completion =
+                    TaskCompletionSource<Highbar.V1.CommandBatchResult>(TaskCreationOptions.RunContinuationsAsynchronously)
+                hub.pendingNativeResults[key] <- { identity = identity; completion = completion }
+                Ok completion.Task
+            | Some _, _ -> Error "coordinator command lease or reserved native identity was replaced before pending registration"
+            | None, _ -> Error "coordinator command channel closed before pending registration")
+
+    let expirePendingNativeResult channelIncarnation batchSeq correlation detail (hub: Hub) =
+        withLock hub (fun () ->
+            let key = nativeKey channelIncarnation batchSeq correlation
+            match hub.pendingNativeResults.TryGetValue key with
+            | true, pending -> completePendingUnknownLocked hub pending detail
+            | false, _ -> ())
+
+    let reportNativeResult pluginId channelIncarnation (result: Highbar.V1.CommandBatchResult) (hub: Hub) =
+        withLock hub (fun () ->
+            let key = nativeKey channelIncarnation result.BatchSeq result.ClientCommandId
+            match hub.pendingNativeResults.TryGetValue key with
+            | true, pending when pending.identity.pluginId = pluginId ->
+                hub.pendingNativeResults.Remove key |> ignore
+                rememberCompletedLocked hub key
+                let outcome =
+                    match result.Status with
+                    | Highbar.V1.CommandBatchStatus.CommandBatchAccepted
+                    | Highbar.V1.CommandBatchStatus.CommandBatchAcceptedWithWarnings -> Audit.Accepted
+                    | Highbar.V1.CommandBatchStatus.CommandBatchRejectedQueueFull -> Audit.RejectedQueueFull
+                    | _ -> Audit.RejectedInvalid
+                let detail = resultDetail result
+                publishNativeResultLocked hub pending.identity outcome result.AcceptedCommandCount result.Issues detail
+                match outcome with
+                | Audit.Accepted ->
+                    let accepted = min result.AcceptedCommandCount pending.identity.expectedDispatches
+                    pending.identity.acceptedCommandCount <- Some accepted
+                    let retained = min pending.identity.expectedDispatches (max accepted pending.identity.dispatchesSeen)
+                    let unused = pending.identity.expectedDispatches - retained
+                    releaseDispatchReservationsLocked hub pending.identity unused
+                    if pending.identity.dispatchesSeen >= accepted then
+                        hub.nativeIdentities.Remove key |> ignore
+                | _ ->
+                    releaseDispatchReservationsLocked hub pending.identity pending.identity.expectedDispatches
+                    hub.nativeIdentities.Remove key |> ignore
+                pending.completion.TrySetResult result |> ignore
+                Recorded
+            | true, _ -> Late
+            | false, _ when hub.completedNativeResults.Contains key -> Duplicate
+            | false, _ -> Late)
+
+    let noteNativeDispatch (dispatch: Highbar.V1.CommandDispatchEvent) (hub: Hub) =
+        withLock hub (fun () ->
+            let key = nativeKey dispatch.ChannelIncarnation dispatch.BatchSeq dispatch.ClientCommandId
+            match hub.nativeIdentities.TryGetValue key, hub.coordinatorOutbound with
+            | (true, identity), Some outbound
+                when outbound.leaseId = identity.leaseId
+                     && outbound.channelIncarnation = dispatch.ChannelIncarnation
+                     && identity.dispatchesSeen < identity.expectedDispatches ->
+                let outcome, wireOutcome =
+                    if dispatch.Status = Highbar.V1.CommandDispatchStatus.CommandDispatchApplied then
+                        Audit.Applied, NativeCommandDispatchStatus.NativeCommandDispatchApplied
+                    else
+                        Audit.Skipped (uint32 dispatch.Status), NativeCommandDispatchStatus.NativeCommandDispatchSkipped
+                let detail =
+                    match dispatch.Issue with
+                    | ValueSome issue when not (String.IsNullOrWhiteSpace issue.Detail) ->
+                        truncateText maxRetainedDetailChars issue.Detail
+                    | _ -> string dispatch.Status
+                hub.auditEmitter
+                    (Audit.AuditEvent.CoordinatorNativeCommandDispatch
+                        (DateTimeOffset.UtcNow, identity.sessionId, identity.originatingClient,
+                         identity.parentCommandId, identity.childIndex, identity.childCount,
+                         dispatch.CommandIndex, dispatch.TargetUnitId, dispatch.BatchSeq,
+                         dispatch.ClientCommandId, dispatch.ChannelIncarnation, outcome,
+                         dispatch.Frame, detail))
+                let notification = NativeCommandDispatch.empty()
+                notification.ParentCommandId <- Google.Protobuf.ByteString.CopyFrom(identity.parentCommandId.ToByteArray())
+                let (ScriptingClientId clientName) = identity.originatingClient
+                notification.OriginatingClient <- clientName
+                notification.ChildIndex <- uint32 identity.childIndex
+                notification.ChildCount <- uint32 identity.childCount
+                notification.CommandIndex <- dispatch.CommandIndex
+                notification.TargetUnitId <- dispatch.TargetUnitId
+                notification.BatchSeq <- dispatch.BatchSeq
+                notification.ClientCommandId <- dispatch.ClientCommandId
+                notification.Status <- wireOutcome
+                notification.NativeStatus <- uint32 dispatch.Status
+                notification.Frame <- dispatch.Frame
+                notification.Detail <- detail
+                notification.ChannelIncarnation <- dispatch.ChannelIncarnation
+                let message = StateMsg.empty()
+                message.NativeCommandDispatch <- notification
+                enqueueFeedbackLocked hub identity.originatingClient identity.parentCommandId "native-dispatch" identity.feedbackReserved message
+                identity.dispatchesSeen <- identity.dispatchesSeen + 1u
+                match identity.acceptedCommandCount with
+                | Some expected when identity.dispatchesSeen >= expected ->
+                    hub.nativeIdentities.Remove key |> ignore
+                | _ -> ()
+                true
+            | _ -> false)
+
     let private expansionCount (command: CommandPipeline.Command) =
         match command.kind with
         | CommandPipeline.Gameplay (CommandPipeline.UnitOrder (ids, _, _, _)) -> ids.Length
@@ -363,7 +696,10 @@ module BrokerState =
 
     let private admitOutboundLocked (command: CommandPipeline.Command) (hub: Hub) =
         match hub.session, hub.coordinatorOutbound with
-        | Some session, Some outbound ->
+        | Some session, Some outbound
+            when outbound.readerClaimed
+                 && not (String.IsNullOrWhiteSpace outbound.pluginId)
+                 && not (String.IsNullOrWhiteSpace outbound.channelIncarnation) ->
             let count = expansionCount command
             let dummy = [ for i in 1 .. count -> uint64 i, uint64 i ]
             match WireConvert.tryExpandCoreCommandToHighBar command dummy with
@@ -383,17 +719,63 @@ module BrokerState =
                 match WireConvert.tryExpandCoreCommandToHighBar command allocations with
                 | Error reason -> Error reason
                 | Ok batches ->
-                    let delivery =
-                        { sessionId = sessionId
-                          parentCommandId = command.commandId
-                          originatingClient = command.originatingClient
-                          batches = batches }
-                    if outbound.channel.Writer.TryWrite delivery then
-                        hub.nextBatchSeq <- hub.nextBatchSeq + uint64 count
-                        hub.nextCorrelation <- hub.nextCorrelation + uint64 count
-                        Ok ()
-                    else
+                    let feedbackReserved = hub.clients.ContainsKey command.originatingClient
+                    let requiredFeedback =
+                        batches |> List.sumBy (fun batch -> 1 + batch.Commands.Count)
+                    let feedbackFits =
+                        if not feedbackReserved then true
+                        else
+                            match hub.clients.TryGetValue command.originatingClient with
+                            | true, client ->
+                                client.feedbackBacklog.Count
+                                + feedbackReservationCountLocked hub command.originatingClient
+                                + requiredFeedback
+                                <= retentionCapacity hub
+                            | false, _ -> false
+                    if hub.nativeIdentities.Count + batches.Length > retentionCapacity hub
+                       || not feedbackFits then
                         Error CommandPipeline.QueueFull
+                    else
+                        let identities =
+                            batches
+                            |> List.mapi (fun index batch ->
+                                let correlation = batch.ClientCommandId |> ValueOption.defaultValue 0UL
+                                let key = nativeKey outbound.channelIncarnation batch.BatchSeq correlation
+                                key,
+                                { sessionId = sessionId
+                                  leaseId = outbound.leaseId
+                                  pluginId = outbound.pluginId
+                                  channelIncarnation = outbound.channelIncarnation
+                                  parentCommandId = command.commandId
+                                  originatingClient = command.originatingClient
+                                  childIndex = index
+                                  childCount = batches.Length
+                                  targetUnitId = batch.TargetUnitId
+                                  batchSeq = batch.BatchSeq
+                                  correlation = correlation
+                                  expectedDispatches = uint32 batch.Commands.Count
+                                  feedbackReserved = feedbackReserved
+                                  resultPublished = false
+                                  acceptedCommandCount = None
+                                  dispatchesSeen = 0u })
+                        let delivery =
+                            { sessionId = sessionId
+                              parentCommandId = command.commandId
+                              originatingClient = command.originatingClient
+                              batches = batches }
+                        for key, identity in identities do
+                            hub.nativeIdentities[key] <- identity
+                        if feedbackReserved then
+                            changeFeedbackReservationLocked hub command.originatingClient requiredFeedback
+                        if outbound.channel.Writer.TryWrite delivery then
+                            hub.nextBatchSeq <- hub.nextBatchSeq + uint64 count
+                            hub.nextCorrelation <- hub.nextCorrelation + uint64 count
+                            Ok ()
+                        else
+                            for key, _ in identities do hub.nativeIdentities.Remove key |> ignore
+                            if feedbackReserved then
+                                changeFeedbackReservationLocked hub command.originatingClient -requiredFeedback
+                            Error CommandPipeline.QueueFull
         | _ -> Error (CommandPipeline.InvalidPayload "no active coordinator command channel")
 
     let sendToCoordinator (command: CommandPipeline.Command) (hub: Hub) =
@@ -587,10 +969,29 @@ module BrokerState =
                     Some message
             match initial with
             | Some message -> channel.Writer.TryWrite(message) |> ignore
-            | None -> ())
+            | None -> ()
+            let rec drainBacklog () =
+                if client.feedbackBacklog.Count > 0 then
+                    let message = client.feedbackBacklog.Peek()
+                    if channel.Writer.TryWrite message then
+                        client.feedbackBacklog.Dequeue() |> ignore
+                        drainBacklog ()
+            drainBacklog ())
 
     let unsubscribeState (client: ClientChannel) (hub: Hub) : unit =
         withLock hub (fun () -> client.subscriber <- None)
+
+    let flushFeedbackBacklog (client: ClientChannel) (hub: Hub) : unit =
+        withLock hub (fun () ->
+            let rec drain () =
+                match client.subscriber with
+                | Some channel when client.feedbackBacklog.Count > 0 ->
+                    let message = client.feedbackBacklog.Peek()
+                    if channel.Writer.TryWrite message then
+                        client.feedbackBacklog.Dequeue() |> ignore
+                        drain ()
+                | _ -> ()
+            drain ())
 
     let clearTelemetryGap (hub: Hub) : unit =
         withLock hub (fun () ->
@@ -612,7 +1013,8 @@ module BrokerState =
                 hub.roster <- newRoster
                 let channel : ClientChannel =
                     { id = id
-                      subscriber = None }
+                      subscriber = None
+                      feedbackBacklog = Queue() }
                 hub.clients[id] <- channel
                 hub.auditEmitter (Audit.AuditEvent.ClientConnected (at, id, peerVersion))
                 Ok channel)

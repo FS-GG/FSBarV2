@@ -473,6 +473,16 @@ module WireConvert =
                         lastSeq = Some recvSeq
                         baselineValid = false }
                 invalid, Gap (previousSeq, recvSeq)
+            | ValueSome (Highbar.V1.StateUpdate.Types.Payload.Delta delta)
+                when delta.Events.Count > 0
+                     && (delta.Events
+                         |> Seq.forall (fun event ->
+                             match event.Kind with
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _) -> true
+                             | _ -> false)) ->
+                // Dispatch feedback is consumed by HighBarCoordinatorService
+                // and intentionally does not mutate the materialized snapshot.
+                { view with lastSeq = Some recvSeq }, KeepAliveOnly
             | ValueSome (Highbar.V1.StateUpdate.Types.Payload.Delta delta) when delta.Events.Count > 0 ->
                 let detail =
                     if view.baselineValid then

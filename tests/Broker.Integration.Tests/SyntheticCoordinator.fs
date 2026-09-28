@@ -152,6 +152,9 @@ let connect
         // 3. OpenCommandChannel server-streaming (broker → plugin).
         let sub = CommandChannelSubscribe.empty()
         sub.PluginId <- pluginId
+        sub.SchemaVersion <- schemaVersion
+        sub.AdmissionResultProtocol <- AdmissionResultProtocol.CorrelatedV1
+        sub.ChannelIncarnation <- Guid.NewGuid().ToString("N")
         let cmdCall = client.OpenCommandChannelAsync(sub, cancellationToken = cts.Token)
 
         return new Driver(client, pluginId, schemaVersion, Some pushCall, Some cmdCall, cts)

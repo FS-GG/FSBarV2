@@ -4,6 +4,7 @@ open System
 open System.Collections.Concurrent
 open System.Threading
 open System.Threading.Tasks
+open System.Threading.Channels
 open Expecto
 open Broker.Core
 open Broker.Protocol
@@ -582,6 +583,10 @@ let outboundDeliveryTests =
                   lastHeartbeatAt = DateTimeOffset.UtcNow
                   lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let reader =
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
+                | BrokerState.Claimed lease -> lease.reader
+                | other -> failtestf "expected reader lease, got %A" other
             let parent =
                 mkCoreCommand
                     (CommandPipeline.Gameplay
@@ -590,10 +595,6 @@ let outboundDeliveryTests =
             Expect.equal (BrokerState.sendToCoordinator parent hub) (Ok ()) "whole parent admitted"
             let overflow = { parent with commandId = Guid.NewGuid() }
             Expect.equal (BrokerState.sendToCoordinator overflow hub) (Error CommandPipeline.QueueFull) "full outbound queue rejects the whole second parent"
-            let reader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
-                | BrokerState.Claimed lease -> lease.reader
-                | other -> failtestf "expected reader lease, got %A" other
             let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
             Expect.isTrue (reader.TryRead(&delivery)) "one parent envelope was queued"
             Expect.equal delivery.parentCommandId parent.commandId "full parent UUID is retained"
@@ -612,16 +613,16 @@ let outboundDeliveryTests =
                   keepAliveIntervalMs = 5000; pluginId = "collision-test"; schemaVersion = "1.0.0"
                   engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let reader =
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
+                | BrokerState.Claimed lease -> lease.reader
+                | other -> failtestf "expected reader lease, got %A" other
             let parent =
                 mkCoreCommand
                     (CommandPipeline.Gameplay
                         (CommandPipeline.UnitOrder ([3u; 4u], CommandPipeline.Stop, None, None)))
             Expect.equal (BrokerState.sendToCoordinator parent hub) (Ok ()) "first parent admitted"
             Expect.equal (BrokerState.sendToCoordinator parent hub) (Ok ()) "duplicate parent identity admitted with fresh child identities"
-            let reader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
-                | BrokerState.Claimed lease -> lease.reader
-                | other -> failtestf "expected reader lease, got %A" other
             let read () =
                 let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
                 Expect.isTrue (reader.TryRead(&delivery)) "delivery available"
@@ -637,6 +638,154 @@ let outboundDeliveryTests =
             Expect.sequenceEqual (second.batches |> List.map _.BatchSeq) [3UL; 4UL] "second range"
         }
 
+        test "native results correlate multiple children and callers and backlog without a subscriber" {
+            let hub, audit = mkHubWithAudit ()
+            let link : Session.ProxyAiLink =
+                { attachedAt = DateTimeOffset.UtcNow; protocolVersion = System.Version(1, 0); lastSnapshotAt = None
+                  keepAliveIntervalMs = 5000; pluginId = "result-owner"; schemaVersion = "1.0.0"
+                  engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
+            Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let lease =
+                match BrokerState.tryClaimCoordinatorCommandChannel "result-owner" "inc-1" hub with
+                | BrokerState.Claimed lease -> lease
+                | other -> failtestf "expected lease: %A" other
+            let alpha = ScriptingClientId "alpha"
+            let beta = ScriptingClientId "beta"
+            let alphaClient =
+                BrokerState.registerClient alpha (System.Version(1, 0)) DateTimeOffset.UtcNow hub
+                |> function Ok client -> client | Error error -> failtestf "alpha registration: %A" error
+            let betaClient =
+                BrokerState.registerClient beta (System.Version(1, 0)) DateTimeOffset.UtcNow hub
+                |> function Ok client -> client | Error error -> failtestf "beta registration: %A" error
+            let alphaParent =
+                { mkCoreCommand (CommandPipeline.Gameplay (CommandPipeline.UnitOrder ([4u; 9u], CommandPipeline.Stop, None, None))) with
+                    originatingClient = alpha }
+            let betaParent =
+                { mkCoreCommand (CommandPipeline.Admin CommandPipeline.Pause) with originatingClient = beta }
+            Expect.equal (BrokerState.sendToCoordinator alphaParent hub) (Ok ()) "alpha parent admitted"
+            Expect.equal (BrokerState.sendToCoordinator betaParent hub) (Ok ()) "beta parent admitted"
+            let readDelivery () =
+                let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
+                Expect.isTrue (lease.reader.TryRead(&delivery)) "delivery available"
+                delivery
+            let alphaDelivery = readDelivery ()
+            let betaDelivery = readDelivery ()
+            for index in 0 .. alphaDelivery.batches.Length - 1 do
+                BrokerState.registerPendingNativeResult lease alphaDelivery index hub
+                |> function Ok _ -> () | Error error -> failtest error
+            BrokerState.registerPendingNativeResult lease betaDelivery 0 hub
+            |> function Ok _ -> () | Error error -> failtest error
+
+            let report status (batch: CommandBatch) =
+                let result = CommandBatchResult.empty()
+                result.BatchSeq <- batch.BatchSeq
+                result.ClientCommandId <- batch.ClientCommandId |> ValueOption.defaultValue 0UL
+                result.Status <- status
+                result.AcceptedCommandCount <- if status = CommandBatchStatus.CommandBatchAccepted then 1u else 0u
+                result
+            let accepted = report CommandBatchStatus.CommandBatchAccepted alphaDelivery.batches[0]
+            let rejected = report CommandBatchStatus.CommandBatchRejectedQueueFull alphaDelivery.batches[1]
+            Expect.equal (BrokerState.reportNativeResult "intruder" "inc-1" accepted hub) BrokerState.Late "wrong owner cannot complete pending work"
+            Expect.equal (BrokerState.reportNativeResult "result-owner" "inc-1" accepted hub) BrokerState.Recorded "accepted child records"
+            Expect.equal (BrokerState.reportNativeResult "result-owner" "inc-1" rejected hub) BrokerState.Recorded "rejected child records"
+            Expect.equal (BrokerState.reportNativeResult "result-owner" "inc-1" accepted hub) BrokerState.Duplicate "exact report retry is duplicate"
+            Expect.equal (BrokerState.reportNativeResult "result-owner" "wrong-inc" accepted hub) BrokerState.Late "wrong incarnation is late"
+            let betaBatch = betaDelivery.batches[0]
+            BrokerState.expirePendingNativeResult "inc-1" betaBatch.BatchSeq (betaBatch.ClientCommandId |> ValueOption.defaultValue 0UL) "fixture cancellation after forwarding" hub
+
+            let drain client =
+                let channel = Channel.CreateUnbounded<FSBarV2.Broker.Contracts.StateMsg>()
+                BrokerState.subscribeState client channel hub
+                let results = ResizeArray<FSBarV2.Broker.Contracts.NativeCommandResult>()
+                let mutable message = Unchecked.defaultof<FSBarV2.Broker.Contracts.StateMsg>
+                while channel.Reader.TryRead(&message) do
+                    match message.Body with
+                    | ValueSome (FSBarV2.Broker.Contracts.StateMsg.Types.Body.NativeCommandResult result) -> results.Add result
+                    | _ -> ()
+                results |> Seq.toList
+            let alphaResults = drain alphaClient
+            let betaResults = drain betaClient
+            Expect.sequenceEqual (alphaResults |> List.map _.ChildIndex) [0u; 1u] "multi-child order is retained"
+            Expect.sequenceEqual
+                (alphaResults |> List.map _.Status)
+                [ FSBarV2.Broker.Contracts.NativeCommandResultStatus.NativeCommandAccepted
+                  FSBarV2.Broker.Contracts.NativeCommandResultStatus.NativeCommandRejectedQueueFull ]
+                "accepted and rejected results are distinct"
+            Expect.equal (Guid(alphaResults[0].ParentCommandId.ToByteArray())) alphaParent.commandId "alpha parent UUID survives"
+            Expect.equal betaResults.Length 1 "second caller receives only its own result"
+            Expect.equal betaResults[0].OriginatingClient "beta" "second caller identity survives"
+            Expect.equal betaResults[0].Status FSBarV2.Broker.Contracts.NativeCommandResultStatus.NativeCommandUnknown "cancellation is UNKNOWN"
+            Expect.isTrue
+                (audit.ToArray() |> Array.exists (function Audit.CoordinatorNativeCommandResult (_, _, _, parent, _, _, _, _, _, _, Audit.NativeUnknown, _, _) when parent = betaParent.commandId -> true | _ -> false))
+                "unknown terminal result is typed audit evidence"
+        }
+
+        test "bounded terminal retention refuses before forwarding and preserves every accepted outcome" {
+            let hub = BrokerState.create (System.Version(1, 0)) 1 ignore
+            let link : Session.ProxyAiLink =
+                { attachedAt = DateTimeOffset.UtcNow; protocolVersion = System.Version(1, 0); lastSnapshotAt = None
+                  keepAliveIntervalMs = 5000; pluginId = "retention-owner"; schemaVersion = "1.0.0"
+                  engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
+            Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let clientId = ScriptingClientId "slow-client"
+            let client =
+                BrokerState.registerClient clientId (System.Version(1, 0)) DateTimeOffset.UtcNow hub
+                |> function Ok value -> value | Error error -> failtestf "register: %A" error
+            let lease =
+                match BrokerState.tryClaimCoordinatorCommandChannel "retention-owner" "retention-inc" hub with
+                | BrokerState.Claimed value -> value
+                | other -> failtestf "claim: %A" other
+            let accepted = ResizeArray<CommandBatch>()
+            for _ in 1 .. 8 do
+                let command =
+                    { mkCoreCommand (CommandPipeline.Admin CommandPipeline.Pause) with
+                        originatingClient = clientId }
+                Expect.equal (BrokerState.sendToCoordinator command hub) (Ok ()) "capacity is reserved before forwarding"
+                let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
+                Expect.isTrue (lease.reader.TryRead(&delivery)) "accepted parent is forwarded"
+                BrokerState.registerPendingNativeResult lease delivery 0 hub
+                |> function Ok _ -> () | Error error -> failtest error
+                let batch = delivery.batches.Head
+                accepted.Add batch
+                let result = CommandBatchResult.empty()
+                result.BatchSeq <- batch.BatchSeq
+                result.ClientCommandId <- batch.ClientCommandId |> ValueOption.defaultValue 0UL
+                result.Status <- CommandBatchStatus.CommandBatchAccepted
+                result.AcceptedCommandCount <- 1u
+                Expect.equal
+                    (BrokerState.reportNativeResult "retention-owner" "retention-inc" result hub)
+                    BrokerState.Recorded
+                    "native admission completes"
+            let overflow =
+                { mkCoreCommand (CommandPipeline.Admin CommandPipeline.Pause) with
+                    originatingClient = clientId }
+            Expect.equal (BrokerState.sendToCoordinator overflow hub) (Error CommandPipeline.QueueFull) "retention exhaustion refuses admission"
+            let mutable unexpected = Unchecked.defaultof<BrokerState.OutboundDelivery>
+            Expect.isFalse (lease.reader.TryRead(&unexpected)) "refused work never reaches the native channel"
+            for batch in accepted do
+                let dispatch = CommandDispatchEvent.empty()
+                dispatch.BatchSeq <- batch.BatchSeq
+                dispatch.ClientCommandId <- batch.ClientCommandId |> ValueOption.defaultValue 0UL
+                dispatch.ChannelIncarnation <- "retention-inc"
+                dispatch.CommandIndex <- 0u
+                dispatch.TargetUnitId <- batch.TargetUnitId
+                dispatch.Status <- CommandDispatchStatus.CommandDispatchApplied
+                Expect.isTrue (BrokerState.noteNativeDispatch dispatch hub) "reserved dispatch outcome is retained"
+            let channel = Channel.CreateUnbounded<FSBarV2.Broker.Contracts.StateMsg>()
+            BrokerState.subscribeState client channel hub
+            let mutable admissionCount = 0
+            let mutable dispatchCount = 0
+            let mutable message = Unchecked.defaultof<FSBarV2.Broker.Contracts.StateMsg>
+            while channel.Reader.TryRead(&message) do
+                match message.Body with
+                | ValueSome (FSBarV2.Broker.Contracts.StateMsg.Types.Body.NativeCommandResult _) -> admissionCount <- admissionCount + 1
+                | ValueSome (FSBarV2.Broker.Contracts.StateMsg.Types.Body.NativeCommandDispatch _) -> dispatchCount <- dispatchCount + 1
+                | _ -> ()
+            Expect.equal admissionCount 8 "every accepted admission outcome survives a missing subscriber"
+            Expect.equal dispatchCount 8 "every terminal execution outcome survives a missing subscriber"
+            Expect.equal (BrokerState.sendToCoordinator overflow hub) (Ok ()) "draining retained outcomes releases admission capacity"
+        }
+
         test "a coordinator session grants exactly one reader lease" {
             let hub = BrokerState.create (System.Version(1, 0)) 4 ignore
             let link : Session.ProxyAiLink =
@@ -645,16 +794,16 @@ let outboundDeliveryTests =
                   engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
             let oldReader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
                 | BrokerState.Claimed lease -> lease.reader
                 | other -> failtestf "first reader should claim: %A" other
-            Expect.equal (BrokerState.tryClaimCoordinatorCommandChannel hub) BrokerState.AlreadyClaimed "second reader is refused"
+            Expect.equal (BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation-2" hub) BrokerState.AlreadyClaimed "second reader is refused"
             BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow hub
-            Expect.equal (BrokerState.tryClaimCoordinatorCommandChannel hub) BrokerState.NoCoordinator "closed session cannot be claimed"
+            Expect.equal (BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation-2" hub) BrokerState.NoCoordinator "closed session cannot be claimed"
             let replacement = { link with attachedAt = DateTimeOffset.UtcNow; pluginId = "lease-test-2" }
             Expect.equal (BrokerState.attachCoordinator replacement hub) (Ok ()) "replacement coordinator attached"
             let newReader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin-2" "test-incarnation-2" hub with
                 | BrokerState.Claimed lease -> lease.reader
                 | other -> failtestf "replacement reader should claim its own channel: %A" other
             let command = mkCoreCommand (CommandPipeline.Admin CommandPipeline.Pause)
@@ -674,13 +823,13 @@ let outboundDeliveryTests =
                   engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
             let oldLease =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
                 | BrokerState.Claimed lease -> lease
                 | other -> failtestf "old lease missing: %A" other
             BrokerState.completeCoordinatorCommandChannel oldLease.sessionId "normal completion" hub
             Expect.isTrue (BrokerState.ensureCoordinatorCommandChannel hub) "live session renewed its empty channel"
             let newLease =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation-2" hub with
                 | BrokerState.Claimed lease -> lease
                 | other -> failtestf "new lease missing: %A" other
             BrokerState.closeCoordinatorCommandChannel oldLease.leaseId "late old-reader cleanup" hub
@@ -715,6 +864,10 @@ let outboundDeliveryTests =
                   keepAliveIntervalMs = 5000; pluginId = "cancel-test"; schemaVersion = "1.0.0"
                   engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let reader =
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
+                | BrokerState.Claimed lease -> lease.reader
+                | other -> failtestf "expected reader lease, got %A" other
             let parent =
                 mkCoreCommand
                     (CommandPipeline.Gameplay
@@ -722,10 +875,6 @@ let outboundDeliveryTests =
             Expect.equal (BrokerState.sendToCoordinator parent hub) (Ok ()) "parent admitted"
             let cancelledLater = { parent with commandId = Guid.NewGuid() }
             Expect.equal (BrokerState.sendToCoordinator cancelledLater hub) (Ok ()) "later parent admitted"
-            let reader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
-                | BrokerState.Claimed lease -> lease.reader
-                | other -> failtestf "expected reader lease, got %A" other
             let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
             Expect.isTrue (reader.TryRead(&delivery)) "delivery available"
             use cancelled = new CancellationTokenSource()
@@ -767,6 +916,10 @@ let outboundDeliveryTests =
                   lastHeartbeatAt = DateTimeOffset.UtcNow
                   lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let reader =
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
+                | BrokerState.Claimed lease -> lease.reader
+                | other -> failtestf "expected reader lease, got %A" other
             let parent =
                 mkCoreCommand
                     (CommandPipeline.Gameplay
@@ -778,10 +931,6 @@ let outboundDeliveryTests =
                     commandId = Guid.NewGuid()
                     kind = CommandPipeline.Gameplay (CommandPipeline.UnitOrder ([7u; 8u], CommandPipeline.Stop, None, None)) }
             Expect.equal (BrokerState.sendToCoordinator laterParent hub) (Ok ()) "later parent admitted"
-            let reader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
-                | BrokerState.Claimed lease -> lease.reader
-                | other -> failtestf "expected reader lease, got %A" other
             let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
             Expect.isTrue (reader.TryRead(&delivery)) "delivery available"
             let mutable writes = 0
@@ -822,6 +971,10 @@ let outboundDeliveryTests =
                   keepAliveIntervalMs = 5000; pluginId = "replacement-test"; schemaVersion = "1.0.0"
                   engineSha256 = "test"; lastHeartbeatAt = DateTimeOffset.UtcNow; lastSeq = 0UL }
             Expect.equal (BrokerState.attachCoordinator link hub) (Ok ()) "coordinator attached"
+            let reader =
+                match BrokerState.tryClaimCoordinatorCommandChannel "test-plugin" "test-incarnation" hub with
+                | BrokerState.Claimed lease -> lease.reader
+                | other -> failtestf "expected reader lease, got %A" other
             let parent =
                 mkCoreCommand
                     (CommandPipeline.Gameplay
@@ -829,10 +982,6 @@ let outboundDeliveryTests =
             Expect.equal (BrokerState.sendToCoordinator parent hub) (Ok ()) "parent admitted"
             let queued = { parent with commandId = Guid.NewGuid() }
             Expect.equal (BrokerState.sendToCoordinator queued hub) (Ok ()) "second parent admitted"
-            let reader =
-                match BrokerState.tryClaimCoordinatorCommandChannel hub with
-                | BrokerState.Claimed lease -> lease.reader
-                | other -> failtestf "expected reader lease, got %A" other
             let mutable delivery = Unchecked.defaultof<BrokerState.OutboundDelivery>
             Expect.isTrue (reader.TryRead(&delivery)) "delivery available"
             BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow hub

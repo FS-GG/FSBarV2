@@ -9,6 +9,16 @@ module Audit =
         | Unknown
         | NotAttempted
 
+    type NativeAdmissionOutcome =
+        | Accepted
+        | RejectedInvalid
+        | RejectedQueueFull
+        | NativeUnknown
+
+    type NativeDispatchOutcome =
+        | Applied
+        | Skipped of nativeStatus:uint32
+
     type AuditEvent =
         | ClientConnected of at:DateTimeOffset * id:ScriptingClientId * version:Version
         | ClientDisconnected of at:DateTimeOffset * id:ScriptingClientId * reason:string
@@ -27,6 +37,9 @@ module Audit =
         | CoordinatorCommandChannelOpened of at:DateTimeOffset * pluginId:string
         | CoordinatorCommandChannelClosed of at:DateTimeOffset * pluginId:string * reason:string
         | CoordinatorCommandDelivery of at:DateTimeOffset * sessionId:Guid * originatingClient:ScriptingClientId * parentCommandId:Guid * childIndex:int * childCount:int * actingUnit:uint32 * batchSeq:uint64 * correlation:uint64 * outcome:CoordinatorDeliveryOutcome * detail:string
+        | CoordinatorNativeCommandResult of at:DateTimeOffset * sessionId:Guid * originatingClient:ScriptingClientId * parentCommandId:Guid * childIndex:int * childCount:int * actingUnit:uint32 * batchSeq:uint64 * correlation:uint64 * channelIncarnation:string * outcome:NativeAdmissionOutcome * acceptedCommandCount:uint32 * detail:string
+        | CoordinatorNativeCommandDispatch of at:DateTimeOffset * sessionId:Guid * originatingClient:ScriptingClientId * parentCommandId:Guid * childIndex:int * childCount:int * commandIndex:uint32 * actingUnit:uint32 * batchSeq:uint64 * correlation:uint64 * channelIncarnation:string * outcome:NativeDispatchOutcome * frame:uint32 * detail:string
+        | CoordinatorTerminalFeedbackUnavailable of at:DateTimeOffset * originatingClient:ScriptingClientId * parentCommandId:Guid * stage:string * detail:string
         | CoordinatorStateGap of at:DateTimeOffset * pluginId:string * lastSeq:uint64 * receivedSeq:uint64
         | CoordinatorStateInvalidated of at:DateTimeOffset * pluginId:string * lastSeq:uint64 * receivedSeq:uint64 * detail:string
 
@@ -105,6 +118,24 @@ module Audit =
                    "ChildIndex", box childIndex; "ChildCount", box childCount; "ActingUnit", box actingUnit
                    "BatchSeq", box batchSeq; "Correlation", box correlation
                    "Outcome", box (sprintf "%A" outcome); "Detail", box detail |])
+        | CoordinatorNativeCommandResult (at, sessionId, client, parentId, childIndex, childCount, actingUnit, batchSeq, correlation, incarnation, outcome, acceptedCount, detail) ->
+            struct (
+                "audit.coordinator_native_command_result at={At} session_id={SessionId} client_name={ClientName} parent_command_id={ParentCommandId} child_index={ChildIndex} child_count={ChildCount} acting_unit={ActingUnit} batch_seq={BatchSeq} correlation={Correlation} channel_incarnation={ChannelIncarnation} outcome={Outcome} accepted_command_count={AcceptedCommandCount} detail={Detail}",
+                [| "At", box at; "SessionId", box sessionId; "ClientName", box (nameOf client); "ParentCommandId", box parentId
+                   "ChildIndex", box childIndex; "ChildCount", box childCount; "ActingUnit", box actingUnit
+                   "BatchSeq", box batchSeq; "Correlation", box correlation; "ChannelIncarnation", box incarnation
+                   "Outcome", box (sprintf "%A" outcome); "AcceptedCommandCount", box acceptedCount; "Detail", box detail |])
+        | CoordinatorNativeCommandDispatch (at, sessionId, client, parentId, childIndex, childCount, commandIndex, actingUnit, batchSeq, correlation, incarnation, outcome, frame, detail) ->
+            struct (
+                "audit.coordinator_native_command_dispatch at={At} session_id={SessionId} client_name={ClientName} parent_command_id={ParentCommandId} child_index={ChildIndex} child_count={ChildCount} command_index={CommandIndex} acting_unit={ActingUnit} batch_seq={BatchSeq} correlation={Correlation} channel_incarnation={ChannelIncarnation} outcome={Outcome} frame={Frame} detail={Detail}",
+                [| "At", box at; "SessionId", box sessionId; "ClientName", box (nameOf client); "ParentCommandId", box parentId
+                   "ChildIndex", box childIndex; "ChildCount", box childCount; "CommandIndex", box commandIndex; "ActingUnit", box actingUnit
+                   "BatchSeq", box batchSeq; "Correlation", box correlation; "ChannelIncarnation", box incarnation
+                   "Outcome", box (sprintf "%A" outcome); "Frame", box frame; "Detail", box detail |])
+        | CoordinatorTerminalFeedbackUnavailable (at, client, parentId, stage, detail) ->
+            struct (
+                "audit.coordinator_terminal_feedback_unavailable at={At} client_name={ClientName} parent_command_id={ParentCommandId} stage={Stage} detail={Detail}",
+                [| "At", box at; "ClientName", box (nameOf client); "ParentCommandId", box parentId; "Stage", box stage; "Detail", box detail |])
         | CoordinatorStateGap (at, pid, lastSeq, recvSeq) ->
             struct (
                 "audit.coordinator_state_gap at={At} plugin_id={PluginId} last_seq={LastSeq} received_seq={ReceivedSeq}",

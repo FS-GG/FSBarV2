@@ -61,6 +61,9 @@ let private heartbeat (client: HighBarCoordinator.HighBarCoordinatorClient) plug
 let private openCommandStream (client: HighBarCoordinator.HighBarCoordinatorClient) pluginId token =
     let request = CommandChannelSubscribe.empty()
     request.PluginId <- pluginId
+    request.SchemaVersion <- "1.0.0"
+    request.AdmissionResultProtocol <- AdmissionResultProtocol.CorrelatedV1
+    request.ChannelIncarnation <- Guid.NewGuid().ToString("N")
     client.OpenCommandChannelAsync(request, cancellationToken = token)
 
 let private openedCount (audit: ConcurrentQueue<Audit.AuditEvent>) =

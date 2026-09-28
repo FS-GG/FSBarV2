@@ -20,7 +20,8 @@ module HighBarCoordinatorService =
     type Config =
         { expectedSchemaVersion: string
           ownerRule: BrokerState.OwnerRule
-          heartbeatTimeoutMs: int }
+          heartbeatTimeoutMs: int
+          nativeResultTimeoutMs: int }
 
     val defaultConfig : Config
 
