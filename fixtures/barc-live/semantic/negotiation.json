@@ -1,0 +1,31 @@
+{
+  "contract": "barc-live-v1/negotiation",
+  "cases": [
+    {
+      "peer": "preview-v1-client",
+      "requestedProfile": "barc-preview-v1",
+      "endpoint": "preview",
+      "outcome": "ACCEPT"
+    },
+    {
+      "peer": "preview-v1-client",
+      "requestedProfile": "barc-live-v1",
+      "endpoint": "live",
+      "outcome": "REFUSE_BEFORE_LIVE_ENVELOPE"
+    },
+    {
+      "peer": "live-v1-client",
+      "requestedProfile": "barc-live-v1",
+      "endpoint": "live",
+      "nativeProtocol": "LIVE_CONTROL_PROTOCOL_V1",
+      "outcome": "ACCEPT"
+    },
+    {
+      "peer": "live-v1-client",
+      "requestedProfile": "barc-live-v1",
+      "endpoint": "live",
+      "nativeProtocol": "LIVE_CONTROL_PROTOCOL_UNSPECIFIED",
+      "outcome": "REFUSE_BEFORE_ARM"
+    }
+  ]
+}

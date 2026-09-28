@@ -1,0 +1,32 @@
+{
+  "schema": "barc.browser.v1/barc-live-v1",
+  "schemaSha256": "6bd31abfa569e596880cc49376fce4526ceb6ea1f9443973fe12a8a6efae6bd3",
+  "mappingSha256": "568b3fb2b18725a424c69cc30f309833b737a283943d4a8dc1cb7c3d5b92a18d",
+  "negotiationSha256": "94ddff723cad8717df78c0dc8377dcf1697e82c437896a93c9da0cd7ff9f4ca3",
+  "entries": [
+    {
+      "name": "live-bootstrap",
+      "type": "LiveServerEnvelope",
+      "wireSha256": "a6b26c69ef7257123dc18435ad8600ea3c06d0ce077c5d9d5a5e66ec417e9c55",
+      "semanticSha256": "c833c2bd64ac4b2cbb79c913e6b569d269340f914f4e43a889361a1217657502"
+    },
+    {
+      "name": "live-guest-id0-move-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "56633725cd25c6c7846f3615f33e4608135a23756de27e34ac5d80d7c3bba121",
+      "semanticSha256": "ec4eec0faa7a4ce5e18161fcefb2d0047773e0cfbc92a52a6ff9a48a64ffc2a5"
+    },
+    {
+      "name": "live-guest-attack-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "047284d0f5f865300b7fc89f28a7d5b29731229ae19f68f768f19d5fd4a50930",
+      "semanticSha256": "2f581230e7c5a823bd32d10d54c81acb4c241a9ee8deb1cfa82d95325d34ab9e"
+    },
+    {
+      "name": "live-result-feedback",
+      "type": "LiveGuestRequest",
+      "wireSha256": "cebf475de2e710f5c0809c973045bdaa5f556f0a3fce667dc4f601ef041b0dbe",
+      "semanticSha256": "86aef840009f2acde7282a76b18f7aab75d0983bc9173e8e06b4395cf2bf866b"
+    }
+  ]
+}
