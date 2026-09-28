@@ -161,7 +161,11 @@ let tests = testList "BARC preview companion" [
         let closeBuffer = Array.zeroCreate<byte> 128
         let! (closed: ValueWebSocketReceiveResult) = socket.ReceiveAsync(Memory<byte>(closeBuffer), timeout.Token).AsTask()
         Expect.equal closed.MessageType WebSocketMessageType.Close "native session replacement closes old credential"
-        let replacement = BrokerState.session handle.Hub |> Option.map Session.id
+        let replacementDeadline = DateTimeOffset.UtcNow.AddSeconds 2.0
+        let mutable replacement = BrokerState.session handle.Hub |> Option.map Session.id
+        while (replacement |> Option.forall ((=) (Guid.Parse sessionId))) && DateTimeOffset.UtcNow < replacementDeadline do
+            do! Task.Delay(10, timeout.Token)
+            replacement <- BrokerState.session handle.Hub |> Option.map Session.id
         Expect.isSome replacement "replacement session is live"
         Expect.notEqual replacement (Some(Guid.Parse sessionId)) "fixture replaces the original session"
         Expect.equal handle.NativeSubmissionCount 0 "preview composition submits no native command"
@@ -179,6 +183,42 @@ let tests = testList "BARC preview companion" [
         document.Dispose()
         timeout.Dispose()
         Expect.isFalse (File.Exists ready) "private handoff is removed on teardown"
+        Directory.Delete(root, true)
+        Directory.Delete(privateRoot, true)
+    }
+
+    testTask "late static bind failure releases earlier protocol and gateway acquisitions" {
+        let root = tempDirectory()
+        createAssets root
+        let privateRoot = tempDirectory()
+        let ready = Path.Combine(privateRoot, "ready.json")
+        let grpcPort, gatewayPort, staticPort = freePort(), freePort(), freePort()
+        let occupied = new TcpListener(IPAddress.Loopback, staticPort)
+        occupied.Start()
+        let settings =
+            { config root ready (TimeSpan.FromSeconds 2.0) PreviewHost.defaultFixtureTiming with
+                grpcPort = grpcPort
+                gatewayPort = gatewayPort
+                staticPort = staticPort }
+        let mutable refused = false
+        try
+            let! handle = PreviewHost.start settings CancellationToken.None
+            do! (handle :> IAsyncDisposable).DisposeAsync().AsTask()
+        with _ -> refused <- true
+        Expect.isTrue refused "occupied late static listener fails startup"
+        Expect.isFalse (File.Exists ready) "failed startup leaves no credential handoff"
+        occupied.Stop()
+        let timing : PreviewHost.FixtureTiming =
+            { secondSnapshot = TimeSpan.FromSeconds 5.0
+              gap = TimeSpan.FromSeconds 5.0
+              recovery = TimeSpan.FromSeconds 5.0
+              replacement = TimeSpan.FromSeconds 5.0 }
+        let timeout = new CancellationTokenSource(TimeSpan.FromSeconds 5.0)
+        let! replacement = PreviewHost.start { settings with fixtureTiming = timing } timeout.Token
+        Expect.isTrue (File.Exists ready) "all three ports are reusable after rollback"
+        do! (replacement :> IAsyncDisposable).DisposeAsync().AsTask()
+        timeout.Dispose()
+        Expect.isFalse (File.Exists ready) "replacement tears down normally"
         Directory.Delete(root, true)
         Directory.Delete(privateRoot, true)
     }

@@ -66,7 +66,9 @@ module PreviewHost =
         let relativeReady = Path.GetRelativePath(fullRoot, ready)
         if relativeReady <> ".." && not (relativeReady.StartsWith(".." + string Path.DirectorySeparatorChar)) then
             invalidArg "readyFile" "ready file must be outside the public asset root"
-        let qualificationReceipt = config.qualificationReceipt |> Option.map Path.GetFullPath
+        let qualificationReceipt =
+            config.qualificationReceipt
+            |> Option.map Path.GetFullPath
         qualificationReceipt |> Option.iter (fun receipt ->
             if String.IsNullOrWhiteSpace receipt || File.Exists receipt || Directory.Exists receipt then
                 invalidArg "qualificationReceipt" "qualification receipt must be a new caller-owned path"
@@ -237,54 +239,91 @@ window.barcPreview = mount(document.getElementById("barc-preview"), {{ assetBase
     let start (config: Config) (ct: CancellationToken) = task {
         let root, readyPath, qualificationReceipt = validate config
         let linked = CancellationTokenSource.CreateLinkedTokenSource(ct)
-        let! protocol = ServerHost.start { ServerHost.defaultOptions with listenAddress = loopback config.grpcPort } (Version(1, 0)) ignore linked.Token
-        let grpcChannel = GrpcChannel.ForAddress(http config.grpcPort)
-        let coordinator = HighBarCoordinator.HighBarCoordinatorClient(grpcChannel)
-        let! _ = heartbeat coordinator "barc-fixture" linked.Token
-        let sessionId = Session.id (BrokerState.session protocol.Hub).Value
-        let credential = token ()
-        let expires = DateTimeOffset.UtcNow.Add config.credentialLifetime
-        let staticOrigin = http config.staticPort
-        let! gateway = Gateway.startAsync protocol.Hub
-                           { Gateway.defaultConfig (http config.gatewayPort) staticOrigin credential sessionId with
-                               credentialExpiresAt = expires
-                               perspectiveId = "barc-fixture"
-                               maxFrameBytes = 65536
-                               maxEntities = 64 } linked.Token
-        let! staticHost = startStatic root config.basePath config.staticPort linked.Token
-        let fixtureCall = coordinator.PushStateAsync(cancellationToken = linked.Token)
-        let nativeCount = ref 0
-        let subscribe = CommandChannelSubscribe.empty()
-        subscribe.PluginId <- "barc-fixture"; subscribe.SchemaVersion <- "1.0.0"
-        subscribe.AdmissionResultProtocol <- AdmissionResultProtocol.CorrelatedV1
-        subscribe.ChannelIncarnation <- "barc-preview-sentinel"
-        let commandCall = coordinator.OpenCommandChannelAsync(subscribe, cancellationToken = linked.Token)
-        let commandTask = task {
-            try
-                while! commandCall.ResponseStream.MoveNext(linked.Token) do
-                    Interlocked.Increment nativeCount |> ignore
-            with :? OperationCanceledException -> () }
-        let fixtureTask = task {
-            if config.fixtureMode then
+        let mutable protocolResource : ServerHost.ServerHandle option = None
+        let mutable gatewayResource : IHost option = None
+        let mutable staticResource : IHost option = None
+        let mutable channelResource : GrpcChannel option = None
+        let mutable fixtureResource : Grpc.Core.AsyncClientStreamingCall<StateUpdate, PushAck> option = None
+        let mutable commandResource : Grpc.Core.AsyncServerStreamingCall<CommandBatch> option = None
+        let mutable fixtureWork : Task option = None
+        let mutable commandWork : Task option = None
+        try
+            let! protocol = ServerHost.start { ServerHost.defaultOptions with listenAddress = loopback config.grpcPort } (Version(1, 0)) ignore linked.Token
+            protocolResource <- Some protocol
+            let grpcChannel = GrpcChannel.ForAddress(http config.grpcPort)
+            channelResource <- Some grpcChannel
+            let coordinator = HighBarCoordinator.HighBarCoordinatorClient(grpcChannel)
+            let! _ = heartbeat coordinator "barc-fixture" linked.Token
+            let sessionId = Session.id (BrokerState.session protocol.Hub).Value
+            let credential = token ()
+            let expires = DateTimeOffset.UtcNow.Add config.credentialLifetime
+            let staticOrigin = http config.staticPort
+            let! gateway = Gateway.startAsync protocol.Hub
+                               { Gateway.defaultConfig (http config.gatewayPort) staticOrigin credential sessionId with
+                                   credentialExpiresAt = expires
+                                   perspectiveId = "barc-fixture"
+                                   maxFrameBytes = 65536
+                                   maxEntities = 64 } linked.Token
+            gatewayResource <- Some gateway
+            let! staticHost = startStatic root config.basePath config.staticPort linked.Token
+            staticResource <- Some staticHost
+            let fixtureCall = coordinator.PushStateAsync(cancellationToken = linked.Token)
+            fixtureResource <- Some fixtureCall
+            let nativeCount = ref 0
+            let subscribe = CommandChannelSubscribe.empty()
+            subscribe.PluginId <- "barc-fixture"; subscribe.SchemaVersion <- "1.0.0"
+            subscribe.AdmissionResultProtocol <- AdmissionResultProtocol.CorrelatedV1
+            subscribe.ChannelIncarnation <- "barc-preview-sentinel"
+            let commandCall = coordinator.OpenCommandChannelAsync(subscribe, cancellationToken = linked.Token)
+            commandResource <- Some commandCall
+            let commandTask = task {
                 try
-                    do! fixtureCall.RequestStream.WriteAsync(richSnapshot 9007199254740993UL 100u 11.25f)
-                    do! Task.Delay(config.fixtureTiming.secondSnapshot, linked.Token)
-                    do! fixtureCall.RequestStream.WriteAsync(richSnapshot 9007199254740994UL 101u 12.25f)
-                    do! Task.Delay(config.fixtureTiming.gap, linked.Token)
-                    do! fixtureCall.RequestStream.WriteAsync(gap 9007199254740996UL 102u)
-                    do! Task.Delay(config.fixtureTiming.recovery, linked.Token)
-                    do! fixtureCall.RequestStream.WriteAsync(richSnapshot 9007199254740997UL 103u 13.25f)
-                    do! Task.Delay(config.fixtureTiming.replacement, linked.Token)
-                    do! fixtureCall.RequestStream.CompleteAsync()
-                    let deadline = DateTimeOffset.UtcNow.AddSeconds 3.0
-                    while BrokerState.session protocol.Hub |> Option.isSome do
-                        if DateTimeOffset.UtcNow > deadline then failwith "fixture state stream did not detach"
-                        do! Task.Delay(10, linked.Token)
-                    let! _ = heartbeat coordinator "barc-fixture-replacement" linked.Token
-                    ()
+                    while! commandCall.ResponseStream.MoveNext(linked.Token) do
+                        Interlocked.Increment nativeCount |> ignore
                 with :? OperationCanceledException -> () }
-        let staticBase = staticOrigin + config.basePath
-        writeReady readyPath staticBase (ws config.gatewayPort) sessionId credential expires (http config.grpcPort) config.fixtureMode
-        return Handle(protocol, gateway, staticHost, grpcChannel, fixtureCall, commandCall, linked, fixtureTask, commandTask,
-                      readyPath, qualificationReceipt, nativeCount)
+            commandWork <- Some commandTask
+            let fixtureTask = task {
+                if config.fixtureMode then
+                    try
+                        do! fixtureCall.RequestStream.WriteAsync(richSnapshot 9007199254740993UL 100u 11.25f)
+                        do! Task.Delay(config.fixtureTiming.secondSnapshot, linked.Token)
+                        do! fixtureCall.RequestStream.WriteAsync(richSnapshot 9007199254740994UL 101u 12.25f)
+                        do! Task.Delay(config.fixtureTiming.gap, linked.Token)
+                        do! fixtureCall.RequestStream.WriteAsync(gap 9007199254740996UL 102u)
+                        do! Task.Delay(config.fixtureTiming.recovery, linked.Token)
+                        do! fixtureCall.RequestStream.WriteAsync(richSnapshot 9007199254740997UL 103u 13.25f)
+                        do! Task.Delay(config.fixtureTiming.replacement, linked.Token)
+                        do! fixtureCall.RequestStream.CompleteAsync()
+                        let deadline = DateTimeOffset.UtcNow.AddSeconds 3.0
+                        while BrokerState.session protocol.Hub |> Option.isSome do
+                            if DateTimeOffset.UtcNow > deadline then failwith "fixture state stream did not detach"
+                            do! Task.Delay(10, linked.Token)
+                        let! _ = heartbeat coordinator "barc-fixture-replacement" linked.Token
+                        ()
+                    with :? OperationCanceledException -> () }
+            fixtureWork <- Some fixtureTask
+            let staticBase = staticOrigin + config.basePath
+            writeReady readyPath staticBase (ws config.gatewayPort) sessionId credential expires (http config.grpcPort) config.fixtureMode
+            return Handle(protocol, gateway, staticHost, grpcChannel, fixtureCall, commandCall, linked,
+                          fixtureTask, commandTask, readyPath, qualificationReceipt, nativeCount)
+        with error ->
+            linked.Cancel()
+            fixtureResource |> Option.iter (fun call -> try call.Dispose() with _ -> ())
+            commandResource |> Option.iter (fun call -> try call.Dispose() with _ -> ())
+            channelResource |> Option.iter (fun channel -> try channel.Dispose() with _ -> ())
+            let work = [ fixtureWork; commandWork ] |> List.choose id |> List.toArray
+            if work.Length > 0 then
+                try do! Task.WhenAll work with _ -> ()
+            match staticResource with
+            | Some host -> try do! host.StopAsync() with _ -> ()
+            | None -> ()
+            match gatewayResource with
+            | Some host -> try do! host.StopAsync() with _ -> ()
+            | None -> ()
+            match protocolResource with
+            | Some host -> try do! (host :> IAsyncDisposable).DisposeAsync().AsTask() with _ -> ()
+            | None -> ()
+            try File.Delete readyPath with _ -> ()
+            linked.Dispose()
+            return raise error
     }
