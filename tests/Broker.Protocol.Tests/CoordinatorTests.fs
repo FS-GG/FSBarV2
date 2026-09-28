@@ -74,7 +74,7 @@ let wireConvertTests =
             let upd = mkStateUpdate 1UL 100u
             let _, result = WireConvert.applyHighBarStateUpdate upd v0
             match result with
-            | WireConvert.NewSnapshot s ->
+            | WireConvert.NewSnapshot (s, _) ->
                 Expect.equal s.tick 100L "frame is threaded into tick"
             | other ->
                 failtestf "expected NewSnapshot, got %A" other
@@ -106,7 +106,7 @@ let wireConvertTests =
             let v2, result = WireConvert.applyHighBarStateUpdate (mkStateUpdate 5UL 5u) v1
             Expect.isTrue (WireConvert.hasValidBaseline v2) "replacement snapshot is valid"
             match result with
-            | WireConvert.NewSnapshot snapshot -> Expect.equal snapshot.tick 5L "new baseline tick"
+            | WireConvert.NewSnapshot (snapshot, _) -> Expect.equal snapshot.tick 5L "new baseline tick"
             | other -> failtestf "expected NewSnapshot, got %A" other
         }
 
@@ -128,9 +128,41 @@ let wireConvertTests =
             upd.Snapshot.OwnUnits.Add(own)
             let _, result = WireConvert.applyHighBarStateUpdate upd WireConvert.emptyRunningView
             match result with
-            | WireConvert.NewSnapshot snapshot ->
+            | WireConvert.NewSnapshot (snapshot, _) ->
                 Expect.equal snapshot.units.Head.pos.x 11.0f "ground x comes from native X"
                 Expect.equal snapshot.units.Head.pos.y 23.0f "ground y comes from native Z"
+            | other -> failtestf "expected NewSnapshot, got %A" other
+        }
+
+        test "browser observation preserves provenance elevation radar and economy optionals" {
+            let own = OwnUnit.empty()
+            own.UnitId <- 77u
+            own.DefId <- 501u
+            own.TeamId <- 7
+            own.Position <- ValueSome (position 11.25f 403.5f -37.5f)
+            own.Health <- 123.5f
+            own.MaxHealth <- 800.0f
+            let radar = RadarBlip.empty()
+            radar.BlipId <- 99u
+            radar.Position <- ValueSome (position 73.25f 0.0f -8.5f)
+            let economy = TeamEconomy.empty()
+            economy.Metal <- 42.5f
+            economy.MetalStorage <- 1000.0f
+            economy.MetalIncome <- 7.25f
+            let upd = mkStateUpdate 9007199254740993UL 1u
+            upd.Snapshot.OwnUnits.Add own
+            upd.Snapshot.RadarEnemies.Add radar
+            upd.Snapshot.Economy <- ValueSome economy
+            let _, result = WireConvert.applyHighBarStateUpdate upd WireConvert.emptyRunningView
+            match result with
+            | WireConvert.NewSnapshot (_, browser) ->
+                Expect.equal browser.sequence 9007199254740993UL "full uint64 sequence retained"
+                Expect.equal browser.units.[0].observation Snapshot.Own "own provenance retained"
+                Expect.equal browser.units.[0].position.elevation (Some 403.5f) "elevation retained"
+                Expect.equal browser.units.[1].observation Snapshot.Radar "radar provenance retained"
+                Expect.equal browser.units.[1].definitionId None "unknown radar definition remains absent"
+                Expect.equal browser.units.[1].health None "hidden health remains absent"
+                Expect.equal browser.teamEconomy.Value.metal.expenditure None "unsupported expenditure remains absent"
             | other -> failtestf "expected NewSnapshot, got %A" other
         }
 
@@ -155,7 +187,7 @@ let wireConvertTests =
             let v3, recovery = WireConvert.applyHighBarStateUpdate (mkStateUpdate 4UL 4u) v2
             Expect.isTrue (WireConvert.hasValidBaseline v3) "full snapshot recovers"
             match recovery with
-            | WireConvert.NewSnapshot snapshot -> Expect.equal snapshot.tick 4L "recovery tick"
+            | WireConvert.NewSnapshot (snapshot, _) -> Expect.equal snapshot.tick 4L "recovery tick"
             | other -> failtestf "expected recovered snapshot, got %A" other
         }
 
@@ -212,6 +244,28 @@ let wireConvertTests =
             | WireConvert.Invalidated (_, _, detail) ->
                 Expect.stringContains detail "missing position" "reason identifies absent field"
             | other -> failtestf "expected invalidation, got %A" other
+        }
+
+        test "browser preview bound does not invalidate the legacy materializer" {
+            let upd = mkStateUpdate 1UL 1u
+            for id in 1u .. 4097u do
+                let feature = MapFeature.empty()
+                feature.FeatureId <- id
+                feature.DefId <- 1u
+                feature.Position <- ValueSome (position 1.0f 2.0f 3.0f)
+                upd.Snapshot.MapFeatures.Add feature
+            let view, result = WireConvert.applyHighBarStateUpdate upd WireConvert.emptyRunningView
+            Expect.isTrue (WireConvert.hasValidBaseline view) "legacy baseline remains valid"
+            match result with
+            | WireConvert.NewSnapshot (legacy, browser) ->
+                Expect.equal legacy.features.Length 4097 "legacy snapshot is complete"
+                let hub, _ = mkHubWithAudit ()
+                Expect.isOk (BrokerState.openGuestSession DateTimeOffset.UtcNow hub) "session opens"
+                BrokerState.applyBrowserObservation "fixture" browser hub
+                match BrokerState.browserLatest hub with
+                | Some (Snapshot.Stale(_, _, _, detail)) -> Expect.stringContains detail "4096-entity" "browser feed refuses oversize"
+                | other -> failtestf "expected browser-only stale marker, got %A" other
+            | other -> failtestf "expected complete legacy snapshot, got %A" other
         }
     ]
 

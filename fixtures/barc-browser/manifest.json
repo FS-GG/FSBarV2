@@ -1,0 +1,166 @@
+{
+  "schema": "barc.browser.corpus/v1",
+  "protoPackage": "barc.browser.v1",
+  "protocolVersion": "1.0.0",
+  "profile": "barc-preview-v1",
+  "generator": {
+    "protobufjs": "8.8.0",
+    "protobufjsCli": "2.7.0",
+    "long": "5.3.2"
+  },
+  "maxFrameBytes": 65536,
+  "protoSha256": "752ef84e8631de6e08f5ef94851fcbd918e451ebfb5d446a705baa317f65ea0f",
+  "orderedBundleSha256": "0cd8abc6beaa7f92425c6e56ba7faa3ff7d62d30989a6ab95134a72d4e420bbf",
+  "cases": [
+    {
+      "name": "auth-incomplete",
+      "wire": "wire/auth-incomplete.bin",
+      "semantic": "semantic/auth-incomplete.json",
+      "expected": "semantic-refusal:incomplete-metadata",
+      "sha256": "03fa9a9328073cda74d86dbf1a220186dda3447715b7ed213b4c8ccb8e7cb6a1"
+    },
+    {
+      "name": "auth-stale-credential",
+      "wire": "wire/auth-stale-credential.bin",
+      "semantic": "semantic/auth-stale-credential.json",
+      "expected": "semantic-refusal:stale-credential",
+      "sha256": "f9b1e01aea145bd81127a945e58406b507a1f870ec06cae3efb0ad157c9e0d02"
+    },
+    {
+      "name": "auth-wrong-game",
+      "wire": "wire/auth-wrong-game.bin",
+      "semantic": "semantic/auth-wrong-game.json",
+      "expected": "semantic-refusal:wrong-game",
+      "sha256": "720928e3e85134f7fb12c24568266fefd9ae791020e0cadc96b6968b05daa94b"
+    },
+    {
+      "name": "auth-wrong-origin",
+      "wire": "wire/auth-wrong-origin.bin",
+      "semantic": "semantic/auth-wrong-origin.json",
+      "expected": "semantic-refusal:wrong-origin",
+      "sha256": "c9269c2046aaa97855e8de100beb0a91f0fb23248a83248d4439406f19ac94d9"
+    },
+    {
+      "name": "auth-wrong-session",
+      "wire": "wire/auth-wrong-session.bin",
+      "semantic": "semantic/auth-wrong-session.json",
+      "expected": "semantic-refusal:wrong-session",
+      "sha256": "f1ddd1814ed1bc1a7b181de19ec63d1d7fae1219f2e666885f99b37c32ce3f6e"
+    },
+    {
+      "name": "guest-ground-target",
+      "wire": "wire/guest-ground-target.bin",
+      "semantic": "semantic/guest-ground-target.json",
+      "expected": "decode",
+      "sha256": "6f595abad0a93c446c66b8c5b3ec7184496755ce2dd802594bb258402b2a3103"
+    },
+    {
+      "name": "guest-initialize",
+      "wire": "wire/guest-initialize.bin",
+      "semantic": "semantic/guest-initialize.json",
+      "expected": "decode",
+      "sha256": "9d7bba130e776ddffce3e508137b9035213ba6f94e5b2031b615ac7ca480d3b0"
+    },
+    {
+      "name": "guest-invalid-context",
+      "wire": "wire/guest-invalid-context.bin",
+      "semantic": "semantic/guest-invalid-context.json",
+      "expected": "semantic-refusal:stale-context-sequence",
+      "sha256": "3f37037ea0d9037c365e8a2b01627fae1efbb5670f3d1f393c6fcd121140295e"
+    },
+    {
+      "name": "guest-invalid-session",
+      "wire": "wire/guest-invalid-session.bin",
+      "semantic": "semantic/guest-invalid-session.json",
+      "expected": "semantic-refusal:wrong-session",
+      "sha256": "f9e34e31bca94fe68992054b91a473a2212ec219925a98410598fe19a2a39965"
+    },
+    {
+      "name": "guest-move-preview",
+      "wire": "wire/guest-move-preview.bin",
+      "semantic": "semantic/guest-move-preview.json",
+      "expected": "decode",
+      "sha256": "f03196a9d72243dbc3f0adc6cf1e141864ceb3b4b327ef1f5f34db91de2034ed"
+    },
+    {
+      "name": "guest-no-action-ack",
+      "wire": "wire/guest-no-action-ack.bin",
+      "semantic": "semantic/guest-no-action-ack.json",
+      "expected": "decode:no-action-ack",
+      "sha256": "9be09cfc7284cc29dec3e2ece441edacaf36b3bc94d228f210957dda7479be40"
+    },
+    {
+      "name": "guest-observation",
+      "wire": "wire/guest-observation.bin",
+      "semantic": "semantic/guest-observation.json",
+      "expected": "decode",
+      "sha256": "ff9c0d7c9deced9044977271c25c22db1940b8900e4c778ed7e82965ba046ae3"
+    },
+    {
+      "name": "guest-select",
+      "wire": "wire/guest-select.bin",
+      "semantic": "semantic/guest-select.json",
+      "expected": "decode",
+      "sha256": "ea9f48d149142dd3bf73670f56b903007a3f9a19e1c5766388c73d13578cb686"
+    },
+    {
+      "name": "malformed-varint",
+      "wire": "wire/malformed-varint.bin",
+      "expected": "decode-refusal",
+      "sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+    },
+    {
+      "name": "observation-asymmetric",
+      "wire": "wire/observation-asymmetric.bin",
+      "semantic": "semantic/observation-asymmetric.json",
+      "expected": "decode",
+      "sha256": "d684878476a93a2277b7ebc30be475c868fb69503c14d8a9488beb3c6411c80b"
+    },
+    {
+      "name": "observation-optional-absent",
+      "wire": "wire/observation-optional-absent.bin",
+      "semantic": "semantic/observation-optional-absent.json",
+      "expected": "decode",
+      "sha256": "36be1b9895a74dcb6a7e06520cb87bdaf06b58bae39738235d3eda0522895dd4"
+    },
+    {
+      "name": "observation-optional-present-zero",
+      "wire": "wire/observation-optional-present-zero.bin",
+      "semantic": "semantic/observation-optional-present-zero.json",
+      "expected": "decode",
+      "sha256": "88d2f4b70ade6d10a7c38964e6c94e0483c78855b3c4a7e81fe7a05bc4d33ad2"
+    },
+    {
+      "name": "observation-unknown-enum",
+      "wire": "wire/observation-unknown-enum.bin",
+      "semantic": "semantic/observation-unknown-enum.json",
+      "expected": "semantic-refusal:unknown-enum",
+      "sha256": "84c6bb04facbf284e2c2f63bbb7c258fd619ee17debc40551381c49c731d5561"
+    },
+    {
+      "name": "observation-unknown-field",
+      "wire": "wire/observation-unknown-field.bin",
+      "semantic": "semantic/observation-unknown-field.json",
+      "expected": "decode-and-drop-unknown-on-reencode",
+      "sha256": "1aeeaf1f44e6cc72dc2c12ce88318b54a66919d7e9cecbdd2db1e632f0005e0f"
+    },
+    {
+      "name": "oversized-frame",
+      "wire": "wire/oversized-frame.bin",
+      "expected": "size-refusal:max-65536",
+      "sha256": "3266304f31be278d06c3bd3eb9aa3e00c59bedec0a890de466568b0b90b0e01f"
+    },
+    {
+      "name": "truncated-observation",
+      "wire": "wire/truncated-observation.bin",
+      "expected": "decode-refusal",
+      "sha256": "6d0df8368a322026455217debcd36b5b8b3f723cb17c9948b71590cbb7c636db"
+    },
+    {
+      "name": "unknown-envelope-wire",
+      "wire": "wire/unknown-envelope-wire.bin",
+      "expected": "semantic-refusal:unknown-envelope-body",
+      "sha256": "bc1aefbdddfd2b537f3f96e4c82a29c636362acf12bcc1d8cfc5e2432277b5a8"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>BARC guest worker harness</title>
+<button id="responsive">responsive</button>
+<output id="ticks">0</output>
+<script type="module">
+  import { GuestSupervisor } from "/src/Broker.Browser.Wasm/index.js";
+  window.GuestSupervisor = GuestSupervisor;
+  window.ticks = 0;
+  window.clicks = 0;
+  setInterval(() => { window.ticks += 1; document.querySelector("#ticks").value = String(window.ticks); }, 5);
+  document.querySelector("#responsive").addEventListener("click", () => { window.clicks += 1; });
+</script>
+</html>

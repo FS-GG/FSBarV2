@@ -1,0 +1,18 @@
+{
+  "requestId": "9007199254740994",
+  "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+  "consumedSequence": "9007199254740993",
+  "acknowledgment": "GUEST_ACK_STATUS_CONSUMED",
+  "kind": "INTENT_KIND_MOVE",
+  "move": {
+    "unitIds": [
+      "77"
+    ],
+    "groundTarget": {
+      "x": 123.25,
+      "elevation": 456.5,
+      "z": -789.75
+    }
+  },
+  "preview": "move"
+}

@@ -1,0 +1,7 @@
+{
+  "authenticate": {
+    "game": "bar",
+    "protocolVersion": "1.0.0"
+  },
+  "body": "authenticate"
+}

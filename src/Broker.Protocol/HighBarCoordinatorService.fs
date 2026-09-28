@@ -345,14 +345,17 @@ module HighBarCoordinatorService =
                                             BrokerState.activePluginId service.hub
                                             |> Option.defaultValue ""
                                         match result with
-                                        | WireConvert.NewSnapshot snap ->
+                                        | WireConvert.NewSnapshot (snap, browser) ->
                                             BrokerState.applySnapshot snap service.hub
+                                            BrokerState.applyBrowserObservation pid browser service.hub
                                             BrokerState.refreshLiveness now service.hub
                                         | WireConvert.Gap (l, r) ->
                                             BrokerState.noteStateGap pid l r now service.hub
+                                            BrokerState.invalidateBrowserFeed l r "state sequence gap" service.hub
                                             BrokerState.refreshLiveness now service.hub
                                         | WireConvert.Invalidated (l, r, detail) ->
                                             BrokerState.noteStateInvalidated pid l r detail now service.hub
+                                            BrokerState.invalidateBrowserFeed l r detail service.hub
                                             BrokerState.refreshLiveness now service.hub
                                         | WireConvert.KeepAliveOnly ->
                                             BrokerState.refreshLiveness now service.hub

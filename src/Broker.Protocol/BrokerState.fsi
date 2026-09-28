@@ -179,6 +179,19 @@ module BrokerState =
     /// optional 2D viz can render without polling the Hub.
     val snapshots : hub:Hub -> IObservable<Snapshot.GameStateSnapshot>
 
+    val applyBrowserObservation :
+        perspectiveId:string -> observation:Snapshot.BrowserObservation -> hub:Hub -> unit
+    val invalidateBrowserFeed :
+        lastSequence:uint64 -> receivedSequence:uint64 -> detail:string -> hub:Hub -> unit
+    val browserLatest : hub:Hub -> Snapshot.BrowserFeed option
+    val browserFeed : hub:Hub -> IObservable<Snapshot.BrowserFeed>
+    /// Atomically subscribe before reading the retained value, so a feed
+    /// transition cannot disappear between late-subscriber bootstrap steps.
+    val subscribeBrowserFeed :
+        observer:IObserver<Snapshot.BrowserFeed>
+        -> hub:Hub
+        -> Snapshot.BrowserFeed option * IDisposable
+
     /// Toggle pause on the active session. No-op when no session.
     val togglePause : hub:Hub -> Result<unit, string>
 

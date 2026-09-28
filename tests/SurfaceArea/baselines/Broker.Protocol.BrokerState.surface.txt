@@ -17,6 +17,8 @@
   F Broker.Protocol.BrokerState.Hub.activePluginId : FSharpOption<String>
   F Broker.Protocol.BrokerState.Hub.auditEmitter : FSharpFunc<AuditEvent,Unit>
   F Broker.Protocol.BrokerState.Hub.brokerVersion : Version
+  F Broker.Protocol.BrokerState.Hub.browserBroadcaster : BrowserBroadcaster
+  F Broker.Protocol.BrokerState.Hub.browserLatest : FSharpOption<BrowserFeed>
   F Broker.Protocol.BrokerState.Hub.clients : ConcurrentDictionary<ScriptingClientId,ClientChannel>
   F Broker.Protocol.BrokerState.Hub.commandQueueCapacity : Int32
   F Broker.Protocol.BrokerState.Hub.completedNativeResultOrder : Queue<ValueTuple`3>
@@ -45,12 +47,15 @@
   F Broker.Protocol.BrokerState.OutboundDelivery.sessionId : Guid
 M Broker.Protocol.BrokerState.activePluginId(hub:Hub) : FSharpOption<String>
 M Broker.Protocol.BrokerState.admitScriptingCommand(client:ClientChannel, command:Command, hub:Hub) : CommandAck
+M Broker.Protocol.BrokerState.applyBrowserObservation(perspectiveId:String, observation:BrowserObservation, hub:Hub) : Void
 M Broker.Protocol.BrokerState.applySnapshot(snapshot:GameStateSnapshot, hub:Hub) : Void
 M Broker.Protocol.BrokerState.asCoreFacade(hub:Hub) : CoreFacade
 M Broker.Protocol.BrokerState.attachCoordinator(link:ProxyAiLink, hub:Hub) : FSharpResult<Unit,String>
 M Broker.Protocol.BrokerState.auditEmitter(hub:Hub) : FSharpFunc<AuditEvent,Unit>
 M Broker.Protocol.BrokerState.bindSlot(id:ScriptingClientId, slot:Int32, hub:Hub) : FSharpResult<Unit,SingleWriterError>
 M Broker.Protocol.BrokerState.brokerVersion(hub:Hub) : Version
+M Broker.Protocol.BrokerState.browserFeed(hub:Hub) : IObservable<BrowserFeed>
+M Broker.Protocol.BrokerState.browserLatest(hub:Hub) : FSharpOption<BrowserFeed>
 M Broker.Protocol.BrokerState.clearTelemetryGap(hub:Hub) : Void
 M Broker.Protocol.BrokerState.closeCoordinatorCommandChannel(leaseId:Guid, reason:String, hub:Hub) : Void
 M Broker.Protocol.BrokerState.closeSession(reason:EndReason, at:DateTimeOffset, hub:Hub) : Void
@@ -62,6 +67,7 @@ M Broker.Protocol.BrokerState.expirePendingNativeResult(channelIncarnation:Strin
 M Broker.Protocol.BrokerState.flushFeedbackBacklog(client:ClientChannel, hub:Hub) : Void
 M Broker.Protocol.BrokerState.grantAdmin(id:ScriptingClientId, by:String, at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,RosterError>
 M Broker.Protocol.BrokerState.hasCoordinatorCommandChannel(hub:Hub) : Boolean
+M Broker.Protocol.BrokerState.invalidateBrowserFeed(lastSequence:UInt64, receivedSequence:UInt64, detail:String, hub:Hub) : Void
 M Broker.Protocol.BrokerState.isCurrentDelivery(delivery:OutboundDelivery, hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.lastHeartbeatAt(hub:Hub) : DateTimeOffset
 M Broker.Protocol.BrokerState.launchHostSession(at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,String>
@@ -87,6 +93,7 @@ M Broker.Protocol.BrokerState.setOwnerRule(rule:OwnerRule, hub:Hub) : Void
 M Broker.Protocol.BrokerState.slots(hub:Hub) : FSharpList<ParticipantSlot>
 M Broker.Protocol.BrokerState.snapshots(hub:Hub) : IObservable<GameStateSnapshot>
 M Broker.Protocol.BrokerState.stepSpeed(delta:Decimal, hub:Hub) : FSharpResult<Unit,String>
+M Broker.Protocol.BrokerState.subscribeBrowserFeed(observer:IObserver<BrowserFeed>, hub:Hub) : Tuple<FSharpOption`1,IDisposable>
 M Broker.Protocol.BrokerState.subscribeState(client:ClientChannel, channel:Channel<StateMsg>, hub:Hub) : Void
 M Broker.Protocol.BrokerState.telemetryGap(hub:Hub) : Boolean
 M Broker.Protocol.BrokerState.telemetryValid(hub:Hub) : Boolean

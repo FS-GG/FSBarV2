@@ -1,0 +1,21 @@
+{
+  "requestId": "1",
+  "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+  "initialize": {
+    "game": "bar",
+    "protocolVersion": "1.0.0",
+    "profile": "barc-preview-v1",
+    "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+    "perspectiveId": "team-7",
+    "mode": "PREVIEW_MODE_READ_ONLY",
+    "validity": {
+      "status": "VALIDITY_STATUS_CURRENT"
+    },
+    "limits": {
+      "maxFrameBytes": 65536,
+      "authTimeoutMs": 3000,
+      "maxEntities": 4096
+    }
+  },
+  "input": "initialize"
+}

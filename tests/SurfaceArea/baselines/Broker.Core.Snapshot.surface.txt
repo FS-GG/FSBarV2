@@ -1,3 +1,15 @@
+  C Broker.Core.Snapshot.BrowserFeed.Current(Item:BrowserObservation)
+  C Broker.Core.Snapshot.BrowserFeed.Stale(sessionId:Guid, lastSequence:UInt64, receivedSequence:UInt64, detail:String)
+  C Broker.Core.Snapshot.ObservationKind.Own()
+  C Broker.Core.Snapshot.ObservationKind.Radar()
+  C Broker.Core.Snapshot.ObservationKind.Visual()
+  F Broker.Core.Snapshot.BrowserObservation.capturedAt : DateTimeOffset
+  F Broker.Core.Snapshot.BrowserObservation.features : FSharpList<ObservedFeature>
+  F Broker.Core.Snapshot.BrowserObservation.perspectiveId : String
+  F Broker.Core.Snapshot.BrowserObservation.sequence : UInt64
+  F Broker.Core.Snapshot.BrowserObservation.sessionId : Guid
+  F Broker.Core.Snapshot.BrowserObservation.teamEconomy : FSharpOption<TeamEconomy>
+  F Broker.Core.Snapshot.BrowserObservation.units : FSharpList<ObservedUnit>
   F Broker.Core.Snapshot.Building.classId : String
   F Broker.Core.Snapshot.Building.id : UInt32
   F Broker.Core.Snapshot.Building.ownerPlayerId : Int32
@@ -18,6 +30,17 @@
   F Broker.Core.Snapshot.MapMeta.mapName : String
   F Broker.Core.Snapshot.MapMeta.outline : Byte[]
   F Broker.Core.Snapshot.MapMeta.size : Vec2
+  F Broker.Core.Snapshot.ObservedFeature.definitionId : UInt32
+  F Broker.Core.Snapshot.ObservedFeature.id : UInt64
+  F Broker.Core.Snapshot.ObservedFeature.position : Vec3
+  F Broker.Core.Snapshot.ObservedUnit.definitionId : FSharpOption<UInt32>
+  F Broker.Core.Snapshot.ObservedUnit.generation : FSharpOption<UInt64>
+  F Broker.Core.Snapshot.ObservedUnit.health : FSharpOption<Single>
+  F Broker.Core.Snapshot.ObservedUnit.id : UInt64
+  F Broker.Core.Snapshot.ObservedUnit.maxHealth : FSharpOption<Single>
+  F Broker.Core.Snapshot.ObservedUnit.observation : ObservationKind
+  F Broker.Core.Snapshot.ObservedUnit.position : Vec3
+  F Broker.Core.Snapshot.ObservedUnit.teamId : FSharpOption<Int32>
   F Broker.Core.Snapshot.PlayerTelemetry.buildingCount : Int32
   F Broker.Core.Snapshot.PlayerTelemetry.economy : EconomyStats
   F Broker.Core.Snapshot.PlayerTelemetry.kills : Int32
@@ -28,22 +51,40 @@
   F Broker.Core.Snapshot.PlayerTelemetry.teamId : Int32
   F Broker.Core.Snapshot.PlayerTelemetry.unitClassBreakdown : FSharpMap<String,Int32>
   F Broker.Core.Snapshot.PlayerTelemetry.unitCount : Int32
+  F Broker.Core.Snapshot.ResourceAmount.current : FSharpOption<Double>
+  F Broker.Core.Snapshot.ResourceAmount.expenditure : FSharpOption<Double>
+  F Broker.Core.Snapshot.ResourceAmount.income : FSharpOption<Double>
+  F Broker.Core.Snapshot.ResourceAmount.storage : FSharpOption<Double>
   F Broker.Core.Snapshot.ResourceVector.energy : Double
   F Broker.Core.Snapshot.ResourceVector.metal : Double
+  F Broker.Core.Snapshot.TeamEconomy.energy : ResourceAmount
+  F Broker.Core.Snapshot.TeamEconomy.metal : ResourceAmount
+  F Broker.Core.Snapshot.TeamEconomy.teamId : FSharpOption<Int32>
   F Broker.Core.Snapshot.Unit.classId : String
   F Broker.Core.Snapshot.Unit.id : UInt32
   F Broker.Core.Snapshot.Unit.ownerPlayerId : Int32
   F Broker.Core.Snapshot.Unit.pos : Vec2
   F Broker.Core.Snapshot.Vec2.x : Single
   F Broker.Core.Snapshot.Vec2.y : Single
+  F Broker.Core.Snapshot.Vec3.elevation : FSharpOption<Single>
+  F Broker.Core.Snapshot.Vec3.x : Single
+  F Broker.Core.Snapshot.Vec3.z : Single
 M Broker.Core.Snapshot.isStrictlyAfter(prev:GameStateSnapshot, next:GameStateSnapshot) : Boolean
 M Broker.Core.Snapshot.mapMetaOnFirstOnly(prev:FSharpOption<GameStateSnapshot>, next:GameStateSnapshot) : GameStateSnapshot
+T Broker.Core.Snapshot.BrowserFeed : union
+T Broker.Core.Snapshot.BrowserObservation : record
 T Broker.Core.Snapshot.Building : record
 T Broker.Core.Snapshot.EconomyStats : record
 T Broker.Core.Snapshot.Feature : record
 T Broker.Core.Snapshot.GameStateSnapshot : record
 T Broker.Core.Snapshot.MapMeta : record
+T Broker.Core.Snapshot.ObservationKind : union
+T Broker.Core.Snapshot.ObservedFeature : record
+T Broker.Core.Snapshot.ObservedUnit : record
 T Broker.Core.Snapshot.PlayerTelemetry : record
+T Broker.Core.Snapshot.ResourceAmount : record
 T Broker.Core.Snapshot.ResourceVector : record
+T Broker.Core.Snapshot.TeamEconomy : record
 T Broker.Core.Snapshot.Unit : record
 T Broker.Core.Snapshot.Vec2 : record
+T Broker.Core.Snapshot.Vec3 : record

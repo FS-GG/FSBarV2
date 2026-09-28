@@ -1,0 +1,53 @@
+{
+  "requestId": "2",
+  "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+  "contextSequence": "9007199254740993",
+  "observation": {
+    "units": [
+      {
+        "id": "77",
+        "definitionId": 501,
+        "teamId": 7,
+        "observation": "OBSERVATION_KIND_OWN",
+        "position": {
+          "x": 11.25,
+          "elevation": 403.5,
+          "z": -37.5
+        },
+        "health": 123.5,
+        "maxHealth": 800
+      },
+      {
+        "id": "99",
+        "observation": "OBSERVATION_KIND_RADAR",
+        "position": {
+          "x": 73.25,
+          "z": -8.5
+        }
+      }
+    ],
+    "features": [],
+    "sessionId": "ABEiM0RVZneImaq7zN3u/w==",
+    "sequence": "9007199254740993",
+    "capturedAtUnixMs": "1770000000123",
+    "perspectiveId": "team-7",
+    "validity": {
+      "status": "VALIDITY_STATUS_CURRENT",
+      "lastSequence": "9007199254740993"
+    },
+    "teamEconomy": {
+      "teamId": 7,
+      "metal": {
+        "current": 42.5,
+        "storage": 1000,
+        "income": 7.25
+      },
+      "energy": {
+        "current": 0,
+        "storage": 5000,
+        "income": 91.5
+      }
+    }
+  },
+  "input": "observation"
+}

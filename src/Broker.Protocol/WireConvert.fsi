@@ -47,7 +47,7 @@ module WireConvert =
     val hasValidBaseline : view:RunningView -> bool
 
     type ApplyResult =
-        | NewSnapshot of Snapshot.GameStateSnapshot
+        | NewSnapshot of Snapshot.GameStateSnapshot * Snapshot.BrowserObservation
         | Gap of lastSeq:uint64 * receivedSeq:uint64
         | Invalidated of lastSeq:uint64 * receivedSeq:uint64 * detail:string
         | KeepAliveOnly

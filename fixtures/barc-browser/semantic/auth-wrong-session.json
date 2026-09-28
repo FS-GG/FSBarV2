@@ -1,0 +1,11 @@
+{
+  "authenticate": {
+    "game": "bar",
+    "protocolVersion": "1.0.0",
+    "profile": "barc-preview-v1",
+    "credential": "fixture-credential",
+    "origin": "http://127.0.0.1:4173",
+    "expectedSessionId": "7u7u7u7u7u7u7u7u7u7u7g=="
+  },
+  "body": "authenticate"
+}
