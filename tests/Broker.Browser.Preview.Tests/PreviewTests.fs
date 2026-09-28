@@ -194,6 +194,12 @@ let tests = testList "BARC preview companion" [
             do! (handle :> IAsyncDisposable).DisposeAsync().AsTask()
         with :? ArgumentException -> assetsRefused <- true
         Expect.isTrue assetsRefused "incomplete trusted assets are refused"
+        let mutable nonFixtureRefused = false
+        try
+            let! handle = PreviewHost.start { settings with fixtureMode = false } CancellationToken.None
+            do! (handle :> IAsyncDisposable).DisposeAsync().AsTask()
+        with :? ArgumentException -> nonFixtureRefused <- true
+        Expect.isTrue nonFixtureRefused "unlabelled non-fixture operation is outside this horizon"
         Directory.Delete(root, true)
         Directory.Delete(privateRoot, true)
     }

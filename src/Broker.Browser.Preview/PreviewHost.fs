@@ -50,6 +50,8 @@ module PreviewHost =
     let private validate (config: Config) =
         let fullRoot = Path.GetFullPath config.assetsRoot
         let ready = Path.GetFullPath config.readyFile
+        if not config.fixtureMode then
+            invalidArg "fixtureMode" "this preview horizon requires explicit fixture mode"
         if not (Directory.Exists fullRoot) then invalidArg "assetsRoot" "asset root does not exist"
         if config.basePath.Length < 3 || not (config.basePath.StartsWith "/") || not (config.basePath.EndsWith "/")
            || config.basePath.Contains("..") || config.basePath.Contains("//") then
