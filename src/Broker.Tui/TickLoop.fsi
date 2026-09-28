@@ -13,15 +13,6 @@ module TickLoop =
         | Dashboard
         | Lobby of draft:Lobby.LobbyConfig
 
-    /// Operator-facing handle for the optional 2D visualisation. The TUI
-    /// only knows it can `Toggle` viz on/off and ask the host for a
-    /// `Status` line to surface in the dashboard footer; the App-level
-    /// composition root supplies the live wiring that talks to
-    /// `Broker.Viz.VizHost`.
-    type VizController =
-        abstract Toggle : unit -> unit
-        abstract Status : unit -> string option
-
     /// Pure dispatch: given the current UI mode and a hotkey action,
     /// invoke the matching `Session.CoreFacade` operator method and
     /// return the next UI mode. Decoupled from the live ANSI loop so
@@ -36,12 +27,10 @@ module TickLoop =
     /// Single-thread render-and-input loop. Owns the AnsiConsole.Live
     /// context — Spectre.Console's `LiveDisplay` is not thread-safe, so
     /// rendering and input handling share one thread (research.md §4).
-    /// `viz` is `None` when the broker was started with `--no-viz`; the
-    /// `V` hotkey is then a silent no-op. Returns when the user issues
+    /// Returns when the user issues
     /// `Quit` or the cancellation token fires.
     val run :
         core:Session.CoreFacade
-        -> viz:VizController option
         -> tickIntervalMs:int
         -> CancellationToken
         -> Task<unit>

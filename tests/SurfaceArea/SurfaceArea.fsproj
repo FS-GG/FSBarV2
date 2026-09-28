@@ -17,7 +17,6 @@
     <ProjectReference Include="..\..\src\Broker.Core\Broker.Core.fsproj" />
     <ProjectReference Include="..\..\src\Broker.Protocol\Broker.Protocol.fsproj" />
     <ProjectReference Include="..\..\src\Broker.Tui\Broker.Tui.fsproj" />
-    <ProjectReference Include="..\..\src\Broker.Viz\Broker.Viz.fsproj" />
     <ProjectReference Include="..\..\src\Broker.App\Broker.App.fsproj" />
   </ItemGroup>
 

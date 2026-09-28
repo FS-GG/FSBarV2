@@ -8,6 +8,5 @@
   C Broker.Tui.HotkeyMap.Action.RevokeClient(Item:ScriptingClientId)
   C Broker.Tui.HotkeyMap.Action.StepSpeed(delta:Decimal)
   C Broker.Tui.HotkeyMap.Action.TogglePause()
-  C Broker.Tui.HotkeyMap.Action.ToggleViz()
 M Broker.Tui.HotkeyMap.map(key:ConsoleKeyInfo, mode:Mode) : Action
 T Broker.Tui.HotkeyMap.Action : union

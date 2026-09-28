@@ -15,7 +15,6 @@ module HotkeyMap =
         | RevokeClient of ScriptingClientId
         | OpenElevatePrompt
         | EndSession
-        | ToggleViz
         | NoAction
 
     let private isHosting (mode: Mode.Mode) =
@@ -31,7 +30,6 @@ module HotkeyMap =
     let map (key: ConsoleKeyInfo) (mode: Mode.Mode) : Action =
         // Bindings per quickstart.md / spec hotkey list:
         //   Q       : quit (always available)
-        //   V       : toggle 2D viz (always available, may report unavailable)
         //   L       : open lobby (Idle only)
         //   Enter   : confirm host launch (when in Hosting + Configuring)
         //   Space   : pause/resume (host mode only)
@@ -44,7 +42,6 @@ module HotkeyMap =
         // actions are emitted by the dedicated clients-pane handler.
         match key.Key with
         | ConsoleKey.Q     -> Quit
-        | ConsoleKey.V     -> ToggleViz
         | ConsoleKey.L     when mode = Mode.Mode.Idle -> OpenLobby
         | ConsoleKey.Enter when isHosting mode -> LaunchHostSession
         | ConsoleKey.Spacebar when isHosting mode -> TogglePause

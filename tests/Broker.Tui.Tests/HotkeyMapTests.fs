@@ -64,9 +64,9 @@ let hotkeyMapTests =
             Expect.equal (map (key ConsoleKey.X) Mode.Mode.Idle) NoAction "X in Idle (no session)"
         }
 
-        test "V maps to ToggleViz in any mode" {
+        test "V has no native viewer action" {
             for mode in [ Mode.Mode.Idle; Mode.Mode.Guest; hostingMode ] do
-                Expect.equal (map (key ConsoleKey.V) mode) ToggleViz (sprintf "V in %A" mode)
+                Expect.equal (map (key ConsoleKey.V) mode) NoAction (sprintf "V in %A" mode)
         }
 
         test "unbound key returns NoAction" {

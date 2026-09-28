@@ -7,7 +7,6 @@ open System.Threading.Tasks
 open Broker.Core
 open Broker.Protocol
 open Broker.Tui
-open Broker.Viz
 
 module Program =
 
@@ -32,27 +31,16 @@ module Program =
             args.expectedSchemaVersion
             |> Option.iter (fun v -> BrokerState.setExpectedSchemaVersion v handle.Hub)
 
-            // Optional 2D viz: probe at startup to populate the footer
-            // status line; the actual SkiaViewer window only opens on `V`.
-            let liveController : VizControllerImpl.LiveVizController option =
-                if args.noViz then None
-                else
-                    Some (VizControllerImpl.LiveVizController(BrokerState.snapshots handle.Hub))
-            let vizController : TickLoop.VizController option =
-                liveController
-                |> Option.map (fun c -> c :> TickLoop.VizController)
-
             try
                 // Run the TUI tick loop on the main thread.
                 let core = BrokerState.asCoreFacade handle.Hub
                 Console.CancelKeyPress.Add(fun e ->
                     e.Cancel <- true
                     cts.Cancel())
-                do! TickLoop.run core vizController 100 cts.Token
+                do! TickLoop.run core 100 cts.Token
                 return 0
             finally
                 cts.Cancel()
-                liveController |> Option.iter (fun c -> c.Close())
                 (handle :> IAsyncDisposable).DisposeAsync().AsTask().Wait()
                 (factory :> IDisposable).Dispose()
         }

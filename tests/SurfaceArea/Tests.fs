@@ -24,7 +24,6 @@ let private brokerAssemblies : Assembly list =
     [ typeof<Broker.Core.ScriptingClientId>.Assembly                  // Broker.Core
       typeof<Broker.Protocol.BackpressureGate.CommandAck>.Assembly    // Broker.Protocol
       typeof<Broker.Tui.Layout.Slot>.Assembly                         // Broker.Tui
-      typeof<Broker.Viz.SceneBuilder.Scene>.Assembly                  // Broker.Viz
       typeof<Broker.App.Cli.Args>.Assembly ]                          // Broker.App
     |> List.distinct
 
