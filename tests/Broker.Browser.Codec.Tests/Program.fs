@@ -18,7 +18,10 @@ let cases = property manifest "cases"
 let mutable absent: obj option = None
 let mutable zero: obj option = None
 let mutable asymmetric: obj option = None
-let mutable refused = 0
+let mutable decodeExceptions = 0
+let mutable oversizedBoundaryObserved = false
+let mutable unknownEnumPreserved = false
+let mutable unknownEnvelopeBodyAbsent = false
 let mutable decoded = 0
 
 let require condition message =
@@ -34,7 +37,7 @@ for index in 0 .. length cases - 1 do
 
     if name = "oversized-frame" then
         require (length bytes = 65537) "oversized fixture lost its 65537-byte boundary"
-        refused <- refused + 1
+        oversizedBoundaryObserved <- true
     elif name = "malformed-varint" || name = "truncated-observation" then
         let mutable rejected = false
 
@@ -44,7 +47,7 @@ for index in 0 .. length cases - 1 do
             rejected <- true
 
         require rejected $"{name} was accepted by the Fable-imported protobuf codec"
-        refused <- refused + 1
+        decodeExceptions <- decodeExceptions + 1
     else
         let canonical = decode name bytes
 
@@ -73,11 +76,11 @@ for index in 0 .. length cases - 1 do
         | "observation-unknown-enum" ->
             let observation = property canonical "observation"
             let unit = property (property observation "units") "0"
-            require (numberProperty unit "observation" = 99.0) "unknown enum value was not preserved for refusal"
-            refused <- refused + 1
+            require (numberProperty unit "observation" = 99.0) "unknown enum value was not preserved"
+            unknownEnumPreserved <- true
         | "unknown-envelope-wire" ->
             require (not (hasOwn canonical "body")) "unknown envelope acquired a fabricated body"
-            refused <- refused + 1
+            unknownEnvelopeBodyAbsent <- true
         | _ -> ()
 
         decoded <- decoded + 1
@@ -118,5 +121,9 @@ require (numberProperty ownPosition "x" = 11.25 && numberProperty ownPosition "e
 let economy = property observation "teamEconomy"
 let energy = property economy "energy"
 require (numberProperty energy "current" = 0.0 && numberProperty energy "storage" = 5000.0) "team economy values drifted"
+require (decodeExceptions = 2) "malformed/truncated decoder exception count drifted"
+require oversizedBoundaryObserved "oversized fixture boundary was not observed"
+require unknownEnumPreserved "unknown enum compatibility case was not observed"
+require unknownEnvelopeBodyAbsent "unknown envelope compatibility case was not observed"
 
-printfn "Fable codec: %d decoded corpus cases, %d bounded refusals, 64-bit/optional/XYZ/radar/features/economy parity passed" decoded refused
+printfn "Fable codec: %d decoded semantic cases; %d malformed/truncated decoder exceptions; 65537-byte boundary observed; unknown enum preserved; unknown envelope projected without a body; 64-bit/optional/XYZ/radar/features/economy parity passed" decoded decodeExceptions
