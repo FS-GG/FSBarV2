@@ -1,256 +1,294 @@
 # BARC-01.3 browser and custom-WASM preview
 
-**Implementation candidate, 2026-09-28.** Owner: `FS-GG/FSBarV2`.
-The first `.3a/.3b` window is locally qualified; native source delivery remains pending. This is a bounded continuation of
-**BARC-01 — Fable BAR client and custom WASM control**, not a new feature.
+**Selected implementation window, 2026-09-28.** Owner: `FS-GG/FSBarV2`. Durable path:
+`docs/roadmaps/barc-01-browser-preview.md`. `.3a/.3b` are source delivered;
+`.3c–.3e` remain unfinished. This expands the existing **BARC-01** feature and
+preserves its milestone and cost lineage.
 
 Programme: [Unified §9.8](https://github.com/FS-GG/.github/blob/main/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md#98-feature-parts-and-subroadmap-index).
-Product requirements remain in the [original BARC design](https://github.com/FS-GG/.github/blob/main/docs/2026-09-08-134900-fable-bar-wasm-client-design-roadmap.md),
-especially §§4.3, 5.2, 8, 9 and 12.1. This plan owns the new `.3a–.3e` work;
-the original `.3` entry summarizes their eventual acceptance. Earlier foundation
-and native-result ledgers retain their own completion authority.
+Requirements remain in the [original BARC design](https://github.com/FS-GG/.github/blob/main/docs/2026-09-08-134900-fable-bar-wasm-client-design-roadmap.md),
+especially §§4.3, 5.2, 8, 9 and 12.1. Earlier foundation/native ledgers retain
+completion authority. This document owns `.3a–.3e`; the original `.3` entry
+summarizes their eventual acceptance.
 
 The outcome is a Fable/Elmish tactical preview connected to the existing broker,
-with mouse and keyboard input interpreted by real WASM guests. The same product
-composition runs inside a clean generated `fs-gg-fable-game` receiver. Typed
-intentions are inspectable; this preview has no browser-to-native command route.
-Both an imported custom module and the bundled manual module use the public
-candidate ABI. Completing this preview does not complete BARC-01 or enable `.4`.
+with equivalent mouse/keyboard actions interpreted by real WASM guests. The same
+product composition and example guest run in a clean generated Fable-game
+receiver. Typed intentions remain previews: no browser-to-native submission
+operation is introduced. This window does not deliver `.4` native control.
 
-## Verified starting point and reuse
+**Dispatch condition satisfied:** the parent read back Unified closure
+[PR #3957](https://github.com/FS-GG/.github/pull/3957) at protected merge
+`f4df3703023254efa9a51b6ab5b3fc9008b4ce66`, with the qualified candidate tree.
+Viewer and `.3a/.3b` closure now appear in §0. The parent may select the next
+window after accepting these joins/touch-sets; this planner does not dispatch it.
 
-| Surface | Evidence and consequence |
+## Accepted source and actual remaining gaps
+
+The fork's remote `main` was read back at
+`16e0a1bddaa64f38754824b012195c803361aedc`, merged [PR #3](https://github.com/FS-GG/FSBarV2/pull/3).
+The accepted merge has the qualified candidate `c00d11d` tree. Inspect the
+[owning first-window evidence](https://github.com/FS-GG/FSBarV2/blob/16e0a1bddaa64f38754824b012195c803361aedc/docs/roadmaps/evidence/barc-01.3ab-browser-boundary.md)
+and reuse these surfaces:
+
+| Capability | Delivered evidence and next consequence |
 | --- | --- |
-| Broker foundation | [Owning plan](https://github.com/FS-GG/FSBarV2/blob/396af034057c826ed11b871f27b49984f30c1d8e/docs/roadmaps/barc-01-foundation.md) records ground coordinates, features, strict command decoding, bounded delivery and gap fencing. Reuse `BrokerState`, `WireConvert.RunningView` and the production `ServerHost`. |
-| Current fork | Remote `main` was independently read back at `396af034057c826ed11b871f27b49984f30c1d8e`, the merged [viewer-detachment PR #1](https://github.com/FS-GG/FSBarV2/pull/1), above receiver/harness merge `b096ea17608c572ad2d0d3d4a961ad7f1c4a3b78`. The normal Release solution builds without SkiaViewer. Owning evidence reports Lib 2, Core 58, Contracts 6, Protocol 56, Tui 44 and SurfaceArea 25 passing tests. |
-| Existing failure boundary | Integration is 28/31. Three admin fixtures expect `AdminNotAvailable` where strict decoding returns `InvalidPayload`; the same failures were independently reproduced against the earlier protected upstream base. Preserve this explicit baseline; do not call the full suite green. A focused expectation repair may join only with evidence that the fixture expresses the current intended contract. |
-| Native result/effect | [Real Move proof](https://github.com/FS-GG/FSBarV2/blob/b096ea17608c572ad2d0d3d4a961ad7f1c4a3b78/docs/roadmaps/evidence/barc-01.2c-real-fsbar-native-move.md) crosses production FSBar, native admission, engine dispatch and observed movement. HighBar fork source is `81016ee38b123a490e6ff06037cdc2f56a105a96`; the proof records its tested candidate and asset hashes separately. This is genuine local native evidence, not a browser journey or hosted qualification. Preserve the frozen HighBar protobufs. |
-| Missing browser data | [Core snapshot](https://github.com/FS-GG/FSBarV2/blob/396af034057c826ed11b871f27b49984f30c1d8e/src/Broker.Core/Snapshot.fsi) and [materializer](https://github.com/FS-GG/FSBarV2/blob/396af034057c826ed11b871f27b49984f30c1d8e/src/Broker.Protocol/WireConvert.fs) currently flatten own/visual units, discard elevation and radar, and deliberately emit no invented player economy. The native snapshot already carries own/visual/radar collections and team economy. `.3a` must preserve these in the existing broker projection before the UI can claim them. |
-| Continuity limits | Complete snapshots replace the materialized baseline. Unsupported nonempty state deltas invalidate it; dispatch-only deltas do not. Preserve that behavior and show stale status until a complete replacement. This window does not claim general lifecycle-delta materialization. |
-| Browser/Fable implementation | No BAR browser, product WebSocket endpoint, WASM host or guest SDK was found in the inspected FSBar tree. `ServerHost` currently serves HTTP/2 gRPC only. These are missing capabilities, not receiver configuration alone. |
-| Qualified generator | Public Templates **0.15.0**, source `b86c841a1c4c4bf7f157a3ae4dc61b0356d6576d`; wizard **0.12.0**, source `4889c446de0a431d1168a61a89ab660fc2062314`; SDD **2.0.2**. [D5 public receiver repeat](https://github.com/FS-GG/FS.GG.Templates/actions/runs/36474756648) passed after `.github` pin activation `2574f02aa8cf835ab1e0b5ff6c62504c33098183`. Templates source closure is `46d3a28b1706c1ef447d7d6e0b4890ca1d88be4a`; it is not the package source identity. SDD 2.0.3 publication activity is not an adopted input without its receiver readback. |
-| Actual Fable conventions | The public Templates source uses Fable tool **5.18.0**, Fable.Core **5.3.0**, Elmish **5.0.2**, browser bindings **2.20.0**, Vite **7.3.6**, and explicit shared protocol/cross-runtime tests. Use those qualified conventions. The generated arena's SignalR/RoomAuthority path does not own BAR state. |
-| Existing WASM research/code | SC2 Client `0abaa74eaeab6fa8dd2b6274269726e31538bf48` contains a working product-specific worker/supervisor and Rust guest source. Inspect it as an implementation donor for supervision and tests, preserving provenance; do not import SC2 protocol/authority or create a common game framework. The BARC ABI remains the original design's candidate ABI. |
+| Rich broker projection | `Broker.Core/Snapshot.*`, `Broker.Protocol/WireConvert.*` and `BrokerState.*` preserve own/visual/radar, features, X/Z plus elevation and optional economy through one materializer. A real coordinator → production Hub → authenticated WebSocket suite passes 10 cases. Keep perspective filtering and baseline invalidation there. |
+| Browser transport | `Broker.Browser.Gateway/Gateway.*` starts an optional loopback HTTP WebSocket listener sharing the existing Hub. Authentication is the first client frame; bootstrap is the first authenticated **WebSocket** server envelope. There is no HTTP bootstrap endpoint or launchable preview application yet. Wrong origin/game/profile/session, replaced sessions and bounded teardown are covered. All post-authentication client frames refuse. |
+| Product schema and codec | `Broker.Browser.Contracts/barc_browser.proto` and `generated/codec.js` define `barc.browser.v1`. Fable 5.18.0/Core 5.3.0 compatibility proves 19 decoded cases plus two malformed/truncated exceptions. Unknown enums survive, unknown envelopes have no body, and the 65,537-byte fixture is only a boundary observation. A product client must enforce byte limits and semantic validity before use. |
+| Real Worker and Rust guests | `Broker.Browser.Wasm/index.js` exports `GuestSupervisor`; actual Chromium Worker tests pass 24 cases. Reuse its external phase watchdog, byte/range checks and request/session/context/generation fences. Rust manual and separately built odd-ID example guests use the same ABI and can load without a host rebuild. This is host qualification, not product UI acceptance. |
+| Integration constraints | Supervisor permits one pending call, with 64 KiB input/output and a 250 ms default per-phase watchdog. The Rust SDK accepts at most 64 observed units and clears selection on each observation. Production UI must serialize calls, respect encoded-request overhead and visibly handle capacity. Continuous updates require a narrow guest selection-retention correction. |
+| Missing product surfaces | No Fable tactical application, transport semantic guard, user input adapter, pairing/module UI, executable fixture-backed companion, product asset archive or generated BAR receiver exists. Browser ABI tests do not establish these paths. |
+| Qualified base | Release solution build had zero warnings/errors; Core 58, Protocol 58, Contracts 6, Tui 44, SurfaceArea 25, gateway 10, Node 6 and Worker 24 passed. Integration stays 28/31: three inherited admin fixtures expect `AdminNotAvailable` instead of strict-decoding `InvalidPayload`. Preserve the attribution; do not call the entire suite green. |
 
-The fork has no configured protection/rulesets/workflows at this baseline.
-Report local qualification and native GitHub merge readback explicitly; do not
-invent hosted success. Upstream `EHotwagner` push/PR access remains 403. Fork
-delivery is the selected ownership boundary; upstream adoption stays separate.
-The old foundation prose has stale `.1h` status: its owner prepared correction
-`b4f245ec94722f1699cdff10035217accbc3a5c4` for a coherent later source delivery.
-The integrator may carry that exact correction; workers must not independently
-rewrite the foundation ledger or the user's dirty original design checkout.
+Schema SHA-256 is `752ef84e8631de6e08f5ef94851fcbd918e451ebfb5d446a705baa317f65ea0f`;
+corpus bundle SHA-256 is `0cd8abc6beaa7f92425c6e56ba7faa3ff7d62d30989a6ab95134a72d4e420bbf`.
+Existing locks pin protobuf.js 8.8.0, generator 2.7.0, Long 5.3.2,
+Google.Protobuf 3.34.1 and Grpc.Tools 2.76.0. Guest builds use Rust 1.90.0.
+Do not generate another wire schema or replace the working codecs.
 
-## Decisions for this horizon
+The [native Move proof](https://github.com/FS-GG/FSBarV2/blob/b096ea17608c572ad2d0d3d4a961ad7f1c4a3b78/docs/roadmaps/evidence/barc-01.2c-real-fsbar-native-move.md)
+remains genuine local native evidence at its separate boundary. HighBar source
+`81016ee38b123a490e6ff06037cdc2f56a105a96` and frozen native protobufs are unchanged
+by this window. The viewer detachment is already merged. No SkiaViewer work is
+needed. Fork source/native readback does not imply hosted CI: this fork has no
+configured workflows/protection. Upstream EHotwagner delivery remains 403.
 
-1. **One broker authority.** Extend the existing materializer with a richer typed
-   observation projection and derive compatible legacy views from the same
-   accepted state. Preserve perspective provenance, own/visual/radar distinctions,
-   unavailable fields, X/Z ground coordinates plus Y elevation, typed feature IDs
-   and optional team economy. Do not rebuild state independently in another server.
-   Native generation or allied-contact facts absent from the current profile stay
-   unavailable; no invented IDs, player identities, visibility or zero-valued facts.
-2. **Product HTTP/WebSocket/protobuf boundary.** Add an opt-in loopback HTTP/1.1
-   browser listener alongside the existing gRPC host, sharing its `Hub`. Browser
-   bootstrap identifies `game=bar`, protocol/profile, session/perspective, preview
-   mode, state validity and limits. Pair with a short-lived, browser-specific
-   credential and an explicit allowed origin; use an authenticated first socket
-   message and a timeout before releasing state. An arena credential, wrong origin,
-   unknown protocol or stale session must fail. The preview endpoint exposes no
-   command submission operation and cannot call `admitScriptingCommand`.
-3. **Explicit codecs.** Use one product `.proto` definition, native generated
-   protobuf on the server, and generated protobuf.js bindings behind a small Fable
-   adapter. Use exact locked dependency versions after the first compatibility
-   probe. Encode/decode exact 64-bit identities via a lossless representation,
-   never JavaScript numbers. protobuf.js supports generated browser bindings and
-   explicit 64-bit conversions; its encoder does not implicitly validate inputs,
-   so product semantic validation remains required ([upstream documentation](https://github.com/protobufjs/protobuf.js/blob/master/README.md)).
-   The Rust guest consumes that same payload schema; avoid a parallel JSON ABI.
-4. **Trusted host, untrusted bytes.** Retain the original `barc_*` i32 byte ABI,
-   eight-byte output descriptor, bounded core wasm32 profile and external Worker
-   watchdog. Trusted product code owns the Worker script. Import `.wasm` plus
-   declarative manifest/configuration only. Begin with one active controller,
-   Rust manual controller and a separately authored example; advisors and a second
-   guest language remain later scope. Inspect every allocation/output range and
-   validate the whole output before exposing an intent preview.
-5. **Product-owned composition.** Put Fable components, codec adapter, input
-   normalization and Worker assets in reusable product surfaces. The local client
-   and generated receiver import the same built/source artifact, with identical
-   hashes and example guest; neither duplicates BAR logic. Keep native protobuf,
-   gRPC, filesystem and process assemblies outside every Fable compilation graph.
-   Make no Templates source change unless a clean integration proves a missing
-   reusable extension point.
-6. **Local preview first.** Use the original resource limits as candidate test
-   settings, not measured capacity promises. One measured Chromium configuration
-   is the initial support statement. No remote hosting, native dispatch, retail
-   keymap parity, unattended automation or release promise enters this window.
+## Fixed composition and first integration join
 
-## First executable window
+Use the existing codec and Worker behind new product-owned Fable modules in
+`src/Broker.Browser.Client/`. A small `BarcPreview.mount(root, options)` surface
+starts the component and returns disposal; options identify the broker endpoint,
+pairing input and trusted asset base. The local entry point and generated receiver
+call the same surface. Freeze this mount/asset-layout interface in an early local
+commit; it is a product composition seam, not a general game framework.
 
-The routine route applies. Execute through
-`/home/developer/projects/.github/.agents/skills/work-roadmap/SKILL.md`, the known
-canonical fallback because this fork has no installed copy or routine policy.
-That absence is not evidence that a hosted eligibility check exists. Preserve
-native safeguards and exact source/test evidence; do not install a governance
-workflow merely to make this preview possible.
+Add a dedicated `src/Broker.Browser.Preview/` executable which composes the
+production Protocol host, Gateway and static client assets. Its explicit fixture
+mode feeds BAR-shaped observations through the public HighBar coordinator gRPC
+service. It does not call browser projection setters to simulate a successful
+journey, create a second state authority, launch a native game or dispatch commands.
+Reuse fixture values and setup conventions from `GatewayTests.fs`, with a
+repeatable sequence of complete snapshots, gap, recovery and session replacement.
+The fixture runner is part of this bounded preview composition and is labelled
+as such in the UI.
 
-- [ ] **BARC-01.3a — Preserve BAR observations through a real preview connection — route: routine.**
-  Depends on the delivered broker foundation and current qualified provider
-  identities above; `.2` live acceptance is not an entry gate.
-  Extend the existing observation projection and validity publication, define the
-  small versioned product schema and shared semantic corpus, then connect a real
-  browser-capable WebSocket client through the production broker host. Fixtures
-  enter through the coordinator service, not a DOM mock or second authority.
-  The initial local contract commit freezes bootstrap, observation, normalized
-  input, preview output and guest ABI fixtures so `.3b` can begin concurrently.
-  Add a focused server project/adapter and tests without changing App/Tui.
-  Acceptance: own unit, visual enemy, radar-only blip, feature and optional team
-  economy survive actual coordinator → accepted broker state → authenticated
-  WebSocket → Fable/JavaScript decoding. Use unequal X/Y/Z, shared unit/feature
-  numeric IDs, absent versus zero values, sequence values above 2^53, unknown enum,
-  malformed/oversized envelope and incomplete metadata cases. A gap or unsupported
-  delta visibly invalidates old data, including late subscribers; a fresh complete
-  snapshot recovers. A hidden enemy absent from the perspective fixture never
-  appears. Wrong-origin/arena/stale credentials refuse. Attempted preview command
-  messages cannot enqueue a native command, even with an active coordinator.
-  Run focused Core/Protocol/contract tests, .NET ↔ Fable codec fixtures and a real
-  socket integration test; retain unchanged native proto hashes. Stop after the
-  bounded gateway/projection outcome, with actual evidence and remaining limits.
+The executable creates an expiring session credential and a private local pairing
+handoff; the UI accepts endpoint/session/credential through its pairing controls.
+The browser supplies its own origin. Keep credentials out of asset bundles,
+checked-in fixtures, URLs, localStorage and captured public evidence. The generated
+receiver's actual served origin must be passed to Gateway. Preserve the current
+first-message authentication instead of inventing a second authentication route.
 
-- [ ] **BARC-01.3b — Supervise real manual and custom WASM guests — route: routine.**
-  Depends on `.3a`'s reviewed local schema/ABI corpus commit, not its PR merge or
-  native runtime. Build the trusted supervisor/Worker and minimal Rust SDK/manual
-  guest plus a separate example consuming the same schema. Freeze exported names,
-  configuration and error semantics before connecting the UI. The SDK source and
-  `.wasm` hashes travel with reproducible build instructions and conformance data.
-  Acceptance: .NET, Fable/JavaScript and real Rust WASM consume/re-encode the same
-  semantic corpus, retaining optional values, target namespaces and 64-bit
-  sequences. Ordered select/ground-target input produces an equivalent typed Move
-  preview in the manual guest; the example produces its independently authored
-  policy output. A newly compiled/imported module works without rebuilding the
-  host. Invalid imports/exports/start section, unbounded memory/table, overlapping
-  or out-of-bounds descriptors, malformed/oversized output, trap and infinite loops
-  in allocation, initialization, processing, freeing and shutdown are contained by
-  an external watchdog. Termination discards output and old-generation messages;
-  navigation/disarm remains responsive. A browser harness proves actual Worker
-  behavior, not only Node tests. No output reaches native dispatch. Stop at the
-  reusable host/SDK result; browser product acceptance belongs to the next window.
+The product archive preserves the relative client/codec/Worker source layout.
+A generated receiver installs that exact tree beneath its `Client` subtree and
+compiles the same Fable sources, with the same trusted Worker and guest bytes.
+Receiver packaging adds only its entry-point adapter, declared dependencies and
+asset/build wiring. It must not rewrite BAR implementation sources. Record hashes
+for both consumed compositions. Production asset URLs must work at a non-root
+base path; neither sibling checkout references nor a development server proxy
+counts as receiver acceptance.
 
-### Disjoint lanes and joins
+**First acceptance example:** start the actual preview executable and browser
+entry point, pair through the visible controls, load the manual `.wasm`, and receive
+an owned unit 77, visual enemy, radar-only contact, feature 77 and optional economy
+from the real broker connection. Click owned unit 77, allow another complete
+observation, then confirm ground `(128.25, -64.5)` through mouse targeting. Repeat
+by focusing the owned-unit list and using the keyboard ground cursor/confirmation.
+Both paths must yield the same guest-produced Move payload, including unit 77 and
+X/Z; compare payload semantics independently of request counters. Ground elevation
+stays absent when terrain height is unavailable. Test the same journey in the
+receiver before `.3d` is accepted.
 
-The parent names one FSBar integrator before dispatch and assigns isolated
-worktrees from `396af034…` or its verified successor. Implementation model is
-`gpt-5.6-sol`, effort `medium`; reuse each worker for its repairs. Plan expansion
-uses the existing `gpt-6-astra` high context while useful.
+The current payload has no terrain/map-bounds contract. Use an explicit fixture
+world rectangle and labelled orthographic fixture view for this preview. Do not
+infer real BAR map scale or pathfinding from the screen bounds. Preserve known
+elevation in observation details, and preserve unavailable facts as unavailable.
 
-| Lane | Exclusive touch-set | Join/stop rule |
+## Milestones
+
+- [x] **BARC-01.3a — Preserve BAR observations through a real preview connection — route: routine.**
+  Source delivered by PR #3 at `16e0a1b…`, with the rich broker projection,
+  authenticated preview gateway, shared schema and actual Fable codec probe.
+  Qualification details and semantic limitations are in the evidence above.
+
+- [x] **BARC-01.3b — Supervise real manual and custom WASM guests — route: routine.**
+  Source delivered by the same PR/merge. The trusted Worker, candidate ABI, SDK,
+  reproducible manual/example guests and actual browser containment are accepted.
+  Product UI, larger observation capacity and final receiver use remain below.
+
+- [ ] **BARC-01.3c — Launchable Fable tactical preview with equivalent input — route: routine.**
+  Depends on `.3a/.3b` and the parent's authoritative PR #3957 projection readback.
+  Deliver the mountable Elmish DOM/SVG component and the companion executable as
+  one joined source outcome. Show own/visual/radar shapes, typed features, optional
+  economy, selection/target preview, connection/state age and module status. Mark
+  stale retained objects visibly and disable guest gameplay input while stale.
+  Mouse and keyboard adapters share domain Select/GroundTarget requests; DOM code
+  cannot create Move output. Include keyboard-only pairing, load/disarm, selection,
+  coarse/fine target movement and confirmation, readable target text and Escape.
+  Suspend gameplay shortcuts in text fields, dialogs and IME composition. Release
+  held navigation, pointer capture and pending gestures on blur/lost capture;
+  window focus loss/hidden tab suspends the guest and invalidates pending output.
+  Explicit resume reinitializes against the current accepted observation.
+
+  Before decoding, bound incoming binary bytes by the configured ceiling and then
+  the stricter negotiated limit. Reject unknown/missing body, unsupported required
+  enums/profile/mode, wrong session/perspective, non-finite positions/resources,
+  invalid identity/sequence values and over-limit collections before state or guest
+  mutation. Unknown optional protobuf fields can remain compatible. A server
+  `preview` body is not a source of gameplay output. Handle legitimate stale
+  envelopes without requiring fields that are present only on current observations.
+  Use exact uint64 strings/BigInt throughout; never round through JS numbers.
+
+  Serialize initialize/observation/input operations through the existing single-call
+  supervisor. Keep the queue bounded; coalesce only superseded complete snapshots,
+  never ordered discrete inputs, and reset visibly on overflow. Bind every input
+  to the guest's acknowledged observation, session and generation. Stale state,
+  disconnect, replacement and semantic refusal clear pending target/output and
+  disarm before stale results can render. Account for GuestRequest encoding overhead
+  within the 64 KiB guest bound. A >64-unit observation must visibly suspend this
+  SDK profile rather than truncate; larger profiles belong to later qualification.
+
+  Repair selection continuity inside the existing Rust SDK: on a newer current
+  observation retain only still-observed owned selected units; remove lost/changed
+  ownership and reset on session replacement. Do not have the DOM silently replay
+  selection to hide the guest behavior. Test this with a snapshot between selection
+  and target, an ownership change, and the independent odd-ID policy. No ABI or
+  HighBar schema extension is required for this correction.
+
+  Acceptance: the first example above passes through the actual entry, broker and
+  Worker; radar lacks invented health/team, unit/feature 77 stay distinct, zero
+  economy differs from absent. The product file picker imports independently built
+  custom bytes without rebuilding; selecting odd/even units demonstrates the custom
+  policy changes output. Product-level malformed/oversized/unknown cases refuse
+  before guest invocation. Trap/hang/import failures leave pairing/navigation and
+  disarm responsive. Capture zero native submissions with a broker command-channel
+  sentinel, not merely a browser GET-only assertion. Focused Fable state/input tests,
+  real entry-point Playwright journeys and affected existing suites pass.
+
+- [ ] **BARC-01.3d — Clean public Fable-game receiver consumes the same preview — route: routine.**
+  Preparation depends on the frozen mount/archive layout; final acceptance depends
+  on `.3c`'s joined artifact. Produce one hash-manifested candidate archive from the
+  exact product source/build, including client sources, generated codec, trusted
+  Worker assets and manual/example WASM. Generated product code consumes that exact
+  archive; no separate BAR implementation, native assemblies or unpublished package
+  substitution is permitted.
+
+  From public packages and empty selected caches, create an explicit Fable-game
+  receiver using Templates 0.15.0 and qualified SDD 2.0.3. Keep the activated SVG
+  Player/typed-SDD defaults and record actual scaffold/tool/provider provenance.
+  Add the opt-in BAR mount to the generated Client with its own connection scope;
+  its Server continues to serve product assets, while BAR connects to the configured
+  paired FSBar gateway. Existing arena examples may remain reachable, but BAR never
+  joins RoomAuthority, sends arena movement or receives arena credentials as grants.
+  Do not alter Templates source absent a reproduced missing extension point.
+
+  Acceptance: the generated Fable build and production server load the same component,
+  Worker and guest at the actual base path. Both input journeys, custom import,
+  stale/recovery and guest-fault navigation pass against the real fixture-backed
+  broker. Cross-runtime and browser tests refuse arena credentials/messages in BAR
+  sessions and prove arena ticks do not mutate BAR state. Compare implementation
+  and guest hashes with the local composition. A retained-workspace smoke case
+  preserves unrelated source, user module/configuration and lifecycle choice; the
+  adopter refuses collisions instead of overwriting owner files. This is candidate
+  composition adoption, not public BAR package publication or a complete upgrade
+  promise. Stop at that receiver outcome and evidence.
+
+- [ ] **BARC-01.3e — Qualify the joined preview and close its bounded outcome — route: routine.**
+  Depends on `.3c/.3d` and their exact combined source/archive. The integrator runs
+  coherent focused checks once on the joined tree, preserving known baseline
+  failures without laundering new ones. Replay the real product/receiver journeys,
+  host semantic refusals, focus/stale/session recovery, independent custom policy,
+  containment and zero-native-submission assertions. Reuse the unchanged corpus and
+  ABI suites; rerun when changes affect them, not per administrative checkpoint.
+  Record OS/hardware/browser/tool versions, artifact hashes/bytes, entity counts,
+  guest p95/max processing and observed watchdog/navigation behavior for the declared
+  small fixture profile. Report startup and round-trip measurements separately;
+  synthetic timings do not establish native game latency or late-game capacity.
+
+  Source delivery requires exact native PR merge and default-branch readback in
+  the selected fork. Close `.3` only when both local and generated previews meet
+  acceptance. Report hosted checks as unavailable if configuration remains absent.
+  Publication, upstream adoption and `.4` live browser control remain separate.
+  Land the mandatory asynchronous Unified §0 closure projection before selecting
+  the next dependent `.4` acceptance.
+
+## Parallel ownership and joins
+
+Use isolated worktrees from `16e0a1b…` or a verified compatible successor. The
+parent names one integrator and releases implementation now that PR #3957 has landed.
+Reuse existing `gpt-5.6-sol` medium workers; this Astra-high expansion does not
+require another planning review. Workers use the canonical
+`/home/developer/projects/.github/.agents/skills/work-roadmap/SKILL.md` fallback.
+Routine route and native safeguards apply; missing hosted routine policy is not
+permission to claim a hosted eligibility pass.
+
+| Lane | Exclusive touch-set | Real dependency and stop |
 | --- | --- | --- |
-| A: `.3a`, broker/contract owner | `src/Broker.Core/Snapshot.*`; relevant `src/Broker.Protocol/{WireConvert,BrokerState,HighBarCoordinatorService,ServerHost}.*` and project compile lists; new `src/Broker.Browser.Contracts/**`, `src/Broker.Browser.Gateway/**`; affected Core/Protocol tests; new `tests/Broker.Browser.Protocol.Tests/**`, `tests/Broker.Browser.Codec.Tests/**`, `fixtures/barc-browser/**` | Own the schema/corpus and generated browser codec. Publish its local immutable contract commit to B; later contract changes return through A and invalidate affected fixtures. No HighBar vendored schema edits. |
-| B: `.3b`, host/guest owner | New `src/Broker.Browser.Wasm/**`, `sdk/barc/**`, `examples/barc-guests/**`, `tests/Broker.Browser.Wasm.Tests/**`, `scripts/build-barc-guests.*` | Read A's contract/corpus; generate private or local SDK outputs only within B's directories. Do not edit A's schema/generated browser codec, browser client, shared solution or existing integration fixtures. |
-| Integrator | New owning roadmap/evidence, optional exact `.1h` correction, root solution/build/tool manifests and shared package locks; final cross-lane composition | Own shared files and final combined exact-tree checks. Per-project lane locks are lane-owned. Rebase/check viewer and receiver merges before integration; do not resurrect their removed references. |
+| Client, `.3c` | New `src/Broker.Browser.Client/**`, `tests/Broker.Browser.Client.Tests/**` | Own mount API, transport semantic guard, Elmish/input/Worker integration and product browser tests. Read delivered contracts/Worker; request changes through their owner. Can implement against accepted corpus while companion is built; cannot claim the real journey before joining it. |
+| Companion/guest continuity, `.3c` | New `src/Broker.Browser.Preview/**`, `tests/Broker.Browser.Preview.Tests/**`; existing `sdk/barc/**`, `examples/barc-guests/**`, `scripts/build-barc-guests.sh`, `tests/Broker.Browser.Wasm.Tests/**` | Own runnable production-host composition, actual coordinator fixtures, pairing handoff and narrow SDK selection correction. Consume the agreed client output/mount layout; keep hostile fixtures separate from shipped example assets. Stop at launcher and guest tests plus the client join. |
+| Receiver, `.3d` | New `examples/barc-fable-game/**`, `tests/Broker.Browser.Receiver.Tests/**`, `scripts/package-barc-preview.*`, `scripts/qualify-barc-receiver.*` | Begin clean scaffold/provenance and packaging preparation after interface freeze. Consume immutable client/Worker/guest trees without edits. Final receiver journey waits for joined `.3c`; it is not independently complete because scaffolding passes. |
+| Parent integrator, `.3e` | Root solution/tool/build files, shared dependency manifests/locks, archive interface manifest, owning roadmap/evidence and Unified index/progress | Lane owners may edit their new lane-local manifests/locks using the existing exact pins; review those at integration. Apply shared dependency proposals, own shared changes and coherent qualification. A demonstrated Gateway/contract/Core defect routes through this owner to one assigned worker; other lanes remain read-only on those files. |
 
-No current viewer worker overlap remains after its merge, but `Broker.App/**`,
-`Broker.Tui/**`, `Broker.Viz/**`, existing viewer/integration tests and SurfaceArea
-baselines are excluded from A/B by default. If an actual signature change needs
-one, route that bounded adjustment through the integrator before editing.
-Keep dependent micro-steps local. The parent admits one coherent `.3` dependency
-chain PR at a time through its live repository queue; parallel workers do not
-each open PRs against the same unfinished chain. A pending merge does not block
-disjoint local implementation. Stop/reassign when touch-sets overlap.
+The initial mount/options, output directory, asset layout and launcher readiness
+handoff are one small integrator-owned interface commit. Then client and companion
+work proceed in parallel; receiver preparation can also proceed. Do not dispatch
+separate workers for tightly coupled UI substeps or let receiver packaging edit
+client files. Native protobufs, Broker.App/Tui/Viz, unrelated admin fixtures and
+the user's dirty original BARC design are outside all lane touch-sets.
 
-## Remaining preview outcomes
+Accumulate dependent micro-steps as local tested commits. The parent admits one
+coherent `.3` dependency-chain PR at a time via its live queue; lane count does
+not create a PR per lane. If an earlier coherent delivery lands before receiver
+completion, retain `.3` open and preserve every later acceptance gate.
 
-These are stable milestones, not an expanded executable checklist. Expand only
-the next useful window after `.3a/.3b` expose measured contract and toolchain facts.
+## Public inputs, workspace impact and later outcomes
 
-| Milestone | Outcome | Entry and decisive evidence |
-| --- | --- | --- |
-| **BARC-01.3c — Fable tactical preview with equivalent input** | Reusable Elmish DOM/SVG composition, session/stale strip, selection/ground target, radar uncertainty, features, economy and module import/diagnostics | A/B joined. A Playwright bot starts the actual product entry, pairs, loads the guest, selects an owned unit and confirms the same asymmetric ground point by mouse and keyboard. Compare guest-produced typed intents. Test focus loss, lost pointer capture, IME/text fields, repeat and hidden-tab release; host recovery survives a guest hang. UI code cannot fabricate the passing intent. |
-| **BARC-01.3d — Clean Fable-game receiver** | Product-owned integration/example materializes the same composition and guest inside a clean public `fs-gg-fable-game` workspace | `.3c` artifact. Generate using the pinned public route; apply an explicit BAR composition from an immutable product archive, with no sibling-checkout dependency. Build through the generated Fable toolchain and serve production assets/Worker at its actual base path. Run the real paired fixture-backed broker journey there. Cross-runtime/browser tests reject arena messages/credentials in BAR mode and prove no arena tick mutates BAR state. Record package/source/asset hashes. |
-| **BARC-01.3e — Qualified preview handoff** | Reproducible product and receiver preview acceptance with documented limits and measured browser costs | `.3c/.3d` actual browser runs. Repeat a separately built custom import, invalid/trapped/hung containment and equivalent inputs in both compositions; verify zero native submissions. Record machine/browser/tool versions, bytes, entity counts, guest time/watchdog behavior and navigation responsiveness. Clean production build and coherent combined-tree tests pass except explicitly classified pre-existing failures. Native merge readback closes `.3`; this is source/preview delivery, not published adoption or `.4` control. |
+Templates **0.15.0** source is `b86c841a1c4c4bf7f157a3ae4dc61b0356d6576d`;
+wizard **0.12.0** source is `4889c446de0a431d1168a61a89ab660fc2062314`.
+[D5's public receiver repeat](https://github.com/FS-GG/FS.GG.Templates/actions/runs/36474756648)
+passed after `.github` activation `2574f02aa8cf835ab1e0b5ff6c62504c33098183`.
+The Fable provider uses Fable 5.18.0/Core 5.3.0, Elmish 5.0.2, browser bindings
+2.20.0 and Vite 7.3.6. Preserve exact generated locks and add only necessary
+product dependencies through the integrator.
 
-Next product outcomes retain their original identities. **BARC-01.4** joins this
-preview with qualified real observation and native authority/results to prove
-mouse, keyboard and independent custom-module control through actual effects in
-both clients. `.2c`'s native Move is useful input, not that browser acceptance.
-**`.5`** adds useful build/economy/combat/reclaim and queue play; **`.6`** qualifies
-failure recovery, scale, SDK portability and recordings; **`.7`** publishes a
-compatible opt-in release and proves clean installation and upgrades. Those
-outcomes are not executable expansions of this preview window.
-
-## Workspace, publication and accounting boundaries
+SDD **2.0.3** source/tag is `0c26ac591e76d2839177da823b3f6ada5c09a698`.
+Its [receiver source PR #1083](https://github.com/FS-GG/FS.GG.SDD/pull/1083) and
+[successful public readback](https://github.com/FS-GG/FS.GG.SDD/actions/runs/36478312479)
+identify the published release after the earlier publisher's anonymous-index
+race. The owning clean public-only and retained qualifier passed on that exact
+source without a target-command override; the parent verified its record/hash,
+not a second full qualifier run. `.3d` explicitly selects this qualified public
+version, records its installed package hashes and exercises its own Fable receiver.
+That selection does not change any ordinary registry still pinned to SDD 2.0.2.
 
 Under [Unified §9.9](https://github.com/FS-GG/.github/blob/main/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md#99-when-new-workspaces-change),
-the affected receiver family is explicitly selected `fs-gg-fable-game`. Before
-this work it supplies its existing SVG/game examples; after `.3d`, an explicitly
-composed receiver can run a BAR preview. `.3c` first enables the product browser
-source, `.3d` first changes the selected generated receiver. Neither changes
-ordinary freshly generated workspace contents or enables native gameplay.
+`.3c` first enables the product browser source and `.3d` first changes the
+explicitly selected generated receiver. Ordinary newly generated workspaces,
+SVG Player/typed-SDD defaults, operating epochs and fleet installations do not
+change. BAR is opt-in. A source archive is candidate adoption, not a public
+package release. `.7` owns coherent product publication, public receiver adoption
+and full promised upgrade/conflict handling. Existing workspaces do not auto-upgrade.
+Any proven reusable template defect needs a Templates-owned fix, publication and
+subsequent receiver adoption; it does not authorize replacing the arena default.
 
-Keep the already activated SVG Player and typed-SDD lifecycle defaults from D5.
-BAR remains an explicit product composition. Use public Templates 0.15.0 and SDD
-2.0.2 for the first clean receiver; identify any explicit lifecycle/bundle choice
-in its evidence. Do not substitute an in-flight SDD publisher or local template.
-The product archive in `.3d` is a pinned candidate adoption artifact, not a claim
-that its package is public. `.7` owns product publication and installed public
-receiver adoption. A demonstrated missing template extension would create a
-Templates-owned producer change, publication, then receiver pin adoption; it
-does not authorize a template rewrite or BAR default.
+Later original outcomes remain outlines: **BARC-01.4** joins qualified native
+observation/authority with actual mouse, keyboard and independent guest effects
+in both clients; **`.5`** adds useful build/economy/combat/reclaim and queue play;
+**`.6`** qualifies recovery, larger workloads, SDK portability and recordings;
+**`.7`** qualifies published installation and upgrades. The `.2c` native Move
+proof and this preview do not by themselves close `.4`.
 
-Existing generated workspaces do not auto-upgrade. `.3d` documents a bounded
-opt-in integration and checks a retained-workspace smoke case for preservation
-of unrelated arena/product code, modules and configuration. Full promised
-upgrade compatibility and conflict handling remain `.7` acceptance. No SDD
-operating epoch, protected default or fleet installation changes here.
+Keep feature `BARC-01`, selected item `BARC-01.3`, existing original-item mapping
+and stable `.3a–.3e` IDs across workers/repairs. The current planner attempt is
+`barc-preview-horizon-readonly-20260928-2124`; telemetry is not configured and no
+usage/efficiency result is claimed. The parent reconciles supported terminal
+usage; missing counters stay unknown. Preserve the existing 10% whole-item
+bureaucracy ceiling, useful-test exclusion, near-5% recovery target and the
+15-distinct-breach/any-above-25% intervention rule without a duplicate ledger.
 
-Preserve feature `BARC-01`, selected item `BARC-01.3`, and stable `.3a–.3e` lane
-identities under the parent's existing original-item mapping and attempt lineage.
-Do not reset costs on a new worker, PR or retry, and do not invent a non-self
-original mapping. Use the existing roadmap telemetry adapter for dispatch,
-follow-ups and terminal reconciliation; the parent records this planner's final
-usage after it becomes terminal. Product traces are separate evidence. Missing
-host coverage or unjoined usage remains unknown, never zero or reconstructed.
-Apply the existing whole-item 10% bureaucracy ceiling, near-5% recovery target,
-15 distinct breach / any above-25% intervention rule; useful tests are excluded.
-No additional manual receipt ledger is needed.
-
-## Concrete remaining gaps and completion claim
-
-The first window can run now. Its initial codec spike must lock compatible
-protobuf.js/generator/Rust dependencies and confirm Fable consumption; those
-versions are deliberately not guessed. The current native profile cannot prove
-entity lifetime generations or all allied/remembered-contact semantics, so the
-preview represents those fields as unavailable and `.4` qualifies any required
-producer extension. Real perspective extraction remains native evidence; fixture
-filtering proves only the preview boundary. Existing three admin-fixture failures,
-upstream 403, absent hosted configuration and product publication are explicit
-independent limits. Replan only if the single broker projection, explicit codec,
-qualified generated receiver or guest isolation assumptions fail materially.
-
-The first implementation candidate creates the optional gateway, shared wire contract, trusted Worker and Rust SDK; it enables no browser-to-native command route.
-After source delivery, the integrator records authoritative `.3` closure only
-after `.3e` and lands the required asynchronous Unified §0 progress update before
-selecting the next dependent `.4` acceptance. Independent ready work may continue.
-
-### Exact Unified §9.8 link addition
-
-In the existing **Fable BAR client and custom WASM control** row, retain both
-current links and append this link to the final subroadmap cell after the owning
-document has landed:
-
-```markdown
-, [FSBarV2 browser/WASM preview — BARC-01.3](https://github.com/FS-GG/FSBarV2/blob/main/docs/roadmaps/barc-01-browser-preview.md)
-```
-
-Until source delivery, the owning document is on `routine/barc-browser-preview-20260928`; do not publish a nonexistent default-branch link. Link maintenance may join existing
-cross-repository work and does not require a planning-only PR.
-
-## First-window qualification
-
-The integrator joined the gateway, optional-fact contract, Worker and real Fable
-compatibility slice on `routine/barc-browser-preview-20260928`. The
-[bounded evidence and commands](evidence/barc-01.3ab-browser-boundary.md) record
-the final combined-tree checks and existing failure classification.
-`.3a/.3b` remain unchecked above until the native merge is read back.
-The complete `.3` preview still needs `.3c–.3e`; no product UI, generated BAR
-receiver, release, installation or native browser control is accepted here.
+The parent accepted this window after the projection readback. Implementation
+uses isolated local branches and joins one coherent source outcome before PR
+admission. This unmerged plan does not claim product or receiver acceptance. The existing §9.8 browser-plan link
+continues to point to `docs/roadmaps/barc-01-browser-preview.md`; retain the
+original design/foundation links and add no new roadmap row.
