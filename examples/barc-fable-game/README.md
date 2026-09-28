@@ -43,3 +43,26 @@ scripts/qualify-barc-receiver-journey.sh \
   --receiver-evidence /a/qualified/candidate-evidence \
   --evidence /a/new/journey-evidence
 ```
+
+## Live receiver preparation
+
+The preview route remains `/barc/` and omits the mount profile. A joined live
+candidate is an explicit opt-in at `/barc/?barc-profile=barc-live-v1`; unknown
+profile values refuse before the product mount. Endpoint, session and credential
+values still come only from the product's visible controls or memory-only mount
+options.
+
+`scripts/package-barc-live-receiver.sh` consumes a reviewed
+`fsbar.barc-live-receiver-pins/v1` document from the joined owner. It requires the
+exact joined source commit and hashes for the built client, stylesheet, Worker,
+generated codec/contract and two independently built guests. Every transitive
+runtime import is an additional `dependency` pin; unlisted files are excluded.
+It copies product bytes without rewriting them, embeds the pins, and emits a
+deterministic archive.
+`BARC_LIVE_RECEIVER_PINS.schema.json` documents that handoff shape; the packager
+also enforces the fixed client/codec/Worker archive locations, unique paths and
+exactly one entry for every named role.
+`scripts/qualify-barc-receiver-live-prep.sh` compares every pinned archive byte
+with that joined source. Its receipt is deliberately `prepared`: clean/retained
+generation, both input journeys, imported-guest native effect and publication
+remain false until the final Native/Broker/Browser join and actual runtime proof.
