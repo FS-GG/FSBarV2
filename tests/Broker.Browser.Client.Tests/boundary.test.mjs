@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { decodeServerFrame, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
+import { encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
 
 const wire = name => readFile(`../../fixtures/barc-browser/wire/${name}.bin`);
 const bootstrap = {
@@ -23,6 +24,14 @@ test("present zero stays distinct from absent", async () => {
   assert.equal(decoded.observation.units[0].teamId, 0);
   assert.equal(decoded.observation.units[0].position.elevation, 0);
   assert.equal(decoded.observation.units[0].generation, "0");
+});
+
+test("legitimate stale envelopes omit current-only perspective and capture fields", () => {
+  const bytes = encodeObject(v1.ServerEnvelope, { observation: { sessionId: bootstrap.sessionId, sequence: "9007199254740994", validity: { status: "VALIDITY_STATUS_STALE", lastSequence: "9007199254740994", receivedSequence: "9007199254740996", detail: "gap" } } });
+  const decoded = decodeServerFrame(bytes, { bootstrap, negotiatedMaxFrameBytes: 65536 });
+  assert.equal(decoded.observation.validity.status, "VALIDITY_STATUS_STALE");
+  assert.equal(Object.hasOwn(decoded.observation, "perspectiveId"), false);
+  assert.equal(Object.hasOwn(decoded.observation, "capturedAtUnixMs"), false);
 });
 
 for (const [name, message] of [

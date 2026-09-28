@@ -34,7 +34,10 @@ model <- apply "snapshot" "stale" "snapshot-9007199254740993" model
 require (Domain.connectionText model.Connection = "stale") "stale snapshot must be visible"
 require (not model.Armed && model.Preview.IsNone) "stale state must clear preview and disarm"
 
+model <- apply "snapshot" "current" "snapshot-9007199254740997" model
+require (Domain.connectionText model.Connection = "current" && not model.Armed) "recovery returns current but requires explicit rearm"
+
 model <- apply "disconnected" "closed" Unchecked.defaultof<obj> model
 require (Domain.connectionText model.Connection = "disconnected" && not model.Armed) "disconnect must remain disarmed"
 
-printfn "BARC client Elmish state tests passed (8 assertions)"
+printfn "BARC client Elmish state tests passed (9 assertions)"

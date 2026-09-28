@@ -42,6 +42,7 @@ module Domain =
         match kind with
         | "connecting" -> Connecting
         | "streaming" -> Streaming
+        | "current" -> Streaming
         | "stale" -> Stale
         | "disconnected" -> Disconnected
         | "refused" -> Refused

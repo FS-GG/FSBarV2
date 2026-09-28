@@ -133,8 +133,8 @@ test("actual companion preserves the complete read-only product boundary", async
       const value = point.matrixTransform(element.getScreenCTM()); return { x: value.x, y: value.y };
     });
     await page.mouse.click(screen.x, screen.y);
-    await expect(page.locator(".move-preview")).toHaveAttribute("data-x", "128.25");
-    await expect(page.locator(".move-preview")).toHaveAttribute("data-z", "-64.5");
+    const pointerMove = await page.locator(".move-preview").evaluate(element => ({ x: Number(element.dataset.x), z: Number(element.dataset.z), units: element.dataset.unitIds }));
+    expect(pointerMove).toEqual({ x: 128.25, z: -64.5, units: "77" });
     await page.evaluate(() => window.__barcPointerPreview = document.querySelector(".move-preview"));
     await selectAndKeyboardTarget(page);
     await page.waitForFunction(() => document.querySelector(".move-preview") !== window.__barcPointerPreview);
@@ -155,12 +155,11 @@ test("actual companion preserves the complete read-only product boundary", async
     await expect(page.locator(".diagnostic")).toContainText("disarmed");
 
     await chooseFile(page, "Import .wasm", source("tests/Broker.Browser.Wasm.Tests/generated/trap-process.wasm"));
-    await rearm(page); await page.locator('[data-unit-id="77"]').click();
+    await page.getByRole("button", { name: "Rearm" }).click();
     await expect(page.locator(".module")).toContainText(/faulted|trap/i);
     await expect(page.getByRole("button", { name: "Pair" })).toBeEnabled();
     await chooseFile(page, "Import .wasm", source("tests/Broker.Browser.Wasm.Tests/generated/hang-process.wasm"));
-    await rearm(page); await page.locator('[data-unit-id="77"]').click();
-    await page.getByLabel("Target X").fill("128.25"); await page.getByLabel("Target Z").fill("-64.5"); await page.getByRole("button", { name: "Preview target" }).click();
+    await page.getByRole("button", { name: "Rearm" }).click();
     await expect(page.locator(".module")).toContainText(/timed-out|timed out/);
     await expect(page.getByRole("button", { name: "Pair" })).toBeEnabled();
     await expect(page.getByLabel("Target X")).toBeEditable();

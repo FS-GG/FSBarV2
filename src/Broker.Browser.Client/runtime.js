@@ -8,12 +8,17 @@ const CONFIGURED_MAX_FRAME = 1024 * 1024;
 const MAX_GUEST_ENTITIES = 64;
 const MAX_QUEUE = 8;
 const MAX_MODULE_BYTES = 8 * 1024 * 1024;
+const TARGET_QUANTUM = 0.25;
 
 const bytesEqual = (left, right) => left === right;
 const finite = (value) => typeof value === "number" && Number.isFinite(value);
 const nonzeroId = (value) => typeof value === "string" && /^(?:[1-9][0-9]*)$/.test(value);
 const sequence = (value) => typeof value === "string" && /^(?:0|[1-9][0-9]*)$/.test(value);
 const known = (value, values) => values.includes(value);
+const quantizeTarget = value => {
+  const quantized = Math.round(value / TARGET_QUANTUM) * TARGET_QUANTUM;
+  return Object.is(quantized, -0) ? 0 : quantized;
+};
 
 function uuidBytesBase64(value) {
   const match = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(value.trim());
@@ -55,12 +60,11 @@ function validateBootstrap(value) {
 }
 
 function validateObservation(value, bootstrap) {
-  if (!value || !bytesEqual(value.sessionId, bootstrap.sessionId) || value.perspectiveId !== bootstrap.perspectiveId) {
-    throw new Error("observation session or perspective does not match bootstrap");
-  }
+  if (!value || !bytesEqual(value.sessionId, bootstrap.sessionId)) throw new Error("observation session does not match bootstrap");
   if (!nonzeroId(value.sequence)) throw new Error("observation identity is invalid");
   validateValidity(value.validity, true);
   const stale = value.validity.status === "VALIDITY_STATUS_STALE";
+  if ((!stale && value.perspectiveId !== bootstrap.perspectiveId) || (stale && value.perspectiveId && value.perspectiveId !== bootstrap.perspectiveId)) throw new Error("observation perspective does not match bootstrap");
   if (!stale && !sequence(value.capturedAtUnixMs)) throw new Error("current observation capture time is invalid");
   if (!Array.isArray(value.units) || !Array.isArray(value.features)) throw new Error("observation collections are missing");
   if (value.units.length + value.features.length > bootstrap.limits.maxEntities) throw new Error("observation exceeds negotiated entity limit");
@@ -221,7 +225,12 @@ export function createRuntime(root, options, emit) {
       if (response.requestId !== item.requestId || response.sessionId !== bootstrap.sessionId || response.consumedSequence !== item.contextSequence || response.acknowledgment !== "GUEST_ACK_STATUS_CONSUMED") {
         throw new Error("guest response identity did not match queued input");
       }
-      if (response.kind === "INTENT_KIND_MOVE" && response.preview === "move") notify("preview", "", response.move);
+      if (response.kind === "INTENT_KIND_MOVE" && response.preview === "move") {
+        response.move.groundTarget.x = quantizeTarget(response.move.groundTarget.x);
+        response.move.groundTarget.z = quantizeTarget(response.move.groundTarget.z);
+        if (Object.hasOwn(response.move.groundTarget, "elevation")) response.move.groundTarget.elevation = quantizeTarget(response.move.groundTarget.elevation);
+        notify("preview", "", response.move);
+      }
       else if (!response.kind && !response.preview) notify("preview", "", null);
       else throw new Error("guest response preview and kind disagree");
     } catch (error) { disarm(`Guest output refused: ${error.message}`); }
@@ -245,8 +254,8 @@ export function createRuntime(root, options, emit) {
   };
   const groundTarget = position => {
     if (!projection.armed || selected.length === 0 || !snapshot) return;
-    target = position;
-    request({ position }, snapshot.sequence, "groundTarget");
+    target = { x: quantizeTarget(position.x), z: quantizeTarget(position.z), ...(Object.hasOwn(position, "elevation") ? { elevation: quantizeTarget(position.elevation) } : {}) };
+    request({ position: target }, snapshot.sequence, "groundTarget");
     render(projection);
   };
 
