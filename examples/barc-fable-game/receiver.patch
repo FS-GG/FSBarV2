@@ -5,11 +5,11 @@ index e1f9541..f8910a4 100644
 @@ -25,7 +25,7 @@ module Api =
                          "body" ==> BootstrapV1.encodeRequest request
                      ]
- 
+
 -            let! response = fetch ("/api/bootstrap", options) |> Async.AwaitPromise
 +            let! response = fetch (BaseUrl.resolve "api/bootstrap", options) |> Async.AwaitPromise
              let! text = response?text () |> Async.AwaitPromise
- 
+
              match BootstrapV1.responseFromJson (text: string) with
 diff --git a/Client/App.fs b/Client/App.fs
 index c352545..bc5a8ed 100644
@@ -21,7 +21,7 @@ index c352545..bc5a8ed 100644
          // only after the transport opens, in a versioned protocol message.
 -        let conn = SignalR.build "/hub/game"
 +        let conn = SignalR.build (BaseUrl.resolve "hub/game")
- 
+
          conn.on (
              "Message",
 diff --git a/Client/BaseUrl.fs b/Client/BaseUrl.fs
@@ -75,7 +75,7 @@ index c8b2939..f327dfb 100644
 @@ -1,12 +1,16 @@
 -import { defineConfig } from "vite";
 +import { defineConfig, loadEnv } from "vite";
- 
+
  // Development requests to /api and the SignalR hub stay same-origin and are forwarded
  // to ASP.NET Core; the hub's WebSocket upgrade needs `ws: true` explicitly.
 -export default defineConfig({
@@ -103,7 +103,7 @@ index dcfc260..f0c89fc 100644
 @@ -182,6 +182,12 @@ module Program =
          builder.Services.AddHostedService<TickBroadcaster>() |> ignore
          let app = builder.Build()
- 
+
 +        match builder.Configuration["BasePath"] with
 +        | null
 +        | ""
