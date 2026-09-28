@@ -2,7 +2,7 @@
 
 **Selected implementation window, 2026-09-28.** Owner: `FS-GG/FSBarV2`. Durable path:
 `docs/roadmaps/barc-01-browser-preview.md`. `.3a/.3b` are source delivered;
-`.3c–.3e` remain unfinished. This expands the existing **BARC-01** feature and
+`.3c–.3e` are qualified on the joined candidate; native fork delivery is the final source gate. This expands the existing **BARC-01** feature and
 preserves its milestone and cost lineage.
 
 Programme: [Unified §9.8](https://github.com/FS-GG/.github/blob/main/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md#98-feature-parts-and-subroadmap-index).
@@ -117,7 +117,7 @@ elevation in observation details, and preserve unavailable facts as unavailable.
   reproducible manual/example guests and actual browser containment are accepted.
   Product UI, larger observation capacity and final receiver use remain below.
 
-- [ ] **BARC-01.3c — Launchable Fable tactical preview with equivalent input — route: routine.**
+- [x] **BARC-01.3c — Launchable Fable tactical preview with equivalent input — route: routine.**
   Depends on `.3a/.3b` and the parent's authoritative PR #3957 projection readback.
   Deliver the mountable Elmish DOM/SVG component and the companion executable as
   one joined source outcome. Show own/visual/radar shapes, typed features, optional
@@ -166,7 +166,7 @@ elevation in observation details, and preserve unavailable facts as unavailable.
   sentinel, not merely a browser GET-only assertion. Focused Fable state/input tests,
   real entry-point Playwright journeys and affected existing suites pass.
 
-- [ ] **BARC-01.3d — Clean public Fable-game receiver consumes the same preview — route: routine.**
+- [x] **BARC-01.3d — Clean public Fable-game receiver consumes the same preview — route: routine.**
   Preparation depends on the frozen mount/archive layout; final acceptance depends
   on `.3c`'s joined artifact. Produce one hash-manifested candidate archive from the
   exact product source/build, including client sources, generated codec, trusted
@@ -194,7 +194,7 @@ elevation in observation details, and preserve unavailable facts as unavailable.
   composition adoption, not public BAR package publication or a complete upgrade
   promise. Stop at that receiver outcome and evidence.
 
-- [ ] **BARC-01.3e — Qualify the joined preview and close its bounded outcome — route: routine.**
+- [x] **BARC-01.3e — Qualify the joined preview and close its bounded outcome — route: routine.**
   Depends on `.3c/.3d` and their exact combined source/archive. The integrator runs
   coherent focused checks once on the joined tree, preserving known baseline
   failures without laundering new ones. Replay the real product/receiver journeys,
@@ -289,6 +289,6 @@ bureaucracy ceiling, useful-test exclusion, near-5% recovery target and the
 
 The parent accepted this window after the projection readback. Implementation
 uses isolated local branches and joins one coherent source outcome before PR
-admission. This unmerged plan does not claim product or receiver acceptance. The existing §9.8 browser-plan link
+admission. The [joined qualification evidence](evidence/barc-01.3cde-preview.md) records actual local and generated-receiver acceptance. These checked candidate milestones acquire source-delivered status only after exact native fork merge/readback; the parent owns that gate and the immediate Unified §0 projection. The existing §9.8 browser-plan link
 continues to point to `docs/roadmaps/barc-01-browser-preview.md`; retain the
 original design/foundation links and add no new roadmap row.
