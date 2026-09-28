@@ -67,6 +67,7 @@ ready="$evidence/ready.json"
 native_receipt="$evidence/native-qualification.json"
 receiver_pid=
 companion_pid=
+journey_pid=
 
 stop_process() {
   local pid="$1" label="$2"
@@ -93,6 +94,10 @@ cleanup() {
     kill -KILL "$companion_pid" 2>/dev/null || true
     wait "$companion_pid" 2>/dev/null || true
   fi
+  if [[ -n "$journey_pid" ]] && kill -0 "$journey_pid" 2>/dev/null; then
+    kill -KILL "$journey_pid" 2>/dev/null || true
+    wait "$journey_pid" 2>/dev/null || true
+  fi
   if [[ -n "$receiver_pid" ]] && kill -0 "$receiver_pid" 2>/dev/null; then
     kill -KILL "$receiver_pid" 2>/dev/null || true
     wait "$receiver_pid" 2>/dev/null || true
@@ -100,6 +105,8 @@ cleanup() {
   exit "$status"
 }
 trap cleanup EXIT
+
+npm ci --ignore-scripts --prefix "$client_tests" > "$evidence/client-test-install.log"
 
 (cd "$receiver_publish" && exec dotnet Server.dll --urls "$receiver_origin" --BasePath=/barc) \
   > "$evidence/receiver-server.log" 2>&1 &
@@ -113,6 +120,16 @@ for _ in $(seq 1 200); do
   sleep 0.05
 done
 [[ "$ready_receiver" == true ]] || { echo "generated receiver did not become ready" >&2; exit 1; }
+
+# Start Chromium before the companion so the journey is already waiting on the
+# private handoff when the fixture emits its first complete observation.
+BARC_RUN_ACTUAL_COMPANION=1 \
+BARC_EXTERNAL_READY_FILE="$ready" \
+BARC_EXTERNAL_PRODUCT_URL="$receiver_url" \
+  npm run test:actual --prefix "$client_tests" > "$evidence/actual-receiver-journey.log" &
+journey_pid=$!
+sleep 1
+kill -0 "$journey_pid" 2>/dev/null || { echo "actual receiver journey exited before companion startup" >&2; exit 1; }
 
 dotnet "$companion" --fixture \
   --assets-root "$evidence/companion-assets" --base-path /barc/ \
@@ -130,11 +147,8 @@ done
 [[ "$(stat -c '%a' "$ready")" == 600 ]] || { echo "private handoff mode is not 0600" >&2; exit 1; }
 jq -e '.schema == "barc.preview.ready/v1" and .fixtureMode == true' "$ready" >/dev/null
 
-npm ci --ignore-scripts --prefix "$client_tests" > "$evidence/client-test-install.log"
-BARC_RUN_ACTUAL_COMPANION=1 \
-BARC_EXTERNAL_READY_FILE="$ready" \
-BARC_EXTERNAL_PRODUCT_URL="$receiver_url" \
-  npm run test:actual --prefix "$client_tests" > "$evidence/actual-receiver-journey.log"
+wait "$journey_pid"
+journey_pid=
 
 stop_process "$companion_pid" "actual companion"
 companion_pid=
