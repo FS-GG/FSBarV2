@@ -269,7 +269,36 @@ let wireConvertTests =
                 match result with
                 | WireConvert.Invalidated (1UL,2UL,detail) ->
                     Expect.stringContains detail "does not materialize" "refusal remains explicit"
+                    Expect.stringContains
+                        detail
+                        (sprintf "arms[unit_idle(actor=%d,knownOwn=false)=1]; distinct=1; omitted=0" unitId)
+                        "the bounded diagnostic identifies the rejected idle actor"
                 | other -> failtestf "expected unknown idle refusal, got %A" other
+        }
+
+        test "unsupported delta diagnostics expose bounded arm names and counts only" {
+            let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
+            let delta=StateDelta.empty()
+            for _ in 1..2 do
+                let event=DeltaEvent.empty()
+                event.EnemyLeaveLos<-EnemyLeaveLOSEvent.empty()
+                delta.Events.Add event
+            let radar=DeltaEvent.empty()
+            radar.EnemyEnterRadar<-EnemyEnterRadarEvent.empty()
+            delta.Events.Add radar
+            let update=StateUpdate.empty()
+            update.Seq<-2UL
+            update.Frame<-2u
+            update.Delta<-delta
+            let _, result=WireConvert.applyHighBarStateUpdate update v1
+            match result with
+            | WireConvert.Invalidated (_,_,detail) ->
+                Expect.stringContains detail "does not materialize" "the stable refusal category is retained"
+                Expect.stringContains
+                    detail
+                    "arms[enemy_enter_radar=1,enemy_leave_los=2]; distinct=2; omitted=0"
+                    "diagnostics contain finite arm names and aggregate counts without payloads"
+            | other -> failtestf "expected unsupported arm diagnostics, got %A" other
         }
 
         test "mixed economy and command dispatch applies economy without weakening dispatch correlation" {
@@ -312,7 +341,8 @@ let wireConvertTests =
             let v2, result=WireConvert.applyHighBarStateUpdate update v1
             Expect.isFalse (WireConvert.hasValidBaseline v2) "an unknown or unset arm invalidates the baseline"
             match result with
-            | WireConvert.Invalidated (1UL,2UL,_) -> ()
+            | WireConvert.Invalidated (1UL,2UL,detail) ->
+                Expect.stringContains detail "arms[unset=1]; distinct=1; omitted=0" "unset oneof is named without payload data"
             | other -> failtestf "expected Invalidated, got %A" other
         }
 
