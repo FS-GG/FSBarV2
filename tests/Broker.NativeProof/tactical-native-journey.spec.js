@@ -29,7 +29,18 @@ async function pair(page,j,guest="Manual guest"){
 async function target(live,p){await live.getByLabel("Target X").fill(String(p.x));await live.getByLabel("Target Z").fill(String(p.z))}
 async function keyboardSelect(page,live,refs){const map=live.getByLabel(/Live tactical map/);await map.focus();for(let i=0;i<64&&!((await live.locator(".selection").textContent())??"").includes(key(refs[0]));i++)await page.keyboard.press("Tab");expect(await live.locator(".selection").textContent()).toContain(key(refs[0]));for(const ref of refs.slice(1)){for(let i=0;i<64&&!((await live.locator(".selection").textContent())??"").includes(key(ref));i++)await page.keyboard.press("Control+Tab");expect(await live.locator(".selection").textContent()).toContain(key(ref))}}
 const selectedRefs=async live=>{const value=(await live.locator(".selection").textContent())??"",match=/^Actors (.*?) ·/.exec(value);return match?match[1].split(", "):[]}
-async function actorPoint(live,ref){const actor=live.locator(selector("unit",ref));await expect(actor).toBeVisible({timeout:30000});const box=await actor.boundingBox();expect(box).not.toBeNull();return{x:box.x+box.width/2,y:box.y+box.height/2}}
+async function actorPoint(live,ref){
+  const actor=live.locator(selector("unit",ref));let point=null;
+  await expect.poll(async()=>{
+    point=await actor.evaluate((node,expected)=>{
+      if(!node.isConnected||node.dataset.unitId!==expected.id||node.dataset.lifetime!==expected.lifetime)return null;
+      const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2;
+      return box.width>0&&box.height>0&&Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight?{x,y}:null;
+    },ref).catch(()=>null);
+    return point;
+  },{timeout:30000,intervals:[0,10,25,50,100,250]}).not.toBeNull();
+  return point;
+}
 async function pointerSelect(page,live,ref,expected,toggle=false){for(let attempt=0;attempt<64;attempt++){const point=await actorPoint(live,ref);if(toggle)await page.keyboard.down("Control");try{await page.mouse.click(point.x,point.y)}finally{if(toggle)await page.keyboard.up("Control")}if(JSON.stringify(await selectedRefs(live))===JSON.stringify(expected.map(key)))return}throw new Error(`pointer could not establish exact actor set ${expected.map(key).join(", ")}`)}
 async function select(page,live,source,refs){if(source==="keyboard")return keyboardSelect(page,live,refs);for(let i=0;i<refs.length;i++)await pointerSelect(page,live,refs[i],refs.slice(0,i+1),i>0)}
 async function cycleTarget(page,live,kind,ref){const map=live.getByLabel(/Live tactical map/),letter=kind==="friendly"?"t":"f",label=kind==="friendly"?"Friendly":"Feature";await map.focus();for(let i=0;i<64&&!((await live.locator(".target").textContent())??"").includes(`${label} ${key(ref)}`);i++)await page.keyboard.press(letter);expect(await live.locator(".target").textContent()).toContain(`${label} ${key(ref)}`)}

@@ -107,6 +107,31 @@ test("physical actor selection waits for a delayed tactical observation render",
   const box=await actor.boundingBox();expect(box).not.toBeNull();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await expect(page.locator(".selection")).toContainText(`Actors ${ref0.id}:${ref0.lifetime}`);
 });
 
+test("atomic actor geometry supports genuine pointer selection during repeated SVG replacement",async({page})=>{
+  const overlap={id:"17",lifetime:"9007199254741021"};
+  const overlapping={...tacticalObservation,
+    preview:{...tacticalObservation.preview,units:[...tacticalObservation.preview.units,{id:"17",definitionId:503,teamId:0,observation:"OBSERVATION_KIND_OWN",position:{x:1024,z:1024}}]},
+    units:[...tacticalObservation.units,{reference:overlap,observation:"OBSERVATION_KIND_OWN"}],
+    tactical:{...tacticalObservation.tactical,actors:[...tacticalObservation.tactical.actors,actorTactical(overlap)]}};
+  tacticalObservationOverride=overlapping;
+  await arm(page,"Manual guest","barc-live-tactical-v1");
+  await page.evaluate(()=>{window.__barcUnitReplacementCount=0;new MutationObserver(records=>window.__barcUnitReplacementCount+=records.reduce((count,record)=>count+record.removedNodes.length,0)).observe(document.querySelector(".units"),{childList:true})});
+  const actor=page.locator(`[data-unit-id="${ref0.id}"][data-lifetime="${ref0.lifetime}"]`);
+  const point=async()=>actor.evaluate((node,expected)=>{if(!node.isConnected||node.dataset.unitId!==expected.id||node.dataset.lifetime!==expected.lifetime)return null;const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2;return box.width>0&&box.height>0&&Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null},ref0).catch(()=>null);
+  await page.evaluate(()=>window.__barcRenderChurn=setInterval(()=>{const units=document.querySelector(".units");units.replaceChildren(...[...units.children].map(node=>node.cloneNode(true)))},0));
+  try{
+    await expect.poll(()=>page.evaluate(()=>window.__barcUnitReplacementCount)).toBeGreaterThan(2);
+    const beforeClickChurn=await page.evaluate(()=>window.__barcUnitReplacementCount);
+    for(let attempt=0;attempt<64;attempt++){
+      let current=null;await expect.poll(async()=>current=await point(),{timeout:30000,intervals:[0,10,25,50]}).not.toBeNull();
+      await page.mouse.click(current.x,current.y);
+      if(((await page.locator(".selection").textContent())??"").startsWith(`Actors ${ref0.id}:${ref0.lifetime} ·`))break;
+    }
+    await expect(page.locator(".selection")).toContainText(`Actors ${ref0.id}:${ref0.lifetime} ·`);
+    await expect.poll(()=>page.evaluate(()=>window.__barcUnitReplacementCount)).toBeGreaterThan(beforeClickChurn);
+  }finally{await page.evaluate(()=>clearInterval(window.__barcRenderChurn))}
+});
+
 test("two canonical result lifecycles cross the real Worker without revoking authority",async({page})=>{
   canonicalFeedback=true;await arm(page);await page.locator('[data-unit-id="0"]').click();await page.getByRole("button",{name:"Stop"}).click();await expect.poll(()=>submissions.length).toBe(1);
   await page.getByLabel("Target X").fill("512.5");await page.getByLabel("Target Z").fill("1024.25");await page.getByRole("button",{name:"Move",exact:true}).click();await expect.poll(()=>submissions.length).toBe(2);
