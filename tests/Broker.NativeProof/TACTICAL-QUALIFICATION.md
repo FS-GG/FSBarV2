@@ -1,0 +1,42 @@
+# Tactical native qualification preparation
+
+This harness prepares the six real `barc-live-tactical-v1` journeys required by
+BARC-01.5f. It does not start the engine and does not treat broker or native
+`APPLIED` feedback as completion of a game effect.
+
+Start the production host with `--tactical-live-host`. The host waits for exact
+native tactical capabilities, a complete catalogue and a tactical snapshot
+paired to a production basis before it creates its private mode-0600 ready
+file. The ready file uses `fsbar.barc-native-live-host/v2`, identifies profile
+revision 1 and retains server-generated pairing data only in the private
+directory. Host output prints the ready-file path, never its credential.
+
+The parent-owned runner creates a mode-0600
+`fsbar.barc-tactical-native-browser-handoff/v1` file with exact source,
+archive, client, plugin and engine hashes. It supplies local and generated
+receivers, each with pointer, keyboard and imported-guest journeys. Every
+journey uses a distinct credential and output file. Run:
+
+```console
+dotnet run -c Release --project tests/Broker.NativeProof/Broker.NativeProof.fsproj -- \
+  --tactical-live-host 127.0.0.1:PORT http://127.0.0.1:PORT \
+  http://127.0.0.1:RECEIVER /private/new-host-dir SOURCE_COMMIT
+
+npm --prefix tests/Broker.NativeProof ci --ignore-scripts
+BARC_TACTICAL_HANDOFF=/private/handoff.json \
+  npm --prefix tests/Broker.NativeProof run test:tactical
+```
+
+Pointer covers construction, repair and lifetime-bound feature reclaim.
+Keyboard covers bounded factory count, rally, current production-queue edit,
+repeat and selected BAR mode. The imported guest covers ordered multi-actor
+fanout, combat and a locally refused unavailable action with zero submission.
+The driver records decoded submit/result/observation frames to new mode-0600
+files and omits authentication frames. Native and engine traces remain private.
+
+Acceptance still requires later observations proving the configured building,
+health, feature/resource, produced-unit/rally, queue/repeat/mode and combat
+effects. `assertCanonicalLifecycle` additionally requires broker admission,
+native admission and applied dispatch for every child. The parent must reject
+missing effects, missing children, stale identities, fixture mode, reused
+credentials, wrong pins or any public/default installation claim.

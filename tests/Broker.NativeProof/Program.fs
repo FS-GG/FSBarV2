@@ -229,7 +229,9 @@ module Program =
     let main argv =
         let listenAddress = if argv.Length = 1 then argv[0] else "127.0.0.1:5021"
         try
-            (if argv.Length > 0 && argv[0] = "--live-host" then LiveHost.run argv[1..] else run listenAddress) |> fun task -> task.GetAwaiter().GetResult()
+            (if argv.Length > 0 && argv[0] = "--live-host" then LiveHost.run "barc-live-v1" argv[1..]
+             elif argv.Length > 0 && argv[0] = "--tactical-live-host" then LiveHost.run "barc-live-tactical-v1" argv[1..]
+             else run listenAddress) |> fun task -> task.GetAwaiter().GetResult()
         with ex ->
             eprintfn "PROOF_FAIL %s" ex.Message
             1

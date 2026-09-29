@@ -191,7 +191,7 @@ export function createLiveRuntime(root, options, emit) {
   const supervisor = new GuestSupervisor({ workerUrl: new URL("src/Broker.Browser.Wasm/guest-worker.js", assetBase), limits: { phaseTimeoutMilliseconds: 250 } });
   let socket = null, disposed = false, pairedSession = null, bootstrap = null, observation = null, moduleBytes = null, moduleName = "No guest loaded", moduleIdentity = null;
   let selected = [], target = { x: 0, z: 0 }, attackTarget = null, friendlyTarget = null, featureTarget = null, movePolicy = "MOVE_POLICY_REPLACE", controllerStage = "CONTROLLER_STAGE_UNSPECIFIED";
-  let connectionGeneration = 0, lifecycleEpoch = 0, composing = false, pointerId = null, pointerUnit = null, protocolRefused = false;
+  let connectionGeneration = 0, lifecycleEpoch = 0, composing = false, pointerId = null, pointerUnit = null, selectionCursor = -1, protocolRefused = false;
   let lastObservationSequence = 0n, lastResultSequence = 0n; const pendingParents = new Map();
 
   root.classList.add("barc-preview", "barc-live");
@@ -208,7 +208,7 @@ export function createLiveRuntime(root, options, emit) {
   const currentRefs = kind => observation?.units?.filter(unit => unit.observation === kind).map(unit => unit.reference) ?? [];
   const send = value => { if (!socket || socket.readyState !== WebSocket.OPEN) throw new Error("live socket is unavailable"); socket.send(encodeObject(v1.LiveClientEnvelope, value)); };
   const revoke = reason => {
-    lifecycleEpoch++; selected = []; attackTarget = null; friendlyTarget = null; featureTarget = null;
+    lifecycleEpoch++; selected = []; selectionCursor = -1; attackTarget = null; friendlyTarget = null; featureTarget = null;
     if (bootstrap && moduleIdentity && ["CONTROLLER_STAGE_ARM_REQUESTED", "CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED"].includes(controllerStage)) {
       controllerStage = "CONTROLLER_STAGE_REVOKE_REQUESTED"; try { send({ revoke: { controller: bootstrap.controller, reason } }); } catch {}
     }
@@ -238,7 +238,12 @@ export function createLiveRuntime(root, options, emit) {
     if (encoded.byteLength > bootstrap.limits.maxInputBytes) return revoke("Live guest input exceeds its negotiated byte limit.");
     queue.enqueue({ kind, bytes: encoded, request, connection: connectionGeneration, generation: supervisor.generation, epoch: lifecycleEpoch });
   };
-  const select = (source, actors) => { if (!confirmed()) return; selected = actors.slice(0, MAX_ACTORS); guestRequest({ manualInput: { source, modifiers: {}, select: { actors: selected } } }); render(); };
+  const select = (source, actors, modifiers = {}) => { if (!confirmed()) return; selected = actors.slice(0, MAX_ACTORS); guestRequest({ manualInput: { source, modifiers, select: { actors: selected } } }); render(); };
+  const toggleSelection = (source, actor, modifiers) => {
+    const index=selected.findIndex(value=>sameRef(value,actor));
+    const next=index>=0?selected.filter((_,candidate)=>candidate!==index):selected.length<MAX_ACTORS?[...selected,actor]:selected;
+    if(next.length!==selected.length)select(source,next,modifiers);
+  };
   const action = (source, intent, modifiers = {}) => { if (!confirmed() || selected.length === 0) return; guestRequest({ manualInput: { source, modifiers, action: { actors: selected, ...intent } } }); };
   const move = (source, position, append = false) => { const b = bootstrap?.capabilities?.mapBounds; if (!b) return; const x = Math.min(b.maxX, Math.max(b.minX ?? 0, position.x)), z = Math.min(b.maxZ, Math.max(b.minZ ?? 0, position.z)); target = { x, z }; movePolicy = append ? "MOVE_POLICY_APPEND" : elements.policy.value; action(source, { move: { position: target, policy: movePolicy } }, { shift: movePolicy === "MOVE_POLICY_APPEND" }); render(); };
   const stop = source => action(source, { stop: {} });
@@ -292,7 +297,7 @@ export function createLiveRuntime(root, options, emit) {
             || BigInt(replacement.controller.authorityEpoch) <= BigInt(bootstrap.controller.authorityEpoch)
             || replacement.controller.controllerId === bootstrap.controller.controllerId
             || replacement.controller.controllerIncarnation === bootstrap.controller.controllerIncarnation) throw new Error("replacement live bootstrap identity or negotiation is invalid");
-        lifecycleEpoch++; queue.reset(); selected = []; attackTarget = null; friendlyTarget = null; featureTarget = null; observation = null; moduleIdentity = null; pendingParents.clear(); lastObservationSequence = 0n; lastResultSequence = 0n;
+        lifecycleEpoch++; queue.reset(); selected = []; selectionCursor = -1; attackTarget = null; friendlyTarget = null; featureTarget = null; observation = null; moduleIdentity = null; pendingParents.clear(); lastObservationSequence = 0n; lastResultSequence = 0n;
       }
       bootstrap = replacement; controllerStage = "CONTROLLER_STAGE_UNSPECIFIED"; notify("streaming", isReplacement ? "Fresh live authority identity received." : "Authenticated live session; load a guest and request native authority."); render(); return;
     }
@@ -367,20 +372,20 @@ export function createLiveRuntime(root, options, emit) {
   elements.file.addEventListener("change",async()=>{const file=elements.file.files[0];if(file?.size>MAX_MODULE)revoke("Module exceeds its import bound.");else if(file)await loadModule(file.name,new Uint8Array(await file.arrayBuffer()));elements.file.value=""});
   elements.svg.addEventListener("compositionstart",()=>composing=true);elements.svg.addEventListener("compositionend",()=>composing=false);
   elements.svg.addEventListener("keydown",event=>{if(composing||event.isComposing||event.target.closest("input,textarea,[contenteditable=true],[role=dialog]"))return;if(event.key==="Escape"){revoke("Escape revoked live authority.");return}if(!confirmed())return;const own=currentRefs("OBSERVATION_KIND_OWN"),visual=currentRefs("OBSERVATION_KIND_VISUAL");
-    if(event.key==="Tab"&&own.length){event.preventDefault();const index=Math.max(-1,own.findIndex(item=>selected.some(value=>sameRef(item,value))));select("LIVE_INPUT_SOURCE_KEYBOARD",[own[(index+1)%own.length]])}
+    if(event.key==="Tab"&&own.length){event.preventDefault();if(selectionCursor<0)selectionCursor=Math.max(-1,own.findIndex(item=>selected.some(value=>sameRef(item,value))));selectionCursor=(selectionCursor+1)%own.length;const actor=own[selectionCursor];if(event.ctrlKey||event.metaKey)toggleSelection("LIVE_INPUT_SOURCE_KEYBOARD",actor,{control:true});else select("LIVE_INPUT_SOURCE_KEYBOARD",[actor])}
     else if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key)){event.preventDefault();const step=event.shiftKey?.25:10;if(event.key==="ArrowLeft")target.x-=step;if(event.key==="ArrowRight")target.x+=step;if(event.key==="ArrowUp")target.z-=step;if(event.key==="ArrowDown")target.z+=step;attackTarget=null;render()}
     else if(event.key.toLowerCase()==="s"){event.preventDefault();stop("LIVE_INPUT_SOURCE_KEYBOARD")}
     else if(event.key.toLowerCase()==="a"&&visual.length){event.preventDefault();const index=Math.max(-1,visual.findIndex(item=>attackTarget&&sameRef(item,attackTarget)));attackTarget=visual[(index+1)%visual.length];render()}
     else if(tacticalProfile&&"bgrxpyqm".includes(event.key.toLowerCase())){event.preventDefault();const kinds={b:"build",g:"guard",r:"repair",x:"reclaimFeature",p:"factoryProduce",y:"setRally",q:"queueEdit",m:"tacticalMode"};elements.tacticalAction.value=kinds[event.key.toLowerCase()];render()}
     else if(event.key==="Enter"||event.key===" "){event.preventDefault();if(tacticalProfile&&elements.tacticalAction.matches(":focus, :hover"))tacticalAction("LIVE_INPUT_SOURCE_KEYBOARD");else if(attackTarget)attack("LIVE_INPUT_SOURCE_KEYBOARD");else if(tacticalProfile)tacticalAction("LIVE_INPUT_SOURCE_KEYBOARD");else move("LIVE_INPUT_SOURCE_KEYBOARD",target,event.shiftKey)} });
   elements.svg.addEventListener("pointerdown",event=>{if(!confirmed())return;pointerId=event.pointerId;pointerUnit=event.target.closest("[data-live-ref]")?.dataset.liveRef??null;elements.svg.setPointerCapture(pointerId)});
-  elements.svg.addEventListener("lostpointercapture",()=>{pointerId=null;pointerUnit=null});elements.svg.addEventListener("pointerup",event=>{if(pointerId!==event.pointerId||!confirmed())return;pointerId=null;const unit=observation?.units.find(value=>refKey(value.reference)===pointerUnit),feature=observation?.tactical?.features?.find(value=>refKey(value.reference)===pointerUnit);pointerUnit=null;if(feature){featureTarget=feature.reference;elements.tacticalAction.value="reclaimFeature";render()}else if(unit?.observation==="OBSERVATION_KIND_OWN"&&event.shiftKey){friendlyTarget=unit.reference;render()}else if(unit?.observation==="OBSERVATION_KIND_OWN")select("LIVE_INPUT_SOURCE_POINTER",[unit.reference]);else if(unit?.observation==="OBSERVATION_KIND_VISUAL"){attackTarget=unit.reference;attack("LIVE_INPUT_SOURCE_POINTER")}else{const p=elements.svg.createSVGPoint();p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(elements.svg.getScreenCTM().inverse()),b=bootstrap.capabilities.mapBounds;target={x:(b.minX??0)+local.x/800*(b.maxX-(b.minX??0)),z:(b.minZ??0)+local.y/520*(b.maxZ-(b.minZ??0))};if(tacticalProfile)tacticalAction("LIVE_INPUT_SOURCE_POINTER");else move("LIVE_INPUT_SOURCE_POINTER",target,event.shiftKey)}});
+  elements.svg.addEventListener("lostpointercapture",()=>{pointerId=null;pointerUnit=null});elements.svg.addEventListener("pointerup",event=>{if(pointerId!==event.pointerId||!confirmed())return;pointerId=null;const unit=observation?.units.find(value=>refKey(value.reference)===pointerUnit),feature=observation?.tactical?.features?.find(value=>refKey(value.reference)===pointerUnit);pointerUnit=null;if(feature){featureTarget=feature.reference;elements.tacticalAction.value="reclaimFeature";render()}else if(unit?.observation==="OBSERVATION_KIND_OWN"&&event.shiftKey){friendlyTarget=unit.reference;render()}else if(unit?.observation==="OBSERVATION_KIND_OWN"&&(event.ctrlKey||event.metaKey))toggleSelection("LIVE_INPUT_SOURCE_POINTER",unit.reference,{control:true}) ;else if(unit?.observation==="OBSERVATION_KIND_OWN")select("LIVE_INPUT_SOURCE_POINTER",[unit.reference]);else if(unit?.observation==="OBSERVATION_KIND_VISUAL"){attackTarget=unit.reference;attack("LIVE_INPUT_SOURCE_POINTER")}else{const p=elements.svg.createSVGPoint();p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(elements.svg.getScreenCTM().inverse()),b=bootstrap.capabilities.mapBounds;target={x:(b.minX??0)+local.x/800*(b.maxX-(b.minX??0)),z:(b.minZ??0)+local.y/520*(b.maxZ-(b.minZ??0))};if(tacticalProfile)tacticalAction("LIVE_INPUT_SOURCE_POINTER");else move("LIVE_INPUT_SOURCE_POINTER",target,event.shiftKey)}});
   const blur=()=>!disposed&&revoke("Window focus loss revoked live authority."),visibility=()=>document.hidden&&revoke("Hidden page revoked live authority.");window.addEventListener("blur",blur);document.addEventListener("visibilitychange",visibility);
 
   function render() {
     elements.status.textContent = bootstrap ? "current: live session" : "unpaired"; elements.module.textContent = `${moduleName} — ${moduleIdentity ? `generation ${moduleIdentity.generation}` : "not armed"}`;
     elements.authority.textContent = `Authority: ${controllerStage.replace("CONTROLLER_STAGE_", "").toLowerCase().replaceAll("_", " ")}`;
-    elements.selection.textContent = selected.length ? `Actors ${selected.map(refKey).join(", ")}` : "No lifetime-bound actor selected";
+    elements.selection.textContent = selected.length ? `Actors ${selected.map(refKey).join(", ")} · Ctrl-click or Ctrl+Tab toggles actors` : "No lifetime-bound actor selected · Ctrl-click or Ctrl+Tab toggles actors";
     elements.target.textContent = `${attackTarget ? `Attack ${refKey(attackTarget)} · ` : ""}${friendlyTarget ? `Friendly ${refKey(friendlyTarget)} · ` : ""}${featureTarget ? `Feature ${refKey(featureTarget)} · ` : ""}Target X ${target.x.toFixed(2)} · Z ${target.z.toFixed(2)}`;
     const tactical = observation?.tactical;
     elements.catalogue.textContent = tacticalProfile ? (bootstrap?.tacticalCatalogue ? `Catalogue ${bootstrap.tacticalCatalogue.content.gameName} ${bootstrap.tacticalCatalogue.content.gameVersion} · revision ${bootstrap.tacticalCatalogue.catalogueRevision} · ${bootstrap.tacticalCatalogue.definitions.length} definitions` : "Tactical catalogue unavailable") : "Legacy live profile";

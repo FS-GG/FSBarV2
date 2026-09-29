@@ -11,8 +11,9 @@ open Broker.Protocol
 open Broker.Browser.Gateway
 
 module LiveHost =
-    let run (argv: string array) = task {
+    let run (profile: string) (argv: string array) = task {
         if argv.Length <> 5 then invalidArg "argv" "--live-host requires GRPC_ADDRESS GATEWAY_HTTP ORIGIN PRIVATE_DIRECTORY SOURCE_SHA"
+        if profile <> "barc-live-v1" && profile <> "barc-live-tactical-v1" then invalidArg "profile" "unsupported live profile"
         let grpcAddress, gatewayUrl, origin, privateDirectory, sourceSha = argv[0],argv[1],argv[2],argv[3],argv[4]
         if not (grpcAddress.StartsWith("127.0.0.1:")) then invalidArg "argv" "native qualification requires a loopback gRPC address"
         if Directory.Exists privateDirectory then invalidArg "argv" "private evidence directory must be new"
@@ -39,12 +40,23 @@ module LiveHost =
             let! gateway = Gateway.startLiveAsync host.Hub config lifetime.Token
             try
                 let state=BrokerState.liveControl host.Hub
+                let protobufJson (value: Google.Protobuf.IMessage) =
+                    use document=JsonDocument.Parse(string value)
+                    document.RootElement.Clone()
                 use feedbackSubscription = (LiveControl.feedback state).Subscribe({new IObserver<LiveControl.Feedback> with
                     member _.OnNext value =
                         let envelope=Broker.Browser.Live.LiveBoundary.feedbackEnvelope value
                         write(box {|kind="result";utc=DateTimeOffset.UtcNow;source=sourceSha;parentId=value.parentId;inputId=value.inputId;moduleGeneration=string value.moduleGeneration;authorityEpoch=string value.authorityEpoch;batchSequence=string value.batchSequence;correlationId=string value.correlationId;childIndex=value.childIndex;childCount=value.childCount;actorId=value.actor.Id;actorLifetime=string value.actor.Lifetime;stage=string value.stage;status=string value.status;detail=value.detail;nativeFrame=Option.toNullable value.nativeFrame;commandChannelIncarnation=value.commandChannelIncarnation;wireEnvelope=envelope.ToString()|})
                     member _.OnError error = write(box {|kind="result-stream-error";detail=error.Message|})
                     member _.OnCompleted() = write(box {|kind="result-stream-completed"|})})
+                use metadataSubscription = (LiveControl.metadataReports state).Subscribe({new IObserver<uint64> with
+                    member _.OnNext sequence =
+                        let capabilities=LiveControl.latestCapabilities state |> Option.map (protobufJson >> box) |> Option.toObj
+                        let catalogue=LiveControl.latestTacticalCatalogue state |> Option.map (List.map protobufJson >> box) |> Option.toObj
+                        let tactical=LiveControl.latestTacticalSnapshot state |> Option.map (protobufJson >> box) |> Option.toObj
+                        write(box {|kind="live-metadata";utc=DateTimeOffset.UtcNow;source=sourceSha;stateSequence=string sequence;capabilities=capabilities;catalogue=catalogue;tactical=tactical|})
+                    member _.OnError error = write(box {|kind="metadata-stream-error";detail=error.Message|})
+                    member _.OnCompleted() = write(box {|kind="metadata-stream-completed"|})})
                 let _, feedSubscription = BrokerState.subscribeBrowserFeed ({new IObserver<Snapshot.BrowserFeed> with
                     member _.OnNext value =
                         match value with
@@ -55,7 +67,16 @@ module LiveHost =
                     member _.OnError error = write(box {|kind="observation-stream-error";detail=error.Message|})
                     member _.OnCompleted() = write(box {|kind="observation-stream-completed"|})}) host.Hub
                 use feedSubscription=feedSubscription
-                let ready={|schema="fsbar.barc-native-live-host/v1";sourceCommit=sourceSha;grpcAddress=grpcAddress;gatewayUrl=gatewayUrl.Replace("http://","ws://")+config.path;allowedOrigin=origin;sessionId=sessionId;credential=credential;nativeTracePath=tracePath;fixtureMode=false|}
+                if profile="barc-live-tactical-v1" then
+                    use tacticalReady=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)
+                    tacticalReady.CancelAfter(TimeSpan.FromSeconds 60.)
+                    try
+                        while LiveControl.latestCapabilities state |> Option.bind (fun value -> value.Tactical |> ValueOption.toOption) |> Option.isNone
+                              || LiveControl.latestTacticalCatalogue state |> Option.isNone
+                              || LiveControl.latestTacticalSnapshot state |> Option.isNone do
+                            do! Task.Delay(50,tacticalReady.Token)
+                    with :? OperationCanceledException -> invalidOp "timed out waiting for native tactical capabilities, complete catalogue and paired snapshot"
+                let ready={|schema="fsbar.barc-native-live-host/v2";sourceCommit=sourceSha;profile=profile;tacticalRevision=(if profile="barc-live-tactical-v1" then 1 else 0);grpcAddress=grpcAddress;gatewayUrl=gatewayUrl.Replace("http://","ws://")+config.path;allowedOrigin=origin;sessionId=sessionId;credential=credential;nativeTracePath=tracePath;fixtureMode=false|}
                 let readyBytes=JsonSerializer.SerializeToUtf8Bytes ready
                 use readyFile = new FileStream(readyPath,FileMode.CreateNew,FileAccess.Write,FileShare.Read)
                 if not (OperatingSystem.IsWindows()) then File.SetUnixFileMode(readyPath,UnixFileMode.UserRead ||| UnixFileMode.UserWrite)

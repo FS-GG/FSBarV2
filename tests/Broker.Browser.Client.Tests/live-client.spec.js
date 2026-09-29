@@ -124,6 +124,32 @@ test("tactical pointer and keyboard controls cross the real Worker with exact bi
   expect(submissions).toHaveLength(4);
 });
 
+test("pointer and keyboard multi-selection preserve ordered actors through the real tactical guest",async({page})=>{
+  await arm(page,"Manual guest","barc-live-tactical-v1");
+  await page.locator('[data-unit-id="0"]').click();
+  await page.locator('[data-unit-id="31999"]').click({modifiers:["Control"]});
+  await expect(page.locator(".selection")).toContainText("0:9007199254740999, 31999:9007199254741001");
+  await page.getByLabel("Action").selectOption("build");
+  await page.getByRole("button",{name:"Send tactical command"}).click();
+  await expect.poll(()=>submissions.length).toBe(1);
+  expect(submissions[0].intent.actors).toEqual([{lifetime:ref0.lifetime},ref31999]);
+  expect(submissions[0].intent.actorTacticalBindings.map(value=>value.actor)).toEqual([{lifetime:ref0.lifetime},ref31999]);
+
+  await page.reload();await arm(page,"Manual guest","barc-live-tactical-v1");
+  submissions=[];const map=page.getByLabel(/Live tactical map/);await map.focus();
+  await page.keyboard.press("Control+Tab");await page.keyboard.press("Control+Tab");
+  await expect(page.locator(".selection")).toContainText("0:9007199254740999, 31999:9007199254741001");
+  await page.keyboard.press("b");await page.keyboard.press("Enter");
+  await expect.poll(()=>submissions.length).toBe(1);
+  expect(submissions[0].intent.actors).toEqual([{lifetime:ref0.lifetime},ref31999]);
+
+  await page.locator('[data-unit-id="31999"]').click({modifiers:["Control"]});
+  await expect(page.locator(".selection")).not.toContainText("31999:9007199254741001");
+  await page.getByRole("button",{name:"Send tactical command"}).click();
+  await expect.poll(()=>submissions.length).toBe(2);
+  expect(submissions[1].intent.actors).toEqual([{lifetime:ref0.lifetime}]);
+});
+
 test("independently compiled guest changes a tactical action rather than fabricating an effect",async({page})=>{
   await arm(page,"Custom guest","barc-live-tactical-v1");
   await page.locator('[data-unit-id="0"]').click();

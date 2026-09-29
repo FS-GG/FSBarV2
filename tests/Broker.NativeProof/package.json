@@ -1,0 +1,14 @@
+{
+  "name": "fs-gg-barc-native-proof",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:preparation": "node --test tactical-native-evidence.test.mjs",
+    "test:tactical": "BARC_RUN_TACTICAL_NATIVE=1 playwright test tactical-native-journey.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "long": "5.3.2",
+    "protobufjs": "8.8.0"
+  }
+}
