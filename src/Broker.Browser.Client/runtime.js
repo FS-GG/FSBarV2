@@ -1,5 +1,6 @@
 import { canonicalObject, encodeObject, v1 } from "../Broker.Browser.Contracts/generated/codec.js";
 import { GuestSupervisor } from "../Broker.Browser.Wasm/index.js";
+import { createLiveRuntime } from "./live-runtime.js";
 
 const PROFILE = "barc-preview-v1";
 const PROTOCOL = "1.0.0";
@@ -173,7 +174,7 @@ function svgElement(name, attributes = {}) {
   return element;
 }
 
-export function createRuntime(root, options, emit) {
+function createPreviewRuntime(root, options, emit) {
   if (!(root instanceof Element)) throw new Error("BARC preview mount root must be an Element");
   const assetBase = new URL(options.assetBaseUrl);
   if (!assetBase.href.endsWith("/")) throw new Error("assetBaseUrl must end with /");
@@ -436,4 +437,8 @@ export function createRuntime(root, options, emit) {
     render,
     dispose() { disposed = true; connectionGeneration++; queue.reset("Client disposed."); socket?.close(); window.removeEventListener("blur", blur); document.removeEventListener("visibilitychange", visibility); root.replaceChildren(); root.classList.remove("barc-preview"); }
   };
+}
+
+export function createRuntime(root, options, emit) {
+  return options?.profile === "barc-live-v1" ? createLiveRuntime(root, options, emit) : createPreviewRuntime(root, options, emit);
 }

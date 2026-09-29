@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="LiveHost.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -14,6 +15,7 @@
     <ProjectReference Include="..\..\src\Broker.Protocol\Broker.Protocol.fsproj" />
     <ProjectReference Include="..\..\src\Broker.Contracts\Broker.Contracts.fsproj" />
     <ProjectReference Include="..\..\src\Broker.Core\Broker.Core.fsproj" />
+    <ProjectReference Include="..\..\src\Broker.Browser.Gateway\Broker.Browser.Gateway.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

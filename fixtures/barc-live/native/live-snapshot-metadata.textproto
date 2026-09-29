@@ -1,0 +1,30 @@
+reporter {
+  plugin_id: "highbar-live"
+  schema_version: "1.0.0"
+  protocol: LIVE_CONTROL_PROTOCOL_V1
+  process_incarnation: "process-live-1"
+  match_incarnation: "0123456789abcdef"
+  state_channel_incarnation: "state-live-1"
+}
+report_sequence: 9007199254741013
+snapshot {
+  basis {
+    token: "fedcba9876543210"
+    state_sequence: 9007199254740993
+    frame: 427
+    match_incarnation: "0123456789abcdef"
+    process_incarnation: "process-live-1"
+    state_channel_incarnation: "state-live-1"
+    snapshot_send_monotonic_ns: 9007199254741015
+    effective_cadence_frames: 30
+  }
+  perspective_team_id: 0
+  units {
+    reference { id: 0 lifetime: 9007199254740999 }
+    eligibility: NATIVE_LIVE_UNIT_OWNED_ACTOR
+  }
+  units {
+    reference { id: 77 lifetime: 9007199254741003 }
+    eligibility: NATIVE_LIVE_UNIT_VISUAL_TARGET
+  }
+}

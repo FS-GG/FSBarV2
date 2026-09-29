@@ -92,6 +92,7 @@ module ServerHost =
             let app = builder.Build()
             app.MapGrpcService<ScriptingClientService.Impl>() |> ignore
             app.MapGrpcService<HighBarCoordinatorService.Impl>() |> ignore
+            app.MapGrpcService<HighBarCoordinatorService.LiveImpl>() |> ignore
 
             do! app.StartAsync(cancellationToken)
             let handle = RunningHandle(app, hub, options.listenAddress)

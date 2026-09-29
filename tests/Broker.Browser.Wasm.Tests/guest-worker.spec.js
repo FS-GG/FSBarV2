@@ -2,10 +2,12 @@ import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { canonicalObject, encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const fixture = (name) => readFile(path.join(root, "fixtures/barc-browser/wire", `${name}.bin`));
 const generated = (name) => `/tests/Broker.Browser.Wasm.Tests/generated/${name}.wasm`;
+const liveSemantic = async (name) => JSON.parse(await readFile(path.join(root, "fixtures/barc-live/semantic", `${name}.json`), "utf8"));
 
 async function install(page, moduleName, timeout = 75) {
   await page.goto("/tests/Broker.Browser.Wasm.Tests/harness.html");
@@ -150,6 +152,57 @@ test("manual and independently compiled custom guests emit the typed Move previe
   }
   expect(hashes[0]).not.toBe(hashes[1]);
   expect(network.every((request) => request.method === "GET")).toBe(true);
+});
+
+test("ABI1 manual and custom guests consume lifetime-bound live inputs and emit semantic actions", async ({ page }) => {
+  const bootstrap = (await liveSemantic("live-bootstrap")).bootstrap;
+  const moveRequest = await liveSemantic("live-guest-manual-move-request");
+  const basis = moveRequest.basis, sessionId = moveRequest.sessionId, moduleGeneration = moveRequest.moduleGeneration;
+  const request = (inputId, input) => encodeObject(v1.LiveGuestRequest, { inputId, sessionId, moduleGeneration, basis, ...input });
+  const ref0 = { id: "0", lifetime: "9007199254740999" };
+  const ref31999 = { id: "31999", lifetime: "9007199254741001" };
+  const visual77 = { id: "77", lifetime: "9007199254741003" };
+  const radar88 = { id: "88", lifetime: "9007199254741005" };
+  const observation = request("AQEBAQEBAQEBAQEBAQEBAQ==", { observation: {
+    preview: { sessionId, sequence: basis.stateSequence, capturedAtUnixMs: "1770000000123", perspectiveId: "team-0", validity: { status: "VALIDITY_STATUS_CURRENT", lastSequence: basis.stateSequence }, units: [], features: [] },
+    basis, units: [
+      { reference: ref0, observation: "OBSERVATION_KIND_OWN" },
+      { reference: ref31999, observation: "OBSERVATION_KIND_OWN" },
+      { reference: visual77, observation: "OBSERVATION_KIND_VISUAL" },
+      { reference: radar88, observation: "OBSERVATION_KIND_RADAR" },
+    ]
+  }});
+  const select = request("AgICAgICAgICAgICAgICAg==", { manualInput: { source: "LIVE_INPUT_SOURCE_POINTER", modifiers: {}, select: { actors: [ref0, ref31999] } } });
+  const move = request("AwMDAwMDAwMDAwMDAwMDAw==", { manualInput: { source: "LIVE_INPUT_SOURCE_KEYBOARD", modifiers: { shift: true }, action: { actors: [ref0, ref31999], move: { position: { x: 512.5, elevation: 0, z: 1024.25 }, policy: "MOVE_POLICY_APPEND" } } } });
+  const attack = request("BAQEBAQEBAQEBAQEBAQEBA==", { manualInput: { source: "LIVE_INPUT_SOURCE_POINTER", modifiers: {}, action: { actors: [ref0, ref31999], attack: { target: visual77 } } } });
+  const radarAttack = request("BQUFBQUFBQUFBQUFBQUFBQ==", { manualInput: { source: "LIVE_INPUT_SOURCE_POINTER", modifiers: {}, action: { actors: [ref0], attack: { target: radar88 } } } });
+  const initialize = request("AAAAAAAAAAAAAAAAAAAAAQ==", { initialize: bootstrap });
+
+  for (const moduleName of ["manual-preview", "custom-preview"]) {
+    expect((await install(page, moduleName)).state).toBe("completed");
+    expect((await call(page, "initialize", initialize)).state).toBe("completed");
+    expect((await call(page, "process", observation)).state).toBe("completed");
+    expect((await call(page, "process", select)).state).toBe("completed");
+    const moved = await call(page, "process", move);
+    expect(moved.state).toBe("completed");
+    const moveResponse = canonicalObject(v1.LiveGuestResponse, Uint8Array.from(moved.output));
+    expect(moveResponse.inputId).toBe("AwMDAwMDAwMDAwMDAwMDAw==");
+    expect(moveResponse.moduleGeneration).toBe(moduleGeneration);
+    expect(moveResponse.basis).toEqual(basis);
+    if (moduleName === "manual-preview") {
+      expect(moveResponse.intent.actors).toEqual([{ lifetime: ref0.lifetime }, ref31999]);
+      expect(moveResponse.intent.move.policy).toBe("MOVE_POLICY_APPEND");
+      const attacked = canonicalObject(v1.LiveGuestResponse, Uint8Array.from((await call(page, "process", attack)).output));
+      expect(attacked.intent.attack.target).toEqual(visual77);
+      const feedback = request("BAQEBAQEBAQEBAQEBAQEBA==", { result: { resultSequence:"9007199254741011",parentId:"EjRWeBI0QjSCNBI0VniavA==",inputId:"BAQEBAQEBAQEBAQEBAQEBA==",module:{sha256:bootstrap.module.sha256,generation:moduleGeneration},basis,controller:bootstrap.controller,childIndex:0,childCount:2,actor:ref0,stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED",disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:431,commandChannelIncarnation:"command-live-1" } });
+      const acknowledged = canonicalObject(v1.LiveGuestResponse, Uint8Array.from((await call(page, "process", feedback)).output));
+      expect(acknowledged.intent).toBeUndefined();
+      expect((await call(page, "process", radarAttack)).state).toBe("faulted");
+    } else {
+      expect(moveResponse.intent.actors).toEqual([ref31999]);
+      expect(moveResponse.intent.move.policy).toBe("MOVE_POLICY_REPLACE");
+    }
+  }
 });
 
 test("selection survives current snapshots, drops lost ownership, and reapplies custom policy", async ({ page }) => {

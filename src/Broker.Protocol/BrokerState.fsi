@@ -59,6 +59,7 @@ module BrokerState =
     val roster        : hub:Hub -> ScriptingRoster.Roster
     val slots         : hub:Hub -> ParticipantSlot.ParticipantSlot list
     val session       : hub:Hub -> Session.Session option
+    val liveControl   : hub:Hub -> LiveControl.State
 
     /// Mutate the host-mode lobby + initial session. Called from the TUI
     /// when the operator confirms a host-mode launch.

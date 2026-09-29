@@ -28,6 +28,7 @@
   F Broker.Protocol.BrokerState.Hub.feedbackReservations : Dictionary<ScriptingClientId,Int32>
   F Broker.Protocol.BrokerState.Hub.invalidity : FSharpOption<Tuple`3>
   F Broker.Protocol.BrokerState.Hub.lastHeartbeatAt : DateTimeOffset
+  F Broker.Protocol.BrokerState.Hub.liveControl : State
   F Broker.Protocol.BrokerState.Hub.mode : Mode
   F Broker.Protocol.BrokerState.Hub.nativeIdentities : Dictionary<ValueTuple`3,NativeIdentity>
   F Broker.Protocol.BrokerState.Hub.nextBatchSeq : UInt64
@@ -72,6 +73,7 @@ M Broker.Protocol.BrokerState.isCurrentDelivery(delivery:OutboundDelivery, hub:H
 M Broker.Protocol.BrokerState.lastHeartbeatAt(hub:Hub) : DateTimeOffset
 M Broker.Protocol.BrokerState.launchHostSession(at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,String>
 M Broker.Protocol.BrokerState.liveClients(hub:Hub) : FSharpList<ClientChannel>
+M Broker.Protocol.BrokerState.liveControl(hub:Hub) : State
 M Broker.Protocol.BrokerState.mode(hub:Hub) : Mode
 M Broker.Protocol.BrokerState.noteHeartbeat(pluginId:String, at:DateTimeOffset, hub:Hub) : FSharpResult<Unit,RejectReason>
 M Broker.Protocol.BrokerState.noteNativeDispatch(dispatch:CommandDispatchEvent, hub:Hub) : Boolean

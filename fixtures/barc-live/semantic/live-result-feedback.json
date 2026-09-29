@@ -1,0 +1,48 @@
+{
+  "inputId": "u7u7u8zMTd2O7v///////w==",
+  "sessionId": "ERERESIiQzOERFVVVVVVVQ==",
+  "moduleGeneration": "9007199254740997",
+  "basis": {
+    "token": "AQIDBAUGBwgJCgsMDQ4PEA==",
+    "stateSequence": "9007199254740993",
+    "nativeFrame": 427,
+    "matchId": "qqqqqru7TMyN3e7u7u7u7g==",
+    "processIncarnation": "process-live-1",
+    "stateChannelIncarnation": "state-live-1"
+  },
+  "result": {
+    "resultSequence": "9007199254741005",
+    "parentId": "EjRWeBI0QjSCNBI0VniavA==",
+    "inputId": "u7u7u8zMTd2O7v///////w==",
+    "module": {
+      "sha256": "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=",
+      "generation": "9007199254740997"
+    },
+    "basis": {
+      "token": "AQIDBAUGBwgJCgsMDQ4PEA==",
+      "stateSequence": "9007199254740993",
+      "nativeFrame": 427,
+      "matchId": "qqqqqru7TMyN3e7u7u7u7g==",
+      "processIncarnation": "process-live-1",
+      "stateChannelIncarnation": "state-live-1"
+    },
+    "controller": {
+      "sessionId": "ERERESIiQzOERFVVVVVVVQ==",
+      "controllerId": "ZmZmZnd3SIiJmaqqqqqqqg==",
+      "controllerIncarnation": "controller-live-1",
+      "authorityEpoch": "9007199254740995"
+    },
+    "batchSequence": "9007199254741007",
+    "correlationId": "9007199254741009",
+    "childCount": 2,
+    "actor": {
+      "lifetime": "9007199254740999"
+    },
+    "stage": "LIVE_RESULT_STAGE_NATIVE_DISPATCH",
+    "status": "LIVE_RESULT_STATUS_APPLIED",
+    "disposition": "LIVE_RESULT_DISPOSITION_RECORDED",
+    "nativeFrame": 431,
+    "commandChannelIncarnation": "command-live-1"
+  },
+  "input": "result"
+}

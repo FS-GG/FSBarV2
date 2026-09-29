@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fs.gg/schemas/barc-live-receiver-pins-v1.json",
+  "title": "BARC live generated-receiver pins",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "profile", "source", "files"],
+  "properties": {
+    "schema": { "const": "fsbar.barc-live-receiver-pins/v1" },
+    "profile": { "const": "barc-live-v1" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit"],
+      "properties": {
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "sourcePath", "archivePath", "sha256"],
+        "properties": {
+          "role": {
+            "enum": [
+              "clientJs",
+              "clientCss",
+              "codec",
+              "contract",
+              "worker",
+              "manualGuest",
+              "customGuest",
+              "dependency"
+            ]
+          },
+          "sourcePath": { "type": "string", "minLength": 1 },
+          "archivePath": {
+            "type": "string",
+            "pattern": "^(src|guests)/"
+          },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,274 @@
+syntax = "proto3";
+
+package barc.browser.v1;
+option csharp_namespace = "Broker.Browser.Contracts";
+
+import "barc_browser.proto";
+
+// Additive live-control profile. barc-preview-v1 and guest ABI version 1 stay
+// byte-for-byte compatible; a peer must explicitly negotiate barc-live-v1.
+enum LiveActionKind {
+  LIVE_ACTION_KIND_UNSPECIFIED = 0;
+  LIVE_ACTION_KIND_STOP = 1;
+  LIVE_ACTION_KIND_MOVE = 2;
+  LIVE_ACTION_KIND_ATTACK = 3;
+}
+
+enum MovePolicy {
+  MOVE_POLICY_UNSPECIFIED = 0;
+  MOVE_POLICY_REPLACE = 1;
+  MOVE_POLICY_APPEND = 2;
+}
+
+enum LiveInputSource {
+  LIVE_INPUT_SOURCE_UNSPECIFIED = 0;
+  LIVE_INPUT_SOURCE_POINTER = 1;
+  LIVE_INPUT_SOURCE_KEYBOARD = 2;
+}
+
+enum ControllerStage {
+  CONTROLLER_STAGE_UNSPECIFIED = 0;
+  CONTROLLER_STAGE_ARM_REQUESTED = 1;
+  CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED = 2;
+  CONTROLLER_STAGE_REVOKE_REQUESTED = 3;
+  CONTROLLER_STAGE_REVOKE_NATIVE_CONFIRMED = 4;
+  CONTROLLER_STAGE_EXPIRED = 5;
+  CONTROLLER_STAGE_REFUSED = 6;
+  CONTROLLER_STAGE_UNAVAILABLE = 7;
+}
+
+enum LiveResultStage {
+  LIVE_RESULT_STAGE_UNSPECIFIED = 0;
+  LIVE_RESULT_STAGE_BROKER_ADMISSION = 1;
+  LIVE_RESULT_STAGE_NATIVE_ADMISSION = 2;
+  LIVE_RESULT_STAGE_NATIVE_DISPATCH = 3;
+  LIVE_RESULT_STAGE_UNKNOWN = 4;
+}
+
+enum LiveResultStatus {
+  LIVE_RESULT_STATUS_UNSPECIFIED = 0;
+  LIVE_RESULT_STATUS_ACCEPTED = 1;
+  LIVE_RESULT_STATUS_REJECTED = 2;
+  LIVE_RESULT_STATUS_APPLIED = 3;
+  LIVE_RESULT_STATUS_SKIPPED = 4;
+  LIVE_RESULT_STATUS_EXPIRED = 5;
+  LIVE_RESULT_STATUS_UNKNOWN = 6;
+}
+
+enum LiveResultDisposition {
+  LIVE_RESULT_DISPOSITION_UNSPECIFIED = 0;
+  LIVE_RESULT_DISPOSITION_RECORDED = 1;
+  LIVE_RESULT_DISPOSITION_DUPLICATE = 2;
+  LIVE_RESULT_DISPOSITION_LATE = 3;
+}
+
+message UnitReference {
+  // Engine unit id 0 is legal. Presence of this message, not scalar zero,
+  // distinguishes a reference from absence.
+  uint64 id = 1;
+  uint64 lifetime = 2;
+}
+
+message ObservationBasis {
+  bytes token = 1;
+  uint64 state_sequence = 2;
+  uint32 native_frame = 3;
+  bytes match_id = 4;
+  string process_incarnation = 5;
+  string state_channel_incarnation = 6;
+}
+
+message LiveModuleIdentity {
+  bytes sha256 = 1;
+  uint64 generation = 2;
+}
+
+message MapBounds {
+  float min_x = 1;
+  float max_x = 2;
+  float min_z = 3;
+  float max_z = 4;
+  bool terrain_elevation_available = 5;
+}
+
+message LiveLimits {
+  uint32 max_actor_count = 1;
+  uint32 max_input_bytes = 2;
+  uint32 max_output_bytes = 3;
+  uint32 max_frame_bytes = 4;
+  uint32 max_pending_inputs = 5;
+  uint32 max_module_bytes = 6;
+  uint32 guest_phase_timeout_ms = 7;
+  // Producer-qualified freshness bound. It is deliberately independent of
+  // guest_phase_timeout_ms and has no schema default.
+  uint32 max_observation_age_ms = 8;
+  uint32 live_snapshot_cadence_frames = 9;
+  uint32 max_native_unit_id = 10;
+  uint32 max_pending_parents = 11;
+  uint32 max_retained_results = 12;
+}
+
+message LiveCapabilities {
+  bool stop = 1;
+  bool move = 2;
+  bool attack_visible_unit = 3;
+  MapBounds map_bounds = 4;
+}
+
+message ControllerIdentity {
+  bytes session_id = 1;
+  bytes controller_id = 2;
+  string controller_incarnation = 3;
+  uint64 authority_epoch = 4;
+}
+
+message LiveBootstrap {
+  Bootstrap preview = 1;
+  string live_profile = 2;
+  ControllerIdentity controller = 3;
+  LiveModuleIdentity module = 4;
+  LiveLimits limits = 5;
+  LiveCapabilities capabilities = 6;
+}
+
+message LiveObservedUnit {
+  UnitReference reference = 1;
+  ObservationKind observation = 2;
+}
+
+message LiveObservation {
+  Observation preview = 1;
+  ObservationBasis basis = 2;
+  repeated LiveObservedUnit units = 3;
+}
+
+message StopAction {}
+
+message MoveTarget {
+  Position3 position = 1;
+  MovePolicy policy = 2;
+}
+
+message AttackTarget {
+  UnitReference target = 1;
+}
+
+message LiveIntent {
+  repeated UnitReference actors = 1;
+  oneof action {
+    StopAction stop = 10;
+    MoveTarget move = 11;
+    AttackTarget attack = 12;
+  }
+}
+
+message LiveInputModifiers {
+  bool shift = 1;
+  bool control = 2;
+  bool alt = 3;
+}
+
+message LiveActorSelection {
+  repeated UnitReference actors = 1;
+}
+
+// Normalized, bounded manual input delivered to the guest. A selection input
+// updates policy context without issuing an action. An action carries the
+// complete actor set and semantic Stop/Move/Attack intent for that basis.
+message LiveManualInput {
+  LiveInputSource source = 1;
+  LiveInputModifiers modifiers = 2;
+  oneof input {
+    LiveActorSelection select = 10;
+    LiveIntent action = 11;
+  }
+}
+
+message LiveResult {
+  uint64 result_sequence = 1;
+  bytes parent_id = 2;
+  bytes input_id = 3;
+  LiveModuleIdentity module = 4;
+  ObservationBasis basis = 5;
+  ControllerIdentity controller = 6;
+  uint64 batch_sequence = 7;
+  uint64 correlation_id = 8;
+  uint32 child_index = 9;
+  uint32 child_count = 10;
+  UnitReference actor = 11;
+  LiveResultStage stage = 12;
+  LiveResultStatus status = 13;
+  LiveResultDisposition disposition = 14;
+  string reason = 15;
+  optional uint32 native_frame = 16;
+  string command_channel_incarnation = 17;
+}
+
+message LiveGuestRequest {
+  bytes input_id = 1;
+  bytes session_id = 2;
+  uint64 module_generation = 3;
+  ObservationBasis basis = 4;
+  oneof input {
+    LiveBootstrap initialize = 10;
+    LiveObservation observation = 11;
+    LiveResult result = 12;
+    LiveManualInput manual_input = 13;
+  }
+}
+
+message LiveGuestResponse {
+  bytes input_id = 1;
+  bytes session_id = 2;
+  uint64 module_generation = 3;
+  ObservationBasis basis = 4;
+  GuestAckStatus acknowledgment = 5;
+  string refusal_detail = 6;
+  optional LiveIntent intent = 10;
+}
+
+message ArmController {
+  ControllerIdentity controller = 1;
+  LiveModuleIdentity module = 2;
+}
+
+message RevokeController {
+  ControllerIdentity controller = 1;
+  string reason = 2;
+}
+
+message SubmitLiveIntent {
+  bytes parent_id = 1;
+  bytes input_id = 2;
+  ControllerIdentity controller = 3;
+  LiveModuleIdentity module = 4;
+  ObservationBasis basis = 5;
+  LiveIntent intent = 6;
+}
+
+message ControllerState {
+  uint64 state_sequence = 1;
+  ControllerIdentity controller = 2;
+  LiveModuleIdentity module = 3;
+  ControllerStage stage = 4;
+  string reason = 5;
+}
+
+message LiveClientEnvelope {
+  oneof body {
+    ClientAuth authenticate = 1;
+    ArmController arm = 2;
+    RevokeController revoke = 3;
+    SubmitLiveIntent submit = 4;
+  }
+}
+
+message LiveServerEnvelope {
+  oneof body {
+    LiveBootstrap bootstrap = 1;
+    LiveObservation observation = 2;
+    ControllerState controller_state = 3;
+    LiveResult result = 4;
+    LiveGuestRequest guest_input = 5;
+  }
+}

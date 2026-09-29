@@ -34,6 +34,14 @@ pub struct GuestRequest {
 
 pub trait PreviewPolicy {
     fn retain_unit(unit_id: u64) -> bool;
+
+    /// Live guests may narrow the operator's actor selection, but they never
+    /// manufacture actors which were absent from the acknowledged observation.
+    fn retain_live_actor(unit_id: u64, _lifetime: u64) -> bool { Self::retain_unit(unit_id) }
+
+    /// Independently authored policies can change the semantic queue policy
+    /// without seeing or emitting native command-option bits.
+    fn live_move_policy(policy: MovePolicy) -> MovePolicy { policy }
 }
 
 pub struct GuestState {
@@ -46,6 +54,7 @@ pub struct GuestState {
     session_length: usize,
     context_sequence: u64,
     output: [u8; MAX_OUTPUT_BYTES],
+    live: LiveGuestState,
 }
 
 impl GuestState {
@@ -55,12 +64,14 @@ impl GuestState {
             observed_ids: [0; MAX_SELECTION], observed_kinds: [0; MAX_SELECTION], observed_count: 0,
             session_id: [0; MAX_SESSION_BYTES], session_length: 0, context_sequence: 0,
             output: [0; MAX_OUTPUT_BYTES],
+            live: LiveGuestState::new(),
         }
     }
 
-    pub fn reset(&mut self) { self.selected_count = 0; self.observed_count = 0; self.session_length = 0; self.context_sequence = 0; }
+    pub fn reset(&mut self) { self.selected_count = 0; self.observed_count = 0; self.session_length = 0; self.context_sequence = 0; self.live.reset(); }
 
     pub fn initialize(&mut self, bytes: &[u8]) -> Result<&[u8], i32> {
+        if is_live_request(bytes) { return self.live.initialize(bytes); }
         let request = decode_request(bytes).ok_or(2)?;
         let Input::Initialize { bootstrap_session, bootstrap_session_length } = request.input else { return Err(2); };
         if request.context_sequence != 0
@@ -74,6 +85,7 @@ impl GuestState {
     }
 
     pub fn process<P: PreviewPolicy>(&mut self, bytes: &[u8]) -> Result<Option<&[u8]>, i32> {
+        if is_live_request(bytes) { return self.live.process::<P>(bytes).map(Some); }
         let request = decode_request(bytes).ok_or(3)?;
         if self.session_length == 0 || request.session_id[..request.session_length] != self.session_id[..self.session_length] {
             return Err(5);
@@ -138,6 +150,9 @@ impl GuestState {
         }
     }
 }
+
+mod live;
+pub use live::{LiveGuestState, MovePolicy, UnitReference, is_live_request};
 
 impl Default for GuestState { fn default() -> Self { Self::new() } }
 

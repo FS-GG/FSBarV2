@@ -17,4 +17,5 @@ M Broker.Protocol.HighBarCoordinatorService.writeDelivery(service:Service, write
 P Broker.Protocol.HighBarCoordinatorService.defaultConfig : Config
 T Broker.Protocol.HighBarCoordinatorService.Config : record
 T Broker.Protocol.HighBarCoordinatorService.Impl : class
+T Broker.Protocol.HighBarCoordinatorService.LiveImpl : class
 T Broker.Protocol.HighBarCoordinatorService.Service : record

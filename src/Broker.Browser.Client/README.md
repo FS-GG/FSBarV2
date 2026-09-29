@@ -4,6 +4,13 @@ This package builds the reusable read-only tactical preview component. It owns
 pairing, strict incoming-envelope validation, guest lifecycle and the DOM/SVG
 view. It has no native command transport.
 
+Passing `profile: "barc-live-v1"` to the same `mount` export selects the
+explicit live controller. It waits for native authority confirmation, routes
+typed pointer and keyboard actions through the active WASM guest, and submits
+only the validated `LiveIntent` returned by that guest. Selection is bound to
+producer lifetimes; focus loss, hidden pages, module/session replacement and
+controller expiry revoke gameplay input. Omitting `profile` preserves preview.
+
 ```js
 import { mount } from "./assets/barc-preview.js";
 

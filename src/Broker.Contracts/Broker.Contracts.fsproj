@@ -27,6 +27,8 @@
     <Protobuf Include="highbar/events.proto" GrpcServices="None" ProtoRoot="." AdditionalProtocArguments="--experimental_allow_proto3_optional" />
     <Protobuf Include="highbar/state.proto" GrpcServices="None" ProtoRoot="." AdditionalProtocArguments="--experimental_allow_proto3_optional" />
     <Protobuf Include="highbar/coordinator.proto" GrpcServices="Both" ProtoRoot="." AdditionalProtocArguments="--experimental_allow_proto3_optional" />
+    <!-- Additive live-control sibling. The frozen coordinator contract remains unchanged. -->
+    <Protobuf Include="highbar/live_control.proto" GrpcServices="Both" ProtoRoot="." AdditionalProtocArguments="--experimental_allow_proto3_optional" />
   </ItemGroup>
 
   <Target Name="RestorePinnedFSharpProtocPlugin" BeforeTargets="_Protobuf_CoreCompile">

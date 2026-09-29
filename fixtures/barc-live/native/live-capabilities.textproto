@@ -1,0 +1,27 @@
+reporter {
+  plugin_id: "highbar-live"
+  schema_version: "1.0.0"
+  protocol: LIVE_CONTROL_PROTOCOL_V1
+  process_incarnation: "process-live-1"
+  match_incarnation: "0123456789abcdef"
+  state_channel_incarnation: "state-live-1"
+}
+report_sequence: 9007199254741011
+capabilities {
+  max_actor_count: 64
+  max_batch_commands: 1
+  max_native_unit_id: 31999
+  snapshot_cadence_ceiling_frames: 30
+  max_observation_age_ms: 2000
+  map_width_cells: 1024
+  map_height_cells: 1024
+  min_world_x: 0
+  max_world_x_inclusive: 8191
+  min_world_z: 0
+  max_world_z_inclusive: 8191
+  terrain_elevation_available: true
+  supports_stop: true
+  supports_move: true
+  supports_attack_visible_unit: true
+  max_reported_units: 4096
+}

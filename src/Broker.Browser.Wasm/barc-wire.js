@@ -75,7 +75,7 @@ const validateMove = (bytes) => {
   validatePosition(groundTarget);
 };
 
-export function requestIdentity(bytesLike) {
+function previewRequestIdentity(bytesLike) {
   const reader = new Reader(Uint8Array.from(bytesLike));
   let requestId;
   let sessionId;
@@ -93,7 +93,64 @@ export function requestIdentity(bytesLike) {
   return { requestId, sessionId: Uint8Array.from(sessionId), contextSequence };
 }
 
-export function validateGuestResponse(bytesLike, expected) {
+const liveReference = bytes => {
+  const reader = new Reader(bytes); let id = 0n, lifetime = 0n;
+  while (!reader.done) { const key = reader.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
+    if (field === 1 && wire === 0) id = reader.varint();
+    else if (field === 2 && wire === 0) lifetime = reader.varint();
+    else reader.skip(wire);
+  }
+  if (lifetime === 0n) invalid("live unit reference requires a nonzero lifetime");
+  return { id, lifetime };
+};
+
+const validateLiveIntent = bytes => {
+  const reader = new Reader(bytes), actors = []; let action = null, actionBytes = null;
+  while (!reader.done) { const key = reader.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
+    if (field === 1 && wire === 2) actors.push(liveReference(reader.lengthDelimited()));
+    else if ([10, 11, 12].includes(field) && wire === 2) { if (action !== null) invalid("live intent has multiple actions"); action = field; actionBytes = reader.lengthDelimited(); }
+    else reader.skip(wire);
+    if (actors.length > 64) invalid("live intent exceeds its actor limit");
+  }
+  if (actors.length === 0 || action === null) invalid("live intent requires actors and one action");
+  if (new Set(actors.map(actor => actor.id.toString())).size !== actors.length) invalid("live intent contains duplicate actor identities");
+  if (action === 11) {
+    const move = new Reader(actionBytes); let position = null, policy = 0n;
+    while (!move.done) { const key = move.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
+      if (field === 1 && wire === 2) position = move.lengthDelimited();
+      else if (field === 2 && wire === 0) policy = move.varint();
+      else move.skip(wire);
+    }
+    if (position === null || ![1n, 2n].includes(policy)) invalid("live Move requires a position and semantic policy");
+    validatePosition(position);
+  } else if (action === 12) {
+    const attack = new Reader(actionBytes); let target = null;
+    while (!attack.done) { const key = attack.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
+      if (field === 1 && wire === 2) target = liveReference(attack.lengthDelimited()); else attack.skip(wire);
+    }
+    if (target === null || actors.some(actor => actor.id === target.id)) invalid("live Attack requires a distinct target reference");
+  }
+};
+
+function liveRequestIdentity(bytesLike) {
+  const reader = new Reader(Uint8Array.from(bytesLike)); let inputId, sessionId, moduleGeneration = 0n, basis;
+  while (!reader.done) { const key = reader.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
+    if (field === 1 && wire === 2) inputId = reader.lengthDelimited();
+    else if (field === 2 && wire === 2) sessionId = reader.lengthDelimited();
+    else if (field === 3 && wire === 0) moduleGeneration = reader.varint();
+    else if (field === 4 && wire === 2) basis = reader.lengthDelimited();
+    else reader.skip(wire);
+  }
+  if (!inputId?.length || !sessionId?.length || moduleGeneration === 0n || !basis?.length) invalid("live request identity is incomplete");
+  return { profile: "live", inputId: Uint8Array.from(inputId), sessionId: Uint8Array.from(sessionId), moduleGeneration, basis: Uint8Array.from(basis) };
+}
+
+export function requestIdentity(bytesLike) {
+  const bytes = Uint8Array.from(bytesLike);
+  return bytes[0] === 0x0a ? liveRequestIdentity(bytes) : { profile: "preview", ...previewRequestIdentity(bytes) };
+}
+
+function validatePreviewGuestResponse(bytesLike, expected) {
   const bytes = Uint8Array.from(bytesLike);
   const reader = new Reader(bytes);
   let requestId;
@@ -120,4 +177,27 @@ export function validateGuestResponse(bytesLike, expected) {
   if (!((kind === 0n && move === null) || (kind === 1n && move !== null))) invalid("response preview and intent kind disagree");
   if (move !== null) validateMove(move);
   return bytes;
+}
+
+function validateLiveGuestResponse(bytesLike, expected) {
+  const bytes = Uint8Array.from(bytesLike), reader = new Reader(bytes);
+  let inputId, sessionId, moduleGeneration = 0n, basis, acknowledgment = 0n, intent = null;
+  while (!reader.done) { const key = reader.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
+    if (field === 1 && wire === 2) inputId = reader.lengthDelimited();
+    else if (field === 2 && wire === 2) sessionId = reader.lengthDelimited();
+    else if (field === 3 && wire === 0) moduleGeneration = reader.varint();
+    else if (field === 4 && wire === 2) basis = reader.lengthDelimited();
+    else if (field === 5 && wire === 0) acknowledgment = reader.varint();
+    else if (field === 10 && wire === 2) intent = reader.lengthDelimited();
+    else reader.skip(wire);
+  }
+  if (!equalBytes(inputId ?? [], expected.inputId) || !equalBytes(sessionId ?? [], expected.sessionId)
+      || moduleGeneration !== expected.moduleGeneration || !equalBytes(basis ?? [], expected.basis)) invalid("live response identity does not match its request");
+  if (acknowledgment !== 1n) invalid("live response did not acknowledge consumption");
+  if (intent !== null) validateLiveIntent(intent);
+  return bytes;
+}
+
+export function validateGuestResponse(bytesLike, expected) {
+  return expected.profile === "live" ? validateLiveGuestResponse(bytesLike, expected) : validatePreviewGuestResponse(bytesLike, expected);
 }

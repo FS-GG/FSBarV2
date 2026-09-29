@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "generate": "node scripts/generate-codecs.mjs",
-    "corpus": "node ../../fixtures/barc-browser/scripts/build-corpus.mjs"
+    "corpus": "node ../../fixtures/barc-browser/scripts/build-corpus.mjs",
+    "corpus:live": "node ../../fixtures/barc-live/scripts/build-corpus.mjs"
   },
   "dependencies": {
     "long": "5.3.2",

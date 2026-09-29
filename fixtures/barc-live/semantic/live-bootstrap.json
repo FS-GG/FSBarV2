@@ -1,0 +1,48 @@
+{
+  "bootstrap": {
+    "preview": {
+      "game": "Beyond All Reason",
+      "protocolVersion": "barc.browser.v1",
+      "profile": "barc-live-v1",
+      "sessionId": "ERERESIiQzOERFVVVVVVVQ==",
+      "perspectiveId": "team-0",
+      "mode": "PREVIEW_MODE_READ_ONLY"
+    },
+    "liveProfile": "barc-live-v1",
+    "controller": {
+      "sessionId": "ERERESIiQzOERFVVVVVVVQ==",
+      "controllerId": "ZmZmZnd3SIiJmaqqqqqqqg==",
+      "controllerIncarnation": "controller-live-1",
+      "authorityEpoch": "9007199254740995"
+    },
+    "module": {
+      "sha256": "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=",
+      "generation": "9007199254740997"
+    },
+    "limits": {
+      "maxActorCount": 64,
+      "maxInputBytes": 65536,
+      "maxOutputBytes": 65536,
+      "maxFrameBytes": 65536,
+      "maxPendingInputs": 8,
+      "maxModuleBytes": 8388608,
+      "guestPhaseTimeoutMs": 250,
+      "maxObservationAgeMs": 2000,
+      "liveSnapshotCadenceFrames": 30,
+      "maxNativeUnitId": 31999,
+      "maxPendingParents": 8,
+      "maxRetainedResults": 64
+    },
+    "capabilities": {
+      "stop": true,
+      "move": true,
+      "attackVisibleUnit": true,
+      "mapBounds": {
+        "maxX": 8191,
+        "maxZ": 8191,
+        "terrainElevationAvailable": true
+      }
+    }
+  },
+  "body": "bootstrap"
+}

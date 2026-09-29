@@ -1,0 +1,56 @@
+{
+  "schema": "barc.browser.v1/barc-live-v1",
+  "schemaSha256": "0094b7dc893e6bf264a271b296cda005f77e75edd29af40683a6c29698e7b533",
+  "mappingSha256": "71b31e26c0f74ca956bb41d4b525fbf0543e7f04a442684a0b2aced741da52f2",
+  "negotiationSha256": "94ddff723cad8717df78c0dc8377dcf1697e82c437896a93c9da0cd7ff9f4ca3",
+  "entries": [
+    {
+      "name": "live-bootstrap",
+      "type": "LiveServerEnvelope",
+      "wireSha256": "a6b26c69ef7257123dc18435ad8600ea3c06d0ce077c5d9d5a5e66ec417e9c55",
+      "semanticSha256": "c833c2bd64ac4b2cbb79c913e6b569d269340f914f4e43a889361a1217657502"
+    },
+    {
+      "name": "live-guest-manual-select-request",
+      "type": "LiveGuestRequest",
+      "wireSha256": "83a4315dc11e6250749f46121710388a13feaab10b5bdfe21a1c04cffa0b2bd8",
+      "semanticSha256": "35cf2ed5954765d064783b77602a598511248b256389c1b8667790042aa3c0c5"
+    },
+    {
+      "name": "live-guest-manual-move-request",
+      "type": "LiveGuestRequest",
+      "wireSha256": "7aae04dc94eaf89b79a129fe4c741105e5cb18b83c0eacf08610eee6c75fda84",
+      "semanticSha256": "e38c2366a24e4de4ae16326f36b300a8f085a39a6c6eed80d8439d3003de6c4d"
+    },
+    {
+      "name": "live-guest-id0-move-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "56633725cd25c6c7846f3615f33e4608135a23756de27e34ac5d80d7c3bba121",
+      "semanticSha256": "ec4eec0faa7a4ce5e18161fcefb2d0047773e0cfbc92a52a6ff9a48a64ffc2a5"
+    },
+    {
+      "name": "live-guest-attack-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "047284d0f5f865300b7fc89f28a7d5b29731229ae19f68f768f19d5fd4a50930",
+      "semanticSha256": "2f581230e7c5a823bd32d10d54c81acb4c241a9ee8deb1cfa82d95325d34ab9e"
+    },
+    {
+      "name": "live-result-feedback",
+      "type": "LiveGuestRequest",
+      "wireSha256": "cebf475de2e710f5c0809c973045bdaa5f556f0a3fce667dc4f601ef041b0dbe",
+      "semanticSha256": "86aef840009f2acde7282a76b18f7aab75d0983bc9173e8e06b4395cf2bf866b"
+    },
+    {
+      "name": "live-capabilities",
+      "type": "highbar.v1.LiveStateReport",
+      "wireSha256": "48444d17d1ee88f4cc31ad6907b57017361ee1f724741a262ab5f721902546b0",
+      "semanticSha256": "c2954eec6e26e759e8faa948c545f7b9a4f7f527ae2f5d75e3d64eaf832afa2d"
+    },
+    {
+      "name": "live-snapshot-metadata",
+      "type": "highbar.v1.LiveStateReport",
+      "wireSha256": "19582252cd411c662629802232739bdbe121203768d4dbfa93b018754ce971ab",
+      "semanticSha256": "bd547a29001cb6bb1fa70d4a282d448093d8a9a5e202e69a1920805b428ebfef"
+    }
+  ]
+}

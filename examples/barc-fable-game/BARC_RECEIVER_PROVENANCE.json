@@ -49,9 +49,19 @@
     "vite": "7.3.6"
   },
   "barcAdoption": {
-    "requiredMount": "Broker.Browser.Client.BarcPreview.mount(root, { assetBaseUrl; initialGatewayUrl?; initialCredential?; initialExpectedSessionId? })",
+    "requiredMount": "Broker.Browser.Client.BarcPreview.mount(root, { assetBaseUrl; profile?; initialGatewayUrl?; initialCredential?; initialExpectedSessionId? })",
     "pairing": "visible endpoint/session UUID/credential controls; optional initial values remain in memory only",
     "archiveTarget": "Client/public/barc-preview/",
-    "arenaAuthority": "separate"
+    "arenaAuthority": "separate",
+    "profiles": {
+      "preview": "omitted profile or barc-preview-v1",
+      "live": "explicit barc-live-v1 at /barc/?barc-profile=barc-live-v1",
+      "unknown": "refused before mount"
+    },
+    "livePreparation": {
+      "pinSchema": "fsbar.barc-live-receiver-pins/v1 (BARC_LIVE_RECEIVER_PINS.schema.json)",
+      "receiptSchema": "fsbar.barc-live-receiver-preparation/v1",
+      "disposition": "prepared; joined native acceptance and publication remain pending"
+    }
   }
 }

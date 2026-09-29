@@ -461,6 +461,25 @@ module WireConvert =
                   expenditure = None }
             Some ({ teamId = None; metal = metal; energy = energy } : Snapshot.TeamEconomy)
 
+    let private economyTickToObserved (e: Highbar.V1.EconomyTickEvent) =
+        let values =
+            [ e.Metal; e.MetalIncome; e.MetalUsage; e.MetalStorage
+              e.Energy; e.EnergyIncome; e.EnergyUsage; e.EnergyStorage ]
+        if values |> List.exists (Single.IsFinite >> not) then
+            Error "economy tick contains a non-finite value"
+        else
+            let metal : Snapshot.ResourceAmount =
+                { current = Some (float e.Metal)
+                  storage = Some (float e.MetalStorage)
+                  income = Some (float e.MetalIncome)
+                  expenditure = None }
+            let energy : Snapshot.ResourceAmount =
+                { current = Some (float e.Energy)
+                  storage = Some (float e.EnergyStorage)
+                  income = Some (float e.EnergyIncome)
+                  expenditure = None }
+            Ok ({ teamId = None; metal = metal; energy = energy } : Snapshot.TeamEconomy)
+
     let private snapshotFromView (view: RunningView) : Snapshot.GameStateSnapshot =
         let unitList = view.units |> Map.toList |> List.map snd
         let featureList = view.features |> Map.toList |> List.map snd
@@ -501,6 +520,84 @@ module WireConvert =
                 // rejected above; unlike `last + 1`, this cannot overflow.
                 view.lastSeq
                 |> Option.exists (fun last -> recvSeq - last > 1UL)
+            let isKnownOwnedIdle (idle: Highbar.V1.UnitIdleEvent) =
+                idle.UnitId >= 0
+                && view.browserUnits
+                   |> List.exists (fun unit ->
+                       unit.observation = Snapshot.Own
+                       && unit.id = uint64 idle.UnitId)
+            let isSupportedIdle idle = view.baselineValid && isKnownOwnedIdle idle
+            let hasObservedEnemy id observation =
+                id >= 0
+                && view.browserUnits
+                   |> List.exists (fun unit ->
+                       unit.id = uint64 id
+                       && unit.observation = observation)
+            let isSupportedLeaveLos (event: Highbar.V1.EnemyLeaveLOSEvent) =
+                view.baselineValid && hasObservedEnemy event.EnemyId Snapshot.Visual
+            let isSupportedLeaveRadar (event: Highbar.V1.EnemyLeaveRadarEvent) =
+                view.baselineValid
+                && event.EnemyId >= 0
+                && view.browserUnits
+                   |> List.exists (fun unit ->
+                       unit.id = uint64 event.EnemyId
+                       && unit.observation <> Snapshot.Own)
+            let unsupportedArmName (event: Highbar.V1.DeltaEvent) =
+                match event.Kind with
+                | ValueNone -> Some "unset"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _)
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick _) -> None
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle idle) when isSupportedIdle idle -> None
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle _) -> Some "unit_idle"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos event) when isSupportedLeaveLos event -> None
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar event) when isSupportedLeaveRadar event -> None
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitCreated _) -> Some "unit_created"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitFinished _) -> Some "unit_finished"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitDamaged _) -> Some "unit_damaged"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitDestroyed _) -> Some "unit_destroyed"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitMoveFailed _) -> Some "unit_move_failed"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitGiven _) -> Some "unit_given"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitCaptured _) -> Some "unit_captured"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyEnterLos _) -> Some "enemy_enter_los"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos _) -> Some "enemy_leave_los"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyEnterRadar _) -> Some "enemy_enter_radar"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar _) -> Some "enemy_leave_radar"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyDamaged _) -> Some "enemy_damaged"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyDestroyed _) -> Some "enemy_destroyed"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.FeatureCreated _) -> Some "feature_created"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.FeatureDestroyed _) -> Some "feature_destroyed"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.Message _) -> Some "message"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.WeaponFired _) -> Some "weapon_fired"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.PlayerCommand _) -> Some "player_command"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.SeismicPing _) -> Some "seismic_ping"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandFinished _) -> Some "command_finished"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyCreated _) -> Some "enemy_created"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyFinished _) -> Some "enemy_finished"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.LuaMessage _) -> Some "lua_message"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.AdminAudit _) -> Some "admin_audit"
+            let describeUnsupportedArms (delta: Highbar.V1.StateDelta) =
+                let idleSample=
+                    delta.Events
+                    |> Seq.tryPick (fun event ->
+                        match event.Kind with
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle idle) when not (isSupportedIdle idle) ->
+                            Some(idle.UnitId,isKnownOwnedIdle idle)
+                        | _ -> None)
+                let counts=
+                    delta.Events
+                    |> Seq.choose unsupportedArmName
+                    |> Seq.countBy id
+                    |> Seq.sortBy fst
+                    |> Seq.toList
+                let shown=counts |> List.truncate 8
+                let labels=
+                    shown
+                    |> List.map (fun (name,count) ->
+                        match name,idleSample with
+                        | "unit_idle",Some(actor,knownOwn) -> sprintf "unit_idle(actor=%d,knownOwn=%b)=%d" actor knownOwn count
+                        | _ -> sprintf "%s=%d" name count)
+                let omitted=counts.Length-shown.Length
+                sprintf "arms[%s]; distinct=%d; omitted=%d" (String.concat "," labels) counts.Length omitted
             match update.Payload with
             | ValueSome (Highbar.V1.StateUpdate.Types.Payload.Snapshot ss) ->
                 let collect (items: seq<'a>) (convert: 'a -> Result<'b, string>) : Result<'b list, string> =
@@ -567,17 +664,94 @@ module WireConvert =
                      && (delta.Events
                          |> Seq.forall (fun event ->
                              match event.Kind with
-                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _) -> true
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _)
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick _) -> true
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle idle) ->
+                                 // UnitIdle changes order state, which the browser snapshot
+                                 // does not project. It is fact-preserving only for an owned
+                                 // unit already established by the complete baseline. Refuse
+                                 // absent/negative IDs so lifecycle or ownership drift cannot
+                                 // be hidden as a keepalive.
+                                 isSupportedIdle idle
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos event) ->
+                                 isSupportedLeaveLos event
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar event) ->
+                                 isSupportedLeaveRadar event
                              | _ -> false)) ->
-                // Dispatch feedback is consumed by HighBarCoordinatorService
-                // and intentionally does not mutate the materialized snapshot.
-                { view with lastSeq = Some recvSeq }, KeepAliveOnly
+                // Dispatch feedback is consumed independently by
+                // HighBarCoordinatorService. UnitIdle preserves the last
+                // complete owned-unit facts. EconomyTick is the regular
+                // producer delta emitted immediately after a complete
+                // snapshot and can be applied without weakening unit,
+                // lifetime, ownership, or visibility fences.
+                let economies =
+                    delta.Events
+                    |> Seq.choose (fun event ->
+                        match event.Kind with
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick economy) -> Some economy
+                        | _ -> None)
+                    |> Seq.toList
+                // Validate every arm against the original coherent baseline above,
+                // then apply all withdrawals together. This lets the native producer
+                // report LOS and radar loss for one enemy in the same frame without
+                // the first removal making the second arm appear inconsistent.
+                let removedEnemyIds =
+                    delta.Events
+                    |> Seq.choose (fun event ->
+                        match event.Kind with
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos leave) ->
+                            Some(uint64 leave.EnemyId)
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar leave)
+                            when hasObservedEnemy leave.EnemyId Snapshot.Radar ->
+                            Some(uint64 leave.EnemyId)
+                        | _ -> None)
+                    |> Set.ofSeq
+                let viewAfterWithdrawals =
+                    if Set.isEmpty removedEnemyIds then
+                        { view with lastSeq = Some recvSeq }
+                    else
+                        let browserUnits =
+                            view.browserUnits
+                            |> List.filter (fun unit ->
+                                unit.observation = Snapshot.Own
+                                || not (Set.contains unit.id removedEnemyIds))
+                        let units =
+                            removedEnemyIds
+                            |> Seq.fold (fun current id -> Map.remove (uint32 id) current) view.units
+                        { view with
+                            lastSeq = Some recvSeq
+                            browserUnits = browserUnits
+                            units = units
+                            lastFrame = int64 update.Frame }
+                match economies with
+                | [] when Set.isEmpty removedEnemyIds -> viewAfterWithdrawals, KeepAliveOnly
+                | [] ->
+                    viewAfterWithdrawals,
+                    NewSnapshot (snapshotFromView viewAfterWithdrawals, browserObservationFromView viewAfterWithdrawals)
+                | [ _ ] when not view.baselineValid ->
+                    { view with lastSeq = Some recvSeq },
+                    Invalidated (previousSeq, recvSeq, "economy tick received before a complete baseline")
+                | [ economy ] ->
+                    match economyTickToObserved economy with
+                    | Error detail ->
+                        { view with lastSeq = Some recvSeq; baselineValid = false },
+                        Invalidated (previousSeq, recvSeq, detail)
+                    | Ok teamEconomy ->
+                        let view' =
+                            { viewAfterWithdrawals with
+                                teamEconomy = Some teamEconomy
+                                lastFrame = int64 update.Frame }
+                        view', NewSnapshot (snapshotFromView view', browserObservationFromView view')
+                | _ ->
+                    { view with lastSeq = Some recvSeq; baselineValid = false },
+                    Invalidated (previousSeq, recvSeq, "StateDelta contains multiple economy ticks")
             | ValueSome (Highbar.V1.StateUpdate.Types.Payload.Delta delta) when delta.Events.Count > 0 ->
+                let arms=describeUnsupportedArms delta
                 let detail =
                     if view.baselineValid then
-                        "nonempty StateDelta contains event arms the broker does not materialize"
+                        sprintf "nonempty StateDelta contains event arms the broker does not materialize; %s" arms
                     else
-                        "nonempty StateDelta received before a complete baseline"
+                        sprintf "nonempty StateDelta received before a complete baseline; %s" arms
                 let invalid =
                     { view with
                         lastSeq = Some recvSeq

@@ -16,6 +16,9 @@ let private expectedHashes : (string * string) list =
       "events.proto",      "796d79ed2eb3c20505565d7b93d2d14ce8e1c1c75caa8f4e10bf87ab2a4f0175"
       "common.proto",      "15072451c53f4428bc3c1c1c35e21be5f79a2461c451fa1be523ce26667826b1" ]
 
+let private expectedLiveControlHash =
+    "34e37fd62bcac2758cb6383deae34d3523cb40ce3470034b1fb2ee2ba3bbc240"
+
 /// Vendored protos live next to the Broker.Contracts project. Test runner
 /// sits at `tests/Broker.Contracts.Tests/bin/Debug/net10.0/`; walk up to
 /// the repo root and into `src/Broker.Contracts/highbar/`.
@@ -43,4 +46,10 @@ let protoPinTests =
                 Expect.equal actual expected
                     (sprintf "sha256 drift in %s: re-vendor per HIGHBAR_PROTO_PIN.md or update the pin." fname)
             }
+        test "additive live-control sibling matches its independent pin" {
+            let p = Path.Combine(highbarDir, "live_control.proto")
+            Expect.isTrue (File.Exists p) (sprintf "vendored proto missing: %s" p)
+            Expect.equal (sha256Hex p) expectedLiveControlHash
+                "live_control.proto must move only through its independent producer/consumer pin"
+        }
     ]

@@ -61,7 +61,9 @@ let private mkSnapshot seq frame includeUnit features =
 
 let private mkNonemptyDelta seq frame =
     let event = DeltaEvent.empty()
-    event.EconomyTick <- EconomyTickEvent.empty()
+    let idle = UnitIdleEvent.empty()
+    idle.UnitId <- 7
+    event.UnitIdle <- idle
     let delta = StateDelta.empty()
     delta.Events.Add(event)
     let update = StateUpdate.empty()

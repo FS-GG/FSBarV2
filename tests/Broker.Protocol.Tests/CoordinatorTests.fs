@@ -45,8 +45,30 @@ let private mkDelta (seqNo: uint64) (frame: uint32) (nonempty: bool) =
     let delta = StateDelta.empty()
     if nonempty then
         let event = DeltaEvent.empty()
-        event.EconomyTick <- EconomyTickEvent.empty()
+        let idle = UnitIdleEvent.empty()
+        idle.UnitId <- 7
+        event.UnitIdle <- idle
         delta.Events.Add(event)
+    let upd = StateUpdate.empty()
+    upd.Seq <- seqNo
+    upd.Frame <- frame
+    upd.Delta <- delta
+    upd
+
+let private mkEconomyDelta (seqNo: uint64) (frame: uint32) =
+    let economy = EconomyTickEvent.empty()
+    economy.Metal <- 42.5f
+    economy.MetalIncome <- 7.25f
+    economy.MetalUsage <- 2.0f
+    economy.MetalStorage <- 1000.0f
+    economy.Energy <- 300.0f
+    economy.EnergyIncome <- 11.0f
+    economy.EnergyUsage <- 5.0f
+    economy.EnergyStorage <- 2000.0f
+    let event = DeltaEvent.empty()
+    event.EconomyTick <- economy
+    let delta = StateDelta.empty()
+    delta.Events.Add(event)
     let upd = StateUpdate.empty()
     upd.Seq <- seqNo
     upd.Frame <- frame
@@ -164,6 +186,273 @@ let wireConvertTests =
                 Expect.equal browser.units.[1].health None "hidden health remains absent"
                 Expect.equal browser.teamEconomy.Value.metal.expenditure None "unsupported expenditure remains absent"
             | other -> failtestf "expected NewSnapshot, got %A" other
+        }
+
+        test "regular economy delta advances the materialized browser state without invalidating units" {
+            let baseline = mkStateUpdate 60UL 30u
+            let own = OwnUnit.empty()
+            own.UnitId <- 7u
+            own.DefId <- 303u
+            own.TeamId <- 2
+            own.Position <- ValueSome(position 3.0f 400.0f -5.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let v1, _ = WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+            let v2, result = WireConvert.applyHighBarStateUpdate (mkEconomyDelta 61UL 30u) v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "economy preserves the complete unit baseline"
+            match result with
+            | WireConvert.NewSnapshot (_, browser) ->
+                Expect.equal browser.sequence 61UL "the regular native delta advances browser sequence"
+                Expect.equal browser.units.Length 1 "existing unit facts remain materialized"
+                Expect.equal browser.teamEconomy.Value.metal.current (Some 42.5) "economy current value is applied"
+                Expect.equal browser.teamEconomy.Value.metal.income (Some 7.25) "economy income is applied"
+                Expect.equal browser.teamEconomy.Value.metal.expenditure None "unsupported expenditure remains unavailable"
+            | other -> failtestf "expected materialized economy update, got %A" other
+        }
+
+        test "owned unit idle preserves a valid baseline through the following economy tick" {
+            let baseline = mkStateUpdate 66UL 840u
+            let own = OwnUnit.empty()
+            own.UnitId <- 9983u
+            own.DefId <- 303u
+            own.TeamId <- 0
+            own.Position <- ValueSome(position 2048.0f 321.458f 2048.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let v1, _ = WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            let idle=DeltaEvent.empty()
+            let idleEvent=UnitIdleEvent.empty()
+            idleEvent.UnitId<-9983
+            idle.UnitIdle<-idleEvent
+            let idleDelta=StateDelta.empty()
+            idleDelta.Events.Add idle
+            let idleUpdate=StateUpdate.empty()
+            idleUpdate.Seq<-67UL
+            idleUpdate.Frame<-870u
+            idleUpdate.Delta<-idleDelta
+            let v2, idleResult=WireConvert.applyHighBarStateUpdate idleUpdate v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "idle for the established owned unit retains the complete baseline"
+            match idleResult with
+            | WireConvert.KeepAliveOnly -> ()
+            | other -> failtestf "expected fact-preserving idle, got %A" other
+
+            let v3, economyResult=WireConvert.applyHighBarStateUpdate (mkEconomyDelta 68UL 870u) v2
+            Expect.isTrue (WireConvert.hasValidBaseline v3) "the next regular economy tick remains materializable"
+            match economyResult with
+            | WireConvert.NewSnapshot (_, browser) ->
+                Expect.equal browser.sequence 68UL "economy advances after the idle event"
+                Expect.equal browser.units.Length 1 "idle does not remove or rewrite owned-unit facts"
+                Expect.equal browser.units.Head.id 9983UL "the exact owned actor remains present"
+            | other -> failtestf "expected economy snapshot after idle, got %A" other
+        }
+
+        test "unit idle for an unknown or invalid actor remains fail closed" {
+            let baseline = mkStateUpdate 1UL 1u
+            let own = OwnUnit.empty()
+            own.UnitId <- 7u
+            own.Position <- ValueSome(position 1.0f 2.0f 3.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let v1, _ = WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            for unitId in [ 8; -1 ] do
+                let idle=DeltaEvent.empty()
+                let idleEvent=UnitIdleEvent.empty()
+                idleEvent.UnitId<-unitId
+                idle.UnitIdle<-idleEvent
+                let delta=StateDelta.empty()
+                delta.Events.Add idle
+                let update=StateUpdate.empty()
+                update.Seq<-2UL
+                update.Frame<-2u
+                update.Delta<-delta
+                let view, result=WireConvert.applyHighBarStateUpdate update v1
+                Expect.isFalse (WireConvert.hasValidBaseline view) "idle outside the established own-unit set invalidates"
+                match result with
+                | WireConvert.Invalidated (1UL,2UL,detail) ->
+                    Expect.stringContains detail "does not materialize" "refusal remains explicit"
+                    Expect.stringContains
+                        detail
+                        (sprintf "arms[unit_idle(actor=%d,knownOwn=false)=1]; distinct=1; omitted=0" unitId)
+                        "the bounded diagnostic identifies the rejected idle actor"
+                | other -> failtestf "expected unknown idle refusal, got %A" other
+        }
+
+        test "unsupported delta diagnostics expose bounded arm names and counts only" {
+            let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
+            let delta=StateDelta.empty()
+            for _ in 1..2 do
+                let event=DeltaEvent.empty()
+                event.EnemyLeaveLos<-EnemyLeaveLOSEvent.empty()
+                delta.Events.Add event
+            let radar=DeltaEvent.empty()
+            radar.EnemyEnterRadar<-EnemyEnterRadarEvent.empty()
+            delta.Events.Add radar
+            let update=StateUpdate.empty()
+            update.Seq<-2UL
+            update.Frame<-2u
+            update.Delta<-delta
+            let _, result=WireConvert.applyHighBarStateUpdate update v1
+            match result with
+            | WireConvert.Invalidated (_,_,detail) ->
+                Expect.stringContains detail "does not materialize" "the stable refusal category is retained"
+                Expect.stringContains
+                    detail
+                    "arms[enemy_enter_radar=1,enemy_leave_los=2]; distinct=2; omitted=0"
+                    "diagnostics contain finite arm names and aggregate counts without payloads"
+            | other -> failtestf "expected unsupported arm diagnostics, got %A" other
+        }
+
+        test "simultaneous LOS and radar loss withdraws the original visual fact atomically" {
+            let baseline=mkStateUpdate 7UL 210u
+            let own=OwnUnit.empty()
+            own.UnitId<-9983u
+            own.Position<-ValueSome(position 2048.0f 321.0f 2048.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let disappearing=EnemyUnit.empty()
+            disappearing.UnitId<-21347u
+            disappearing.DefId<-501u
+            disappearing.TeamId<-1
+            disappearing.Position<-ValueSome(position 2200.0f 320.0f 2100.0f)
+            disappearing.Health<-100.0f
+            let retained=EnemyUnit.empty()
+            retained.UnitId<-28820u
+            retained.DefId<-502u
+            retained.TeamId<-1
+            retained.Position<-ValueSome(position 2168.0f 329.0f 2048.0f)
+            retained.Health<-280.0f
+            baseline.Snapshot.VisibleEnemies.Add disappearing
+            baseline.Snapshot.VisibleEnemies.Add retained
+            let v1, _=WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            let leaveLos=DeltaEvent.empty()
+            let leaveLosEvent=EnemyLeaveLOSEvent.empty()
+            leaveLosEvent.EnemyId<-21347
+            leaveLos.EnemyLeaveLos<-leaveLosEvent
+            let losOnlyDelta=StateDelta.empty()
+            losOnlyDelta.Events.Add leaveLos
+            let losOnlyUpdate=StateUpdate.empty()
+            losOnlyUpdate.Seq<-8UL
+            losOnlyUpdate.Frame<-211u
+            losOnlyUpdate.Delta<-losOnlyDelta
+            let _, losOnlyResult=WireConvert.applyHighBarStateUpdate losOnlyUpdate v1
+            match losOnlyResult with
+            | WireConvert.NewSnapshot (_,browser) ->
+                Expect.isFalse (browser.units |> List.exists (fun unit -> unit.id=21347UL)) "LOS loss alone withdraws the visual fact instead of inventing Radar"
+            | other -> failtestf "expected conservative LOS withdrawal, got %A" other
+
+            let leaveRadar=DeltaEvent.empty()
+            let leaveRadarEvent=EnemyLeaveRadarEvent.empty()
+            leaveRadarEvent.EnemyId<-21347
+            leaveRadar.EnemyLeaveRadar<-leaveRadarEvent
+            let delta=StateDelta.empty()
+            delta.Events.Add leaveLos
+            delta.Events.Add leaveRadar
+            let update=StateUpdate.empty()
+            update.Seq<-8UL
+            update.Frame<-211u
+            update.Delta<-delta
+            let v2, result=WireConvert.applyHighBarStateUpdate update v1
+
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "a consecutive visibility withdrawal preserves the coherent baseline"
+            match result with
+            | WireConvert.NewSnapshot (_,browser) ->
+                Expect.equal browser.sequence 8UL "the withdrawal advances the exact producer sequence"
+                Expect.isFalse (browser.units |> List.exists (fun unit -> unit.id=21347UL)) "the lost target has no invented visual or radar fact"
+                Expect.isTrue (browser.units |> List.exists (fun unit -> unit.id=9983UL && unit.observation=Snapshot.Own)) "owned facts remain intact"
+                Expect.isTrue (browser.units |> List.exists (fun unit -> unit.id=28820UL && unit.observation=Snapshot.Visual)) "unrelated visible targets remain intact"
+            | other -> failtestf "expected materialized visibility withdrawal, got %A" other
+
+            let v3, economyResult=WireConvert.applyHighBarStateUpdate (mkEconomyDelta 9UL 211u) v2
+            Expect.isTrue (WireConvert.hasValidBaseline v3) "the next regular economy delta remains valid"
+            match economyResult with
+            | WireConvert.NewSnapshot (_,browser) ->
+                Expect.isFalse (browser.units |> List.exists (fun unit -> unit.id=21347UL)) "the withdrawn target cannot reappear without producer facts"
+            | other -> failtestf "expected economy after visibility withdrawal, got %A" other
+        }
+
+        test "radar loss removes radar-only fact while incoherent LOS loss remains fail closed" {
+            let baseline=mkStateUpdate 1UL 1u
+            let radar=RadarBlip.empty()
+            radar.BlipId<-21347u
+            radar.Position<-ValueSome(position 2200.0f 0.0f 2100.0f)
+            baseline.Snapshot.RadarEnemies.Add radar
+            let v1, _=WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            let leaveRadar=DeltaEvent.empty()
+            let leaveRadarEvent=EnemyLeaveRadarEvent.empty()
+            leaveRadarEvent.EnemyId<-21347
+            leaveRadar.EnemyLeaveRadar<-leaveRadarEvent
+            let radarDelta=StateDelta.empty()
+            radarDelta.Events.Add leaveRadar
+            let radarUpdate=StateUpdate.empty()
+            radarUpdate.Seq<-2UL
+            radarUpdate.Frame<-2u
+            radarUpdate.Delta<-radarDelta
+            let v2, radarResult=WireConvert.applyHighBarStateUpdate radarUpdate v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "radar loss for the established radar fact is coherent"
+            match radarResult with
+            | WireConvert.NewSnapshot (_,browser) -> Expect.isEmpty browser.units "radar loss withdraws the radar-only observation"
+            | other -> failtestf "expected radar withdrawal, got %A" other
+
+            let leaveLos=DeltaEvent.empty()
+            let leaveLosEvent=EnemyLeaveLOSEvent.empty()
+            leaveLosEvent.EnemyId<-21347
+            leaveLos.EnemyLeaveLos<-leaveLosEvent
+            let losDelta=StateDelta.empty()
+            losDelta.Events.Add leaveLos
+            let losUpdate=StateUpdate.empty()
+            losUpdate.Seq<-2UL
+            losUpdate.Frame<-2u
+            losUpdate.Delta<-losDelta
+            let refused, refusedResult=WireConvert.applyHighBarStateUpdate losUpdate v1
+            Expect.isFalse (WireConvert.hasValidBaseline refused) "LOS loss without an established visual fact remains invalid"
+            match refusedResult with
+            | WireConvert.Invalidated (_,_,detail) -> Expect.stringContains detail "enemy_leave_los=1" "the incoherent arm stays diagnostic"
+            | other -> failtestf "expected incoherent LOS refusal, got %A" other
+        }
+
+        test "mixed economy and command dispatch applies economy without weakening dispatch correlation" {
+            let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
+            let update = mkEconomyDelta 2UL 2u
+            let dispatch = DeltaEvent.empty()
+            let dispatchEvent = CommandDispatchEvent.empty()
+            dispatchEvent.BatchSeq <- 1UL
+            dispatchEvent.ClientCommandId <- 1UL
+            dispatch.CommandDispatch <- dispatchEvent
+            update.Delta.Events.Add dispatch
+            let v2, result = WireConvert.applyHighBarStateUpdate update v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "the known atomic delta remains materializable"
+            match result with
+            | WireConvert.NewSnapshot (_, browser) -> Expect.equal browser.sequence 2UL "mixed known arms advance once"
+            | other -> failtestf "expected materialized mixed delta, got %A" other
+        }
+
+        test "economy delta before a baseline cannot fabricate current state" {
+            let view, result =
+                WireConvert.applyHighBarStateUpdate
+                    (mkEconomyDelta 1UL 1u)
+                    WireConvert.emptyRunningView
+            Expect.isFalse (WireConvert.hasValidBaseline view) "economy cannot establish a unit baseline"
+            match result with
+            | WireConvert.Invalidated (_, 1UL, detail) ->
+                Expect.stringContains detail "before a complete baseline" "the refusal identifies the missing baseline"
+            | other -> failtestf "expected Invalidated, got %A" other
+        }
+
+        test "unset delta arm remains fail closed" {
+            let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
+            let event=DeltaEvent.empty()
+            let delta=StateDelta.empty()
+            delta.Events.Add event
+            let update=StateUpdate.empty()
+            update.Seq<-2UL
+            update.Frame<-2u
+            update.Delta<-delta
+            let v2, result=WireConvert.applyHighBarStateUpdate update v1
+            Expect.isFalse (WireConvert.hasValidBaseline v2) "an unknown or unset arm invalidates the baseline"
+            match result with
+            | WireConvert.Invalidated (1UL,2UL,detail) ->
+                Expect.stringContains detail "arms[unset=1]; distinct=1; omitted=0" "unset oneof is named without payload data"
+            | other -> failtestf "expected Invalidated, got %A" other
         }
 
         test "nonempty delta before a baseline cannot fabricate a snapshot" {
