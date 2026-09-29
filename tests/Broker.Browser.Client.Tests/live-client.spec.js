@@ -107,7 +107,7 @@ test("physical actor selection waits for a delayed tactical observation render",
   const box=await actor.boundingBox();expect(box).not.toBeNull();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await expect(page.locator(".selection")).toContainText(`Actors ${ref0.id}:${ref0.lifetime}`);
 });
 
-test("atomic actor geometry supports genuine pointer selection during repeated SVG replacement",async({page})=>{
+test("atomic actor geometry scrolls below-fold actors and supports genuine pointer selection during repeated SVG replacement",async({page})=>{
   const overlap={id:"17",lifetime:"9007199254741021"};
   const overlapping={...tacticalObservation,
     preview:{...tacticalObservation.preview,units:[...tacticalObservation.preview.units,{id:"17",definitionId:503,teamId:0,observation:"OBSERVATION_KIND_OWN",position:{x:1024,z:1024}}]},
@@ -115,9 +115,11 @@ test("atomic actor geometry supports genuine pointer selection during repeated S
     tactical:{...tacticalObservation.tactical,actors:[...tacticalObservation.tactical.actors,actorTactical(overlap)]}};
   tacticalObservationOverride=overlapping;
   await arm(page,"Manual guest","barc-live-tactical-v1");
+  await page.evaluate(()=>{const spacer=document.createElement("div");spacer.style.height=`${innerHeight}px`;document.body.prepend(spacer);scrollTo(0,0)});
   await page.evaluate(()=>{window.__barcUnitReplacementCount=0;new MutationObserver(records=>window.__barcUnitReplacementCount+=records.reduce((count,record)=>count+record.removedNodes.length,0)).observe(document.querySelector(".units"),{childList:true})});
   const actor=page.locator(`[data-unit-id="${ref0.id}"][data-lifetime="${ref0.lifetime}"]`);
-  const point=async()=>actor.evaluate((node,expected)=>{if(!node.isConnected||node.dataset.unitId!==expected.id||node.dataset.lifetime!==expected.lifetime)return null;const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2;return box.width>0&&box.height>0&&Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null},ref0).catch(()=>null);
+  expect(await actor.evaluate(node=>node.getBoundingClientRect().top)).toBeGreaterThanOrEqual(await page.evaluate(()=>innerHeight));
+  const point=async()=>actor.evaluate((node,expected)=>{if(!node.isConnected||node.dataset.unitId!==expected.id||node.dataset.lifetime!==expected.lifetime)return null;node.scrollIntoView({block:"center",inline:"center"});const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2;return box.width>0&&box.height>0&&Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight?{x,y}:null},ref0).catch(()=>null);
   await page.evaluate(()=>window.__barcRenderChurn=setInterval(()=>{const units=document.querySelector(".units");units.replaceChildren(...[...units.children].map(node=>node.cloneNode(true)))},0));
   try{
     await expect.poll(()=>page.evaluate(()=>window.__barcUnitReplacementCount)).toBeGreaterThan(2);

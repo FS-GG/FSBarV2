@@ -34,6 +34,7 @@ async function actorPoint(live,ref){
   await expect.poll(async()=>{
     point=await actor.evaluate((node,expected)=>{
       if(!node.isConnected||node.dataset.unitId!==expected.id||node.dataset.lifetime!==expected.lifetime)return null;
+      node.scrollIntoView({block:"center",inline:"center"});
       const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2;
       return box.width>0&&box.height>0&&Number.isFinite(x)&&Number.isFinite(y)&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight?{x,y}:null;
     },ref).catch(()=>null);
