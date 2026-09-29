@@ -150,6 +150,34 @@ test("pointer and keyboard multi-selection preserve ordered actors through the r
   expect(submissions[1].intent.actors).toEqual([{lifetime:ref0.lifetime}]);
 });
 
+test("keyboard target cycling preserves ordered actors and exact lifetime targets through the real guest",async({page})=>{
+  await arm(page,"Manual guest","barc-live-tactical-v1");
+  submissions=[];const map=page.getByLabel(/Live tactical map/);await map.focus();
+  await page.keyboard.press("Control+Tab");await page.keyboard.press("Control+Tab");
+  await expect(page.locator(".selection")).toContainText("0:9007199254740999, 31999:9007199254741001");
+
+  await page.keyboard.press("g");await page.keyboard.press("Enter");
+  await page.waitForTimeout(50);expect(submissions).toHaveLength(0);
+  await page.keyboard.press("t");await page.keyboard.press("t");
+  await expect(page.locator(".target")).toContainText(`Friendly 31999:${ref31999.lifetime}`);
+  await page.keyboard.press("Enter");await expect.poll(()=>submissions.length).toBe(1);
+  expect(submissions[0].intent.guard.target).toEqual(ref31999);
+
+  await page.keyboard.press("r");await page.keyboard.press("Enter");await expect.poll(()=>submissions.length).toBe(2);
+  expect(submissions[1].intent.repair.target).toEqual(ref31999);
+  await page.keyboard.press("l");await page.keyboard.press("Enter");await expect.poll(()=>submissions.length).toBe(3);
+  expect(submissions[2].intent.reclaimUnit.target).toEqual(ref31999);
+
+  await page.keyboard.press("x");await page.keyboard.press("Enter");
+  await page.waitForTimeout(50);expect(submissions).toHaveLength(3);
+  await page.keyboard.press("f");
+  await expect(page.locator(".target")).toContainText(`Feature 0:${feature0.reference.lifetime}`);
+  await page.keyboard.press("Enter");await expect.poll(()=>submissions.length).toBe(4);
+  expect(submissions[3].intent.reclaimFeature.target).toEqual({lifetime:feature0.reference.lifetime});
+  expect(submissions.every(value=>JSON.stringify(value.intent.actors)===JSON.stringify([{lifetime:ref0.lifetime},ref31999]))).toBe(true);
+  await expect(page.locator(".result")).not.toContainText("native effect complete");
+});
+
 test("independently compiled guest changes a tactical action rather than fabricating an effect",async({page})=>{
   await arm(page,"Custom guest","barc-live-tactical-v1");
   await page.locator('[data-unit-id="0"]').click();
