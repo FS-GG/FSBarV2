@@ -25,7 +25,7 @@ const descriptorKinds=["TACTICAL_DESCRIPTOR_BUILD","TACTICAL_DESCRIPTOR_GUARD","
 const actorTactical=actor=>({actor,descriptorRevision,descriptors:[...descriptorKinds.map(kind=>({kind,allowedDefinitionIds:["TACTICAL_DESCRIPTOR_BUILD","TACTICAL_DESCRIPTOR_FACTORY_PRODUCE"].includes(kind)?[710]:[],allowedModeValues:[]})),{kind:"TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY",allowedDefinitionIds:[],allowedModeValues:["TACTICAL_MODE_VALUE_DISABLED","TACTICAL_MODE_VALUE_ENABLED"],observedModeValue:"TACTICAL_MODE_VALUE_DISABLED"}],queue:[{domain:"QUEUE_DOMAIN_ACTOR_ORDER",revision:"9007199254741015",entries:[{nativeTag:41,action:"LIVE_ACTION_KIND_MOVE",position:{x:1,z:2}}],complete:true},{domain:"QUEUE_DOMAIN_FACTORY_PRODUCTION",revision:"9007199254741016",entries:[{nativeTag:42,action:"LIVE_ACTION_KIND_FACTORY_PRODUCE",definitionId:710}],complete:true,repeat:false},{domain:"QUEUE_DOMAIN_FACTORY_RALLY",revision:"9007199254741017",entries:[],complete:false}]});
 const feature0={reference:{id:"0",lifetime:"9007199254741019"},definitionId:91,position:{x:1400,elevation:12.5,z:1600},reclaimLeft:.75};
 const tacticalObservation={...fullObservation,tactical:{catalogueId,catalogueRevision,economy:{perspectiveId:"team-0",sampleFrame:basis.nativeFrame,metal:{resourceName:"metal",unit:"resource",current:500,storage:1000,incomePerSecond:8.5,usagePerSecond:4},energy:{resourceName:"energy",unit:"resource",current:2500,storage:5000}},actors:[actorTactical(ref0),actorTactical(ref31999)],features:[feature0]}};
-let server, port, sockets, submissions, armRequests, auth, canonicalFeedback, heldFeedback, resultSequence, revocations, tacticalBootstrapOverride, tacticalObservationOverride;
+let server, port, sockets, submissions, armRequests, auth, canonicalFeedback, heldFeedback, resultSequence, revocations, tacticalBootstrapOverride, tacticalObservationOverride, observationDelayMs;
 const routes=[["/client/","src/Broker.Browser.Client/dist/"],["/src/Broker.Browser.Wasm/","src/Broker.Browser.Wasm/"],["/guests/","tests/Broker.Browser.Wasm.Tests/generated/"]];
 
 test.beforeAll(async()=>{
@@ -35,7 +35,7 @@ test.beforeAll(async()=>{
     auth=canonicalObject(v1.LiveClientEnvelope,raw);let currentController=controller,activeModule=null,stateSequence=0;
     const profile=auth.authenticate.profile, selectedBootstrap=profile==="barc-live-tactical-v1"?(tacticalBootstrapOverride??tacticalBootstrap):bootstrap, selectedObservation=profile==="barc-live-tactical-v1"?(tacticalObservationOverride??tacticalObservation):fullObservation;
     const negotiated=canonicalFeedback?{...selectedBootstrap,limits:{...selectedBootstrap.limits,maxPendingParents:2}}:selectedBootstrap;
-    ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...negotiated,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:selectedObservation}));
+    ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...negotiated,controller:currentController}}));const sendObservation=()=>ws.send(encodeObject(v1.LiveServerEnvelope,{observation:selectedObservation}));if(observationDelayMs)setTimeout(sendObservation,observationDelayMs);else sendObservation();
     ws.on("message",bytes=>{const message=canonicalObject(v1.LiveClientEnvelope,bytes);
       if(message.body==="arm"){armRequests.push(message.arm);activeModule=message.arm.module;ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:String(++stateSequence),controller:currentController,module:activeModule,stage:"CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED"}}))}
       else if(message.body==="submit"){submissions.push(message.submit);const intent=message.submit.intent;if(canonicalFeedback)heldFeedback.push({ws,submit:message.submit,controller:currentController});else ws.send(encodeObject(v1.LiveServerEnvelope,{result:{resultSequence:String(++resultSequence),parentId:message.submit.parentId,inputId:message.submit.inputId,module:message.submit.module,basis:message.submit.basis,controller:currentController,childIndex:0,childCount:intent.actors.length,actor:intent.actors[0],stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED",disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:430,commandChannelIncarnation:"command-live-1"}}))}
@@ -49,7 +49,7 @@ test.beforeAll(async()=>{
   })});
   await new Promise(resolveListen=>server.listen(0,"127.0.0.1",resolveListen));port=server.address().port;
 });
-test.beforeEach(()=>{submissions=[];armRequests=[];auth=null;canonicalFeedback=false;heldFeedback=[];resultSequence=0;revocations=[];tacticalBootstrapOverride=null;tacticalObservationOverride=null;});
+test.beforeEach(()=>{submissions=[];armRequests=[];auth=null;canonicalFeedback=false;heldFeedback=[];resultSequence=0;revocations=[];tacticalBootstrapOverride=null;tacticalObservationOverride=null;observationDelayMs=0;});
 test.afterAll(()=>new Promise(resolveClose=>server.close(resolveClose)));
 
 async function arm(page, guest="Manual guest", profile="barc-live-v1") {
@@ -97,6 +97,14 @@ test("repeated real pointer clicks cycle overlapping own actors",async({page})=>
   box=await target.boundingBox();await page.keyboard.down("Shift");try{await page.mouse.click(box.x+box.width/2,box.y+box.height/2)}finally{await page.keyboard.up("Shift")}
   await expect(page.locator(".target")).toContainText(`Friendly 17:${overlap.lifetime}`);await expect(page.locator(".selection")).toContainText(`Actors 0:${ref0.lifetime}, 17:${overlap.lifetime}`);
   await expect(page.locator(".selection")).toContainText("Repeated clicks cycle overlapping actors");
+});
+
+test("physical actor selection waits for a delayed tactical observation render",async({page})=>{
+  observationDelayMs=150;
+  await page.goto(`http://127.0.0.1:${port}/?profile=barc-live-tactical-v1`);
+  await page.getByLabel("Gateway").fill(`ws://127.0.0.1:${port}/live`);await page.getByLabel("Session UUID").fill(sessionUuid);await page.getByLabel("One-time credential").fill("live-credential");await page.getByRole("button",{name:"Pair"}).click();
+  await expect(page.locator(".catalogue")).not.toContainText("unavailable");const actor=page.locator(`[data-unit-id="${ref0.id}"][data-lifetime="${ref0.lifetime}"]`);await expect(actor).toBeVisible({timeout:30000});await page.getByRole("button",{name:"Manual guest"}).click();await page.getByRole("button",{name:"Arm live"}).click();await expect(page.locator(".authority")).toContainText("arm native confirmed");
+  const box=await actor.boundingBox();expect(box).not.toBeNull();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await expect(page.locator(".selection")).toContainText(`Actors ${ref0.id}:${ref0.lifetime}`);
 });
 
 test("two canonical result lifecycles cross the real Worker without revoking authority",async({page})=>{
