@@ -335,6 +335,67 @@ let tests = testList "production live boundary" [
         Expect.equal nativeDispatch.Result.Status LiveResultStatus.Applied "the one terminal dispatch remains applied"
         Expect.equal nativeDispatch.Result.ParentId brokerResult.Result.ParentId "both native stages retain the reserved parent"
 
+        let completeAdditionalParent dispatchSequence = task {
+            let request=submit.Clone()
+            request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+            request.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+            do! send socket (LiveClientEnvelope(Submit=request))
+            let! (broker: LiveServerEnvelope)=receive socket
+            Expect.equal broker.Result.Stage LiveResultStage.BrokerAdmission "the next parent is admitted on the same socket"
+            let! more=commandCall.ResponseStream.MoveNext(CancellationToken.None)
+            Expect.isTrue more "the next parent reaches the live native channel"
+            let nextChild=commandCall.ResponseStream.Current
+            let admitted=CommandBatchResult.empty()
+            admitted.BatchSeq<-nextChild.Batch.Value.BatchSeq
+            admitted.ClientCommandId<-nextChild.Batch.Value.ClientCommandId.Value
+            admitted.Status<-CommandBatchStatus.CommandBatchAccepted
+            admitted.AcceptedCommandCount<-1u
+            let report=CommandBatchResultReport.empty()
+            report.PluginId<-source.PluginId
+            report.SchemaVersion<-source.SchemaVersion
+            report.ChannelIncarnation<-nextChild.Binding.Value.CommandChannelIncarnation
+            report.Result<-ValueSome admitted
+            let! (_:CommandBatchResultReportAck)=coordinator.ReportCommandBatchResultAsync(report).ResponseAsync
+            let! (nativeAccepted:LiveServerEnvelope)=receive socket
+            Expect.equal nativeAccepted.Result.Stage LiveResultStage.NativeAdmission "native admission follows broker admission"
+            let applied=CommandDispatchEvent.empty()
+            applied.BatchSeq<-nextChild.Batch.Value.BatchSeq
+            applied.ClientCommandId<-nextChild.Batch.Value.ClientCommandId.Value
+            applied.ChannelIncarnation<-nextChild.Binding.Value.CommandChannelIncarnation
+            applied.CommandIndex<-0u
+            applied.TargetUnitId<-nextChild.Batch.Value.TargetUnitId
+            applied.Status<-CommandDispatchStatus.CommandDispatchApplied
+            applied.Frame<-laterBasis.Frame+uint32 dispatchSequence
+            let event=DeltaEvent.empty()
+            event.CommandDispatch<-applied
+            let delta=StateDelta.empty()
+            delta.Events.Add event
+            let state=StateUpdate.empty()
+            state.Seq<-laterBasis.StateSequence+dispatchSequence
+            state.Frame<-applied.Frame
+            state.Delta<-delta
+            do! push.RequestStream.WriteAsync state
+            let! (terminal:LiveServerEnvelope)=receive socket
+            Expect.equal terminal.Result.Stage LiveResultStage.NativeDispatch "native dispatch remains terminal"
+            Expect.equal terminal.Result.Status LiveResultStatus.Applied "the next parent completes exactly once"
+        }
+        do! completeAdditionalParent 2UL
+
+        do! completeAdditionalParent 3UL
+        Expect.equal socket.State WebSocketState.Open "released parent capacity accepts and completes a third submission on the same production WebSocket"
+
+        let recoverableFeed =
+            match BrokerState.browserLatest handle.Hub with
+            | Some(Snapshot.Current current) -> current
+            | _ -> failtest "current production feed was unavailable before invalidation"
+        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+3UL) (laterBasis.StateSequence+5UL) "state sequence gap" handle.Hub
+        let! (stale:LiveServerEnvelope)=receive socket
+        Expect.equal stale.Observation.Preview.Validity.Status ValidityStatus.Stale "a materializer gap is delivered explicitly instead of silently ending the socket"
+        Expect.equal stale.Observation.Preview.Sequence stale.Observation.Basis.StateSequence "stale delivery retains the last fully paired facts and basis"
+        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+5UL) "the stale notification preserves the received sequence"
+        Expect.equal socket.State WebSocketState.Open "a stale feed notification leaves the authenticated connection available for explicit revoke and recovery"
+        BrokerState.applyBrowserObservation source.PluginId recoverableFeed handle.Hub
+
         do! send socket (LiveClientEnvelope(Revoke=RevokeController(Controller=controller,Reason="test rearm")))
         let! (revokeRequested: LiveServerEnvelope) = receive socket
         Expect.equal revokeRequested.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.RevokeRequested "browser disarms while native revoke is pending"

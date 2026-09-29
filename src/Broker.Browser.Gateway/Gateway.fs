@@ -342,6 +342,8 @@ module Gateway =
                                 let outputs=Channel.CreateBounded<LiveServerEnvelope>(int (LiveControl.maxRetainedResults state) + 16)
                                 let outputGate=obj()
                                 let mutable lastObservationSequence: uint64 option=None
+                                let mutable lastObservationEnvelope: LiveServerEnvelope option=None
+                                let mutable lastStaleIdentity: struct(uint64 * uint64) option=None
                                 let enqueueLocked detail envelope =
                                     if not (outputs.Writer.TryWrite envelope) then
                                         outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore
@@ -355,8 +357,21 @@ module Gateway =
                                             match LiveBoundary.observation preview state with
                                             | Ok envelope when enqueueLocked "live observation delivery capacity exhausted" envelope ->
                                                 lastObservationSequence<-Some current.sequence
+                                                lastObservationEnvelope<-Some(envelope.Clone())
+                                                lastStaleIdentity<-None
                                             | _ -> ()
-                                    | Snapshot.Stale _ -> outputs.Writer.TryComplete(SessionChanged) |> ignore
+                                    | Snapshot.Stale(staleSessionId,lastSequence,receivedSequence,detail) when staleSessionId=sessionId ->
+                                        let identity=struct(lastSequence,receivedSequence)
+                                        match lastObservationEnvelope with
+                                        | Some prior when lastStaleIdentity<>Some identity ->
+                                            let stale=prior.Clone()
+                                            // Retain the last fully paired facts and basis. The validity
+                                            // reports the gap without inventing a snapshot for lastSequence.
+                                            stale.Observation.Preview.Validity<-
+                                                validity ValidityStatus.Stale lastSequence (Some receivedSequence) detail
+                                            if enqueueLocked "live stale observation delivery capacity exhausted" stale then
+                                                lastStaleIdentity<-Some identity
+                                        | _ -> ()
                                     | _ -> outputs.Writer.TryComplete(SessionChanged) |> ignore
                                 let feedObserver =
                                     { new IObserver<Snapshot.BrowserFeed> with
