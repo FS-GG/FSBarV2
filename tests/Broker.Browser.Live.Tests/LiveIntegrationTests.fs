@@ -277,9 +277,11 @@ let tests = testList "production live boundary" [
 
         let origin = "http://127.0.0.1:4179"
         let browserPort = freePort()
+        let diagnostics = System.Collections.Concurrent.ConcurrentQueue<Gateway.LiveDiagnostic>()
         let! (gateway: Microsoft.Extensions.Hosting.IHost) =
-            Gateway.startLiveAsync handle.Hub
+            Gateway.startLiveAsyncWithDiagnostics handle.Hub
                 (Gateway.defaultLiveConfig (sprintf "http://127.0.0.1:%d" browserPort) origin "secret-live" sessionId)
+                diagnostics.Enqueue
                 CancellationToken.None
         let socket = new ClientWebSocket()
         socket.Options.SetRequestHeader("Origin", origin)
@@ -430,6 +432,7 @@ let tests = testList "production live boundary" [
             | _ -> failtest "fresh paired production feed was unavailable after stale-basis refusal"
         do! send socket (LiveClientEnvelope(Submit=submit))
         do! admissionPublishing.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        Expect.isTrue (diagnostics |> Seq.contains Gateway.SubmitAccepted) "successful submit emits only a fixed accepted boundary diagnostic"
         let concurrentIdle=DeltaEvent.empty()
         let concurrentIdleEvent=UnitIdleEvent.empty()
         concurrentIdleEvent.UnitId<-0
@@ -451,6 +454,7 @@ let tests = testList "production live boundary" [
         do! concurrentWrite
         let! (brokerResult: LiveServerEnvelope) = receive socket
         Expect.equal brokerResult.Result.Stage LiveResultStage.BrokerAdmission "broker admission has one observable result path"
+        Expect.isTrue (diagnostics |> Seq.contains Gateway.BrokerAdmissionForwarded) "admitted feedback emits a fixed forwarded diagnostic"
         Expect.equal brokerResult.Result.Disposition LiveResultDisposition.Recorded "production Gateway marks broadcast feedback as an accepted result record"
         Expect.equal brokerResult.Result.ChildCount 1u "result capacity is reserved per expanded child"
         Expect.equal brokerResult.Result.Basis.StateSequence raceBasis.StateSequence "result preserves the refreshed observation basis"
@@ -586,7 +590,7 @@ let tests = testList "production live boundary" [
         Expect.notEqual replacement.Bootstrap.Controller.ControllerId controller.ControllerId "replacement bootstrap carries a fresh controller identity"
         Expect.equal replacementObservation.Observation.Basis.StateSequence raceBasis.StateSequence "replacement immediately replays the same truthful paired observation"
 
-        BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow handle.Hub
+        do! send socket (LiveClientEnvelope(Submit=SubmitLiveIntent()))
         let closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)
         let closeBuffer = Array.zeroCreate<byte> 128
         let mutable closed = false
@@ -595,11 +599,32 @@ let tests = testList "production live boundary" [
                 let! (received: ValueWebSocketReceiveResult) = socket.ReceiveAsync(Memory<byte>(closeBuffer), closeTimeout.Token).AsTask()
                 closed <- received.MessageType=WebSocketMessageType.Close
         with :? WebSocketException -> closed <- true
-        Expect.isTrue closed "session replacement closes the authenticated live socket"
+        Expect.isTrue closed "a deliberately incomplete submit preserves the connection-close fence"
+        Expect.isTrue (diagnostics |> Seq.contains (Gateway.SubmitRefused Gateway.Incomplete)) "refused submit records its closed validation class without raw detail"
+        Expect.isFalse (diagnostics |> Seq.contains Gateway.ReceiveTaskFailed) "a known submit refusal is not double-labelled as an independent receive fault"
         closeTimeout.Dispose()
+        socket.Dispose()
+
+        let replacementSocket = new ClientWebSocket()
+        replacementSocket.Options.SetRequestHeader("Origin", origin)
+        do! replacementSocket.ConnectAsync(Uri(sprintf "ws://127.0.0.1:%d/barc-live" browserPort), CancellationToken.None)
+        do! send replacementSocket (LiveClientEnvelope(Authenticate=auth.Clone()))
+        let! (_: LiveServerEnvelope) = receive replacementSocket
+        let! (_: LiveServerEnvelope) = receive replacementSocket
+        BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow handle.Hub
+        let replacementCloseTimeout = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)
+        let replacementCloseBuffer = Array.zeroCreate<byte> 128
+        let mutable replacementClosed = false
+        try
+            while not replacementClosed do
+                let! (received: ValueWebSocketReceiveResult) = replacementSocket.ReceiveAsync(Memory<byte>(replacementCloseBuffer), replacementCloseTimeout.Token).AsTask()
+                replacementClosed <- received.MessageType=WebSocketMessageType.Close
+        with :? WebSocketException -> replacementClosed <- true
+        Expect.isTrue replacementClosed "session replacement closes an independently authenticated live socket"
+        replacementCloseTimeout.Dispose()
+        replacementSocket.Dispose()
         feedbackBarrierSubscription.Dispose()
         feedBarrierSubscription.Dispose()
-        socket.Dispose()
         do! gateway.StopAsync()
         (gateway :> IDisposable).Dispose()
         controlCall.Dispose()

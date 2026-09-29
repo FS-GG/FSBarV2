@@ -37,7 +37,10 @@ module LiveHost =
             let sessionId = BrokerState.session host.Hub |> Option.map Session.id |> Option.defaultWith(fun () -> invalidOp "native host has no session")
             let credential = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes 32).ToLowerInvariant()
             let config = { Gateway.defaultLiveConfig gatewayUrl origin credential sessionId with credentialExpiresAt=DateTimeOffset.UtcNow.AddMinutes 30. }
-            let! gateway = Gateway.startLiveAsync host.Hub config lifetime.Token
+            let diagnostic (value: Gateway.LiveDiagnostic) =
+                let struct(phase,reason)=Gateway.diagnosticNames value
+                write(box {|kind="gateway-diagnostic";utc=DateTimeOffset.UtcNow;source=sourceSha;phase=phase;reason=reason|})
+            let! gateway = Gateway.startLiveAsyncWithDiagnostics host.Hub config diagnostic lifetime.Token
             try
                 let state=BrokerState.liveControl host.Hub
                 let protobufJson (value: Google.Protobuf.IMessage) =

@@ -83,3 +83,19 @@ export function assertObservedEffects(rows,journey){
   return true;
 }
 export function plannedChildCount(intent){const actors=intent?.actors?.length??0,count=intent?.factoryProduce?.count??1;return actors*count}
+
+export function sanitizedLifecycle(rows, connection={closed:false,error:false}){
+  const results=rows.filter(x=>x.kind==="result").map(x=>x.value);
+  return {schema:"fsbar.barc-tactical-partial/v1",submitCount:rows.filter(x=>x.kind==="submit").length,resultCount:results.length,brokerAdmissionCount:results.filter(x=>x.stage==="LIVE_RESULT_STAGE_BROKER_ADMISSION").length,nativeAdmissionCount:results.filter(x=>x.stage==="LIVE_RESULT_STAGE_NATIVE_ADMISSION").length,nativeDispatchCount:results.filter(x=>x.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH").length,unknownCount:results.filter(x=>x.stage==="LIVE_RESULT_STAGE_UNKNOWN").length,socketClosed:Boolean(connection.closed),socketError:Boolean(connection.error)};
+}
+
+export async function waitForTerminalOrClose(rows,connection,parentId,count,{timeoutMs=30000,intervalMs=25}={}){
+  const deadline=Date.now()+timeoutMs;
+  while(Date.now()<=deadline){
+    const terminal=new Set(rows.filter(x=>x.kind==="result"&&x.value.parentId===parentId&&(x.value.status==="LIVE_RESULT_STATUS_REJECTED"||x.value.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH"||x.value.stage==="LIVE_RESULT_STAGE_UNKNOWN")).map(x=>x.value.childIndex)).size;
+    if(terminal===count)return terminal;
+    if(connection.closed||connection.error)throw new Error("live websocket closed before terminal result");
+    await new Promise(resolve=>setTimeout(resolve,intervalMs));
+  }
+  throw new Error("timed out waiting for terminal result");
+}

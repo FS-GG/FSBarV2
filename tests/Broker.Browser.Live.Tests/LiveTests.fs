@@ -1,10 +1,51 @@
 module Broker.Browser.Live.Tests.LiveTests
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open Expecto
 open Google.Protobuf
 open Highbar.V1
+open Broker.Browser.Gateway
 open Broker.Protocol
+
+[<Tests>]
+let gatewayDiagnosticTests = testList "gateway diagnostic classification" [
+    testCase "receive output and renewal winners have independent fixed reasons" <| fun _ ->
+        let receiveTask=Task.CompletedTask
+        let outputTask=Task.FromException(InvalidOperationException "private credential uuid frame")
+        let renewalTask=Task.FromCanceled(CancellationToken(true))
+        let renewalFault=Task.FromException(InvalidOperationException "renewal failed")
+        Expect.equal (Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask receiveTask) Gateway.ReceiveTaskCompleted "receive completion is distinct"
+        Expect.equal (Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask outputTask) Gateway.OutputTaskFailed "output failure is distinct"
+        Expect.equal (Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask renewalTask) Gateway.RenewalTaskCancelled "renewal cancellation is distinct"
+        let renewalFailure=Gateway.completedTaskDiagnostic receiveTask outputTask renewalFault renewalFault
+        Expect.equal renewalFailure Gateway.RenewalTaskFailed "renewal failure is distinct"
+        Expect.notEqual renewalFailure Gateway.ReceiveTaskFailed "renewal failure cannot alias receive failure"
+        Expect.notEqual renewalFailure Gateway.OutputTaskFailed "renewal failure cannot alias output failure"
+        let simultaneousReceive=Task.FromException(InvalidOperationException "receive")
+        let simultaneousOutput=Task.FromException(InvalidOperationException "output")
+        let winner=Task.WhenAny([|simultaneousReceive;simultaneousOutput|]).Result
+        Expect.isTrue (Object.ReferenceEquals(winner,simultaneousReceive)) "WhenAny preserves observed order for simultaneous completed tasks"
+        Expect.equal (Gateway.completedTaskDiagnostic simultaneousReceive simultaneousOutput renewalTask winner) Gateway.ReceiveTaskFailed "the exact winner controls classification"
+        Expect.throws (fun () -> Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask (Task.Delay 1) |> ignore) "unobserved tasks cannot be classified"
+    testCase "forwarded feedback precedence and inversion are closed" <| fun _ ->
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.BrokerAdmission LiveControl.Accepted) (Some Gateway.BrokerAdmissionForwarded) "accepted broker feedback is classified"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.BrokerAdmission LiveControl.Rejected) (Some Gateway.BrokerAdmissionRejectedForwarded) "rejected broker feedback is classified"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.Unknown LiveControl.UnknownStatus) (Some Gateway.UnknownForwarded) "unknown stage is classified"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.Unknown LiveControl.Expired) (Some Gateway.ExpiredForwarded) "expired takes precedence over unknown stage"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.NativeAdmission LiveControl.Accepted) None "unselected feedback does not invert into a diagnostic"
+    testCase "throwing diagnostic callbacks cannot escape" <| fun _ ->
+        Gateway.emitDiagnostic (fun _ -> raise(InvalidOperationException "private detail")) Gateway.SubmitAccepted
+    testCase "submit refusal classes are closed and never echo detail" <| fun _ ->
+        Expect.equal (Gateway.submitRefusalReason "live command channel is full") Gateway.CommandChannelFull "known submit refusal has a stable class"
+        let secret="credential=private uuid=33221100-5544-7766-8899-aabbccddeeff actor=9 x=10"
+        let fallback=Gateway.submitRefusalReason secret
+        Expect.equal fallback Gateway.UnknownRefusal "unknown detail uses the closed fallback"
+        let struct(_,name)=Gateway.diagnosticNames(Gateway.SubmitRefused fallback)
+        Expect.equal name "unknown-refusal" "fallback projection is fixed"
+        Expect.isFalse (name.Contains "private") "fallback does not echo sensitive detail"
+]
 open Broker.Core
 open Broker.Browser.Contracts
 open Broker.Browser.Live
