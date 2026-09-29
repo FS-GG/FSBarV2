@@ -23,6 +23,16 @@
   C Broker.Protocol.LiveControl.NativeAdmissionDisposition.NativeDuplicate()
   C Broker.Protocol.LiveControl.NativeAdmissionDisposition.NativeNotOwned()
   C Broker.Protocol.LiveControl.NativeAdmissionDisposition.NativeRecorded()
+  C Broker.Protocol.LiveControl.TacticalAction.Build(Item:NativeBuildIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.FactoryProduce(Item:NativeFactoryProduceIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.Guard(Item:NativeFriendlyTargetIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.QueueEdit(Item:NativeQueueEditIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.ReclaimArea(Item:NativeReclaimAreaIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.ReclaimFeature(Item:NativeReclaimFeatureIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.ReclaimUnit(Item:NativeFriendlyTargetIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.Repair(Item:NativeFriendlyTargetIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.SetRally(Item:NativeSetRallyIntent)
+  C Broker.Protocol.LiveControl.TacticalAction.TacticalMode(Item:NativeTacticalModeIntent)
   F Broker.Protocol.LiveControl.CommandDelivery.batches : FSharpList<LiveCommandBatch>
   F Broker.Protocol.LiveControl.CommandLease.incarnation : String
   F Broker.Protocol.LiveControl.CommandLease.reader : ChannelReader<CommandDelivery>
@@ -85,6 +95,10 @@
   F Broker.Protocol.LiveControl.State.reporter : FSharpOption<LiveStateReporter>
   F Broker.Protocol.LiveControl.State.snapshot : FSharpOption<LiveSnapshotMetadata>
   F Broker.Protocol.LiveControl.State.snapshotReceivedAt : DateTimeOffset
+  F Broker.Protocol.LiveControl.State.tacticalCatalogue : FSharpOption<FSharpList`1>
+  F Broker.Protocol.LiveControl.State.tacticalCatalogueIdentity : FSharpOption<ValueTuple`3>
+  F Broker.Protocol.LiveControl.State.tacticalPages : SortedDictionary<UInt32,TacticalCataloguePage>
+  F Broker.Protocol.LiveControl.State.tacticalSnapshot : FSharpOption<TacticalSnapshotMetadata>
   F Broker.Protocol.LiveControl.Submission.action : Action
   F Broker.Protocol.LiveControl.Submission.actors : FSharpList<NativeUnitReference>
   F Broker.Protocol.LiveControl.Submission.authorityEpoch : UInt64
@@ -96,7 +110,24 @@
   F Broker.Protocol.LiveControl.Submission.moduleSha256 : Byte[]
   F Broker.Protocol.LiveControl.Submission.parentId : Guid
   F Broker.Protocol.LiveControl.Submission.sessionId : Guid
+  F Broker.Protocol.LiveControl.TacticalActor.descriptorRevision : UInt64
+  F Broker.Protocol.LiveControl.TacticalActor.queueRevisions : FSharpList<TacticalQueueBinding>
+  F Broker.Protocol.LiveControl.TacticalActor.reference : NativeUnitReference
+  F Broker.Protocol.LiveControl.TacticalQueueBinding.domain : NativeQueueDomain
+  F Broker.Protocol.LiveControl.TacticalQueueBinding.revision : UInt64
+  F Broker.Protocol.LiveControl.TacticalSubmission.action : TacticalAction
+  F Broker.Protocol.LiveControl.TacticalSubmission.actors : FSharpList<TacticalActor>
+  F Broker.Protocol.LiveControl.TacticalSubmission.authorityEpoch : UInt64
+  F Broker.Protocol.LiveControl.TacticalSubmission.basis : NativeObservationBasis
+  F Broker.Protocol.LiveControl.TacticalSubmission.controllerId : Guid
+  F Broker.Protocol.LiveControl.TacticalSubmission.controllerIncarnation : String
+  F Broker.Protocol.LiveControl.TacticalSubmission.inputId : Guid
+  F Broker.Protocol.LiveControl.TacticalSubmission.moduleGeneration : UInt64
+  F Broker.Protocol.LiveControl.TacticalSubmission.moduleSha256 : Byte[]
+  F Broker.Protocol.LiveControl.TacticalSubmission.parentId : Guid
+  F Broker.Protocol.LiveControl.TacticalSubmission.sessionId : Guid
 M Broker.Protocol.LiveControl.admit(submission:Submission, now:DateTimeOffset, state:State) : FSharpResult<FSharpList`1,String>
+M Broker.Protocol.LiveControl.admitTactical(submission:TacticalSubmission, now:DateTimeOffset, state:State) : FSharpResult<FSharpList`1,String>
 M Broker.Protocol.LiveControl.blocksLegacyGameplay(state:State) : Boolean
 M Broker.Protocol.LiveControl.claimCommands(subscribe:LiveCommandSubscribe, state:State) : ClaimResult<CommandLease>
 M Broker.Protocol.LiveControl.claimControl(subscribe:LiveControlSubscribe, state:State) : ClaimResult<ControlLease>
@@ -107,6 +138,8 @@ M Broker.Protocol.LiveControl.expirePendingResults(now:DateTimeOffset, state:Sta
 M Broker.Protocol.LiveControl.feedback(state:State) : IObservable<Feedback>
 M Broker.Protocol.LiveControl.latestCapabilities(state:State) : FSharpOption<LiveNativeCapabilities>
 M Broker.Protocol.LiveControl.latestSnapshotMetadata(state:State) : FSharpOption<LiveSnapshotMetadata>
+M Broker.Protocol.LiveControl.latestTacticalCatalogue(state:State) : FSharpOption<FSharpList`1>
+M Broker.Protocol.LiveControl.latestTacticalSnapshot(state:State) : FSharpOption<TacticalSnapshotMetadata>
 M Broker.Protocol.LiveControl.maxPendingParents(state:State) : UInt32
 M Broker.Protocol.LiveControl.maxRetainedResults(state:State) : UInt32
 M Broker.Protocol.LiveControl.metadataReports(state:State) : IObservable<UInt64>
@@ -138,3 +171,7 @@ T Broker.Protocol.LiveControl.NativeAdmissionDisposition : union
 T Broker.Protocol.LiveControl.ProvisionalController : record
 T Broker.Protocol.LiveControl.State : record
 T Broker.Protocol.LiveControl.Submission : record
+T Broker.Protocol.LiveControl.TacticalAction : union
+T Broker.Protocol.LiveControl.TacticalActor : record
+T Broker.Protocol.LiveControl.TacticalQueueBinding : record
+T Broker.Protocol.LiveControl.TacticalSubmission : record
