@@ -30,19 +30,38 @@ BARC_TACTICAL_HANDOFF=/private/handoff.json \
 Pointer and keyboard each cover construction and economy, guard, repair,
 lifetime-bound unit/feature/area reclaim, exact factory count and rally,
 current queue insert/remove/repeat, reject-if-busy, a deliberate stale-revision
-pair, both selected BAR modes, mixed-child outcomes and combat. The imported
-guest separately proves its pinned policy action and a locally refused
-unavailable action with zero submission.
+pair, both selected BAR modes, mixed-child outcomes and combat. Keyboard
+journeys use Tab/Ctrl+Tab for actors, `t` for an exact friendly target, `f` for
+an exact feature target, `a` for a visual enemy and the action keys before
+Enter. The imported guest's bytes are hashed before import; its pinned Build
+policy must itself create a new completed building. A locally refused
+unavailable action separately proves zero submission.
 The driver records decoded submit/result/observation frames to new mode-0600
 files and omits authentication frames. Native and engine traces remain private.
 
-Acceptance waits for observations newer than each correlated native dispatch
-frame. It requires new construction to reach complete health, repair to raise
-health, reclaim targets to diminish or disappear with a resource gain beyond
-passive income, exactly two new factory units, a produced unit at rally,
-changed queue revisions/tags/repeat and mode values, and combat health loss.
+Acceptance finishes each causal effect before starting the next action. Each
+effect window ends at the next action and admits only the same
+process/match/state-channel with sequence and native frame after dispatch. It
+requires new construction to reach complete health, repair to raise health,
+reclaim targets to diminish or disappear with a resource gain beyond passive
+income, a rally installed before exactly two new lifetime identities are
+produced and reach it, and exact queue revisions/tags. Repeat must be observed
+on and then off while the production queue is empty. Modes use actors whose
+runtime descriptors actually advertise them, and combat lowers the exact
+lifetime-bound visual target's health.
+
+Reject-if-busy is sent only while the observed actor-order queue is nonempty;
+a missing submit is a failed qualification rather than a native refusal. The
+stale-revision pair invokes two UI actions synchronously and requires identical
+basis and queue bindings before the first edit changes the revision. The mixed
+fixture exposes two actors that are both broker-admissible for Guard, then
+invalidates exactly one at the native fence; every broker admission must be
+accepted before one child applies and the other refuses. These fixture roles
+are explicit handoff data and cannot be inferred by the driver.
 Factory fanout is actor count times requested count. Every child retains its
 broker/native/dispatch or unknown terminal outcome; mixed applied/refused
 parents are preserved rather than flattened. The parent must reject missing or
-preexisting effects, missing children, stale identities, fixture mode, reused
-credentials, wrong pins or any public/default installation claim.
+preexisting effects, wrong lifetimes, foreign-source observations, effects
+that occur after the next action, missing children, wrong causal effect types,
+stale identities, fixture mode, reused credentials, wrong pins or any
+public/default installation claim.
