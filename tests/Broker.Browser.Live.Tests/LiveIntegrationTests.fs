@@ -131,7 +131,7 @@ let tests = testList "production live boundary" [
         capabilities.SupportsMove <- true
         capabilities.SupportsAttackVisibleUnit <- true
         let tacticalCapabilities=NativeTacticalCapabilities.empty()
-        tacticalCapabilities.Profile<-"barc-live-tactical-v1";tacticalCapabilities.Revision<-1u;tacticalCapabilities.MaxCatalogueEntries<-16u;tacticalCapabilities.MaxCataloguePageEntries<-8u;tacticalCapabilities.MaxBuildOptionsPerActor<-8u;tacticalCapabilities.MaxQueueEntriesPerActor<-8u;tacticalCapabilities.MaxFeatureReferences<-8u;tacticalCapabilities.MaxFactoryProductionCount<-4u;tacticalCapabilities.MaxAreaRadiusWorldUnits<-256u;tacticalCapabilities.MaxCommandDescriptorsPerActor<-8u
+        tacticalCapabilities.Profile<-"barc-live-tactical-v1";tacticalCapabilities.Revision<-1u;tacticalCapabilities.MaxCatalogueEntries<-16u;tacticalCapabilities.MaxCataloguePageEntries<-8u;tacticalCapabilities.MaxBuildOptionsPerActor<-8u;tacticalCapabilities.MaxQueueEntriesPerActor<-8u;tacticalCapabilities.MaxFeatureReferences<-512u;tacticalCapabilities.MaxFactoryProductionCount<-4u;tacticalCapabilities.MaxAreaRadiusWorldUnits<-256u;tacticalCapabilities.MaxCommandDescriptorsPerActor<-8u
         capabilities.Tactical<-ValueSome tacticalCapabilities
 
         let invalidSource = reporter (ByteString.CopyFromUtf8("highbar-live-runtime-match-incarnation"))
@@ -190,10 +190,17 @@ let tests = testList "production live boundary" [
         tacticalSnapshot.Basis<-ValueSome basis;tacticalSnapshot.CatalogueId<-page.CatalogueId;tacticalSnapshot.CatalogueRevision<-page.CatalogueRevision
         let tacticalActor=NativeActorTacticalMetadata.empty()
         tacticalActor.Actor<-ValueSome actorRef;tacticalActor.DescriptorRevision<-9007199254741005UL;tacticalSnapshot.Actors.Add tacticalActor
+        for index in 0..341 do
+            let featureRef=NativeFeatureReference.empty()
+            featureRef.Id<-uint32 index;featureRef.Lifetime<-9007199254743000UL+uint64 index
+            let feature=NativeFeatureMetadata.empty()
+            feature.Reference<-ValueSome featureRef;feature.DefinitionId<-91u;feature.WorldX<-float32 index;feature.WorldZ<-float32(index*2);feature.ReclaimLeft<-ValueSome 0.75f
+            tacticalSnapshot.Features.Add feature
         let tacticalReport=LiveStateReport.empty()
         tacticalReport.Reporter<-ValueSome source;tacticalReport.ReportSequence<-9007199254741005UL;tacticalReport.TacticalSnapshot<-tacticalSnapshot
+        Expect.isLessThan (tacticalReport.ToByteArray().Length) (4*1024*1024) "342-feature native report remains below 4 MiB"
         let! (tacticalAck:LiveStateReportAck)=live.ReportLiveStateAsync(tacticalReport).ResponseAsync
-        Expect.equal tacticalAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "production gRPC pairs tactical state to exact basis"
+        Expect.equal tacticalAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "production gRPC pairs 342 tactical features to exact basis"
 
         let controlSub = LiveControlSubscribe.empty()
         controlSub.PluginId <- source.PluginId
@@ -284,6 +291,10 @@ let tests = testList "production live boundary" [
         Expect.equal bootstrap.Bootstrap.LiveProfile "barc-live-tactical-v1" "production WebSocket negotiates tactical profile"
         Expect.equal bootstrap.Bootstrap.TacticalCatalogue.Definitions.Count 1 "complete native catalogue crosses production WebSocket"
         Expect.isNotNull observation.Observation.Tactical "paired tactical observation crosses production WebSocket"
+        Expect.equal observation.Observation.Tactical.Features.Count 342 "all negotiated features cross production gRPC and WebSocket"
+        Expect.equal observation.Observation.Tactical.Features[341].Reference.Id 341UL "feature beyond index 256 retains its id"
+        Expect.equal observation.Observation.Tactical.Features[341].Reference.Lifetime (9007199254743000UL+341UL) "feature beyond index 256 retains its lifetime"
+        Expect.isLessThan (observation.ToByteArray().Length) (64*1024) "complete browser envelope remains below 64 KiB"
         Expect.equal observation.Observation.Basis.StateSequence basis.StateSequence "production observation pairs with native metadata"
         Expect.equal observation.Observation.Units[0].Reference.Id 0UL "legal unit zero crosses WebSocket as a present reference"
 

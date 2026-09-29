@@ -159,8 +159,162 @@ let setupTactical now =
     let commandLease=match LiveControl.claimCommands commands state with LiveControl.Claimed lease->lease|other->failtestf "commands %A" other
     state,controlLease,commandLease,basis,metadata,page
 
+
+let reportFeaturePopulation negotiatedCount observedCount now =
+    let state = LiveControl.create 4
+    let reporter = LiveStateReporter.empty()
+    reporter.PluginId <- "highbar-capacity"
+    reporter.SchemaVersion <- "1.1.0"
+    reporter.Protocol <- LiveControlProtocol.TacticalV1
+    reporter.ProcessIncarnation <- "process-capacity"
+    reporter.MatchIncarnation <- bytes16 "match-capacity"
+    reporter.StateChannelIncarnation <- "state-capacity"
+    let report body sequence =
+        let value = LiveStateReport.empty()
+        value.Reporter <- ValueSome reporter
+        value.ReportSequence <- sequence
+        value.Body <- ValueSome body
+        LiveControl.reportState value now state
+    let caps = LiveNativeCapabilities.empty()
+    caps.MaxActorCount <- 64u
+    caps.MaxBatchCommands <- 1u
+    caps.MaxNativeUnitId <- 31999u
+    caps.SnapshotCadenceCeilingFrames <- 30u
+    caps.MaxObservationAgeMs <- 2000u
+    caps.MaxReportedUnits <- 64u
+    caps.MapWidthCells <- 1024u
+    caps.MapHeightCells <- 1024u
+    caps.MaxWorldXInclusive <- 8191f
+    caps.MaxWorldZInclusive <- 8191f
+    caps.SupportsStop <- true
+    caps.SupportsMove <- true
+    caps.SupportsAttackVisibleUnit <- true
+    let tacticalCaps = NativeTacticalCapabilities.empty()
+    tacticalCaps.Profile <- "barc-live-tactical-v1"
+    tacticalCaps.Revision <- 1u
+    tacticalCaps.MaxCatalogueEntries <- 4096u
+    tacticalCaps.MaxCataloguePageEntries <- 128u
+    tacticalCaps.MaxBuildOptionsPerActor <- 256u
+    tacticalCaps.MaxQueueEntriesPerActor <- 64u
+    tacticalCaps.MaxFeatureReferences <- uint32 negotiatedCount
+    tacticalCaps.MaxFactoryProductionCount <- 1u
+    tacticalCaps.MaxAreaRadiusWorldUnits <- 2048u
+    tacticalCaps.MaxCommandDescriptorsPerActor <- 32u
+    caps.Tactical <- ValueSome tacticalCaps
+    Expect.equal (report (LiveStateReport.Types.Body.Capabilities caps) 1UL) LiveStateReportDisposition.LiveStateReportRecorded "negotiated tactical capabilities"
+    let basis = NativeObservationBasis.empty()
+    basis.Token <- bytes16 "basis-capacity"
+    basis.StateSequence <- 9007199254742001UL
+    basis.Frame <- 900u
+    basis.MatchIncarnation <- reporter.MatchIncarnation
+    basis.ProcessIncarnation <- reporter.ProcessIncarnation
+    basis.StateChannelIncarnation <- reporter.StateChannelIncarnation
+    basis.SnapshotSendMonotonicNs <- 9007199254742003UL
+    basis.EffectiveCadenceFrames <- 6u
+    let snapshot = LiveSnapshotMetadata.empty()
+    snapshot.Basis <- ValueSome basis
+    let actor = NativeLiveUnitMetadata.empty()
+    actor.Reference <- ValueSome(nativeRef 0u 9007199254742005UL)
+    actor.Eligibility <- NativeLiveUnitEligibility.NativeLiveUnitOwnedActor
+    snapshot.Units.Add actor
+    Expect.equal (report (LiveStateReport.Types.Body.Snapshot snapshot) 2UL) LiveStateReportDisposition.LiveStateReportRecorded "paired base snapshot"
+    let page = TacticalCataloguePage.empty()
+    page.TacticalProfile <- "barc-live-tactical-v1"
+    page.TacticalRevision <- 1u
+    page.CatalogueId <- bytes16 "capacity-catalog"
+    page.CatalogueRevision <- 9007199254742007UL
+    page.PageCount <- 1u
+    page.Complete <- true
+    let content = NativeContentIdentity.empty()
+    content.EngineVersion <- "recoil"
+    content.GameName <- "BAR"
+    content.GameVersion <- "test"
+    content.GameContentSha256 <- ByteString.CopyFrom(Array.create 32 0x51uy)
+    page.Content <- ValueSome content
+    let definition = NativeUnitDefinition.empty()
+    definition.DefinitionId <- 91u
+    definition.InternalName <- "feature-def"
+    definition.DisplayName <- "Feature"
+    definition.FootprintXCells <- 1u
+    definition.FootprintZCells <- 1u
+    page.Definitions.Add definition
+    Expect.equal (report (LiveStateReport.Types.Body.TacticalCatalogue page) 3UL) LiveStateReportDisposition.LiveStateReportRecorded "complete catalogue"
+    let tactical = TacticalSnapshotMetadata.empty()
+    tactical.Basis <- ValueSome basis
+    tactical.CatalogueId <- page.CatalogueId
+    tactical.CatalogueRevision <- page.CatalogueRevision
+    for index in 0..observedCount-1 do
+        let reference = NativeFeatureReference.empty()
+        reference.Id <- uint32 index
+        reference.Lifetime <- 9007199254743000UL + uint64 index
+        let feature = NativeFeatureMetadata.empty()
+        feature.Reference <- ValueSome reference
+        feature.DefinitionId <- 91u
+        feature.WorldX <- float32 (index % 512)
+        feature.WorldZ <- float32 ((index * 3) % 512)
+        feature.Elevation <- ValueSome(float32 index / 10f)
+        feature.ReclaimLeft <- ValueSome 0.75f
+        tactical.Features.Add feature
+    let finalReport = LiveStateReport.empty()
+    finalReport.Reporter <- ValueSome reporter
+    finalReport.ReportSequence <- 4UL
+    finalReport.TacticalSnapshot <- tactical
+    LiveControl.reportState finalReport now state,state,basis,page,finalReport.ToByteArray().Length,finalReport
+
 [<Tests>]
 let tests=testList "live broker boundary" [
+    testCase "negotiated feature capacity preserves complete references and refuses overflow atomically" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,14,0,0,TimeSpan.Zero)
+        for count in [256;342;512] do
+            let disposition,state,basis,_,nativeBytes,_=reportFeaturePopulation 512 count now
+            Expect.equal disposition LiveStateReportDisposition.LiveStateReportRecorded (sprintf "%d features accepted at negotiated 512" count)
+            Expect.isLessThan nativeBytes (4*1024*1024) "full native LiveStateReport remains below 4 MiB"
+            printfn "feature-capacity count=%d native-bytes=%d" count nativeBytes
+            let stored=LiveControl.latestTacticalSnapshot state |> Option.get
+            Expect.equal stored.Features.Count count "all native features retained"
+            let selected=stored.Features[count-1].Reference.Value
+            Expect.equal selected.Id (uint32(count-1)) "feature beyond the former index bound keeps its id"
+            Expect.equal selected.Lifetime (9007199254743000UL+uint64(count-1)) "feature lifetime is exact"
+            let preview = Observation(SessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Sequence=basis.StateSequence,CapturedAtUnixMs=now.ToUnixTimeMilliseconds(),PerspectiveId="team-0")
+            for index in 0..count-1 do
+                preview.Features.Add(ObservedFeature(Id=uint64 index,DefinitionId=91u,Position=Position3(X=float32(index%512),Elevation=float32 index/10f,Z=float32((index*3)%512))))
+            let envelope=Expect.wantOk (LiveBoundary.observation preview state) "paired native metadata projects through the browser boundary"
+            Expect.equal envelope.Observation.Tactical.Features.Count count "browser tactical projection is complete"
+            let projected=envelope.Observation.Tactical.Features[count-1].Reference
+            Expect.equal projected.Id (uint64(count-1)) "projected feature id survives"
+            Expect.equal projected.Lifetime selected.Lifetime "projected feature lifetime survives"
+            let browserBytes=envelope.ToByteArray().Length
+            Expect.isLessThan browserBytes (64*1024) "full browser envelope remains below 64 KiB"
+            printfn "feature-capacity count=%d browser-bytes=%d" count browserBytes
+        let refused256,state256,_,_,_,_=reportFeaturePopulation 256 342 now
+        Expect.equal refused256 LiveStateReportDisposition.LiveStateReportRefused "negotiated 256 refuses 342"
+        Expect.isNone (LiveControl.latestTacticalSnapshot state256) "overflow retains zero partial tactical child"
+        let refused513,state513,_,_,_,_=reportFeaturePopulation 512 513 now
+        Expect.equal refused513 LiveStateReportDisposition.LiveStateReportRefused "negotiated 512 refuses 513"
+        Expect.isNone (LiveControl.latestTacticalSnapshot state513) "513 refusal retains zero partial tactical child"
+        let _,guardState,_,_,_,acceptedReport=reportFeaturePopulation 512 342 now
+        let duplicate=acceptedReport.Clone()
+        duplicate.ReportSequence<-5UL
+        let duplicateFeature=duplicate.TacticalSnapshot.Features[300].Clone()
+        duplicateFeature.Reference.Value.Lifetime<-duplicateFeature.Reference.Value.Lifetime+1UL
+        duplicate.TacticalSnapshot.Features.Add duplicateFeature
+        Expect.equal (LiveControl.reportState duplicate now guardState) LiveStateReportDisposition.LiveStateReportRefused "duplicate numeric feature id is refused even with a different lifetime"
+        let malformed=acceptedReport.Clone()
+        malformed.ReportSequence<-5UL
+        malformed.TacticalSnapshot.Features[300].Reference.Value.Lifetime<-0UL
+        Expect.equal (LiveControl.reportState malformed now guardState) LiveStateReportDisposition.LiveStateReportRefused "zero feature lifetime is refused"
+        let stale=acceptedReport.Clone()
+        stale.ReportSequence<-3UL
+        stale.TacticalSnapshot.Features[300].Reference.Value.Lifetime<-9007199254999999UL
+        Expect.equal (LiveControl.reportState stale now guardState) LiveStateReportDisposition.LiveStateReportStale "stale reused reference cannot replace current metadata"
+        let _,replacementState,_,_,_,replacementBase=reportFeaturePopulation 512 342 now
+        let replacement=replacementBase.Clone()
+        replacement.ReportSequence<-5UL
+        replacement.TacticalSnapshot.Features[300].Reference.Value.Lifetime<-9007199254999999UL
+        Expect.equal (LiveControl.reportState replacement now replacementState) LiveStateReportDisposition.LiveStateReportRecorded "fresh reused id requires a new lifetime"
+        Expect.equal (LiveControl.latestTacticalSnapshot replacementState |> Option.get).Features[300].Reference.Value.Lifetime 9007199254999999UL "only the fresh replacement lifetime becomes current"
+
+
     testCase "tactical catalogue and queue revisions reserve every expanded child before native emission" <| fun _ ->
         let now=DateTimeOffset(2026,9,29,13,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis,metadata,_=setupTactical now

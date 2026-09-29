@@ -25,7 +25,7 @@ const descriptorKinds=["TACTICAL_DESCRIPTOR_BUILD","TACTICAL_DESCRIPTOR_GUARD","
 const actorTactical=actor=>({actor,descriptorRevision,descriptors:[...descriptorKinds.map(kind=>({kind,allowedDefinitionIds:["TACTICAL_DESCRIPTOR_BUILD","TACTICAL_DESCRIPTOR_FACTORY_PRODUCE"].includes(kind)?[710]:[],allowedModeValues:[]})),{kind:"TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY",allowedDefinitionIds:[],allowedModeValues:["TACTICAL_MODE_VALUE_DISABLED","TACTICAL_MODE_VALUE_ENABLED"],observedModeValue:"TACTICAL_MODE_VALUE_DISABLED"}],queue:[{domain:"QUEUE_DOMAIN_ACTOR_ORDER",revision:"9007199254741015",entries:[{nativeTag:41,action:"LIVE_ACTION_KIND_MOVE",position:{x:1,z:2}}],complete:true},{domain:"QUEUE_DOMAIN_FACTORY_PRODUCTION",revision:"9007199254741016",entries:[{nativeTag:42,action:"LIVE_ACTION_KIND_FACTORY_PRODUCE",definitionId:710}],complete:true,repeat:false},{domain:"QUEUE_DOMAIN_FACTORY_RALLY",revision:"9007199254741017",entries:[],complete:false}]});
 const feature0={reference:{id:"0",lifetime:"9007199254741019"},definitionId:91,position:{x:1400,elevation:12.5,z:1600},reclaimLeft:.75};
 const tacticalObservation={...fullObservation,tactical:{catalogueId,catalogueRevision,economy:{perspectiveId:"team-0",sampleFrame:basis.nativeFrame,metal:{resourceName:"metal",unit:"resource",current:500,storage:1000,incomePerSecond:8.5,usagePerSecond:4},energy:{resourceName:"energy",unit:"resource",current:2500,storage:5000}},actors:[actorTactical(ref0),actorTactical(ref31999)],features:[feature0]}};
-let server, port, sockets, submissions, armRequests, auth, canonicalFeedback, heldFeedback, resultSequence, revocations;
+let server, port, sockets, submissions, armRequests, auth, canonicalFeedback, heldFeedback, resultSequence, revocations, tacticalBootstrapOverride, tacticalObservationOverride;
 const routes=[["/client/","src/Broker.Browser.Client/dist/"],["/src/Broker.Browser.Wasm/","src/Broker.Browser.Wasm/"],["/guests/","tests/Broker.Browser.Wasm.Tests/generated/"]];
 
 test.beforeAll(async()=>{
@@ -33,7 +33,7 @@ test.beforeAll(async()=>{
   sockets=new WebSocketServer({noServer:true});server.on("upgrade",(request,socket,head)=>sockets.handleUpgrade(request,socket,head,ws=>sockets.emit("connection",ws)));
   sockets.on("connection",ws=>{ws.once("message",raw=>{
     auth=canonicalObject(v1.LiveClientEnvelope,raw);let currentController=controller,activeModule=null,stateSequence=0;
-    const profile=auth.authenticate.profile, selectedBootstrap=profile==="barc-live-tactical-v1"?tacticalBootstrap:bootstrap, selectedObservation=profile==="barc-live-tactical-v1"?tacticalObservation:fullObservation;
+    const profile=auth.authenticate.profile, selectedBootstrap=profile==="barc-live-tactical-v1"?(tacticalBootstrapOverride??tacticalBootstrap):bootstrap, selectedObservation=profile==="barc-live-tactical-v1"?(tacticalObservationOverride??tacticalObservation):fullObservation;
     const negotiated=canonicalFeedback?{...selectedBootstrap,limits:{...selectedBootstrap.limits,maxPendingParents:2}}:selectedBootstrap;
     ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...negotiated,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:selectedObservation}));
     ws.on("message",bytes=>{const message=canonicalObject(v1.LiveClientEnvelope,bytes);
@@ -49,7 +49,7 @@ test.beforeAll(async()=>{
   })});
   await new Promise(resolveListen=>server.listen(0,"127.0.0.1",resolveListen));port=server.address().port;
 });
-test.beforeEach(()=>{submissions=[];armRequests=[];auth=null;canonicalFeedback=false;heldFeedback=[];resultSequence=0;revocations=[]});
+test.beforeEach(()=>{submissions=[];armRequests=[];auth=null;canonicalFeedback=false;heldFeedback=[];resultSequence=0;revocations=[];tacticalBootstrapOverride=null;tacticalObservationOverride=null;});
 test.afterAll(()=>new Promise(resolveClose=>server.close(resolveClose)));
 
 async function arm(page, guest="Manual guest", profile="barc-live-v1") {
@@ -88,6 +88,44 @@ test("custom imported policy filters ID0 and changes semantic Move policy",async
   expect(submissions[0].intent.actors).toEqual([ref31999]);expect(submissions[0].intent.move.policy).toBe("MOVE_POLICY_APPEND");
   // The host requested REPLACE; the independently compiled guest changed it to APPEND.
   expect(await page.getByLabel("Move policy").inputValue()).toBe("MOVE_POLICY_REPLACE");
+});
+
+
+const capacityFeatures=count=>Array.from({length:count},(_,index)=>({reference:{id:String(index),lifetime:String(9007199254743000n+BigInt(index))},definitionId:91,position:{x:index%512,elevation:index/10,z:(index*3)%512},reclaimLeft:.75}));
+
+test("512 negotiated features cross codec, browser, and guest with a reclaim target beyond 256",async({page})=>{
+  const features=capacityFeatures(512);
+  const previewFeatures=features.map(value=>({id:value.reference.id,definitionId:value.definitionId,position:value.position}));
+  tacticalBootstrapOverride={...tacticalBootstrap,capabilities:{...tacticalBootstrap.capabilities,tactical:{...tacticalCapabilities,maxFeatureReferences:512}}};
+  tacticalObservationOverride={...tacticalObservation,preview:{...tacticalObservation.preview,features:previewFeatures},tactical:{...tacticalObservation.tactical,features}};
+  const serverBytes=encodeObject(v1.LiveServerEnvelope,{observation:tacticalObservationOverride});
+  const guestIdentity={inputId:"AQIDBAUGBwgJCgsMDQ4PEA==",sessionId,moduleGeneration:"1",basis};
+  const initBytes=encodeObject(v1.LiveGuestRequest,{...guestIdentity,initialize:tacticalBootstrapOverride});
+  const guestBytes=encodeObject(v1.LiveGuestRequest,{...guestIdentity,observation:tacticalObservationOverride});
+  console.log(`capacity-bytes server=${serverBytes.length} guest-init=${initBytes.length} guest-observation=${guestBytes.length}`);
+  expect(serverBytes.length).toBeLessThan(64*1024);expect(initBytes.length).toBeLessThan(64*1024);expect(guestBytes.length).toBeLessThan(64*1024);
+  await arm(page,"Manual guest","barc-live-tactical-v1");
+  await expect(page.locator('[data-feature-id="341"]')).toBeVisible();
+  await page.locator('[data-unit-id="0"]').click();await page.locator('[data-feature-id="341"]').click();
+  await page.getByRole("button",{name:"Send tactical command"}).click();await expect.poll(()=>submissions.length).toBe(1);
+  expect(submissions[0].intent.reclaimFeature.target).toEqual({id:"341",lifetime:features[341].reference.lifetime});
+  await page.locator('[data-feature-id="511"]').click();await page.getByRole("button",{name:"Send tactical command"}).click();await expect.poll(()=>submissions.length).toBe(2);
+  expect(submissions[1].intent.reclaimFeature.target).toEqual({id:"511",lifetime:features[511].reference.lifetime});
+});
+
+
+test("browser refuses negotiated feature overflow before guest or native submission",async({page})=>{
+  for(const [limit,count] of [[256,342],[512,513]]){
+    const features=capacityFeatures(count);
+    tacticalBootstrapOverride={...tacticalBootstrap,capabilities:{...tacticalBootstrap.capabilities,tactical:{...tacticalCapabilities,maxFeatureReferences:limit}}};
+    tacticalObservationOverride={...tacticalObservation,preview:{...tacticalObservation.preview,features:features.map(value=>({id:value.reference.id,definitionId:value.definitionId,position:value.position}))},tactical:{...tacticalObservation.tactical,features}};
+    await page.goto(`http://127.0.0.1:${port}/?profile=barc-live-tactical-v1`);
+    await page.getByLabel("Gateway").fill(`ws://127.0.0.1:${port}/live`);await page.getByLabel("Session UUID").fill(sessionUuid);await page.getByLabel("One-time credential").fill("live-credential");await page.getByRole("button",{name:"Pair"}).click();
+    await expect(page.locator(".diagnostic")).toContainText("fenced");
+    await expect(page.locator("[data-feature-id]")).toHaveCount(0);
+    expect(submissions).toHaveLength(0);expect(armRequests).toHaveLength(0);
+    await page.reload();
+  }
 });
 
 test("tactical pointer and keyboard controls cross the real Worker with exact bindings",async({page})=>{
