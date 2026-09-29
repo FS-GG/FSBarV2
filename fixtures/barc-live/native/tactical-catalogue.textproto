@@ -1,0 +1,33 @@
+reporter {
+  plugin_id: "highbar-tactical"
+  schema_version: "barc-live-tactical-v1"
+  protocol: LIVE_CONTROL_PROTOCOL_TACTICAL_V1
+  process_incarnation: "process-tactical-1"
+  match_incarnation: "0123456789abcdef"
+  state_channel_incarnation: "state-tactical-1"
+}
+report_sequence: 9007199254741021
+tactical_catalogue {
+  tactical_profile: "barc-live-tactical-v1"
+  tactical_revision: 1
+  content {
+    engine_version: "2025.06.19"
+    game_name: "Beyond All Reason"
+    game_version: "test-29926-0571aa8"
+    game_content_sha256: "cccccccccccccccccccccccccccccccc"
+  }
+  catalogue_id: "RRRRRRRRRRRRRRRR"
+  catalogue_revision: 9007199254741011
+  page_index: 0
+  page_count: 1
+  complete: true
+  definitions {
+    definition_id: 710
+    internal_name: "armmex"
+    display_name: "Metal Extractor"
+    footprint_x_cells: 2
+    footprint_z_cells: 3
+    cost { metal: 75 energy: 900 build_time: 1200 }
+    build_option_definition_ids: 710
+  }
+}

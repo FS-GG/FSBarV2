@@ -12,6 +12,16 @@ enum LiveActionKind {
   LIVE_ACTION_KIND_STOP = 1;
   LIVE_ACTION_KIND_MOVE = 2;
   LIVE_ACTION_KIND_ATTACK = 3;
+  LIVE_ACTION_KIND_BUILD = 4;
+  LIVE_ACTION_KIND_GUARD = 5;
+  LIVE_ACTION_KIND_REPAIR = 6;
+  LIVE_ACTION_KIND_RECLAIM_UNIT = 7;
+  LIVE_ACTION_KIND_RECLAIM_FEATURE = 8;
+  LIVE_ACTION_KIND_RECLAIM_AREA = 9;
+  LIVE_ACTION_KIND_FACTORY_PRODUCE = 10;
+  LIVE_ACTION_KIND_SET_RALLY = 11;
+  LIVE_ACTION_KIND_QUEUE_EDIT = 12;
+  LIVE_ACTION_KIND_TACTICAL_MODE = 13;
 }
 
 enum MovePolicy {
@@ -113,6 +123,7 @@ message LiveCapabilities {
   bool move = 2;
   bool attack_visible_unit = 3;
   MapBounds map_bounds = 4;
+  optional TacticalCapabilities tactical = 5;
 }
 
 message ControllerIdentity {
@@ -129,6 +140,7 @@ message LiveBootstrap {
   LiveModuleIdentity module = 4;
   LiveLimits limits = 5;
   LiveCapabilities capabilities = 6;
+  optional TacticalCatalogue tactical_catalogue = 7;
 }
 
 message LiveObservedUnit {
@@ -140,6 +152,7 @@ message LiveObservation {
   Observation preview = 1;
   ObservationBasis basis = 2;
   repeated LiveObservedUnit units = 3;
+  optional TacticalObservation tactical = 4;
 }
 
 message StopAction {}
@@ -155,11 +168,267 @@ message AttackTarget {
 
 message LiveIntent {
   repeated UnitReference actors = 1;
+  // Tactical actions require exactly one binding for every actor, in the same
+  // order, so heterogeneous selections retain per-unit capability revisions.
+  repeated ActorTacticalBinding actor_tactical_bindings = 2;
   oneof action {
     StopAction stop = 10;
     MoveTarget move = 11;
     AttackTarget attack = 12;
+    BuildTarget build = 13;
+    FriendlyTarget guard = 14;
+    FriendlyTarget repair = 15;
+    FriendlyTarget reclaim_unit = 16;
+    FeatureTarget reclaim_feature = 17;
+    AreaTarget reclaim_area = 18;
+    FactoryProduceTarget factory_produce = 19;
+    RallyTarget set_rally = 20;
+    QueueEditTarget queue_edit = 21;
+    TacticalModeTarget tactical_mode = 22;
   }
+}
+
+// ---- Additive barc-live-tactical-v1 profile ---------------------------------
+
+enum TacticalQueuePolicy {
+  TACTICAL_QUEUE_POLICY_UNSPECIFIED = 0;
+  TACTICAL_QUEUE_POLICY_REPLACE = 1;
+  TACTICAL_QUEUE_POLICY_APPEND = 2;
+  TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY = 3;
+}
+
+enum BuildFacing {
+  BUILD_FACING_UNSPECIFIED = 0;
+  BUILD_FACING_NORTH = 1;
+  BUILD_FACING_EAST = 2;
+  BUILD_FACING_SOUTH = 3;
+  BUILD_FACING_WEST = 4;
+}
+
+enum QueueEditKind {
+  QUEUE_EDIT_KIND_UNSPECIFIED = 0;
+  QUEUE_EDIT_KIND_INSERT = 1;
+  QUEUE_EDIT_KIND_REMOVE_TAG = 2;
+  QUEUE_EDIT_KIND_SET_REPEAT = 3;
+}
+
+enum QueueDomain {
+  QUEUE_DOMAIN_UNSPECIFIED = 0;
+  QUEUE_DOMAIN_ACTOR_ORDER = 1;
+  QUEUE_DOMAIN_FACTORY_PRODUCTION = 2;
+  QUEUE_DOMAIN_FACTORY_RALLY = 3;
+}
+
+enum TacticalDescriptorKind {
+  TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED = 0;
+  TACTICAL_DESCRIPTOR_BUILD = 1;
+  TACTICAL_DESCRIPTOR_GUARD = 2;
+  TACTICAL_DESCRIPTOR_REPAIR = 3;
+  TACTICAL_DESCRIPTOR_RECLAIM_UNIT = 4;
+  TACTICAL_DESCRIPTOR_RECLAIM_FEATURE = 5;
+  TACTICAL_DESCRIPTOR_RECLAIM_AREA = 6;
+  TACTICAL_DESCRIPTOR_FACTORY_PRODUCE = 7;
+  TACTICAL_DESCRIPTOR_SET_RALLY = 8;
+  TACTICAL_DESCRIPTOR_QUEUE_INSERT = 9;
+  TACTICAL_DESCRIPTOR_QUEUE_REMOVE = 10;
+  TACTICAL_DESCRIPTOR_QUEUE_REPEAT = 11;
+  TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY = 12;
+  TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE = 13;
+}
+
+enum TacticalModeValue {
+  TACTICAL_MODE_VALUE_UNSPECIFIED = 0;
+  TACTICAL_MODE_VALUE_DISABLED = 1;
+  TACTICAL_MODE_VALUE_ENABLED = 2;
+}
+
+message TacticalCapabilities {
+  string profile = 1; // exact value: barc-live-tactical-v1
+  uint32 revision = 2; // exact value: 1
+  uint32 max_catalogue_entries = 3;
+  uint32 max_catalogue_page_entries = 4;
+  uint32 max_build_options_per_actor = 5;
+  uint32 max_queue_entries_per_actor = 6;
+  uint32 max_feature_references = 7;
+  uint32 max_factory_production_count = 8;
+  uint32 max_area_radius_world_units = 9;
+  uint32 max_command_descriptors_per_actor = 10;
+}
+
+message ContentIdentity {
+  string engine_version = 1;
+  string game_name = 2;
+  string game_version = 3;
+  bytes game_content_sha256 = 4;
+}
+
+message ResourceCost {
+  optional float metal = 1;
+  optional float energy = 2;
+  optional float build_time = 3;
+}
+
+message TacticalUnitDefinition {
+  // Definition id zero is invalid; unknown definitions remain absent.
+  uint32 definition_id = 1;
+  string internal_name = 2;
+  string display_name = 3;
+  uint32 footprint_x_cells = 4;
+  uint32 footprint_z_cells = 5;
+  ResourceCost cost = 6;
+  repeated uint32 build_option_definition_ids = 7;
+}
+
+message TacticalCatalogue {
+  string profile = 1;
+  uint32 revision = 2;
+  ContentIdentity content = 3;
+  bytes catalogue_id = 4;
+  uint64 catalogue_revision = 5;
+  bool complete = 6;
+  repeated TacticalUnitDefinition definitions = 7;
+}
+
+message FeatureReference {
+  // Feature id 0 is legal. Presence, not scalar zero, identifies a target.
+  uint64 id = 1;
+  uint64 lifetime = 2;
+}
+
+message TacticalFeature {
+  FeatureReference reference = 1;
+  uint32 definition_id = 2;
+  Position3 position = 3;
+  optional float reclaim_left = 4;
+}
+
+message EconomyValue {
+  string resource_name = 1;
+  string unit = 2;
+  optional float current = 3;
+  optional float storage = 4;
+  optional float income_per_second = 5;
+  optional float usage_per_second = 6;
+}
+
+message TacticalEconomy {
+  string perspective_id = 1;
+  uint32 sample_frame = 2;
+  EconomyValue metal = 3;
+  EconomyValue energy = 4;
+}
+
+message TacticalCommandDescriptor {
+  TacticalDescriptorKind kind = 1;
+  bool disabled = 2;
+  repeated uint32 allowed_definition_ids = 3;
+  repeated TacticalModeValue allowed_mode_values = 4;
+  optional TacticalModeValue observed_mode_value = 5;
+}
+
+message TacticalQueueEntry {
+  int32 native_tag = 1;
+  LiveActionKind action = 2;
+  optional uint32 definition_id = 3;
+  optional UnitReference unit_target = 4;
+  optional FeatureReference feature_target = 5;
+  optional Position3 position = 6;
+}
+
+message ActorTacticalState {
+  UnitReference actor = 1;
+  uint64 descriptor_revision = 2;
+  repeated TacticalCommandDescriptor descriptors = 3;
+  repeated TacticalQueue queue = 4;
+}
+
+message TacticalQueue {
+  QueueDomain domain = 1;
+  uint64 revision = 2;
+  repeated TacticalQueueEntry entries = 3;
+  bool complete = 4;
+  optional bool repeat = 5;
+}
+
+message ActorTacticalBinding {
+  UnitReference actor = 1;
+  uint64 descriptor_revision = 2;
+  repeated QueueRevisionBinding queue_revisions = 3;
+}
+
+message QueueRevisionBinding {
+  QueueDomain domain = 1;
+  uint64 revision = 2;
+}
+
+message TacticalObservation {
+  bytes catalogue_id = 1;
+  uint64 catalogue_revision = 2;
+  TacticalEconomy economy = 3;
+  repeated ActorTacticalState actors = 4;
+  repeated TacticalFeature features = 5;
+}
+
+message BuildTarget {
+  uint32 definition_id = 1;
+  Position3 position = 2;
+  BuildFacing facing = 3;
+  TacticalQueuePolicy queue_policy = 4;
+  bytes catalogue_id = 5;
+  uint64 catalogue_revision = 6;
+}
+
+message FriendlyTarget {
+  UnitReference target = 1;
+  TacticalQueuePolicy queue_policy = 2;
+}
+
+message FeatureTarget {
+  FeatureReference target = 1;
+  TacticalQueuePolicy queue_policy = 2;
+}
+
+message AreaTarget {
+  Position3 center = 1;
+  float radius_world_units = 2;
+  TacticalQueuePolicy queue_policy = 3;
+}
+
+message FactoryProduceTarget {
+  uint32 definition_id = 1;
+  uint32 count = 2;
+  TacticalQueuePolicy queue_policy = 3;
+  bytes catalogue_id = 4;
+  uint64 catalogue_revision = 5;
+}
+
+message RallyTarget {
+  Position3 position = 1;
+}
+
+message QueueInsertTarget {
+  int32 before_native_tag = 1;
+  LiveActionKind action = 2;
+  optional uint32 definition_id = 3;
+  optional Position3 position = 4;
+  optional UnitReference unit_target = 5;
+  optional FeatureReference feature_target = 6;
+}
+
+message QueueEditTarget {
+  uint64 expected_queue_revision = 1;
+  QueueEditKind kind = 2;
+  QueueDomain domain = 3;
+  oneof edit {
+    QueueInsertTarget insert = 10;
+    int32 remove_native_tag = 11;
+    bool repeat = 12;
+  }
+}
+
+message TacticalModeTarget {
+  TacticalDescriptorKind kind = 1;
+  TacticalModeValue value = 2;
 }
 
 message LiveInputModifiers {

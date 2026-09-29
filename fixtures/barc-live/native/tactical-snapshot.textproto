@@ -1,0 +1,55 @@
+reporter {
+  plugin_id: "highbar-tactical"
+  schema_version: "barc-live-tactical-v1"
+  protocol: LIVE_CONTROL_PROTOCOL_TACTICAL_V1
+  process_incarnation: "process-tactical-1"
+  match_incarnation: "0123456789abcdef"
+  state_channel_incarnation: "state-tactical-1"
+}
+report_sequence: 9007199254741023
+tactical_snapshot {
+  basis {
+    token: "BBBBBBBBBBBBBBBB"
+    state_sequence: 9007199254740993
+    frame: 427
+    match_incarnation: "0123456789abcdef"
+    process_incarnation: "process-tactical-1"
+    state_channel_incarnation: "state-tactical-1"
+    snapshot_send_monotonic_ns: 9007199254741025
+    effective_cadence_frames: 30
+  }
+  catalogue_id: "RRRRRRRRRRRRRRRR"
+  catalogue_revision: 9007199254741011
+  economy {
+    perspective_team_id: 0
+    sample_frame: 427
+    metal { resource_name: "metal" unit: "resource" current: 500 storage: 1000 income_per_second: 8.5 usage_per_second: 4 }
+    energy { resource_name: "energy" unit: "resource" current: 2500 storage: 5000 }
+  }
+  actors {
+    actor { id: 0 lifetime: 9007199254740999 }
+    descriptor_revision: 9007199254741013
+    descriptors {
+      kind: NATIVE_TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY
+      native_command_id: 34571
+      allowed_mode_values: NATIVE_TACTICAL_MODE_VALUE_DISABLED
+      allowed_mode_values: NATIVE_TACTICAL_MODE_VALUE_ENABLED
+      observed_mode_value: NATIVE_TACTICAL_MODE_VALUE_ENABLED
+    }
+    queue {
+      domain: NATIVE_QUEUE_DOMAIN_FACTORY_PRODUCTION
+      revision: 9007199254741015
+      entries { native_tag: 2147483647 action: LIVE_SEMANTIC_ACTION_FACTORY_PRODUCE definition_id: 710 }
+      complete: true
+      repeat: false
+    }
+  }
+  features {
+    reference { id: 0 lifetime: 9007199254741017 }
+    definition_id: 91
+    world_x: 1400
+    elevation: 12.5
+    world_z: 1600
+    reclaim_left: 0.75
+  }
+}

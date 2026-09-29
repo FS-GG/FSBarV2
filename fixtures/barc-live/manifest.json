@@ -1,8 +1,16 @@
 {
-  "schema": "barc.browser.v1/barc-live-v1",
-  "schemaSha256": "0094b7dc893e6bf264a271b296cda005f77e75edd29af40683a6c29698e7b533",
-  "mappingSha256": "71b31e26c0f74ca956bb41d4b525fbf0543e7f04a442684a0b2aced741da52f2",
-  "negotiationSha256": "94ddff723cad8717df78c0dc8377dcf1697e82c437896a93c9da0cd7ff9f4ca3",
+  "schema": "barc.browser.v1/barc-live-tactical-v1",
+  "schemaSha256": "36a87de7a9da039be82e5e8e4ecdd55ff6e2cb5830aa1f0bc608a01cd3d9b115",
+  "mappingSha256": "f7c0c75334bb4afb9e3a9de906ebd47d65635733c52398b4ce4ab8c0a3a8ceae",
+  "negotiationSha256": "b7df6ebf03201827a391a751396f5234f63cabf3d7d4b0a54e972e04c1978805",
+  "legacyWirePins": {
+    "liveBootstrap": "a6b26c69ef7257123dc18435ad8600ea3c06d0ce077c5d9d5a5e66ec417e9c55",
+    "liveGuestManualSelectRequest": "83a4315dc11e6250749f46121710388a13feaab10b5bdfe21a1c04cffa0b2bd8",
+    "liveGuestManualMoveRequest": "7aae04dc94eaf89b79a129fe4c741105e5cb18b83c0eacf08610eee6c75fda84",
+    "liveGuestId0MoveResponse": "56633725cd25c6c7846f3615f33e4608135a23756de27e34ac5d80d7c3bba121",
+    "liveGuestAttackResponse": "047284d0f5f865300b7fc89f28a7d5b29731229ae19f68f768f19d5fd4a50930",
+    "liveResultFeedback": "cebf475de2e710f5c0809c973045bdaa5f556f0a3fce667dc4f601ef041b0dbe"
+  },
   "entries": [
     {
       "name": "live-bootstrap",
@@ -20,25 +28,61 @@
       "name": "live-guest-manual-move-request",
       "type": "LiveGuestRequest",
       "wireSha256": "7aae04dc94eaf89b79a129fe4c741105e5cb18b83c0eacf08610eee6c75fda84",
-      "semanticSha256": "e38c2366a24e4de4ae16326f36b300a8f085a39a6c6eed80d8439d3003de6c4d"
+      "semanticSha256": "e3391987fdbb8caa61d39b336f9e68313f348c6973324209376c8069eaf6fe3a"
     },
     {
       "name": "live-guest-id0-move-response",
       "type": "LiveGuestResponse",
       "wireSha256": "56633725cd25c6c7846f3615f33e4608135a23756de27e34ac5d80d7c3bba121",
-      "semanticSha256": "ec4eec0faa7a4ce5e18161fcefb2d0047773e0cfbc92a52a6ff9a48a64ffc2a5"
+      "semanticSha256": "42a7e45a159c1ae93751b21086a4724554e734597fdfac6a07c00b461624bb87"
     },
     {
       "name": "live-guest-attack-response",
       "type": "LiveGuestResponse",
       "wireSha256": "047284d0f5f865300b7fc89f28a7d5b29731229ae19f68f768f19d5fd4a50930",
-      "semanticSha256": "2f581230e7c5a823bd32d10d54c81acb4c241a9ee8deb1cfa82d95325d34ab9e"
+      "semanticSha256": "864f93f21883ac575fa2445466b976583f00428a1e7f762656a1d1585cf148a4"
     },
     {
       "name": "live-result-feedback",
       "type": "LiveGuestRequest",
       "wireSha256": "cebf475de2e710f5c0809c973045bdaa5f556f0a3fce667dc4f601ef041b0dbe",
       "semanticSha256": "86aef840009f2acde7282a76b18f7aab75d0983bc9173e8e06b4395cf2bf866b"
+    },
+    {
+      "name": "tactical-bootstrap",
+      "type": "LiveServerEnvelope",
+      "wireSha256": "6acc3098de9e28ca6a49ebd6bb5557d218bbc270e37234eb0ba518b9c455c7f4",
+      "semanticSha256": "af64d09fbb4488ba34f9f38935688bd70fdec34710cbefe837726e723e785d48"
+    },
+    {
+      "name": "tactical-observation",
+      "type": "LiveServerEnvelope",
+      "wireSha256": "38f9074ff2af175ad10cb6e5abe346a48b6712c85621d9be28b7a8c6683f517b",
+      "semanticSha256": "08d44e08463a84d4b4c67a4c6d4d6f2a03d90b38c10fe164406b5f9663df7eca"
+    },
+    {
+      "name": "tactical-guest-build-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "76f8f18ca1e59c08e1ed72d451377c3ab2a47edb19aa264d2ed843de3a031dc9",
+      "semanticSha256": "f3bd35d664962e0afa6250d6ff88d065a96d76a71dc96e663b5456fbd946aa1b"
+    },
+    {
+      "name": "tactical-guest-feature-reclaim-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "7b3875e5623dccfe3b4fa09c01da970a7025fa9a7a93bc7cc98fd86c1bf21732",
+      "semanticSha256": "99a1ec268ce64e249942e2b7793057eb79e3ed1f6b0732bdad3bd9a6007b2957"
+    },
+    {
+      "name": "tactical-guest-queue-remove-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "0fa3c7367286c37c17870b09c31bedd84399c7f77203836d998d4c65f44a1db6",
+      "semanticSha256": "a4426dbd3943a071de742d3f0794f9cef61d2749fdc2200842ac5b03d5ba1414"
+    },
+    {
+      "name": "tactical-guest-unknown-action-response",
+      "type": "LiveGuestResponse",
+      "wireSha256": "5c8422a93466d9a38bcae8e405883115f6ac766a9f5bebd95c7e95ceaddc33b4",
+      "semanticSha256": "98f5d43c018c420fe271d483a0dfe76f935fd378935b6b0d131be0cc4998bd4b"
     },
     {
       "name": "live-capabilities",
@@ -51,6 +95,18 @@
       "type": "highbar.v1.LiveStateReport",
       "wireSha256": "19582252cd411c662629802232739bdbe121203768d4dbfa93b018754ce971ab",
       "semanticSha256": "bd547a29001cb6bb1fa70d4a282d448093d8a9a5e202e69a1920805b428ebfef"
+    },
+    {
+      "name": "tactical-catalogue",
+      "type": "highbar.v1.LiveStateReport",
+      "wireSha256": "6b05cde9b6b68559cc2440cff41195e7d603738b7cad176e230d879d726ae0b3",
+      "semanticSha256": "2a4c401ba159a1fcbe04b6fa07b17d4803ed08f704fddcd3008bdd5d86f3a7a7"
+    },
+    {
+      "name": "tactical-snapshot",
+      "type": "highbar.v1.LiveStateReport",
+      "wireSha256": "136737064b27546b7288954c0f4ce1fa380f20129cb079ba3afb6d5a4060b87f",
+      "semanticSha256": "4372b11c545f4861b987d58a8d7295dc0dc0808883baff888e740f7797df1064"
     }
   ]
 }

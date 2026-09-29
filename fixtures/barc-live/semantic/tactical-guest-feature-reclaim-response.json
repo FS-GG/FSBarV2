@@ -17,13 +17,26 @@
         "lifetime": "9007199254740999"
       }
     ],
-    "actorTacticalBindings": [],
-    "attack": {
-      "target": {
-        "id": "77",
-        "lifetime": "9007199254741003"
+    "actorTacticalBindings": [
+      {
+        "queueRevisions": [
+          {
+            "domain": "QUEUE_DOMAIN_ACTOR_ORDER",
+            "revision": "9007199254741015"
+          }
+        ],
+        "actor": {
+          "lifetime": "9007199254740999"
+        },
+        "descriptorRevision": "9007199254741013"
       }
+    ],
+    "reclaimFeature": {
+      "target": {
+        "lifetime": "9007199254741017"
+      },
+      "queuePolicy": "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY"
     },
-    "action": "attack"
+    "action": "reclaimFeature"
   }
 }

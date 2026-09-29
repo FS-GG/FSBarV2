@@ -1,0 +1,43 @@
+{
+  "inputId": "u7u7u8zMTd2O7v///////w==",
+  "sessionId": "ERERESIiQzOERFVVVVVVVQ==",
+  "moduleGeneration": "9007199254740997",
+  "basis": {
+    "token": "AQIDBAUGBwgJCgsMDQ4PEA==",
+    "stateSequence": "9007199254740993",
+    "nativeFrame": 427,
+    "matchId": "qqqqqru7TMyN3e7u7u7u7g==",
+    "processIncarnation": "process-live-1",
+    "stateChannelIncarnation": "state-live-1"
+  },
+  "acknowledgment": "GUEST_ACK_STATUS_CONSUMED",
+  "intent": {
+    "actors": [
+      {
+        "lifetime": "9007199254740999"
+      }
+    ],
+    "actorTacticalBindings": [
+      {
+        "queueRevisions": [
+          {
+            "domain": "QUEUE_DOMAIN_FACTORY_PRODUCTION",
+            "revision": "9007199254741015"
+          }
+        ],
+        "actor": {
+          "lifetime": "9007199254740999"
+        },
+        "descriptorRevision": "9007199254741013"
+      }
+    ],
+    "queueEdit": {
+      "expectedQueueRevision": "9007199254741015",
+      "kind": "QUEUE_EDIT_KIND_REMOVE_TAG",
+      "domain": "QUEUE_DOMAIN_FACTORY_PRODUCTION",
+      "removeNativeTag": 2147483647,
+      "edit": "removeNativeTag"
+    },
+    "action": "queueEdit"
+  }
+}

@@ -126,4 +126,36 @@ require oversizedBoundaryObserved "oversized fixture boundary was not observed"
 require unknownEnumPreserved "unknown enum compatibility case was not observed"
 require unknownEnvelopeBodyAbsent "unknown envelope compatibility case was not observed"
 
-printfn "Fable codec: %d decoded semantic cases; %d malformed/truncated decoder exceptions; 65537-byte boundary observed; unknown enum preserved; unknown envelope projected without a body; 64-bit/optional/XYZ/radar/features/economy parity passed" decoded decodeExceptions
+// The additive tactical profile uses the same generated protobuf.js adapter.
+// Native-only highbar.v1 entries are qualified by the producer/consumer proto
+// build and are intentionally excluded from this browser decoder pass.
+let liveCorpusRoot = "../../fixtures/barc-live"
+let liveManifest = parseJson (readText $"{liveCorpusRoot}/manifest.json" "utf8")
+let liveEntries = property liveManifest "entries"
+let mutable tacticalCases = 0
+for index in 0 .. length liveEntries - 1 do
+    let item = property liveEntries (string index)
+    let name = stringProperty item "name"
+    let typeName = stringProperty item "type"
+    if not (typeName.StartsWith("highbar.")) then
+        let bytes = readFileSync $"{liveCorpusRoot}/wire/{name}.bin"
+        let canonical = decodeAs typeName bytes
+        let expected = parseJson (readText $"{liveCorpusRoot}/semantic/{name}.json" "utf8")
+        require (json canonical = json expected) $"{name} tactical semantic projection drifted"
+        require (bytesEqual (reencodeAs typeName canonical) bytes) $"{name} tactical wire bytes drifted"
+        if name = "tactical-observation" then
+            let observation = property canonical "observation"
+            let tactical = property observation "tactical"
+            let featureRef = property (property (property tactical "features") "0") "reference"
+            let queue = property (property (property (property tactical "actors") "0") "queue") "0"
+            require (not (hasOwn featureRef "id")) "legal feature id zero acquired a nonzero scalar"
+            require (stringProperty featureRef "lifetime" = "9007199254741017") "feature lifetime lost uint64 precision"
+            require (stringProperty queue "revision" = "9007199254741015") "queue revision lost uint64 precision"
+        elif name = "tactical-guest-unknown-action-response" then
+            let intent = property canonical "intent"
+            let queueEdit = property intent "queueEdit"
+            let insert = property queueEdit "insert"
+            require (numberProperty insert "action" = 99.0) "unknown tactical action was not retained for fail-closed validation"
+        tacticalCases <- tacticalCases + 1
+
+printfn "Fable codec: %d preview and %d live/tactical semantic cases; %d malformed/truncated decoder exceptions; 65537-byte boundary observed; unknown enum preserved; unknown envelope projected without a body; 64-bit/optional/XYZ/radar/features/economy parity passed" decoded tacticalCases decodeExceptions

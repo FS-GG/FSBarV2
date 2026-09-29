@@ -6114,6 +6114,16 @@ export const barc = $root.barc = (() => {
              * @property {number} LIVE_ACTION_KIND_STOP=1 LIVE_ACTION_KIND_STOP value
              * @property {number} LIVE_ACTION_KIND_MOVE=2 LIVE_ACTION_KIND_MOVE value
              * @property {number} LIVE_ACTION_KIND_ATTACK=3 LIVE_ACTION_KIND_ATTACK value
+             * @property {number} LIVE_ACTION_KIND_BUILD=4 LIVE_ACTION_KIND_BUILD value
+             * @property {number} LIVE_ACTION_KIND_GUARD=5 LIVE_ACTION_KIND_GUARD value
+             * @property {number} LIVE_ACTION_KIND_REPAIR=6 LIVE_ACTION_KIND_REPAIR value
+             * @property {number} LIVE_ACTION_KIND_RECLAIM_UNIT=7 LIVE_ACTION_KIND_RECLAIM_UNIT value
+             * @property {number} LIVE_ACTION_KIND_RECLAIM_FEATURE=8 LIVE_ACTION_KIND_RECLAIM_FEATURE value
+             * @property {number} LIVE_ACTION_KIND_RECLAIM_AREA=9 LIVE_ACTION_KIND_RECLAIM_AREA value
+             * @property {number} LIVE_ACTION_KIND_FACTORY_PRODUCE=10 LIVE_ACTION_KIND_FACTORY_PRODUCE value
+             * @property {number} LIVE_ACTION_KIND_SET_RALLY=11 LIVE_ACTION_KIND_SET_RALLY value
+             * @property {number} LIVE_ACTION_KIND_QUEUE_EDIT=12 LIVE_ACTION_KIND_QUEUE_EDIT value
+             * @property {number} LIVE_ACTION_KIND_TACTICAL_MODE=13 LIVE_ACTION_KIND_TACTICAL_MODE value
              */
             v1.LiveActionKind = (function() {
                 const valuesById = $Object.create(null), values = $Object.create(valuesById);
@@ -6121,6 +6131,16 @@ export const barc = $root.barc = (() => {
                 values[valuesById[1] = "LIVE_ACTION_KIND_STOP"] = 1;
                 values[valuesById[2] = "LIVE_ACTION_KIND_MOVE"] = 2;
                 values[valuesById[3] = "LIVE_ACTION_KIND_ATTACK"] = 3;
+                values[valuesById[4] = "LIVE_ACTION_KIND_BUILD"] = 4;
+                values[valuesById[5] = "LIVE_ACTION_KIND_GUARD"] = 5;
+                values[valuesById[6] = "LIVE_ACTION_KIND_REPAIR"] = 6;
+                values[valuesById[7] = "LIVE_ACTION_KIND_RECLAIM_UNIT"] = 7;
+                values[valuesById[8] = "LIVE_ACTION_KIND_RECLAIM_FEATURE"] = 8;
+                values[valuesById[9] = "LIVE_ACTION_KIND_RECLAIM_AREA"] = 9;
+                values[valuesById[10] = "LIVE_ACTION_KIND_FACTORY_PRODUCE"] = 10;
+                values[valuesById[11] = "LIVE_ACTION_KIND_SET_RALLY"] = 11;
+                values[valuesById[12] = "LIVE_ACTION_KIND_QUEUE_EDIT"] = 12;
+                values[valuesById[13] = "LIVE_ACTION_KIND_TACTICAL_MODE"] = 13;
                 return values;
             })();
 
@@ -8111,6 +8131,7 @@ export const barc = $root.barc = (() => {
                  * @property {boolean|null} [move] LiveCapabilities move
                  * @property {boolean|null} [attackVisibleUnit] LiveCapabilities attackVisibleUnit
                  * @property {barc.browser.v1.MapBounds.$Properties|null} [mapBounds] LiveCapabilities mapBounds
+                 * @property {barc.browser.v1.TacticalCapabilities.$Properties|null} [tactical] LiveCapabilities tactical
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -8175,6 +8196,23 @@ export const barc = $root.barc = (() => {
                 LiveCapabilities.prototype.mapBounds = null;
 
                 /**
+                 * LiveCapabilities tactical.
+                 * @member {barc.browser.v1.TacticalCapabilities.$Properties|null|undefined} tactical
+                 * @memberof barc.browser.v1.LiveCapabilities
+                 * @instance
+                 */
+                LiveCapabilities.prototype.tactical = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(LiveCapabilities.prototype, "_tactical", {
+                    get: $util.oneOfGetter($oneOfFields = ["tactical"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
                  * Encodes the specified LiveCapabilities message. Does not implicitly {@link barc.browser.v1.LiveCapabilities.verify|verify} messages.
                  * @function encode
                  * @memberof barc.browser.v1.LiveCapabilities
@@ -8198,6 +8236,8 @@ export const barc = $root.barc = (() => {
                         writer.uint32(/* id 3, wireType 0 =*/24).bool(message.attackVisibleUnit);
                     if (message.mapBounds != null && $Object.hasOwnProperty.call(message, "mapBounds"))
                         $root.barc.browser.v1.MapBounds.encode(message.mapBounds, writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
+                    if (message.tactical != null && $Object.hasOwnProperty.call(message, "tactical"))
+                        $root.barc.browser.v1.TacticalCapabilities.encode(message.tactical, writer.uint32(/* id 5, wireType 2 =*/42).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -8288,6 +8328,13 @@ export const barc = $root.barc = (() => {
                                 message.mapBounds = $root.barc.browser.v1.MapBounds.decode(reader, reader.uint32(), $undefined, _depth + 1, message.mapBounds);
                                 continue;
                             }
+                        case 5: {
+                                if (wireType !== 2)
+                                    break;
+                                message.tactical = $root.barc.browser.v1.TacticalCapabilities.decode(reader, reader.uint32(), $undefined, _depth + 1, message.tactical);
+                                message._tactical = "tactical";
+                                continue;
+                            }
                         }
                         reader.skipType(wireType, _depth, tag);
                         if (!reader.discardUnknown) {
@@ -8353,6 +8400,11 @@ export const barc = $root.barc = (() => {
                             throw $TypeError(".barc.browser.v1.LiveCapabilities.mapBounds: object expected");
                         message.mapBounds = $root.barc.browser.v1.MapBounds.fromObject(object.mapBounds, _depth + 1);
                     }
+                    if (object.tactical != null) {
+                        if (!$util.isObject(object.tactical))
+                            throw $TypeError(".barc.browser.v1.LiveCapabilities.tactical: object expected");
+                        message.tactical = $root.barc.browser.v1.TacticalCapabilities.fromObject(object.tactical, _depth + 1);
+                    }
                     return message;
                 };
 
@@ -8387,6 +8439,8 @@ export const barc = $root.barc = (() => {
                         object.attackVisibleUnit = message.attackVisibleUnit;
                     if (message.mapBounds != null && $Object.hasOwnProperty.call(message, "mapBounds"))
                         object.mapBounds = $root.barc.browser.v1.MapBounds.toObject(message.mapBounds, options, _depth + 1);
+                    if (message.tactical != null && $Object.hasOwnProperty.call(message, "tactical"))
+                        object.tactical = $root.barc.browser.v1.TacticalCapabilities.toObject(message.tactical, options, _depth + 1);
                     return object;
                 };
 
@@ -8780,6 +8834,7 @@ export const barc = $root.barc = (() => {
                  * @property {barc.browser.v1.LiveModuleIdentity.$Properties|null} [module] LiveBootstrap module
                  * @property {barc.browser.v1.LiveLimits.$Properties|null} [limits] LiveBootstrap limits
                  * @property {barc.browser.v1.LiveCapabilities.$Properties|null} [capabilities] LiveBootstrap capabilities
+                 * @property {barc.browser.v1.TacticalCatalogue.$Properties|null} [tacticalCatalogue] LiveBootstrap tacticalCatalogue
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -8860,6 +8915,23 @@ export const barc = $root.barc = (() => {
                 LiveBootstrap.prototype.capabilities = null;
 
                 /**
+                 * LiveBootstrap tacticalCatalogue.
+                 * @member {barc.browser.v1.TacticalCatalogue.$Properties|null|undefined} tacticalCatalogue
+                 * @memberof barc.browser.v1.LiveBootstrap
+                 * @instance
+                 */
+                LiveBootstrap.prototype.tacticalCatalogue = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(LiveBootstrap.prototype, "_tacticalCatalogue", {
+                    get: $util.oneOfGetter($oneOfFields = ["tacticalCatalogue"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
                  * Encodes the specified LiveBootstrap message. Does not implicitly {@link barc.browser.v1.LiveBootstrap.verify|verify} messages.
                  * @function encode
                  * @memberof barc.browser.v1.LiveBootstrap
@@ -8887,6 +8959,8 @@ export const barc = $root.barc = (() => {
                         $root.barc.browser.v1.LiveLimits.encode(message.limits, writer.uint32(/* id 5, wireType 2 =*/42).fork(), _depth + 1).ldelim();
                     if (message.capabilities != null && $Object.hasOwnProperty.call(message, "capabilities"))
                         $root.barc.browser.v1.LiveCapabilities.encode(message.capabilities, writer.uint32(/* id 6, wireType 2 =*/50).fork(), _depth + 1).ldelim();
+                    if (message.tacticalCatalogue != null && $Object.hasOwnProperty.call(message, "tacticalCatalogue"))
+                        $root.barc.browser.v1.TacticalCatalogue.encode(message.tacticalCatalogue, writer.uint32(/* id 7, wireType 2 =*/58).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -8983,6 +9057,13 @@ export const barc = $root.barc = (() => {
                                 message.capabilities = $root.barc.browser.v1.LiveCapabilities.decode(reader, reader.uint32(), $undefined, _depth + 1, message.capabilities);
                                 continue;
                             }
+                        case 7: {
+                                if (wireType !== 2)
+                                    break;
+                                message.tacticalCatalogue = $root.barc.browser.v1.TacticalCatalogue.decode(reader, reader.uint32(), $undefined, _depth + 1, message.tacticalCatalogue);
+                                message._tacticalCatalogue = "tacticalCatalogue";
+                                continue;
+                            }
                         }
                         reader.skipType(wireType, _depth, tag);
                         if (!reader.discardUnknown) {
@@ -9062,6 +9143,11 @@ export const barc = $root.barc = (() => {
                             throw $TypeError(".barc.browser.v1.LiveBootstrap.capabilities: object expected");
                         message.capabilities = $root.barc.browser.v1.LiveCapabilities.fromObject(object.capabilities, _depth + 1);
                     }
+                    if (object.tacticalCatalogue != null) {
+                        if (!$util.isObject(object.tacticalCatalogue))
+                            throw $TypeError(".barc.browser.v1.LiveBootstrap.tacticalCatalogue: object expected");
+                        message.tacticalCatalogue = $root.barc.browser.v1.TacticalCatalogue.fromObject(object.tacticalCatalogue, _depth + 1);
+                    }
                     return message;
                 };
 
@@ -9102,6 +9188,8 @@ export const barc = $root.barc = (() => {
                         object.limits = $root.barc.browser.v1.LiveLimits.toObject(message.limits, options, _depth + 1);
                     if (message.capabilities != null && $Object.hasOwnProperty.call(message, "capabilities"))
                         object.capabilities = $root.barc.browser.v1.LiveCapabilities.toObject(message.capabilities, options, _depth + 1);
+                    if (message.tacticalCatalogue != null && $Object.hasOwnProperty.call(message, "tacticalCatalogue"))
+                        object.tacticalCatalogue = $root.barc.browser.v1.TacticalCatalogue.toObject(message.tacticalCatalogue, options, _depth + 1);
                     return object;
                 };
 
@@ -9424,6 +9512,7 @@ export const barc = $root.barc = (() => {
                  * @property {barc.browser.v1.Observation.$Properties|null} [preview] LiveObservation preview
                  * @property {barc.browser.v1.ObservationBasis.$Properties|null} [basis] LiveObservation basis
                  * @property {Array.<barc.browser.v1.LiveObservedUnit.$Properties>|null} [units] LiveObservation units
+                 * @property {barc.browser.v1.TacticalObservation.$Properties|null} [tactical] LiveObservation tactical
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -9481,6 +9570,23 @@ export const barc = $root.barc = (() => {
                 LiveObservation.prototype.units = $util.emptyArray;
 
                 /**
+                 * LiveObservation tactical.
+                 * @member {barc.browser.v1.TacticalObservation.$Properties|null|undefined} tactical
+                 * @memberof barc.browser.v1.LiveObservation
+                 * @instance
+                 */
+                LiveObservation.prototype.tactical = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(LiveObservation.prototype, "_tactical", {
+                    get: $util.oneOfGetter($oneOfFields = ["tactical"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
                  * Encodes the specified LiveObservation message. Does not implicitly {@link barc.browser.v1.LiveObservation.verify|verify} messages.
                  * @function encode
                  * @memberof barc.browser.v1.LiveObservation
@@ -9503,6 +9609,8 @@ export const barc = $root.barc = (() => {
                     if (message.units != null && message.units.length)
                         for (let i = 0; i < message.units.length; ++i)
                             $root.barc.browser.v1.LiveObservedUnit.encode(message.units[i], writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.tactical != null && $Object.hasOwnProperty.call(message, "tactical"))
+                        $root.barc.browser.v1.TacticalObservation.encode(message.tactical, writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -9580,6 +9688,13 @@ export const barc = $root.barc = (() => {
                                 message.units.push($root.barc.browser.v1.LiveObservedUnit.decode(reader, reader.uint32(), $undefined, _depth + 1));
                                 continue;
                             }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                message.tactical = $root.barc.browser.v1.TacticalObservation.decode(reader, reader.uint32(), $undefined, _depth + 1, message.tactical);
+                                message._tactical = "tactical";
+                                continue;
+                            }
                         }
                         reader.skipType(wireType, _depth, tag);
                         if (!reader.discardUnknown) {
@@ -9651,6 +9766,11 @@ export const barc = $root.barc = (() => {
                             message.units[i] = $root.barc.browser.v1.LiveObservedUnit.fromObject(object.units[i], _depth + 1);
                         }
                     }
+                    if (object.tactical != null) {
+                        if (!$util.isObject(object.tactical))
+                            throw $TypeError(".barc.browser.v1.LiveObservation.tactical: object expected");
+                        message.tactical = $root.barc.browser.v1.TacticalObservation.fromObject(object.tactical, _depth + 1);
+                    }
                     return message;
                 };
 
@@ -9686,6 +9806,8 @@ export const barc = $root.barc = (() => {
                         for (let j = 0; j < message.units.length; ++j)
                             object.units[j] = $root.barc.browser.v1.LiveObservedUnit.toObject(message.units[j], options, _depth + 1);
                     }
+                    if (message.tactical != null && $Object.hasOwnProperty.call(message, "tactical"))
+                        object.tactical = $root.barc.browser.v1.TacticalObservation.toObject(message.tactical, options, _depth + 1);
                     return object;
                 };
 
@@ -10439,10 +10561,21 @@ export const barc = $root.barc = (() => {
                  * Properties of a LiveIntent.
                  * @typedef {Object} barc.browser.v1.LiveIntent.$Properties
                  * @property {Array.<barc.browser.v1.UnitReference.$Properties>|null} [actors] LiveIntent actors
+                 * @property {Array.<barc.browser.v1.ActorTacticalBinding.$Properties>|null} [actorTacticalBindings] LiveIntent actorTacticalBindings
                  * @property {barc.browser.v1.StopAction.$Properties|null} [stop] LiveIntent stop
                  * @property {barc.browser.v1.MoveTarget.$Properties|null} [move] LiveIntent move
                  * @property {barc.browser.v1.AttackTarget.$Properties|null} [attack] LiveIntent attack
-                 * @property {"stop"|"move"|"attack"} [action] LiveIntent action
+                 * @property {barc.browser.v1.BuildTarget.$Properties|null} [build] LiveIntent build
+                 * @property {barc.browser.v1.FriendlyTarget.$Properties|null} [guard] LiveIntent guard
+                 * @property {barc.browser.v1.FriendlyTarget.$Properties|null} [repair] LiveIntent repair
+                 * @property {barc.browser.v1.FriendlyTarget.$Properties|null} [reclaimUnit] LiveIntent reclaimUnit
+                 * @property {barc.browser.v1.FeatureTarget.$Properties|null} [reclaimFeature] LiveIntent reclaimFeature
+                 * @property {barc.browser.v1.AreaTarget.$Properties|null} [reclaimArea] LiveIntent reclaimArea
+                 * @property {barc.browser.v1.FactoryProduceTarget.$Properties|null} [factoryProduce] LiveIntent factoryProduce
+                 * @property {barc.browser.v1.RallyTarget.$Properties|null} [setRally] LiveIntent setRally
+                 * @property {barc.browser.v1.QueueEditTarget.$Properties|null} [queueEdit] LiveIntent queueEdit
+                 * @property {barc.browser.v1.TacticalModeTarget.$Properties|null} [tacticalMode] LiveIntent tacticalMode
+                 * @property {"stop"|"move"|"attack"|"build"|"guard"|"repair"|"reclaimUnit"|"reclaimFeature"|"reclaimArea"|"factoryProduce"|"setRally"|"queueEdit"|"tacticalMode"} [action] LiveIntent action
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -10458,12 +10591,23 @@ export const barc = $root.barc = (() => {
                  * Narrowed shape of a LiveIntent.
                  * @typedef {{
                  *   actors?: Array.<barc.browser.v1.UnitReference.$Shape>|null;
+                 *   actorTacticalBindings?: Array.<barc.browser.v1.ActorTacticalBinding.$Shape>|null;
                  *   stop?: barc.browser.v1.StopAction.$Shape|null;
                  *   move?: barc.browser.v1.MoveTarget.$Shape|null;
                  *   attack?: barc.browser.v1.AttackTarget.$Shape|null;
+                 *   build?: barc.browser.v1.BuildTarget.$Shape|null;
+                 *   guard?: barc.browser.v1.FriendlyTarget.$Shape|null;
+                 *   repair?: barc.browser.v1.FriendlyTarget.$Shape|null;
+                 *   reclaimUnit?: barc.browser.v1.FriendlyTarget.$Shape|null;
+                 *   reclaimFeature?: barc.browser.v1.FeatureTarget.$Shape|null;
+                 *   reclaimArea?: barc.browser.v1.AreaTarget.$Shape|null;
+                 *   factoryProduce?: barc.browser.v1.FactoryProduceTarget.$Shape|null;
+                 *   setRally?: barc.browser.v1.RallyTarget.$Shape|null;
+                 *   queueEdit?: barc.browser.v1.QueueEditTarget.$Shape|null;
+                 *   tacticalMode?: barc.browser.v1.TacticalModeTarget.$Shape|null;
                  *   $unknowns?: Array.<Uint8Array>;
                  * } & (
-                 *   ({ action?: undefined; stop?: null; move?: null; attack?: null }|{ action?: "stop"; stop: barc.browser.v1.StopAction.$Shape; move?: null; attack?: null }|{ action?: "move"; stop?: null; move: barc.browser.v1.MoveTarget.$Shape; attack?: null }|{ action?: "attack"; stop?: null; move?: null; attack: barc.browser.v1.AttackTarget.$Shape })
+                 *   ({ action?: undefined; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "stop"; stop: barc.browser.v1.StopAction.$Shape; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "move"; stop?: null; move: barc.browser.v1.MoveTarget.$Shape; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "attack"; stop?: null; move?: null; attack: barc.browser.v1.AttackTarget.$Shape; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "build"; stop?: null; move?: null; attack?: null; build: barc.browser.v1.BuildTarget.$Shape; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "guard"; stop?: null; move?: null; attack?: null; build?: null; guard: barc.browser.v1.FriendlyTarget.$Shape; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "repair"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair: barc.browser.v1.FriendlyTarget.$Shape; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "reclaimUnit"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit: barc.browser.v1.FriendlyTarget.$Shape; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "reclaimFeature"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature: barc.browser.v1.FeatureTarget.$Shape; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "reclaimArea"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea: barc.browser.v1.AreaTarget.$Shape; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "factoryProduce"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce: barc.browser.v1.FactoryProduceTarget.$Shape; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "setRally"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally: barc.browser.v1.RallyTarget.$Shape; queueEdit?: null; tacticalMode?: null }|{ action?: "queueEdit"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit: barc.browser.v1.QueueEditTarget.$Shape; tacticalMode?: null }|{ action?: "tacticalMode"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode: barc.browser.v1.TacticalModeTarget.$Shape })
                  * )} barc.browser.v1.LiveIntent.$Shape
                  */
 
@@ -10477,6 +10621,7 @@ export const barc = $root.barc = (() => {
                  */
                 const LiveIntent = function (properties) {
                     this.actors = [];
+                    this.actorTacticalBindings = [];
                     if (properties)
                         for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
                             if (properties[keys[i]] != null && keys[i] !== "__proto__")
@@ -10490,6 +10635,14 @@ export const barc = $root.barc = (() => {
                  * @instance
                  */
                 LiveIntent.prototype.actors = $util.emptyArray;
+
+                /**
+                 * LiveIntent actorTacticalBindings.
+                 * @member {Array.<barc.browser.v1.ActorTacticalBinding.$Properties>} actorTacticalBindings
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.actorTacticalBindings = $util.emptyArray;
 
                 /**
                  * LiveIntent stop.
@@ -10515,17 +10668,97 @@ export const barc = $root.barc = (() => {
                  */
                 LiveIntent.prototype.attack = null;
 
+                /**
+                 * LiveIntent build.
+                 * @member {barc.browser.v1.BuildTarget.$Properties|null|undefined} build
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.build = null;
+
+                /**
+                 * LiveIntent guard.
+                 * @member {barc.browser.v1.FriendlyTarget.$Properties|null|undefined} guard
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.guard = null;
+
+                /**
+                 * LiveIntent repair.
+                 * @member {barc.browser.v1.FriendlyTarget.$Properties|null|undefined} repair
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.repair = null;
+
+                /**
+                 * LiveIntent reclaimUnit.
+                 * @member {barc.browser.v1.FriendlyTarget.$Properties|null|undefined} reclaimUnit
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.reclaimUnit = null;
+
+                /**
+                 * LiveIntent reclaimFeature.
+                 * @member {barc.browser.v1.FeatureTarget.$Properties|null|undefined} reclaimFeature
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.reclaimFeature = null;
+
+                /**
+                 * LiveIntent reclaimArea.
+                 * @member {barc.browser.v1.AreaTarget.$Properties|null|undefined} reclaimArea
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.reclaimArea = null;
+
+                /**
+                 * LiveIntent factoryProduce.
+                 * @member {barc.browser.v1.FactoryProduceTarget.$Properties|null|undefined} factoryProduce
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.factoryProduce = null;
+
+                /**
+                 * LiveIntent setRally.
+                 * @member {barc.browser.v1.RallyTarget.$Properties|null|undefined} setRally
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.setRally = null;
+
+                /**
+                 * LiveIntent queueEdit.
+                 * @member {barc.browser.v1.QueueEditTarget.$Properties|null|undefined} queueEdit
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.queueEdit = null;
+
+                /**
+                 * LiveIntent tacticalMode.
+                 * @member {barc.browser.v1.TacticalModeTarget.$Properties|null|undefined} tacticalMode
+                 * @memberof barc.browser.v1.LiveIntent
+                 * @instance
+                 */
+                LiveIntent.prototype.tacticalMode = null;
+
                 // OneOf field names bound to virtual getters and setters
                 let $oneOfFields;
 
                 /**
                  * LiveIntent action.
-                 * @member {"stop"|"move"|"attack"|undefined} action
+                 * @member {"stop"|"move"|"attack"|"build"|"guard"|"repair"|"reclaimUnit"|"reclaimFeature"|"reclaimArea"|"factoryProduce"|"setRally"|"queueEdit"|"tacticalMode"|undefined} action
                  * @memberof barc.browser.v1.LiveIntent
                  * @instance
                  */
                 $Object.defineProperty(LiveIntent.prototype, "action", {
-                    get: $util.oneOfGetter($oneOfFields = ["stop", "move", "attack"]),
+                    get: $util.oneOfGetter($oneOfFields = ["stop", "move", "attack", "build", "guard", "repair", "reclaimUnit", "reclaimFeature", "reclaimArea", "factoryProduce", "setRally", "queueEdit", "tacticalMode"]),
                     set: $util.oneOfSetter($oneOfFields)
                 });
 
@@ -10548,12 +10781,35 @@ export const barc = $root.barc = (() => {
                     if (message.actors != null && message.actors.length)
                         for (let i = 0; i < message.actors.length; ++i)
                             $root.barc.browser.v1.UnitReference.encode(message.actors[i], writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.actorTacticalBindings != null && message.actorTacticalBindings.length)
+                        for (let i = 0; i < message.actorTacticalBindings.length; ++i)
+                            $root.barc.browser.v1.ActorTacticalBinding.encode(message.actorTacticalBindings[i], writer.uint32(/* id 2, wireType 2 =*/18).fork(), _depth + 1).ldelim();
                     if (message.stop != null && $Object.hasOwnProperty.call(message, "stop"))
                         $root.barc.browser.v1.StopAction.encode(message.stop, writer.uint32(/* id 10, wireType 2 =*/82).fork(), _depth + 1).ldelim();
                     if (message.move != null && $Object.hasOwnProperty.call(message, "move"))
                         $root.barc.browser.v1.MoveTarget.encode(message.move, writer.uint32(/* id 11, wireType 2 =*/90).fork(), _depth + 1).ldelim();
                     if (message.attack != null && $Object.hasOwnProperty.call(message, "attack"))
                         $root.barc.browser.v1.AttackTarget.encode(message.attack, writer.uint32(/* id 12, wireType 2 =*/98).fork(), _depth + 1).ldelim();
+                    if (message.build != null && $Object.hasOwnProperty.call(message, "build"))
+                        $root.barc.browser.v1.BuildTarget.encode(message.build, writer.uint32(/* id 13, wireType 2 =*/106).fork(), _depth + 1).ldelim();
+                    if (message.guard != null && $Object.hasOwnProperty.call(message, "guard"))
+                        $root.barc.browser.v1.FriendlyTarget.encode(message.guard, writer.uint32(/* id 14, wireType 2 =*/114).fork(), _depth + 1).ldelim();
+                    if (message.repair != null && $Object.hasOwnProperty.call(message, "repair"))
+                        $root.barc.browser.v1.FriendlyTarget.encode(message.repair, writer.uint32(/* id 15, wireType 2 =*/122).fork(), _depth + 1).ldelim();
+                    if (message.reclaimUnit != null && $Object.hasOwnProperty.call(message, "reclaimUnit"))
+                        $root.barc.browser.v1.FriendlyTarget.encode(message.reclaimUnit, writer.uint32(/* id 16, wireType 2 =*/130).fork(), _depth + 1).ldelim();
+                    if (message.reclaimFeature != null && $Object.hasOwnProperty.call(message, "reclaimFeature"))
+                        $root.barc.browser.v1.FeatureTarget.encode(message.reclaimFeature, writer.uint32(/* id 17, wireType 2 =*/138).fork(), _depth + 1).ldelim();
+                    if (message.reclaimArea != null && $Object.hasOwnProperty.call(message, "reclaimArea"))
+                        $root.barc.browser.v1.AreaTarget.encode(message.reclaimArea, writer.uint32(/* id 18, wireType 2 =*/146).fork(), _depth + 1).ldelim();
+                    if (message.factoryProduce != null && $Object.hasOwnProperty.call(message, "factoryProduce"))
+                        $root.barc.browser.v1.FactoryProduceTarget.encode(message.factoryProduce, writer.uint32(/* id 19, wireType 2 =*/154).fork(), _depth + 1).ldelim();
+                    if (message.setRally != null && $Object.hasOwnProperty.call(message, "setRally"))
+                        $root.barc.browser.v1.RallyTarget.encode(message.setRally, writer.uint32(/* id 20, wireType 2 =*/162).fork(), _depth + 1).ldelim();
+                    if (message.queueEdit != null && $Object.hasOwnProperty.call(message, "queueEdit"))
+                        $root.barc.browser.v1.QueueEditTarget.encode(message.queueEdit, writer.uint32(/* id 21, wireType 2 =*/170).fork(), _depth + 1).ldelim();
+                    if (message.tacticalMode != null && $Object.hasOwnProperty.call(message, "tacticalMode"))
+                        $root.barc.browser.v1.TacticalModeTarget.encode(message.tacticalMode, writer.uint32(/* id 22, wireType 2 =*/178).fork(), _depth + 1).ldelim();
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -10619,6 +10875,14 @@ export const barc = $root.barc = (() => {
                                 message.actors.push($root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1));
                                 continue;
                             }
+                        case 2: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.actorTacticalBindings && message.actorTacticalBindings.length))
+                                    message.actorTacticalBindings = [];
+                                message.actorTacticalBindings.push($root.barc.browser.v1.ActorTacticalBinding.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
                         case 10: {
                                 if (wireType !== 2)
                                     break;
@@ -10638,6 +10902,76 @@ export const barc = $root.barc = (() => {
                                     break;
                                 message.attack = $root.barc.browser.v1.AttackTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.attack);
                                 message.action = "attack";
+                                continue;
+                            }
+                        case 13: {
+                                if (wireType !== 2)
+                                    break;
+                                message.build = $root.barc.browser.v1.BuildTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.build);
+                                message.action = "build";
+                                continue;
+                            }
+                        case 14: {
+                                if (wireType !== 2)
+                                    break;
+                                message.guard = $root.barc.browser.v1.FriendlyTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.guard);
+                                message.action = "guard";
+                                continue;
+                            }
+                        case 15: {
+                                if (wireType !== 2)
+                                    break;
+                                message.repair = $root.barc.browser.v1.FriendlyTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.repair);
+                                message.action = "repair";
+                                continue;
+                            }
+                        case 16: {
+                                if (wireType !== 2)
+                                    break;
+                                message.reclaimUnit = $root.barc.browser.v1.FriendlyTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.reclaimUnit);
+                                message.action = "reclaimUnit";
+                                continue;
+                            }
+                        case 17: {
+                                if (wireType !== 2)
+                                    break;
+                                message.reclaimFeature = $root.barc.browser.v1.FeatureTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.reclaimFeature);
+                                message.action = "reclaimFeature";
+                                continue;
+                            }
+                        case 18: {
+                                if (wireType !== 2)
+                                    break;
+                                message.reclaimArea = $root.barc.browser.v1.AreaTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.reclaimArea);
+                                message.action = "reclaimArea";
+                                continue;
+                            }
+                        case 19: {
+                                if (wireType !== 2)
+                                    break;
+                                message.factoryProduce = $root.barc.browser.v1.FactoryProduceTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.factoryProduce);
+                                message.action = "factoryProduce";
+                                continue;
+                            }
+                        case 20: {
+                                if (wireType !== 2)
+                                    break;
+                                message.setRally = $root.barc.browser.v1.RallyTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.setRally);
+                                message.action = "setRally";
+                                continue;
+                            }
+                        case 21: {
+                                if (wireType !== 2)
+                                    break;
+                                message.queueEdit = $root.barc.browser.v1.QueueEditTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.queueEdit);
+                                message.action = "queueEdit";
+                                continue;
+                            }
+                        case 22: {
+                                if (wireType !== 2)
+                                    break;
+                                message.tacticalMode = $root.barc.browser.v1.TacticalModeTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.tacticalMode);
+                                message.action = "tacticalMode";
                                 continue;
                             }
                         }
@@ -10701,6 +11035,16 @@ export const barc = $root.barc = (() => {
                             message.actors[i] = $root.barc.browser.v1.UnitReference.fromObject(object.actors[i], _depth + 1);
                         }
                     }
+                    if (object.actorTacticalBindings) {
+                        if (!$Array.isArray(object.actorTacticalBindings))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.actorTacticalBindings: array expected");
+                        message.actorTacticalBindings = $Array(object.actorTacticalBindings.length);
+                        for (let i = 0; i < object.actorTacticalBindings.length; ++i) {
+                            if (!$util.isObject(object.actorTacticalBindings[i]))
+                                throw $TypeError(".barc.browser.v1.LiveIntent.actorTacticalBindings: object expected");
+                            message.actorTacticalBindings[i] = $root.barc.browser.v1.ActorTacticalBinding.fromObject(object.actorTacticalBindings[i], _depth + 1);
+                        }
+                    }
                     if (object.stop != null) {
                         if (!$util.isObject(object.stop))
                             throw $TypeError(".barc.browser.v1.LiveIntent.stop: object expected");
@@ -10715,6 +11059,56 @@ export const barc = $root.barc = (() => {
                         if (!$util.isObject(object.attack))
                             throw $TypeError(".barc.browser.v1.LiveIntent.attack: object expected");
                         message.attack = $root.barc.browser.v1.AttackTarget.fromObject(object.attack, _depth + 1);
+                    }
+                    if (object.build != null) {
+                        if (!$util.isObject(object.build))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.build: object expected");
+                        message.build = $root.barc.browser.v1.BuildTarget.fromObject(object.build, _depth + 1);
+                    }
+                    if (object.guard != null) {
+                        if (!$util.isObject(object.guard))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.guard: object expected");
+                        message.guard = $root.barc.browser.v1.FriendlyTarget.fromObject(object.guard, _depth + 1);
+                    }
+                    if (object.repair != null) {
+                        if (!$util.isObject(object.repair))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.repair: object expected");
+                        message.repair = $root.barc.browser.v1.FriendlyTarget.fromObject(object.repair, _depth + 1);
+                    }
+                    if (object.reclaimUnit != null) {
+                        if (!$util.isObject(object.reclaimUnit))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.reclaimUnit: object expected");
+                        message.reclaimUnit = $root.barc.browser.v1.FriendlyTarget.fromObject(object.reclaimUnit, _depth + 1);
+                    }
+                    if (object.reclaimFeature != null) {
+                        if (!$util.isObject(object.reclaimFeature))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.reclaimFeature: object expected");
+                        message.reclaimFeature = $root.barc.browser.v1.FeatureTarget.fromObject(object.reclaimFeature, _depth + 1);
+                    }
+                    if (object.reclaimArea != null) {
+                        if (!$util.isObject(object.reclaimArea))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.reclaimArea: object expected");
+                        message.reclaimArea = $root.barc.browser.v1.AreaTarget.fromObject(object.reclaimArea, _depth + 1);
+                    }
+                    if (object.factoryProduce != null) {
+                        if (!$util.isObject(object.factoryProduce))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.factoryProduce: object expected");
+                        message.factoryProduce = $root.barc.browser.v1.FactoryProduceTarget.fromObject(object.factoryProduce, _depth + 1);
+                    }
+                    if (object.setRally != null) {
+                        if (!$util.isObject(object.setRally))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.setRally: object expected");
+                        message.setRally = $root.barc.browser.v1.RallyTarget.fromObject(object.setRally, _depth + 1);
+                    }
+                    if (object.queueEdit != null) {
+                        if (!$util.isObject(object.queueEdit))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.queueEdit: object expected");
+                        message.queueEdit = $root.barc.browser.v1.QueueEditTarget.fromObject(object.queueEdit, _depth + 1);
+                    }
+                    if (object.tacticalMode != null) {
+                        if (!$util.isObject(object.tacticalMode))
+                            throw $TypeError(".barc.browser.v1.LiveIntent.tacticalMode: object expected");
+                        message.tacticalMode = $root.barc.browser.v1.TacticalModeTarget.fromObject(object.tacticalMode, _depth + 1);
                     }
                     return message;
                 };
@@ -10736,12 +11130,19 @@ export const barc = $root.barc = (() => {
                     if (_depth > $util.recursionLimit)
                         throw $Error("max depth exceeded");
                     let object = {};
-                    if (options.arrays || options.defaults)
+                    if (options.arrays || options.defaults) {
                         object.actors = [];
+                        object.actorTacticalBindings = [];
+                    }
                     if (message.actors && message.actors.length) {
                         object.actors = $Array(message.actors.length);
                         for (let j = 0; j < message.actors.length; ++j)
                             object.actors[j] = $root.barc.browser.v1.UnitReference.toObject(message.actors[j], options, _depth + 1);
+                    }
+                    if (message.actorTacticalBindings && message.actorTacticalBindings.length) {
+                        object.actorTacticalBindings = $Array(message.actorTacticalBindings.length);
+                        for (let j = 0; j < message.actorTacticalBindings.length; ++j)
+                            object.actorTacticalBindings[j] = $root.barc.browser.v1.ActorTacticalBinding.toObject(message.actorTacticalBindings[j], options, _depth + 1);
                     }
                     if (message.stop != null && $Object.hasOwnProperty.call(message, "stop")) {
                         object.stop = $root.barc.browser.v1.StopAction.toObject(message.stop, options, _depth + 1);
@@ -10757,6 +11158,56 @@ export const barc = $root.barc = (() => {
                         object.attack = $root.barc.browser.v1.AttackTarget.toObject(message.attack, options, _depth + 1);
                         if (options.oneofs)
                             object.action = "attack";
+                    }
+                    if (message.build != null && $Object.hasOwnProperty.call(message, "build")) {
+                        object.build = $root.barc.browser.v1.BuildTarget.toObject(message.build, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "build";
+                    }
+                    if (message.guard != null && $Object.hasOwnProperty.call(message, "guard")) {
+                        object.guard = $root.barc.browser.v1.FriendlyTarget.toObject(message.guard, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "guard";
+                    }
+                    if (message.repair != null && $Object.hasOwnProperty.call(message, "repair")) {
+                        object.repair = $root.barc.browser.v1.FriendlyTarget.toObject(message.repair, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "repair";
+                    }
+                    if (message.reclaimUnit != null && $Object.hasOwnProperty.call(message, "reclaimUnit")) {
+                        object.reclaimUnit = $root.barc.browser.v1.FriendlyTarget.toObject(message.reclaimUnit, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "reclaimUnit";
+                    }
+                    if (message.reclaimFeature != null && $Object.hasOwnProperty.call(message, "reclaimFeature")) {
+                        object.reclaimFeature = $root.barc.browser.v1.FeatureTarget.toObject(message.reclaimFeature, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "reclaimFeature";
+                    }
+                    if (message.reclaimArea != null && $Object.hasOwnProperty.call(message, "reclaimArea")) {
+                        object.reclaimArea = $root.barc.browser.v1.AreaTarget.toObject(message.reclaimArea, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "reclaimArea";
+                    }
+                    if (message.factoryProduce != null && $Object.hasOwnProperty.call(message, "factoryProduce")) {
+                        object.factoryProduce = $root.barc.browser.v1.FactoryProduceTarget.toObject(message.factoryProduce, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "factoryProduce";
+                    }
+                    if (message.setRally != null && $Object.hasOwnProperty.call(message, "setRally")) {
+                        object.setRally = $root.barc.browser.v1.RallyTarget.toObject(message.setRally, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "setRally";
+                    }
+                    if (message.queueEdit != null && $Object.hasOwnProperty.call(message, "queueEdit")) {
+                        object.queueEdit = $root.barc.browser.v1.QueueEditTarget.toObject(message.queueEdit, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "queueEdit";
+                    }
+                    if (message.tacticalMode != null && $Object.hasOwnProperty.call(message, "tacticalMode")) {
+                        object.tacticalMode = $root.barc.browser.v1.TacticalModeTarget.toObject(message.tacticalMode, options, _depth + 1);
+                        if (options.oneofs)
+                            object.action = "tacticalMode";
                     }
                     return object;
                 };
@@ -10787,6 +11238,9225 @@ export const barc = $root.barc = (() => {
                 };
 
                 return LiveIntent;
+            })();
+
+            /**
+             * TacticalQueuePolicy enum.
+             * @name barc.browser.v1.TacticalQueuePolicy
+             * @enum {number}
+             * @property {number} TACTICAL_QUEUE_POLICY_UNSPECIFIED=0 TACTICAL_QUEUE_POLICY_UNSPECIFIED value
+             * @property {number} TACTICAL_QUEUE_POLICY_REPLACE=1 TACTICAL_QUEUE_POLICY_REPLACE value
+             * @property {number} TACTICAL_QUEUE_POLICY_APPEND=2 TACTICAL_QUEUE_POLICY_APPEND value
+             * @property {number} TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY=3 TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY value
+             */
+            v1.TacticalQueuePolicy = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "TACTICAL_QUEUE_POLICY_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "TACTICAL_QUEUE_POLICY_REPLACE"] = 1;
+                values[valuesById[2] = "TACTICAL_QUEUE_POLICY_APPEND"] = 2;
+                values[valuesById[3] = "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY"] = 3;
+                return values;
+            })();
+
+            /**
+             * BuildFacing enum.
+             * @name barc.browser.v1.BuildFacing
+             * @enum {number}
+             * @property {number} BUILD_FACING_UNSPECIFIED=0 BUILD_FACING_UNSPECIFIED value
+             * @property {number} BUILD_FACING_NORTH=1 BUILD_FACING_NORTH value
+             * @property {number} BUILD_FACING_EAST=2 BUILD_FACING_EAST value
+             * @property {number} BUILD_FACING_SOUTH=3 BUILD_FACING_SOUTH value
+             * @property {number} BUILD_FACING_WEST=4 BUILD_FACING_WEST value
+             */
+            v1.BuildFacing = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "BUILD_FACING_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "BUILD_FACING_NORTH"] = 1;
+                values[valuesById[2] = "BUILD_FACING_EAST"] = 2;
+                values[valuesById[3] = "BUILD_FACING_SOUTH"] = 3;
+                values[valuesById[4] = "BUILD_FACING_WEST"] = 4;
+                return values;
+            })();
+
+            /**
+             * QueueEditKind enum.
+             * @name barc.browser.v1.QueueEditKind
+             * @enum {number}
+             * @property {number} QUEUE_EDIT_KIND_UNSPECIFIED=0 QUEUE_EDIT_KIND_UNSPECIFIED value
+             * @property {number} QUEUE_EDIT_KIND_INSERT=1 QUEUE_EDIT_KIND_INSERT value
+             * @property {number} QUEUE_EDIT_KIND_REMOVE_TAG=2 QUEUE_EDIT_KIND_REMOVE_TAG value
+             * @property {number} QUEUE_EDIT_KIND_SET_REPEAT=3 QUEUE_EDIT_KIND_SET_REPEAT value
+             */
+            v1.QueueEditKind = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "QUEUE_EDIT_KIND_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "QUEUE_EDIT_KIND_INSERT"] = 1;
+                values[valuesById[2] = "QUEUE_EDIT_KIND_REMOVE_TAG"] = 2;
+                values[valuesById[3] = "QUEUE_EDIT_KIND_SET_REPEAT"] = 3;
+                return values;
+            })();
+
+            /**
+             * QueueDomain enum.
+             * @name barc.browser.v1.QueueDomain
+             * @enum {number}
+             * @property {number} QUEUE_DOMAIN_UNSPECIFIED=0 QUEUE_DOMAIN_UNSPECIFIED value
+             * @property {number} QUEUE_DOMAIN_ACTOR_ORDER=1 QUEUE_DOMAIN_ACTOR_ORDER value
+             * @property {number} QUEUE_DOMAIN_FACTORY_PRODUCTION=2 QUEUE_DOMAIN_FACTORY_PRODUCTION value
+             * @property {number} QUEUE_DOMAIN_FACTORY_RALLY=3 QUEUE_DOMAIN_FACTORY_RALLY value
+             */
+            v1.QueueDomain = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "QUEUE_DOMAIN_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "QUEUE_DOMAIN_ACTOR_ORDER"] = 1;
+                values[valuesById[2] = "QUEUE_DOMAIN_FACTORY_PRODUCTION"] = 2;
+                values[valuesById[3] = "QUEUE_DOMAIN_FACTORY_RALLY"] = 3;
+                return values;
+            })();
+
+            /**
+             * TacticalDescriptorKind enum.
+             * @name barc.browser.v1.TacticalDescriptorKind
+             * @enum {number}
+             * @property {number} TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED=0 TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED value
+             * @property {number} TACTICAL_DESCRIPTOR_BUILD=1 TACTICAL_DESCRIPTOR_BUILD value
+             * @property {number} TACTICAL_DESCRIPTOR_GUARD=2 TACTICAL_DESCRIPTOR_GUARD value
+             * @property {number} TACTICAL_DESCRIPTOR_REPAIR=3 TACTICAL_DESCRIPTOR_REPAIR value
+             * @property {number} TACTICAL_DESCRIPTOR_RECLAIM_UNIT=4 TACTICAL_DESCRIPTOR_RECLAIM_UNIT value
+             * @property {number} TACTICAL_DESCRIPTOR_RECLAIM_FEATURE=5 TACTICAL_DESCRIPTOR_RECLAIM_FEATURE value
+             * @property {number} TACTICAL_DESCRIPTOR_RECLAIM_AREA=6 TACTICAL_DESCRIPTOR_RECLAIM_AREA value
+             * @property {number} TACTICAL_DESCRIPTOR_FACTORY_PRODUCE=7 TACTICAL_DESCRIPTOR_FACTORY_PRODUCE value
+             * @property {number} TACTICAL_DESCRIPTOR_SET_RALLY=8 TACTICAL_DESCRIPTOR_SET_RALLY value
+             * @property {number} TACTICAL_DESCRIPTOR_QUEUE_INSERT=9 TACTICAL_DESCRIPTOR_QUEUE_INSERT value
+             * @property {number} TACTICAL_DESCRIPTOR_QUEUE_REMOVE=10 TACTICAL_DESCRIPTOR_QUEUE_REMOVE value
+             * @property {number} TACTICAL_DESCRIPTOR_QUEUE_REPEAT=11 TACTICAL_DESCRIPTOR_QUEUE_REPEAT value
+             * @property {number} TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY=12 TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY value
+             * @property {number} TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE=13 TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE value
+             */
+            v1.TacticalDescriptorKind = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "TACTICAL_DESCRIPTOR_BUILD"] = 1;
+                values[valuesById[2] = "TACTICAL_DESCRIPTOR_GUARD"] = 2;
+                values[valuesById[3] = "TACTICAL_DESCRIPTOR_REPAIR"] = 3;
+                values[valuesById[4] = "TACTICAL_DESCRIPTOR_RECLAIM_UNIT"] = 4;
+                values[valuesById[5] = "TACTICAL_DESCRIPTOR_RECLAIM_FEATURE"] = 5;
+                values[valuesById[6] = "TACTICAL_DESCRIPTOR_RECLAIM_AREA"] = 6;
+                values[valuesById[7] = "TACTICAL_DESCRIPTOR_FACTORY_PRODUCE"] = 7;
+                values[valuesById[8] = "TACTICAL_DESCRIPTOR_SET_RALLY"] = 8;
+                values[valuesById[9] = "TACTICAL_DESCRIPTOR_QUEUE_INSERT"] = 9;
+                values[valuesById[10] = "TACTICAL_DESCRIPTOR_QUEUE_REMOVE"] = 10;
+                values[valuesById[11] = "TACTICAL_DESCRIPTOR_QUEUE_REPEAT"] = 11;
+                values[valuesById[12] = "TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY"] = 12;
+                values[valuesById[13] = "TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE"] = 13;
+                return values;
+            })();
+
+            /**
+             * TacticalModeValue enum.
+             * @name barc.browser.v1.TacticalModeValue
+             * @enum {number}
+             * @property {number} TACTICAL_MODE_VALUE_UNSPECIFIED=0 TACTICAL_MODE_VALUE_UNSPECIFIED value
+             * @property {number} TACTICAL_MODE_VALUE_DISABLED=1 TACTICAL_MODE_VALUE_DISABLED value
+             * @property {number} TACTICAL_MODE_VALUE_ENABLED=2 TACTICAL_MODE_VALUE_ENABLED value
+             */
+            v1.TacticalModeValue = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "TACTICAL_MODE_VALUE_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "TACTICAL_MODE_VALUE_DISABLED"] = 1;
+                values[valuesById[2] = "TACTICAL_MODE_VALUE_ENABLED"] = 2;
+                return values;
+            })();
+
+            v1.TacticalCapabilities = (function() {
+
+                /**
+                 * Properties of a TacticalCapabilities.
+                 * @typedef {Object} barc.browser.v1.TacticalCapabilities.$Properties
+                 * @property {string|null} [profile] TacticalCapabilities profile
+                 * @property {number|null} [revision] TacticalCapabilities revision
+                 * @property {number|null} [maxCatalogueEntries] TacticalCapabilities maxCatalogueEntries
+                 * @property {number|null} [maxCataloguePageEntries] TacticalCapabilities maxCataloguePageEntries
+                 * @property {number|null} [maxBuildOptionsPerActor] TacticalCapabilities maxBuildOptionsPerActor
+                 * @property {number|null} [maxQueueEntriesPerActor] TacticalCapabilities maxQueueEntriesPerActor
+                 * @property {number|null} [maxFeatureReferences] TacticalCapabilities maxFeatureReferences
+                 * @property {number|null} [maxFactoryProductionCount] TacticalCapabilities maxFactoryProductionCount
+                 * @property {number|null} [maxAreaRadiusWorldUnits] TacticalCapabilities maxAreaRadiusWorldUnits
+                 * @property {number|null} [maxCommandDescriptorsPerActor] TacticalCapabilities maxCommandDescriptorsPerActor
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalCapabilities.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalCapabilities
+                 * @augments barc.browser.v1.TacticalCapabilities.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalCapabilities.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalCapabilities.
+                 * @typedef {barc.browser.v1.TacticalCapabilities.$Properties} barc.browser.v1.TacticalCapabilities.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalCapabilities.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalCapabilities.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalCapabilities.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalCapabilities = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalCapabilities profile.
+                 * @member {string} profile
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.profile = "";
+
+                /**
+                 * TacticalCapabilities revision.
+                 * @member {number} revision
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.revision = 0;
+
+                /**
+                 * TacticalCapabilities maxCatalogueEntries.
+                 * @member {number} maxCatalogueEntries
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxCatalogueEntries = 0;
+
+                /**
+                 * TacticalCapabilities maxCataloguePageEntries.
+                 * @member {number} maxCataloguePageEntries
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxCataloguePageEntries = 0;
+
+                /**
+                 * TacticalCapabilities maxBuildOptionsPerActor.
+                 * @member {number} maxBuildOptionsPerActor
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxBuildOptionsPerActor = 0;
+
+                /**
+                 * TacticalCapabilities maxQueueEntriesPerActor.
+                 * @member {number} maxQueueEntriesPerActor
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxQueueEntriesPerActor = 0;
+
+                /**
+                 * TacticalCapabilities maxFeatureReferences.
+                 * @member {number} maxFeatureReferences
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxFeatureReferences = 0;
+
+                /**
+                 * TacticalCapabilities maxFactoryProductionCount.
+                 * @member {number} maxFactoryProductionCount
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxFactoryProductionCount = 0;
+
+                /**
+                 * TacticalCapabilities maxAreaRadiusWorldUnits.
+                 * @member {number} maxAreaRadiusWorldUnits
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxAreaRadiusWorldUnits = 0;
+
+                /**
+                 * TacticalCapabilities maxCommandDescriptorsPerActor.
+                 * @member {number} maxCommandDescriptorsPerActor
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 */
+                TacticalCapabilities.prototype.maxCommandDescriptorsPerActor = 0;
+
+                /**
+                 * Encodes the specified TacticalCapabilities message. Does not implicitly {@link barc.browser.v1.TacticalCapabilities.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {barc.browser.v1.TacticalCapabilities.$Properties} message TacticalCapabilities message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalCapabilities.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.profile != null && $Object.hasOwnProperty.call(message, "profile") && message.profile !== "")
+                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.profile);
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision") && message.revision !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.revision);
+                    if (message.maxCatalogueEntries != null && $Object.hasOwnProperty.call(message, "maxCatalogueEntries") && message.maxCatalogueEntries !== 0)
+                        writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.maxCatalogueEntries);
+                    if (message.maxCataloguePageEntries != null && $Object.hasOwnProperty.call(message, "maxCataloguePageEntries") && message.maxCataloguePageEntries !== 0)
+                        writer.uint32(/* id 4, wireType 0 =*/32).uint32(message.maxCataloguePageEntries);
+                    if (message.maxBuildOptionsPerActor != null && $Object.hasOwnProperty.call(message, "maxBuildOptionsPerActor") && message.maxBuildOptionsPerActor !== 0)
+                        writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.maxBuildOptionsPerActor);
+                    if (message.maxQueueEntriesPerActor != null && $Object.hasOwnProperty.call(message, "maxQueueEntriesPerActor") && message.maxQueueEntriesPerActor !== 0)
+                        writer.uint32(/* id 6, wireType 0 =*/48).uint32(message.maxQueueEntriesPerActor);
+                    if (message.maxFeatureReferences != null && $Object.hasOwnProperty.call(message, "maxFeatureReferences") && message.maxFeatureReferences !== 0)
+                        writer.uint32(/* id 7, wireType 0 =*/56).uint32(message.maxFeatureReferences);
+                    if (message.maxFactoryProductionCount != null && $Object.hasOwnProperty.call(message, "maxFactoryProductionCount") && message.maxFactoryProductionCount !== 0)
+                        writer.uint32(/* id 8, wireType 0 =*/64).uint32(message.maxFactoryProductionCount);
+                    if (message.maxAreaRadiusWorldUnits != null && $Object.hasOwnProperty.call(message, "maxAreaRadiusWorldUnits") && message.maxAreaRadiusWorldUnits !== 0)
+                        writer.uint32(/* id 9, wireType 0 =*/72).uint32(message.maxAreaRadiusWorldUnits);
+                    if (message.maxCommandDescriptorsPerActor != null && $Object.hasOwnProperty.call(message, "maxCommandDescriptorsPerActor") && message.maxCommandDescriptorsPerActor !== 0)
+                        writer.uint32(/* id 10, wireType 0 =*/80).uint32(message.maxCommandDescriptorsPerActor);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalCapabilities message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalCapabilities.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {barc.browser.v1.TacticalCapabilities.$Properties} message TacticalCapabilities message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalCapabilities.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalCapabilities message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalCapabilities & barc.browser.v1.TacticalCapabilities.$Shape} TacticalCapabilities
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalCapabilities.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalCapabilities();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.profile = value;
+                                else
+                                    delete message.profile;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.revision = value;
+                                else
+                                    delete message.revision;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxCatalogueEntries = value;
+                                else
+                                    delete message.maxCatalogueEntries;
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxCataloguePageEntries = value;
+                                else
+                                    delete message.maxCataloguePageEntries;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxBuildOptionsPerActor = value;
+                                else
+                                    delete message.maxBuildOptionsPerActor;
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxQueueEntriesPerActor = value;
+                                else
+                                    delete message.maxQueueEntriesPerActor;
+                                continue;
+                            }
+                        case 7: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxFeatureReferences = value;
+                                else
+                                    delete message.maxFeatureReferences;
+                                continue;
+                            }
+                        case 8: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxFactoryProductionCount = value;
+                                else
+                                    delete message.maxFactoryProductionCount;
+                                continue;
+                            }
+                        case 9: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxAreaRadiusWorldUnits = value;
+                                else
+                                    delete message.maxAreaRadiusWorldUnits;
+                                continue;
+                            }
+                        case 10: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.maxCommandDescriptorsPerActor = value;
+                                else
+                                    delete message.maxCommandDescriptorsPerActor;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalCapabilities message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalCapabilities & barc.browser.v1.TacticalCapabilities.$Shape} TacticalCapabilities
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalCapabilities.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalCapabilities message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalCapabilities} TacticalCapabilities
+                 */
+                TacticalCapabilities.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalCapabilities)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalCapabilities: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalCapabilities();
+                    if (object.profile != null)
+                        if (typeof object.profile !== "string" || object.profile.length)
+                            message.profile = $String(object.profile);
+                    if (object.revision != null)
+                        if ($Number(object.revision) !== 0)
+                            message.revision = object.revision >>> 0;
+                    if (object.maxCatalogueEntries != null)
+                        if ($Number(object.maxCatalogueEntries) !== 0)
+                            message.maxCatalogueEntries = object.maxCatalogueEntries >>> 0;
+                    if (object.maxCataloguePageEntries != null)
+                        if ($Number(object.maxCataloguePageEntries) !== 0)
+                            message.maxCataloguePageEntries = object.maxCataloguePageEntries >>> 0;
+                    if (object.maxBuildOptionsPerActor != null)
+                        if ($Number(object.maxBuildOptionsPerActor) !== 0)
+                            message.maxBuildOptionsPerActor = object.maxBuildOptionsPerActor >>> 0;
+                    if (object.maxQueueEntriesPerActor != null)
+                        if ($Number(object.maxQueueEntriesPerActor) !== 0)
+                            message.maxQueueEntriesPerActor = object.maxQueueEntriesPerActor >>> 0;
+                    if (object.maxFeatureReferences != null)
+                        if ($Number(object.maxFeatureReferences) !== 0)
+                            message.maxFeatureReferences = object.maxFeatureReferences >>> 0;
+                    if (object.maxFactoryProductionCount != null)
+                        if ($Number(object.maxFactoryProductionCount) !== 0)
+                            message.maxFactoryProductionCount = object.maxFactoryProductionCount >>> 0;
+                    if (object.maxAreaRadiusWorldUnits != null)
+                        if ($Number(object.maxAreaRadiusWorldUnits) !== 0)
+                            message.maxAreaRadiusWorldUnits = object.maxAreaRadiusWorldUnits >>> 0;
+                    if (object.maxCommandDescriptorsPerActor != null)
+                        if ($Number(object.maxCommandDescriptorsPerActor) !== 0)
+                            message.maxCommandDescriptorsPerActor = object.maxCommandDescriptorsPerActor >>> 0;
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalCapabilities message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {barc.browser.v1.TacticalCapabilities} message TacticalCapabilities
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalCapabilities.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.profile = "";
+                        object.revision = 0;
+                        object.maxCatalogueEntries = 0;
+                        object.maxCataloguePageEntries = 0;
+                        object.maxBuildOptionsPerActor = 0;
+                        object.maxQueueEntriesPerActor = 0;
+                        object.maxFeatureReferences = 0;
+                        object.maxFactoryProductionCount = 0;
+                        object.maxAreaRadiusWorldUnits = 0;
+                        object.maxCommandDescriptorsPerActor = 0;
+                    }
+                    if (message.profile != null && $Object.hasOwnProperty.call(message, "profile"))
+                        object.profile = message.profile;
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision"))
+                        object.revision = message.revision;
+                    if (message.maxCatalogueEntries != null && $Object.hasOwnProperty.call(message, "maxCatalogueEntries"))
+                        object.maxCatalogueEntries = message.maxCatalogueEntries;
+                    if (message.maxCataloguePageEntries != null && $Object.hasOwnProperty.call(message, "maxCataloguePageEntries"))
+                        object.maxCataloguePageEntries = message.maxCataloguePageEntries;
+                    if (message.maxBuildOptionsPerActor != null && $Object.hasOwnProperty.call(message, "maxBuildOptionsPerActor"))
+                        object.maxBuildOptionsPerActor = message.maxBuildOptionsPerActor;
+                    if (message.maxQueueEntriesPerActor != null && $Object.hasOwnProperty.call(message, "maxQueueEntriesPerActor"))
+                        object.maxQueueEntriesPerActor = message.maxQueueEntriesPerActor;
+                    if (message.maxFeatureReferences != null && $Object.hasOwnProperty.call(message, "maxFeatureReferences"))
+                        object.maxFeatureReferences = message.maxFeatureReferences;
+                    if (message.maxFactoryProductionCount != null && $Object.hasOwnProperty.call(message, "maxFactoryProductionCount"))
+                        object.maxFactoryProductionCount = message.maxFactoryProductionCount;
+                    if (message.maxAreaRadiusWorldUnits != null && $Object.hasOwnProperty.call(message, "maxAreaRadiusWorldUnits"))
+                        object.maxAreaRadiusWorldUnits = message.maxAreaRadiusWorldUnits;
+                    if (message.maxCommandDescriptorsPerActor != null && $Object.hasOwnProperty.call(message, "maxCommandDescriptorsPerActor"))
+                        object.maxCommandDescriptorsPerActor = message.maxCommandDescriptorsPerActor;
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalCapabilities to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalCapabilities.prototype.toJSON = function() {
+                    return TacticalCapabilities.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalCapabilities
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalCapabilities
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalCapabilities.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalCapabilities";
+                };
+
+                return TacticalCapabilities;
+            })();
+
+            v1.ContentIdentity = (function() {
+
+                /**
+                 * Properties of a ContentIdentity.
+                 * @typedef {Object} barc.browser.v1.ContentIdentity.$Properties
+                 * @property {string|null} [engineVersion] ContentIdentity engineVersion
+                 * @property {string|null} [gameName] ContentIdentity gameName
+                 * @property {string|null} [gameVersion] ContentIdentity gameVersion
+                 * @property {Uint8Array|null} [gameContentSha256] ContentIdentity gameContentSha256
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a ContentIdentity.
+                 * @memberof barc.browser.v1
+                 * @interface IContentIdentity
+                 * @augments barc.browser.v1.ContentIdentity.$Properties
+                 * @deprecated Use barc.browser.v1.ContentIdentity.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a ContentIdentity.
+                 * @typedef {barc.browser.v1.ContentIdentity.$Properties} barc.browser.v1.ContentIdentity.$Shape
+                 */
+
+                /**
+                 * Constructs a new ContentIdentity.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a ContentIdentity.
+                 * @constructor
+                 * @param {barc.browser.v1.ContentIdentity.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const ContentIdentity = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * ContentIdentity engineVersion.
+                 * @member {string} engineVersion
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @instance
+                 */
+                ContentIdentity.prototype.engineVersion = "";
+
+                /**
+                 * ContentIdentity gameName.
+                 * @member {string} gameName
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @instance
+                 */
+                ContentIdentity.prototype.gameName = "";
+
+                /**
+                 * ContentIdentity gameVersion.
+                 * @member {string} gameVersion
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @instance
+                 */
+                ContentIdentity.prototype.gameVersion = "";
+
+                /**
+                 * ContentIdentity gameContentSha256.
+                 * @member {Uint8Array} gameContentSha256
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @instance
+                 */
+                ContentIdentity.prototype.gameContentSha256 = $util.newBuffer([]);
+
+                /**
+                 * Encodes the specified ContentIdentity message. Does not implicitly {@link barc.browser.v1.ContentIdentity.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {barc.browser.v1.ContentIdentity.$Properties} message ContentIdentity message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ContentIdentity.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.engineVersion != null && $Object.hasOwnProperty.call(message, "engineVersion") && message.engineVersion !== "")
+                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.engineVersion);
+                    if (message.gameName != null && $Object.hasOwnProperty.call(message, "gameName") && message.gameName !== "")
+                        writer.uint32(/* id 2, wireType 2 =*/18).string(message.gameName);
+                    if (message.gameVersion != null && $Object.hasOwnProperty.call(message, "gameVersion") && message.gameVersion !== "")
+                        writer.uint32(/* id 3, wireType 2 =*/26).string(message.gameVersion);
+                    if (message.gameContentSha256 != null && $Object.hasOwnProperty.call(message, "gameContentSha256") && message.gameContentSha256.length)
+                        writer.uint32(/* id 4, wireType 2 =*/34).bytes(message.gameContentSha256);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified ContentIdentity message, length delimited. Does not implicitly {@link barc.browser.v1.ContentIdentity.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {barc.browser.v1.ContentIdentity.$Properties} message ContentIdentity message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ContentIdentity.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a ContentIdentity message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ContentIdentity & barc.browser.v1.ContentIdentity.$Shape} ContentIdentity
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ContentIdentity.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.ContentIdentity();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.engineVersion = value;
+                                else
+                                    delete message.engineVersion;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.gameName = value;
+                                else
+                                    delete message.gameName;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.gameVersion = value;
+                                else
+                                    delete message.gameVersion;
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.bytes()).length)
+                                    message.gameContentSha256 = value;
+                                else
+                                    delete message.gameContentSha256;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a ContentIdentity message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ContentIdentity & barc.browser.v1.ContentIdentity.$Shape} ContentIdentity
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ContentIdentity.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a ContentIdentity message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.ContentIdentity} ContentIdentity
+                 */
+                ContentIdentity.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.ContentIdentity)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.ContentIdentity: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.ContentIdentity();
+                    if (object.engineVersion != null)
+                        if (typeof object.engineVersion !== "string" || object.engineVersion.length)
+                            message.engineVersion = $String(object.engineVersion);
+                    if (object.gameName != null)
+                        if (typeof object.gameName !== "string" || object.gameName.length)
+                            message.gameName = $String(object.gameName);
+                    if (object.gameVersion != null)
+                        if (typeof object.gameVersion !== "string" || object.gameVersion.length)
+                            message.gameVersion = $String(object.gameVersion);
+                    if (object.gameContentSha256 != null)
+                        if (object.gameContentSha256.length)
+                            if (typeof object.gameContentSha256 === "string")
+                                $util.base64.decode(object.gameContentSha256, message.gameContentSha256 = $util.newBuffer($util.base64.length(object.gameContentSha256)), 0);
+                            else if (object.gameContentSha256.length >= 0)
+                                message.gameContentSha256 = object.gameContentSha256;
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a ContentIdentity message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {barc.browser.v1.ContentIdentity} message ContentIdentity
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                ContentIdentity.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.engineVersion = "";
+                        object.gameName = "";
+                        object.gameVersion = "";
+                        if (options.bytes === $String)
+                            object.gameContentSha256 = "";
+                        else {
+                            object.gameContentSha256 = [];
+                            if (options.bytes !== $Array)
+                                object.gameContentSha256 = $util.newBuffer(object.gameContentSha256);
+                        }
+                    }
+                    if (message.engineVersion != null && $Object.hasOwnProperty.call(message, "engineVersion"))
+                        object.engineVersion = message.engineVersion;
+                    if (message.gameName != null && $Object.hasOwnProperty.call(message, "gameName"))
+                        object.gameName = message.gameName;
+                    if (message.gameVersion != null && $Object.hasOwnProperty.call(message, "gameVersion"))
+                        object.gameVersion = message.gameVersion;
+                    if (message.gameContentSha256 != null && $Object.hasOwnProperty.call(message, "gameContentSha256"))
+                        object.gameContentSha256 = options.bytes === $String ? $util.base64.encode(message.gameContentSha256, 0, message.gameContentSha256.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.gameContentSha256) : message.gameContentSha256;
+                    return object;
+                };
+
+                /**
+                 * Converts this ContentIdentity to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                ContentIdentity.prototype.toJSON = function() {
+                    return ContentIdentity.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for ContentIdentity
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.ContentIdentity
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                ContentIdentity.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.ContentIdentity";
+                };
+
+                return ContentIdentity;
+            })();
+
+            v1.ResourceCost = (function() {
+
+                /**
+                 * Properties of a ResourceCost.
+                 * @typedef {Object} barc.browser.v1.ResourceCost.$Properties
+                 * @property {number|null} [metal] ResourceCost metal
+                 * @property {number|null} [energy] ResourceCost energy
+                 * @property {number|null} [buildTime] ResourceCost buildTime
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a ResourceCost.
+                 * @memberof barc.browser.v1
+                 * @interface IResourceCost
+                 * @augments barc.browser.v1.ResourceCost.$Properties
+                 * @deprecated Use barc.browser.v1.ResourceCost.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a ResourceCost.
+                 * @typedef {barc.browser.v1.ResourceCost.$Properties} barc.browser.v1.ResourceCost.$Shape
+                 */
+
+                /**
+                 * Constructs a new ResourceCost.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a ResourceCost.
+                 * @constructor
+                 * @param {barc.browser.v1.ResourceCost.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const ResourceCost = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * ResourceCost metal.
+                 * @member {number|null|undefined} metal
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @instance
+                 */
+                ResourceCost.prototype.metal = null;
+
+                /**
+                 * ResourceCost energy.
+                 * @member {number|null|undefined} energy
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @instance
+                 */
+                ResourceCost.prototype.energy = null;
+
+                /**
+                 * ResourceCost buildTime.
+                 * @member {number|null|undefined} buildTime
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @instance
+                 */
+                ResourceCost.prototype.buildTime = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(ResourceCost.prototype, "_metal", {
+                    get: $util.oneOfGetter($oneOfFields = ["metal"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(ResourceCost.prototype, "_energy", {
+                    get: $util.oneOfGetter($oneOfFields = ["energy"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(ResourceCost.prototype, "_buildTime", {
+                    get: $util.oneOfGetter($oneOfFields = ["buildTime"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified ResourceCost message. Does not implicitly {@link barc.browser.v1.ResourceCost.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {barc.browser.v1.ResourceCost.$Properties} message ResourceCost message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ResourceCost.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.metal != null && $Object.hasOwnProperty.call(message, "metal"))
+                        writer.uint32(/* id 1, wireType 5 =*/13).float(message.metal);
+                    if (message.energy != null && $Object.hasOwnProperty.call(message, "energy"))
+                        writer.uint32(/* id 2, wireType 5 =*/21).float(message.energy);
+                    if (message.buildTime != null && $Object.hasOwnProperty.call(message, "buildTime"))
+                        writer.uint32(/* id 3, wireType 5 =*/29).float(message.buildTime);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified ResourceCost message, length delimited. Does not implicitly {@link barc.browser.v1.ResourceCost.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {barc.browser.v1.ResourceCost.$Properties} message ResourceCost message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ResourceCost.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a ResourceCost message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ResourceCost & barc.browser.v1.ResourceCost.$Shape} ResourceCost
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ResourceCost.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.ResourceCost();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 5)
+                                    break;
+                                message.metal = reader.float();
+                                message._metal = "metal";
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 5)
+                                    break;
+                                message.energy = reader.float();
+                                message._energy = "energy";
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 5)
+                                    break;
+                                message.buildTime = reader.float();
+                                message._buildTime = "buildTime";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a ResourceCost message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ResourceCost & barc.browser.v1.ResourceCost.$Shape} ResourceCost
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ResourceCost.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a ResourceCost message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.ResourceCost} ResourceCost
+                 */
+                ResourceCost.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.ResourceCost)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.ResourceCost: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.ResourceCost();
+                    if (object.metal != null)
+                        message.metal = $Number(object.metal);
+                    if (object.energy != null)
+                        message.energy = $Number(object.energy);
+                    if (object.buildTime != null)
+                        message.buildTime = $Number(object.buildTime);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a ResourceCost message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {barc.browser.v1.ResourceCost} message ResourceCost
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                ResourceCost.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (message.metal != null && $Object.hasOwnProperty.call(message, "metal"))
+                        object.metal = options.json && !$isFinite(message.metal) ? $String(message.metal) : message.metal;
+                    if (message.energy != null && $Object.hasOwnProperty.call(message, "energy"))
+                        object.energy = options.json && !$isFinite(message.energy) ? $String(message.energy) : message.energy;
+                    if (message.buildTime != null && $Object.hasOwnProperty.call(message, "buildTime"))
+                        object.buildTime = options.json && !$isFinite(message.buildTime) ? $String(message.buildTime) : message.buildTime;
+                    return object;
+                };
+
+                /**
+                 * Converts this ResourceCost to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                ResourceCost.prototype.toJSON = function() {
+                    return ResourceCost.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for ResourceCost
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.ResourceCost
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                ResourceCost.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.ResourceCost";
+                };
+
+                return ResourceCost;
+            })();
+
+            v1.TacticalUnitDefinition = (function() {
+
+                /**
+                 * Properties of a TacticalUnitDefinition.
+                 * @typedef {Object} barc.browser.v1.TacticalUnitDefinition.$Properties
+                 * @property {number|null} [definitionId] TacticalUnitDefinition definitionId
+                 * @property {string|null} [internalName] TacticalUnitDefinition internalName
+                 * @property {string|null} [displayName] TacticalUnitDefinition displayName
+                 * @property {number|null} [footprintXCells] TacticalUnitDefinition footprintXCells
+                 * @property {number|null} [footprintZCells] TacticalUnitDefinition footprintZCells
+                 * @property {barc.browser.v1.ResourceCost.$Properties|null} [cost] TacticalUnitDefinition cost
+                 * @property {Array.<number>|null} [buildOptionDefinitionIds] TacticalUnitDefinition buildOptionDefinitionIds
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalUnitDefinition.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalUnitDefinition
+                 * @augments barc.browser.v1.TacticalUnitDefinition.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalUnitDefinition.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalUnitDefinition.
+                 * @typedef {barc.browser.v1.TacticalUnitDefinition.$Properties} barc.browser.v1.TacticalUnitDefinition.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalUnitDefinition.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalUnitDefinition.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalUnitDefinition.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalUnitDefinition = function (properties) {
+                    this.buildOptionDefinitionIds = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalUnitDefinition definitionId.
+                 * @member {number} definitionId
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.definitionId = 0;
+
+                /**
+                 * TacticalUnitDefinition internalName.
+                 * @member {string} internalName
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.internalName = "";
+
+                /**
+                 * TacticalUnitDefinition displayName.
+                 * @member {string} displayName
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.displayName = "";
+
+                /**
+                 * TacticalUnitDefinition footprintXCells.
+                 * @member {number} footprintXCells
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.footprintXCells = 0;
+
+                /**
+                 * TacticalUnitDefinition footprintZCells.
+                 * @member {number} footprintZCells
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.footprintZCells = 0;
+
+                /**
+                 * TacticalUnitDefinition cost.
+                 * @member {barc.browser.v1.ResourceCost.$Properties|null|undefined} cost
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.cost = null;
+
+                /**
+                 * TacticalUnitDefinition buildOptionDefinitionIds.
+                 * @member {Array.<number>} buildOptionDefinitionIds
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 */
+                TacticalUnitDefinition.prototype.buildOptionDefinitionIds = $util.emptyArray;
+
+                /**
+                 * Encodes the specified TacticalUnitDefinition message. Does not implicitly {@link barc.browser.v1.TacticalUnitDefinition.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {barc.browser.v1.TacticalUnitDefinition.$Properties} message TacticalUnitDefinition message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalUnitDefinition.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId") && message.definitionId !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.definitionId);
+                    if (message.internalName != null && $Object.hasOwnProperty.call(message, "internalName") && message.internalName !== "")
+                        writer.uint32(/* id 2, wireType 2 =*/18).string(message.internalName);
+                    if (message.displayName != null && $Object.hasOwnProperty.call(message, "displayName") && message.displayName !== "")
+                        writer.uint32(/* id 3, wireType 2 =*/26).string(message.displayName);
+                    if (message.footprintXCells != null && $Object.hasOwnProperty.call(message, "footprintXCells") && message.footprintXCells !== 0)
+                        writer.uint32(/* id 4, wireType 0 =*/32).uint32(message.footprintXCells);
+                    if (message.footprintZCells != null && $Object.hasOwnProperty.call(message, "footprintZCells") && message.footprintZCells !== 0)
+                        writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.footprintZCells);
+                    if (message.cost != null && $Object.hasOwnProperty.call(message, "cost"))
+                        $root.barc.browser.v1.ResourceCost.encode(message.cost, writer.uint32(/* id 6, wireType 2 =*/50).fork(), _depth + 1).ldelim();
+                    if (message.buildOptionDefinitionIds != null && message.buildOptionDefinitionIds.length)
+                        writer.uint32(/* id 7, wireType 2 =*/58).uint32s(message.buildOptionDefinitionIds);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalUnitDefinition message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalUnitDefinition.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {barc.browser.v1.TacticalUnitDefinition.$Properties} message TacticalUnitDefinition message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalUnitDefinition.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalUnitDefinition message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalUnitDefinition & barc.browser.v1.TacticalUnitDefinition.$Shape} TacticalUnitDefinition
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalUnitDefinition.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalUnitDefinition();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.definitionId = value;
+                                else
+                                    delete message.definitionId;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.internalName = value;
+                                else
+                                    delete message.internalName;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.displayName = value;
+                                else
+                                    delete message.displayName;
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.footprintXCells = value;
+                                else
+                                    delete message.footprintXCells;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.footprintZCells = value;
+                                else
+                                    delete message.footprintZCells;
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 2)
+                                    break;
+                                message.cost = $root.barc.browser.v1.ResourceCost.decode(reader, reader.uint32(), $undefined, _depth + 1, message.cost);
+                                continue;
+                            }
+                        case 7: {
+                                if (wireType === 2) {
+                                    if (!(message.buildOptionDefinitionIds && message.buildOptionDefinitionIds.length))
+                                        message.buildOptionDefinitionIds = [];
+                                    reader.uint32s(message.buildOptionDefinitionIds);
+                                    continue;
+                                }
+                                if (wireType !== 0)
+                                    break;
+                                if (!(message.buildOptionDefinitionIds && message.buildOptionDefinitionIds.length))
+                                    message.buildOptionDefinitionIds = [];
+                                message.buildOptionDefinitionIds.push(reader.uint32());
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalUnitDefinition message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalUnitDefinition & barc.browser.v1.TacticalUnitDefinition.$Shape} TacticalUnitDefinition
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalUnitDefinition.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalUnitDefinition message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalUnitDefinition} TacticalUnitDefinition
+                 */
+                TacticalUnitDefinition.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalUnitDefinition)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalUnitDefinition: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalUnitDefinition();
+                    if (object.definitionId != null)
+                        if ($Number(object.definitionId) !== 0)
+                            message.definitionId = object.definitionId >>> 0;
+                    if (object.internalName != null)
+                        if (typeof object.internalName !== "string" || object.internalName.length)
+                            message.internalName = $String(object.internalName);
+                    if (object.displayName != null)
+                        if (typeof object.displayName !== "string" || object.displayName.length)
+                            message.displayName = $String(object.displayName);
+                    if (object.footprintXCells != null)
+                        if ($Number(object.footprintXCells) !== 0)
+                            message.footprintXCells = object.footprintXCells >>> 0;
+                    if (object.footprintZCells != null)
+                        if ($Number(object.footprintZCells) !== 0)
+                            message.footprintZCells = object.footprintZCells >>> 0;
+                    if (object.cost != null) {
+                        if (!$util.isObject(object.cost))
+                            throw $TypeError(".barc.browser.v1.TacticalUnitDefinition.cost: object expected");
+                        message.cost = $root.barc.browser.v1.ResourceCost.fromObject(object.cost, _depth + 1);
+                    }
+                    if (object.buildOptionDefinitionIds) {
+                        if (!$Array.isArray(object.buildOptionDefinitionIds))
+                            throw $TypeError(".barc.browser.v1.TacticalUnitDefinition.buildOptionDefinitionIds: array expected");
+                        message.buildOptionDefinitionIds = $Array(object.buildOptionDefinitionIds.length);
+                        for (let i = 0; i < object.buildOptionDefinitionIds.length; ++i)
+                            message.buildOptionDefinitionIds[i] = object.buildOptionDefinitionIds[i] >>> 0;
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalUnitDefinition message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {barc.browser.v1.TacticalUnitDefinition} message TacticalUnitDefinition
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalUnitDefinition.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults)
+                        object.buildOptionDefinitionIds = [];
+                    if (options.defaults) {
+                        object.definitionId = 0;
+                        object.internalName = "";
+                        object.displayName = "";
+                        object.footprintXCells = 0;
+                        object.footprintZCells = 0;
+                        object.cost = null;
+                    }
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        object.definitionId = message.definitionId;
+                    if (message.internalName != null && $Object.hasOwnProperty.call(message, "internalName"))
+                        object.internalName = message.internalName;
+                    if (message.displayName != null && $Object.hasOwnProperty.call(message, "displayName"))
+                        object.displayName = message.displayName;
+                    if (message.footprintXCells != null && $Object.hasOwnProperty.call(message, "footprintXCells"))
+                        object.footprintXCells = message.footprintXCells;
+                    if (message.footprintZCells != null && $Object.hasOwnProperty.call(message, "footprintZCells"))
+                        object.footprintZCells = message.footprintZCells;
+                    if (message.cost != null && $Object.hasOwnProperty.call(message, "cost"))
+                        object.cost = $root.barc.browser.v1.ResourceCost.toObject(message.cost, options, _depth + 1);
+                    if (message.buildOptionDefinitionIds && message.buildOptionDefinitionIds.length) {
+                        object.buildOptionDefinitionIds = $Array(message.buildOptionDefinitionIds.length);
+                        for (let j = 0; j < message.buildOptionDefinitionIds.length; ++j)
+                            object.buildOptionDefinitionIds[j] = message.buildOptionDefinitionIds[j];
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalUnitDefinition to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalUnitDefinition.prototype.toJSON = function() {
+                    return TacticalUnitDefinition.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalUnitDefinition
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalUnitDefinition
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalUnitDefinition.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalUnitDefinition";
+                };
+
+                return TacticalUnitDefinition;
+            })();
+
+            v1.TacticalCatalogue = (function() {
+
+                /**
+                 * Properties of a TacticalCatalogue.
+                 * @typedef {Object} barc.browser.v1.TacticalCatalogue.$Properties
+                 * @property {string|null} [profile] TacticalCatalogue profile
+                 * @property {number|null} [revision] TacticalCatalogue revision
+                 * @property {barc.browser.v1.ContentIdentity.$Properties|null} [content] TacticalCatalogue content
+                 * @property {Uint8Array|null} [catalogueId] TacticalCatalogue catalogueId
+                 * @property {Long|null} [catalogueRevision] TacticalCatalogue catalogueRevision
+                 * @property {boolean|null} [complete] TacticalCatalogue complete
+                 * @property {Array.<barc.browser.v1.TacticalUnitDefinition.$Properties>|null} [definitions] TacticalCatalogue definitions
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalCatalogue.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalCatalogue
+                 * @augments barc.browser.v1.TacticalCatalogue.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalCatalogue.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalCatalogue.
+                 * @typedef {barc.browser.v1.TacticalCatalogue.$Properties} barc.browser.v1.TacticalCatalogue.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalCatalogue.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalCatalogue.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalCatalogue.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalCatalogue = function (properties) {
+                    this.definitions = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalCatalogue profile.
+                 * @member {string} profile
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.profile = "";
+
+                /**
+                 * TacticalCatalogue revision.
+                 * @member {number} revision
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.revision = 0;
+
+                /**
+                 * TacticalCatalogue content.
+                 * @member {barc.browser.v1.ContentIdentity.$Properties|null|undefined} content
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.content = null;
+
+                /**
+                 * TacticalCatalogue catalogueId.
+                 * @member {Uint8Array} catalogueId
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.catalogueId = $util.newBuffer([]);
+
+                /**
+                 * TacticalCatalogue catalogueRevision.
+                 * @member {Long} catalogueRevision
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.catalogueRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * TacticalCatalogue complete.
+                 * @member {boolean} complete
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.complete = false;
+
+                /**
+                 * TacticalCatalogue definitions.
+                 * @member {Array.<barc.browser.v1.TacticalUnitDefinition.$Properties>} definitions
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 */
+                TacticalCatalogue.prototype.definitions = $util.emptyArray;
+
+                /**
+                 * Encodes the specified TacticalCatalogue message. Does not implicitly {@link barc.browser.v1.TacticalCatalogue.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {barc.browser.v1.TacticalCatalogue.$Properties} message TacticalCatalogue message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalCatalogue.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.profile != null && $Object.hasOwnProperty.call(message, "profile") && message.profile !== "")
+                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.profile);
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision") && message.revision !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.revision);
+                    if (message.content != null && $Object.hasOwnProperty.call(message, "content"))
+                        $root.barc.browser.v1.ContentIdentity.encode(message.content, writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId") && message.catalogueId.length)
+                        writer.uint32(/* id 4, wireType 2 =*/34).bytes(message.catalogueId);
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision") && (typeof message.catalogueRevision === "object" ? message.catalogueRevision.low || message.catalogueRevision.high : message.catalogueRevision !== 0))
+                        writer.uint32(/* id 5, wireType 0 =*/40).uint64(message.catalogueRevision);
+                    if (message.complete != null && $Object.hasOwnProperty.call(message, "complete") && message.complete !== false)
+                        writer.uint32(/* id 6, wireType 0 =*/48).bool(message.complete);
+                    if (message.definitions != null && message.definitions.length)
+                        for (let i = 0; i < message.definitions.length; ++i)
+                            $root.barc.browser.v1.TacticalUnitDefinition.encode(message.definitions[i], writer.uint32(/* id 7, wireType 2 =*/58).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalCatalogue message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalCatalogue.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {barc.browser.v1.TacticalCatalogue.$Properties} message TacticalCatalogue message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalCatalogue.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalCatalogue message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalCatalogue & barc.browser.v1.TacticalCatalogue.$Shape} TacticalCatalogue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalCatalogue.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalCatalogue();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.profile = value;
+                                else
+                                    delete message.profile;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.revision = value;
+                                else
+                                    delete message.revision;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                message.content = $root.barc.browser.v1.ContentIdentity.decode(reader, reader.uint32(), $undefined, _depth + 1, message.content);
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.bytes()).length)
+                                    message.catalogueId = value;
+                                else
+                                    delete message.catalogueId;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.catalogueRevision = value;
+                                else
+                                    delete message.catalogueRevision;
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.bool())
+                                    message.complete = value;
+                                else
+                                    delete message.complete;
+                                continue;
+                            }
+                        case 7: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.definitions && message.definitions.length))
+                                    message.definitions = [];
+                                message.definitions.push($root.barc.browser.v1.TacticalUnitDefinition.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalCatalogue message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalCatalogue & barc.browser.v1.TacticalCatalogue.$Shape} TacticalCatalogue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalCatalogue.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalCatalogue message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalCatalogue} TacticalCatalogue
+                 */
+                TacticalCatalogue.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalCatalogue)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalCatalogue: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalCatalogue();
+                    if (object.profile != null)
+                        if (typeof object.profile !== "string" || object.profile.length)
+                            message.profile = $String(object.profile);
+                    if (object.revision != null)
+                        if ($Number(object.revision) !== 0)
+                            message.revision = object.revision >>> 0;
+                    if (object.content != null) {
+                        if (!$util.isObject(object.content))
+                            throw $TypeError(".barc.browser.v1.TacticalCatalogue.content: object expected");
+                        message.content = $root.barc.browser.v1.ContentIdentity.fromObject(object.content, _depth + 1);
+                    }
+                    if (object.catalogueId != null)
+                        if (object.catalogueId.length)
+                            if (typeof object.catalogueId === "string")
+                                $util.base64.decode(object.catalogueId, message.catalogueId = $util.newBuffer($util.base64.length(object.catalogueId)), 0);
+                            else if (object.catalogueId.length >= 0)
+                                message.catalogueId = object.catalogueId;
+                    if (object.catalogueRevision != null)
+                        if (typeof object.catalogueRevision === "object" ? object.catalogueRevision.low || object.catalogueRevision.high : $Number(object.catalogueRevision) !== 0)
+                            if ($util.Long)
+                                message.catalogueRevision = $util.Long.fromValue(object.catalogueRevision, true);
+                            else if (typeof object.catalogueRevision === "string")
+                                message.catalogueRevision = $parseInt(object.catalogueRevision, 10);
+                            else if (typeof object.catalogueRevision === "number")
+                                message.catalogueRevision = object.catalogueRevision;
+                            else if (typeof object.catalogueRevision === "object")
+                                message.catalogueRevision = new $util.LongBits(object.catalogueRevision.low >>> 0, object.catalogueRevision.high >>> 0).toNumber(true);
+                    if (object.complete != null)
+                        if (object.complete)
+                            message.complete = $Boolean(object.complete);
+                    if (object.definitions) {
+                        if (!$Array.isArray(object.definitions))
+                            throw $TypeError(".barc.browser.v1.TacticalCatalogue.definitions: array expected");
+                        message.definitions = $Array(object.definitions.length);
+                        for (let i = 0; i < object.definitions.length; ++i) {
+                            if (!$util.isObject(object.definitions[i]))
+                                throw $TypeError(".barc.browser.v1.TacticalCatalogue.definitions: object expected");
+                            message.definitions[i] = $root.barc.browser.v1.TacticalUnitDefinition.fromObject(object.definitions[i], _depth + 1);
+                        }
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalCatalogue message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {barc.browser.v1.TacticalCatalogue} message TacticalCatalogue
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalCatalogue.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults)
+                        object.definitions = [];
+                    if (options.defaults) {
+                        object.profile = "";
+                        object.revision = 0;
+                        object.content = null;
+                        if (options.bytes === $String)
+                            object.catalogueId = "";
+                        else {
+                            object.catalogueId = [];
+                            if (options.bytes !== $Array)
+                                object.catalogueId = $util.newBuffer(object.catalogueId);
+                        }
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.catalogueRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.catalogueRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                        object.complete = false;
+                    }
+                    if (message.profile != null && $Object.hasOwnProperty.call(message, "profile"))
+                        object.profile = message.profile;
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision"))
+                        object.revision = message.revision;
+                    if (message.content != null && $Object.hasOwnProperty.call(message, "content"))
+                        object.content = $root.barc.browser.v1.ContentIdentity.toObject(message.content, options, _depth + 1);
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId"))
+                        object.catalogueId = options.bytes === $String ? $util.base64.encode(message.catalogueId, 0, message.catalogueId.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.catalogueId) : message.catalogueId;
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.catalogueRevision = typeof message.catalogueRevision === "number" ? $BigInt(message.catalogueRevision) : $util.Long.fromBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.catalogueRevision === "number")
+                            object.catalogueRevision = options.longs === $String ? $String(message.catalogueRevision) : message.catalogueRevision;
+                        else
+                            object.catalogueRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.catalogueRevision) : options.longs === $Number ? new $util.LongBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0).toNumber(true) : message.catalogueRevision;
+                    if (message.complete != null && $Object.hasOwnProperty.call(message, "complete"))
+                        object.complete = message.complete;
+                    if (message.definitions && message.definitions.length) {
+                        object.definitions = $Array(message.definitions.length);
+                        for (let j = 0; j < message.definitions.length; ++j)
+                            object.definitions[j] = $root.barc.browser.v1.TacticalUnitDefinition.toObject(message.definitions[j], options, _depth + 1);
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalCatalogue to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalCatalogue.prototype.toJSON = function() {
+                    return TacticalCatalogue.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalCatalogue
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalCatalogue
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalCatalogue.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalCatalogue";
+                };
+
+                return TacticalCatalogue;
+            })();
+
+            v1.FeatureReference = (function() {
+
+                /**
+                 * Properties of a FeatureReference.
+                 * @typedef {Object} barc.browser.v1.FeatureReference.$Properties
+                 * @property {Long|null} [id] FeatureReference id
+                 * @property {Long|null} [lifetime] FeatureReference lifetime
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a FeatureReference.
+                 * @memberof barc.browser.v1
+                 * @interface IFeatureReference
+                 * @augments barc.browser.v1.FeatureReference.$Properties
+                 * @deprecated Use barc.browser.v1.FeatureReference.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a FeatureReference.
+                 * @typedef {barc.browser.v1.FeatureReference.$Properties} barc.browser.v1.FeatureReference.$Shape
+                 */
+
+                /**
+                 * Constructs a new FeatureReference.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a FeatureReference.
+                 * @constructor
+                 * @param {barc.browser.v1.FeatureReference.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const FeatureReference = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * FeatureReference id.
+                 * @member {Long} id
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @instance
+                 */
+                FeatureReference.prototype.id = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * FeatureReference lifetime.
+                 * @member {Long} lifetime
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @instance
+                 */
+                FeatureReference.prototype.lifetime = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * Encodes the specified FeatureReference message. Does not implicitly {@link barc.browser.v1.FeatureReference.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {barc.browser.v1.FeatureReference.$Properties} message FeatureReference message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FeatureReference.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.id != null && $Object.hasOwnProperty.call(message, "id") && (typeof message.id === "object" ? message.id.low || message.id.high : message.id !== 0))
+                        writer.uint32(/* id 1, wireType 0 =*/8).uint64(message.id);
+                    if (message.lifetime != null && $Object.hasOwnProperty.call(message, "lifetime") && (typeof message.lifetime === "object" ? message.lifetime.low || message.lifetime.high : message.lifetime !== 0))
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.lifetime);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified FeatureReference message, length delimited. Does not implicitly {@link barc.browser.v1.FeatureReference.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {barc.browser.v1.FeatureReference.$Properties} message FeatureReference message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FeatureReference.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a FeatureReference message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FeatureReference & barc.browser.v1.FeatureReference.$Shape} FeatureReference
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FeatureReference.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.FeatureReference();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.id = value;
+                                else
+                                    delete message.id;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.lifetime = value;
+                                else
+                                    delete message.lifetime;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a FeatureReference message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FeatureReference & barc.browser.v1.FeatureReference.$Shape} FeatureReference
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FeatureReference.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a FeatureReference message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.FeatureReference} FeatureReference
+                 */
+                FeatureReference.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.FeatureReference)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.FeatureReference: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.FeatureReference();
+                    if (object.id != null)
+                        if (typeof object.id === "object" ? object.id.low || object.id.high : $Number(object.id) !== 0)
+                            if ($util.Long)
+                                message.id = $util.Long.fromValue(object.id, true);
+                            else if (typeof object.id === "string")
+                                message.id = $parseInt(object.id, 10);
+                            else if (typeof object.id === "number")
+                                message.id = object.id;
+                            else if (typeof object.id === "object")
+                                message.id = new $util.LongBits(object.id.low >>> 0, object.id.high >>> 0).toNumber(true);
+                    if (object.lifetime != null)
+                        if (typeof object.lifetime === "object" ? object.lifetime.low || object.lifetime.high : $Number(object.lifetime) !== 0)
+                            if ($util.Long)
+                                message.lifetime = $util.Long.fromValue(object.lifetime, true);
+                            else if (typeof object.lifetime === "string")
+                                message.lifetime = $parseInt(object.lifetime, 10);
+                            else if (typeof object.lifetime === "number")
+                                message.lifetime = object.lifetime;
+                            else if (typeof object.lifetime === "object")
+                                message.lifetime = new $util.LongBits(object.lifetime.low >>> 0, object.lifetime.high >>> 0).toNumber(true);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a FeatureReference message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {barc.browser.v1.FeatureReference} message FeatureReference
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                FeatureReference.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.id = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.id = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.lifetime = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.lifetime = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                    }
+                    if (message.id != null && $Object.hasOwnProperty.call(message, "id"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.id = typeof message.id === "number" ? $BigInt(message.id) : $util.Long.fromBits(message.id.low >>> 0, message.id.high >>> 0, true).toBigInt();
+                        else if (typeof message.id === "number")
+                            object.id = options.longs === $String ? $String(message.id) : message.id;
+                        else
+                            object.id = options.longs === $String ? $util.Long.prototype.toString.call(message.id) : options.longs === $Number ? new $util.LongBits(message.id.low >>> 0, message.id.high >>> 0).toNumber(true) : message.id;
+                    if (message.lifetime != null && $Object.hasOwnProperty.call(message, "lifetime"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.lifetime = typeof message.lifetime === "number" ? $BigInt(message.lifetime) : $util.Long.fromBits(message.lifetime.low >>> 0, message.lifetime.high >>> 0, true).toBigInt();
+                        else if (typeof message.lifetime === "number")
+                            object.lifetime = options.longs === $String ? $String(message.lifetime) : message.lifetime;
+                        else
+                            object.lifetime = options.longs === $String ? $util.Long.prototype.toString.call(message.lifetime) : options.longs === $Number ? new $util.LongBits(message.lifetime.low >>> 0, message.lifetime.high >>> 0).toNumber(true) : message.lifetime;
+                    return object;
+                };
+
+                /**
+                 * Converts this FeatureReference to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                FeatureReference.prototype.toJSON = function() {
+                    return FeatureReference.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for FeatureReference
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.FeatureReference
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                FeatureReference.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.FeatureReference";
+                };
+
+                return FeatureReference;
+            })();
+
+            v1.TacticalFeature = (function() {
+
+                /**
+                 * Properties of a TacticalFeature.
+                 * @typedef {Object} barc.browser.v1.TacticalFeature.$Properties
+                 * @property {barc.browser.v1.FeatureReference.$Properties|null} [reference] TacticalFeature reference
+                 * @property {number|null} [definitionId] TacticalFeature definitionId
+                 * @property {barc.browser.v1.Position3.$Properties|null} [position] TacticalFeature position
+                 * @property {number|null} [reclaimLeft] TacticalFeature reclaimLeft
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalFeature.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalFeature
+                 * @augments barc.browser.v1.TacticalFeature.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalFeature.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalFeature.
+                 * @typedef {barc.browser.v1.TacticalFeature.$Properties} barc.browser.v1.TacticalFeature.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalFeature.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalFeature.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalFeature.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalFeature = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalFeature reference.
+                 * @member {barc.browser.v1.FeatureReference.$Properties|null|undefined} reference
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @instance
+                 */
+                TacticalFeature.prototype.reference = null;
+
+                /**
+                 * TacticalFeature definitionId.
+                 * @member {number} definitionId
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @instance
+                 */
+                TacticalFeature.prototype.definitionId = 0;
+
+                /**
+                 * TacticalFeature position.
+                 * @member {barc.browser.v1.Position3.$Properties|null|undefined} position
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @instance
+                 */
+                TacticalFeature.prototype.position = null;
+
+                /**
+                 * TacticalFeature reclaimLeft.
+                 * @member {number|null|undefined} reclaimLeft
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @instance
+                 */
+                TacticalFeature.prototype.reclaimLeft = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalFeature.prototype, "_reclaimLeft", {
+                    get: $util.oneOfGetter($oneOfFields = ["reclaimLeft"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified TacticalFeature message. Does not implicitly {@link barc.browser.v1.TacticalFeature.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {barc.browser.v1.TacticalFeature.$Properties} message TacticalFeature message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalFeature.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.reference != null && $Object.hasOwnProperty.call(message, "reference"))
+                        $root.barc.browser.v1.FeatureReference.encode(message.reference, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId") && message.definitionId !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.definitionId);
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        $root.barc.browser.v1.Position3.encode(message.position, writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.reclaimLeft != null && $Object.hasOwnProperty.call(message, "reclaimLeft"))
+                        writer.uint32(/* id 4, wireType 5 =*/37).float(message.reclaimLeft);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalFeature message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalFeature.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {barc.browser.v1.TacticalFeature.$Properties} message TacticalFeature message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalFeature.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalFeature message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalFeature & barc.browser.v1.TacticalFeature.$Shape} TacticalFeature
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalFeature.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalFeature();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.reference = $root.barc.browser.v1.FeatureReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.reference);
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.definitionId = value;
+                                else
+                                    delete message.definitionId;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                message.position = $root.barc.browser.v1.Position3.decode(reader, reader.uint32(), $undefined, _depth + 1, message.position);
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 5)
+                                    break;
+                                message.reclaimLeft = reader.float();
+                                message._reclaimLeft = "reclaimLeft";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalFeature message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalFeature & barc.browser.v1.TacticalFeature.$Shape} TacticalFeature
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalFeature.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalFeature message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalFeature} TacticalFeature
+                 */
+                TacticalFeature.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalFeature)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalFeature: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalFeature();
+                    if (object.reference != null) {
+                        if (!$util.isObject(object.reference))
+                            throw $TypeError(".barc.browser.v1.TacticalFeature.reference: object expected");
+                        message.reference = $root.barc.browser.v1.FeatureReference.fromObject(object.reference, _depth + 1);
+                    }
+                    if (object.definitionId != null)
+                        if ($Number(object.definitionId) !== 0)
+                            message.definitionId = object.definitionId >>> 0;
+                    if (object.position != null) {
+                        if (!$util.isObject(object.position))
+                            throw $TypeError(".barc.browser.v1.TacticalFeature.position: object expected");
+                        message.position = $root.barc.browser.v1.Position3.fromObject(object.position, _depth + 1);
+                    }
+                    if (object.reclaimLeft != null)
+                        message.reclaimLeft = $Number(object.reclaimLeft);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalFeature message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {barc.browser.v1.TacticalFeature} message TacticalFeature
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalFeature.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.reference = null;
+                        object.definitionId = 0;
+                        object.position = null;
+                    }
+                    if (message.reference != null && $Object.hasOwnProperty.call(message, "reference"))
+                        object.reference = $root.barc.browser.v1.FeatureReference.toObject(message.reference, options, _depth + 1);
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        object.definitionId = message.definitionId;
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        object.position = $root.barc.browser.v1.Position3.toObject(message.position, options, _depth + 1);
+                    if (message.reclaimLeft != null && $Object.hasOwnProperty.call(message, "reclaimLeft"))
+                        object.reclaimLeft = options.json && !$isFinite(message.reclaimLeft) ? $String(message.reclaimLeft) : message.reclaimLeft;
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalFeature to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalFeature.prototype.toJSON = function() {
+                    return TacticalFeature.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalFeature
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalFeature
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalFeature.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalFeature";
+                };
+
+                return TacticalFeature;
+            })();
+
+            v1.EconomyValue = (function() {
+
+                /**
+                 * Properties of an EconomyValue.
+                 * @typedef {Object} barc.browser.v1.EconomyValue.$Properties
+                 * @property {string|null} [resourceName] EconomyValue resourceName
+                 * @property {string|null} [unit] EconomyValue unit
+                 * @property {number|null} [current] EconomyValue current
+                 * @property {number|null} [storage] EconomyValue storage
+                 * @property {number|null} [incomePerSecond] EconomyValue incomePerSecond
+                 * @property {number|null} [usagePerSecond] EconomyValue usagePerSecond
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of an EconomyValue.
+                 * @memberof barc.browser.v1
+                 * @interface IEconomyValue
+                 * @augments barc.browser.v1.EconomyValue.$Properties
+                 * @deprecated Use barc.browser.v1.EconomyValue.$Properties instead.
+                 */
+
+                /**
+                 * Shape of an EconomyValue.
+                 * @typedef {barc.browser.v1.EconomyValue.$Properties} barc.browser.v1.EconomyValue.$Shape
+                 */
+
+                /**
+                 * Constructs a new EconomyValue.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents an EconomyValue.
+                 * @constructor
+                 * @param {barc.browser.v1.EconomyValue.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const EconomyValue = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * EconomyValue resourceName.
+                 * @member {string} resourceName
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 */
+                EconomyValue.prototype.resourceName = "";
+
+                /**
+                 * EconomyValue unit.
+                 * @member {string} unit
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 */
+                EconomyValue.prototype.unit = "";
+
+                /**
+                 * EconomyValue current.
+                 * @member {number|null|undefined} current
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 */
+                EconomyValue.prototype.current = null;
+
+                /**
+                 * EconomyValue storage.
+                 * @member {number|null|undefined} storage
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 */
+                EconomyValue.prototype.storage = null;
+
+                /**
+                 * EconomyValue incomePerSecond.
+                 * @member {number|null|undefined} incomePerSecond
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 */
+                EconomyValue.prototype.incomePerSecond = null;
+
+                /**
+                 * EconomyValue usagePerSecond.
+                 * @member {number|null|undefined} usagePerSecond
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 */
+                EconomyValue.prototype.usagePerSecond = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(EconomyValue.prototype, "_current", {
+                    get: $util.oneOfGetter($oneOfFields = ["current"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(EconomyValue.prototype, "_storage", {
+                    get: $util.oneOfGetter($oneOfFields = ["storage"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(EconomyValue.prototype, "_incomePerSecond", {
+                    get: $util.oneOfGetter($oneOfFields = ["incomePerSecond"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(EconomyValue.prototype, "_usagePerSecond", {
+                    get: $util.oneOfGetter($oneOfFields = ["usagePerSecond"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified EconomyValue message. Does not implicitly {@link barc.browser.v1.EconomyValue.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {barc.browser.v1.EconomyValue.$Properties} message EconomyValue message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                EconomyValue.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.resourceName != null && $Object.hasOwnProperty.call(message, "resourceName") && message.resourceName !== "")
+                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.resourceName);
+                    if (message.unit != null && $Object.hasOwnProperty.call(message, "unit") && message.unit !== "")
+                        writer.uint32(/* id 2, wireType 2 =*/18).string(message.unit);
+                    if (message.current != null && $Object.hasOwnProperty.call(message, "current"))
+                        writer.uint32(/* id 3, wireType 5 =*/29).float(message.current);
+                    if (message.storage != null && $Object.hasOwnProperty.call(message, "storage"))
+                        writer.uint32(/* id 4, wireType 5 =*/37).float(message.storage);
+                    if (message.incomePerSecond != null && $Object.hasOwnProperty.call(message, "incomePerSecond"))
+                        writer.uint32(/* id 5, wireType 5 =*/45).float(message.incomePerSecond);
+                    if (message.usagePerSecond != null && $Object.hasOwnProperty.call(message, "usagePerSecond"))
+                        writer.uint32(/* id 6, wireType 5 =*/53).float(message.usagePerSecond);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified EconomyValue message, length delimited. Does not implicitly {@link barc.browser.v1.EconomyValue.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {barc.browser.v1.EconomyValue.$Properties} message EconomyValue message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                EconomyValue.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes an EconomyValue message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.EconomyValue & barc.browser.v1.EconomyValue.$Shape} EconomyValue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                EconomyValue.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.EconomyValue();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.resourceName = value;
+                                else
+                                    delete message.resourceName;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.unit = value;
+                                else
+                                    delete message.unit;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 5)
+                                    break;
+                                message.current = reader.float();
+                                message._current = "current";
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 5)
+                                    break;
+                                message.storage = reader.float();
+                                message._storage = "storage";
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 5)
+                                    break;
+                                message.incomePerSecond = reader.float();
+                                message._incomePerSecond = "incomePerSecond";
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 5)
+                                    break;
+                                message.usagePerSecond = reader.float();
+                                message._usagePerSecond = "usagePerSecond";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes an EconomyValue message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.EconomyValue & barc.browser.v1.EconomyValue.$Shape} EconomyValue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                EconomyValue.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates an EconomyValue message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.EconomyValue} EconomyValue
+                 */
+                EconomyValue.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.EconomyValue)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.EconomyValue: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.EconomyValue();
+                    if (object.resourceName != null)
+                        if (typeof object.resourceName !== "string" || object.resourceName.length)
+                            message.resourceName = $String(object.resourceName);
+                    if (object.unit != null)
+                        if (typeof object.unit !== "string" || object.unit.length)
+                            message.unit = $String(object.unit);
+                    if (object.current != null)
+                        message.current = $Number(object.current);
+                    if (object.storage != null)
+                        message.storage = $Number(object.storage);
+                    if (object.incomePerSecond != null)
+                        message.incomePerSecond = $Number(object.incomePerSecond);
+                    if (object.usagePerSecond != null)
+                        message.usagePerSecond = $Number(object.usagePerSecond);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from an EconomyValue message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {barc.browser.v1.EconomyValue} message EconomyValue
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                EconomyValue.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.resourceName = "";
+                        object.unit = "";
+                    }
+                    if (message.resourceName != null && $Object.hasOwnProperty.call(message, "resourceName"))
+                        object.resourceName = message.resourceName;
+                    if (message.unit != null && $Object.hasOwnProperty.call(message, "unit"))
+                        object.unit = message.unit;
+                    if (message.current != null && $Object.hasOwnProperty.call(message, "current"))
+                        object.current = options.json && !$isFinite(message.current) ? $String(message.current) : message.current;
+                    if (message.storage != null && $Object.hasOwnProperty.call(message, "storage"))
+                        object.storage = options.json && !$isFinite(message.storage) ? $String(message.storage) : message.storage;
+                    if (message.incomePerSecond != null && $Object.hasOwnProperty.call(message, "incomePerSecond"))
+                        object.incomePerSecond = options.json && !$isFinite(message.incomePerSecond) ? $String(message.incomePerSecond) : message.incomePerSecond;
+                    if (message.usagePerSecond != null && $Object.hasOwnProperty.call(message, "usagePerSecond"))
+                        object.usagePerSecond = options.json && !$isFinite(message.usagePerSecond) ? $String(message.usagePerSecond) : message.usagePerSecond;
+                    return object;
+                };
+
+                /**
+                 * Converts this EconomyValue to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                EconomyValue.prototype.toJSON = function() {
+                    return EconomyValue.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for EconomyValue
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.EconomyValue
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                EconomyValue.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.EconomyValue";
+                };
+
+                return EconomyValue;
+            })();
+
+            v1.TacticalEconomy = (function() {
+
+                /**
+                 * Properties of a TacticalEconomy.
+                 * @typedef {Object} barc.browser.v1.TacticalEconomy.$Properties
+                 * @property {string|null} [perspectiveId] TacticalEconomy perspectiveId
+                 * @property {number|null} [sampleFrame] TacticalEconomy sampleFrame
+                 * @property {barc.browser.v1.EconomyValue.$Properties|null} [metal] TacticalEconomy metal
+                 * @property {barc.browser.v1.EconomyValue.$Properties|null} [energy] TacticalEconomy energy
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalEconomy.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalEconomy
+                 * @augments barc.browser.v1.TacticalEconomy.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalEconomy.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalEconomy.
+                 * @typedef {barc.browser.v1.TacticalEconomy.$Properties} barc.browser.v1.TacticalEconomy.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalEconomy.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalEconomy.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalEconomy.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalEconomy = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalEconomy perspectiveId.
+                 * @member {string} perspectiveId
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @instance
+                 */
+                TacticalEconomy.prototype.perspectiveId = "";
+
+                /**
+                 * TacticalEconomy sampleFrame.
+                 * @member {number} sampleFrame
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @instance
+                 */
+                TacticalEconomy.prototype.sampleFrame = 0;
+
+                /**
+                 * TacticalEconomy metal.
+                 * @member {barc.browser.v1.EconomyValue.$Properties|null|undefined} metal
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @instance
+                 */
+                TacticalEconomy.prototype.metal = null;
+
+                /**
+                 * TacticalEconomy energy.
+                 * @member {barc.browser.v1.EconomyValue.$Properties|null|undefined} energy
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @instance
+                 */
+                TacticalEconomy.prototype.energy = null;
+
+                /**
+                 * Encodes the specified TacticalEconomy message. Does not implicitly {@link barc.browser.v1.TacticalEconomy.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {barc.browser.v1.TacticalEconomy.$Properties} message TacticalEconomy message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalEconomy.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.perspectiveId != null && $Object.hasOwnProperty.call(message, "perspectiveId") && message.perspectiveId !== "")
+                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.perspectiveId);
+                    if (message.sampleFrame != null && $Object.hasOwnProperty.call(message, "sampleFrame") && message.sampleFrame !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.sampleFrame);
+                    if (message.metal != null && $Object.hasOwnProperty.call(message, "metal"))
+                        $root.barc.browser.v1.EconomyValue.encode(message.metal, writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.energy != null && $Object.hasOwnProperty.call(message, "energy"))
+                        $root.barc.browser.v1.EconomyValue.encode(message.energy, writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalEconomy message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalEconomy.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {barc.browser.v1.TacticalEconomy.$Properties} message TacticalEconomy message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalEconomy.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalEconomy message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalEconomy & barc.browser.v1.TacticalEconomy.$Shape} TacticalEconomy
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalEconomy.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalEconomy();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.stringVerify()).length)
+                                    message.perspectiveId = value;
+                                else
+                                    delete message.perspectiveId;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.sampleFrame = value;
+                                else
+                                    delete message.sampleFrame;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                message.metal = $root.barc.browser.v1.EconomyValue.decode(reader, reader.uint32(), $undefined, _depth + 1, message.metal);
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                message.energy = $root.barc.browser.v1.EconomyValue.decode(reader, reader.uint32(), $undefined, _depth + 1, message.energy);
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalEconomy message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalEconomy & barc.browser.v1.TacticalEconomy.$Shape} TacticalEconomy
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalEconomy.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalEconomy message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalEconomy} TacticalEconomy
+                 */
+                TacticalEconomy.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalEconomy)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalEconomy: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalEconomy();
+                    if (object.perspectiveId != null)
+                        if (typeof object.perspectiveId !== "string" || object.perspectiveId.length)
+                            message.perspectiveId = $String(object.perspectiveId);
+                    if (object.sampleFrame != null)
+                        if ($Number(object.sampleFrame) !== 0)
+                            message.sampleFrame = object.sampleFrame >>> 0;
+                    if (object.metal != null) {
+                        if (!$util.isObject(object.metal))
+                            throw $TypeError(".barc.browser.v1.TacticalEconomy.metal: object expected");
+                        message.metal = $root.barc.browser.v1.EconomyValue.fromObject(object.metal, _depth + 1);
+                    }
+                    if (object.energy != null) {
+                        if (!$util.isObject(object.energy))
+                            throw $TypeError(".barc.browser.v1.TacticalEconomy.energy: object expected");
+                        message.energy = $root.barc.browser.v1.EconomyValue.fromObject(object.energy, _depth + 1);
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalEconomy message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {barc.browser.v1.TacticalEconomy} message TacticalEconomy
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalEconomy.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.perspectiveId = "";
+                        object.sampleFrame = 0;
+                        object.metal = null;
+                        object.energy = null;
+                    }
+                    if (message.perspectiveId != null && $Object.hasOwnProperty.call(message, "perspectiveId"))
+                        object.perspectiveId = message.perspectiveId;
+                    if (message.sampleFrame != null && $Object.hasOwnProperty.call(message, "sampleFrame"))
+                        object.sampleFrame = message.sampleFrame;
+                    if (message.metal != null && $Object.hasOwnProperty.call(message, "metal"))
+                        object.metal = $root.barc.browser.v1.EconomyValue.toObject(message.metal, options, _depth + 1);
+                    if (message.energy != null && $Object.hasOwnProperty.call(message, "energy"))
+                        object.energy = $root.barc.browser.v1.EconomyValue.toObject(message.energy, options, _depth + 1);
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalEconomy to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalEconomy.prototype.toJSON = function() {
+                    return TacticalEconomy.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalEconomy
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalEconomy
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalEconomy.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalEconomy";
+                };
+
+                return TacticalEconomy;
+            })();
+
+            v1.TacticalCommandDescriptor = (function() {
+
+                /**
+                 * Properties of a TacticalCommandDescriptor.
+                 * @typedef {Object} barc.browser.v1.TacticalCommandDescriptor.$Properties
+                 * @property {barc.browser.v1.TacticalDescriptorKind|null} [kind] TacticalCommandDescriptor kind
+                 * @property {boolean|null} [disabled] TacticalCommandDescriptor disabled
+                 * @property {Array.<number>|null} [allowedDefinitionIds] TacticalCommandDescriptor allowedDefinitionIds
+                 * @property {Array.<barc.browser.v1.TacticalModeValue>|null} [allowedModeValues] TacticalCommandDescriptor allowedModeValues
+                 * @property {barc.browser.v1.TacticalModeValue|null} [observedModeValue] TacticalCommandDescriptor observedModeValue
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalCommandDescriptor.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalCommandDescriptor
+                 * @augments barc.browser.v1.TacticalCommandDescriptor.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalCommandDescriptor.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalCommandDescriptor.
+                 * @typedef {barc.browser.v1.TacticalCommandDescriptor.$Properties} barc.browser.v1.TacticalCommandDescriptor.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalCommandDescriptor.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalCommandDescriptor.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalCommandDescriptor.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalCommandDescriptor = function (properties) {
+                    this.allowedDefinitionIds = [];
+                    this.allowedModeValues = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalCommandDescriptor kind.
+                 * @member {barc.browser.v1.TacticalDescriptorKind} kind
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @instance
+                 */
+                TacticalCommandDescriptor.prototype.kind = 0;
+
+                /**
+                 * TacticalCommandDescriptor disabled.
+                 * @member {boolean} disabled
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @instance
+                 */
+                TacticalCommandDescriptor.prototype.disabled = false;
+
+                /**
+                 * TacticalCommandDescriptor allowedDefinitionIds.
+                 * @member {Array.<number>} allowedDefinitionIds
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @instance
+                 */
+                TacticalCommandDescriptor.prototype.allowedDefinitionIds = $util.emptyArray;
+
+                /**
+                 * TacticalCommandDescriptor allowedModeValues.
+                 * @member {Array.<barc.browser.v1.TacticalModeValue>} allowedModeValues
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @instance
+                 */
+                TacticalCommandDescriptor.prototype.allowedModeValues = $util.emptyArray;
+
+                /**
+                 * TacticalCommandDescriptor observedModeValue.
+                 * @member {barc.browser.v1.TacticalModeValue|null|undefined} observedModeValue
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @instance
+                 */
+                TacticalCommandDescriptor.prototype.observedModeValue = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalCommandDescriptor.prototype, "_observedModeValue", {
+                    get: $util.oneOfGetter($oneOfFields = ["observedModeValue"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified TacticalCommandDescriptor message. Does not implicitly {@link barc.browser.v1.TacticalCommandDescriptor.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {barc.browser.v1.TacticalCommandDescriptor.$Properties} message TacticalCommandDescriptor message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalCommandDescriptor.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.kind != null && $Object.hasOwnProperty.call(message, "kind") && message.kind !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.kind);
+                    if (message.disabled != null && $Object.hasOwnProperty.call(message, "disabled") && message.disabled !== false)
+                        writer.uint32(/* id 2, wireType 0 =*/16).bool(message.disabled);
+                    if (message.allowedDefinitionIds != null && message.allowedDefinitionIds.length)
+                        writer.uint32(/* id 3, wireType 2 =*/26).uint32s(message.allowedDefinitionIds);
+                    if (message.allowedModeValues != null && message.allowedModeValues.length)
+                        writer.uint32(/* id 4, wireType 2 =*/34).int32s(message.allowedModeValues);
+                    if (message.observedModeValue != null && $Object.hasOwnProperty.call(message, "observedModeValue"))
+                        writer.uint32(/* id 5, wireType 0 =*/40).int32(message.observedModeValue);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalCommandDescriptor message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalCommandDescriptor.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {barc.browser.v1.TacticalCommandDescriptor.$Properties} message TacticalCommandDescriptor message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalCommandDescriptor.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalCommandDescriptor message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalCommandDescriptor & barc.browser.v1.TacticalCommandDescriptor.$Shape} TacticalCommandDescriptor
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalCommandDescriptor.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalCommandDescriptor();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.kind = value;
+                                else
+                                    delete message.kind;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.bool())
+                                    message.disabled = value;
+                                else
+                                    delete message.disabled;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType === 2) {
+                                    if (!(message.allowedDefinitionIds && message.allowedDefinitionIds.length))
+                                        message.allowedDefinitionIds = [];
+                                    reader.uint32s(message.allowedDefinitionIds);
+                                    continue;
+                                }
+                                if (wireType !== 0)
+                                    break;
+                                if (!(message.allowedDefinitionIds && message.allowedDefinitionIds.length))
+                                    message.allowedDefinitionIds = [];
+                                message.allowedDefinitionIds.push(reader.uint32());
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType === 2) {
+                                    if (!(message.allowedModeValues && message.allowedModeValues.length))
+                                        message.allowedModeValues = [];
+                                    reader.int32s(message.allowedModeValues);
+                                    continue;
+                                }
+                                if (wireType !== 0)
+                                    break;
+                                if (!(message.allowedModeValues && message.allowedModeValues.length))
+                                    message.allowedModeValues = [];
+                                message.allowedModeValues.push(reader.int32());
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 0)
+                                    break;
+                                message.observedModeValue = reader.int32();
+                                message._observedModeValue = "observedModeValue";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalCommandDescriptor message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalCommandDescriptor & barc.browser.v1.TacticalCommandDescriptor.$Shape} TacticalCommandDescriptor
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalCommandDescriptor.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalCommandDescriptor message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalCommandDescriptor} TacticalCommandDescriptor
+                 */
+                TacticalCommandDescriptor.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalCommandDescriptor)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalCommandDescriptor: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalCommandDescriptor();
+                    if (object.kind !== 0 && (typeof object.kind !== "string" || $root.barc.browser.v1.TacticalDescriptorKind[object.kind] !== 0))
+                        switch (object.kind) {
+                        case "TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED":
+                        case 0:
+                            message.kind = 0;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_BUILD":
+                        case 1:
+                            message.kind = 1;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_GUARD":
+                        case 2:
+                            message.kind = 2;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_REPAIR":
+                        case 3:
+                            message.kind = 3;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_RECLAIM_UNIT":
+                        case 4:
+                            message.kind = 4;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_RECLAIM_FEATURE":
+                        case 5:
+                            message.kind = 5;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_RECLAIM_AREA":
+                        case 6:
+                            message.kind = 6;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_FACTORY_PRODUCE":
+                        case 7:
+                            message.kind = 7;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_SET_RALLY":
+                        case 8:
+                            message.kind = 8;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_QUEUE_INSERT":
+                        case 9:
+                            message.kind = 9;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_QUEUE_REMOVE":
+                        case 10:
+                            message.kind = 10;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_QUEUE_REPEAT":
+                        case 11:
+                            message.kind = 11;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY":
+                        case 12:
+                            message.kind = 12;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE":
+                        case 13:
+                            message.kind = 13;
+                            break;
+                        default:
+                            if (typeof object.kind === "number" && (object.kind | 0) === object.kind)
+                                message.kind = object.kind;
+                        }
+                    if (object.disabled != null)
+                        if (object.disabled)
+                            message.disabled = $Boolean(object.disabled);
+                    if (object.allowedDefinitionIds) {
+                        if (!$Array.isArray(object.allowedDefinitionIds))
+                            throw $TypeError(".barc.browser.v1.TacticalCommandDescriptor.allowedDefinitionIds: array expected");
+                        message.allowedDefinitionIds = $Array(object.allowedDefinitionIds.length);
+                        for (let i = 0; i < object.allowedDefinitionIds.length; ++i)
+                            message.allowedDefinitionIds[i] = object.allowedDefinitionIds[i] >>> 0;
+                    }
+                    if (object.allowedModeValues) {
+                        if (!$Array.isArray(object.allowedModeValues))
+                            throw $TypeError(".barc.browser.v1.TacticalCommandDescriptor.allowedModeValues: array expected");
+                        message.allowedModeValues = [];
+                        for (let i = 0; i < object.allowedModeValues.length; ++i)
+                            switch (object.allowedModeValues[i]) {
+                            case "TACTICAL_MODE_VALUE_UNSPECIFIED":
+                            case 0:
+                                message.allowedModeValues[message.allowedModeValues.length] = 0;
+                                break;
+                            case "TACTICAL_MODE_VALUE_DISABLED":
+                            case 1:
+                                message.allowedModeValues[message.allowedModeValues.length] = 1;
+                                break;
+                            case "TACTICAL_MODE_VALUE_ENABLED":
+                            case 2:
+                                message.allowedModeValues[message.allowedModeValues.length] = 2;
+                                break;
+                            default:
+                                if (typeof object.allowedModeValues[i] === "number" && (object.allowedModeValues[i] | 0) === object.allowedModeValues[i])
+                                    message.allowedModeValues[message.allowedModeValues.length] = object.allowedModeValues[i];
+                            }
+                    }
+                    switch (object.observedModeValue) {
+                    case "TACTICAL_MODE_VALUE_UNSPECIFIED":
+                    case 0:
+                        message.observedModeValue = 0;
+                        break;
+                    case "TACTICAL_MODE_VALUE_DISABLED":
+                    case 1:
+                        message.observedModeValue = 1;
+                        break;
+                    case "TACTICAL_MODE_VALUE_ENABLED":
+                    case 2:
+                        message.observedModeValue = 2;
+                        break;
+                    default:
+                        if (typeof object.observedModeValue === "number" && (object.observedModeValue | 0) === object.observedModeValue)
+                            message.observedModeValue = object.observedModeValue;
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalCommandDescriptor message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {barc.browser.v1.TacticalCommandDescriptor} message TacticalCommandDescriptor
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalCommandDescriptor.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults) {
+                        object.allowedDefinitionIds = [];
+                        object.allowedModeValues = [];
+                    }
+                    if (options.defaults) {
+                        object.kind = options.enums === $String ? "TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED" : 0;
+                        object.disabled = false;
+                    }
+                    if (message.kind != null && $Object.hasOwnProperty.call(message, "kind"))
+                        object.kind = options.enums === $String ? $root.barc.browser.v1.TacticalDescriptorKind[message.kind] === $undefined ? message.kind : $root.barc.browser.v1.TacticalDescriptorKind[message.kind] : message.kind;
+                    if (message.disabled != null && $Object.hasOwnProperty.call(message, "disabled"))
+                        object.disabled = message.disabled;
+                    if (message.allowedDefinitionIds && message.allowedDefinitionIds.length) {
+                        object.allowedDefinitionIds = $Array(message.allowedDefinitionIds.length);
+                        for (let j = 0; j < message.allowedDefinitionIds.length; ++j)
+                            object.allowedDefinitionIds[j] = message.allowedDefinitionIds[j];
+                    }
+                    if (message.allowedModeValues && message.allowedModeValues.length) {
+                        object.allowedModeValues = $Array(message.allowedModeValues.length);
+                        for (let j = 0; j < message.allowedModeValues.length; ++j)
+                            object.allowedModeValues[j] = options.enums === $String ? $root.barc.browser.v1.TacticalModeValue[message.allowedModeValues[j]] === $undefined ? message.allowedModeValues[j] : $root.barc.browser.v1.TacticalModeValue[message.allowedModeValues[j]] : message.allowedModeValues[j];
+                    }
+                    if (message.observedModeValue != null && $Object.hasOwnProperty.call(message, "observedModeValue"))
+                        object.observedModeValue = options.enums === $String ? $root.barc.browser.v1.TacticalModeValue[message.observedModeValue] === $undefined ? message.observedModeValue : $root.barc.browser.v1.TacticalModeValue[message.observedModeValue] : message.observedModeValue;
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalCommandDescriptor to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalCommandDescriptor.prototype.toJSON = function() {
+                    return TacticalCommandDescriptor.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalCommandDescriptor
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalCommandDescriptor
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalCommandDescriptor.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalCommandDescriptor";
+                };
+
+                return TacticalCommandDescriptor;
+            })();
+
+            v1.TacticalQueueEntry = (function() {
+
+                /**
+                 * Properties of a TacticalQueueEntry.
+                 * @typedef {Object} barc.browser.v1.TacticalQueueEntry.$Properties
+                 * @property {number|null} [nativeTag] TacticalQueueEntry nativeTag
+                 * @property {barc.browser.v1.LiveActionKind|null} [action] TacticalQueueEntry action
+                 * @property {number|null} [definitionId] TacticalQueueEntry definitionId
+                 * @property {barc.browser.v1.UnitReference.$Properties|null} [unitTarget] TacticalQueueEntry unitTarget
+                 * @property {barc.browser.v1.FeatureReference.$Properties|null} [featureTarget] TacticalQueueEntry featureTarget
+                 * @property {barc.browser.v1.Position3.$Properties|null} [position] TacticalQueueEntry position
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalQueueEntry.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalQueueEntry
+                 * @augments barc.browser.v1.TacticalQueueEntry.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalQueueEntry.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalQueueEntry.
+                 * @typedef {barc.browser.v1.TacticalQueueEntry.$Properties} barc.browser.v1.TacticalQueueEntry.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalQueueEntry.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalQueueEntry.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalQueueEntry.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalQueueEntry = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalQueueEntry nativeTag.
+                 * @member {number} nativeTag
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 */
+                TacticalQueueEntry.prototype.nativeTag = 0;
+
+                /**
+                 * TacticalQueueEntry action.
+                 * @member {barc.browser.v1.LiveActionKind} action
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 */
+                TacticalQueueEntry.prototype.action = 0;
+
+                /**
+                 * TacticalQueueEntry definitionId.
+                 * @member {number|null|undefined} definitionId
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 */
+                TacticalQueueEntry.prototype.definitionId = null;
+
+                /**
+                 * TacticalQueueEntry unitTarget.
+                 * @member {barc.browser.v1.UnitReference.$Properties|null|undefined} unitTarget
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 */
+                TacticalQueueEntry.prototype.unitTarget = null;
+
+                /**
+                 * TacticalQueueEntry featureTarget.
+                 * @member {barc.browser.v1.FeatureReference.$Properties|null|undefined} featureTarget
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 */
+                TacticalQueueEntry.prototype.featureTarget = null;
+
+                /**
+                 * TacticalQueueEntry position.
+                 * @member {barc.browser.v1.Position3.$Properties|null|undefined} position
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 */
+                TacticalQueueEntry.prototype.position = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalQueueEntry.prototype, "_definitionId", {
+                    get: $util.oneOfGetter($oneOfFields = ["definitionId"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalQueueEntry.prototype, "_unitTarget", {
+                    get: $util.oneOfGetter($oneOfFields = ["unitTarget"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalQueueEntry.prototype, "_featureTarget", {
+                    get: $util.oneOfGetter($oneOfFields = ["featureTarget"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalQueueEntry.prototype, "_position", {
+                    get: $util.oneOfGetter($oneOfFields = ["position"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified TacticalQueueEntry message. Does not implicitly {@link barc.browser.v1.TacticalQueueEntry.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {barc.browser.v1.TacticalQueueEntry.$Properties} message TacticalQueueEntry message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalQueueEntry.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.nativeTag != null && $Object.hasOwnProperty.call(message, "nativeTag") && message.nativeTag !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.nativeTag);
+                    if (message.action != null && $Object.hasOwnProperty.call(message, "action") && message.action !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).int32(message.action);
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.definitionId);
+                    if (message.unitTarget != null && $Object.hasOwnProperty.call(message, "unitTarget"))
+                        $root.barc.browser.v1.UnitReference.encode(message.unitTarget, writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
+                    if (message.featureTarget != null && $Object.hasOwnProperty.call(message, "featureTarget"))
+                        $root.barc.browser.v1.FeatureReference.encode(message.featureTarget, writer.uint32(/* id 5, wireType 2 =*/42).fork(), _depth + 1).ldelim();
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        $root.barc.browser.v1.Position3.encode(message.position, writer.uint32(/* id 6, wireType 2 =*/50).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalQueueEntry message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalQueueEntry.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {barc.browser.v1.TacticalQueueEntry.$Properties} message TacticalQueueEntry message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalQueueEntry.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalQueueEntry message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalQueueEntry & barc.browser.v1.TacticalQueueEntry.$Shape} TacticalQueueEntry
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalQueueEntry.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalQueueEntry();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.nativeTag = value;
+                                else
+                                    delete message.nativeTag;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.action = value;
+                                else
+                                    delete message.action;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                message.definitionId = reader.uint32();
+                                message._definitionId = "definitionId";
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                message.unitTarget = $root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.unitTarget);
+                                message._unitTarget = "unitTarget";
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 2)
+                                    break;
+                                message.featureTarget = $root.barc.browser.v1.FeatureReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.featureTarget);
+                                message._featureTarget = "featureTarget";
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 2)
+                                    break;
+                                message.position = $root.barc.browser.v1.Position3.decode(reader, reader.uint32(), $undefined, _depth + 1, message.position);
+                                message._position = "position";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalQueueEntry message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalQueueEntry & barc.browser.v1.TacticalQueueEntry.$Shape} TacticalQueueEntry
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalQueueEntry.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalQueueEntry message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalQueueEntry} TacticalQueueEntry
+                 */
+                TacticalQueueEntry.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalQueueEntry)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalQueueEntry: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalQueueEntry();
+                    if (object.nativeTag != null)
+                        if ($Number(object.nativeTag) !== 0)
+                            message.nativeTag = object.nativeTag | 0;
+                    if (object.action !== 0 && (typeof object.action !== "string" || $root.barc.browser.v1.LiveActionKind[object.action] !== 0))
+                        switch (object.action) {
+                        case "LIVE_ACTION_KIND_UNSPECIFIED":
+                        case 0:
+                            message.action = 0;
+                            break;
+                        case "LIVE_ACTION_KIND_STOP":
+                        case 1:
+                            message.action = 1;
+                            break;
+                        case "LIVE_ACTION_KIND_MOVE":
+                        case 2:
+                            message.action = 2;
+                            break;
+                        case "LIVE_ACTION_KIND_ATTACK":
+                        case 3:
+                            message.action = 3;
+                            break;
+                        case "LIVE_ACTION_KIND_BUILD":
+                        case 4:
+                            message.action = 4;
+                            break;
+                        case "LIVE_ACTION_KIND_GUARD":
+                        case 5:
+                            message.action = 5;
+                            break;
+                        case "LIVE_ACTION_KIND_REPAIR":
+                        case 6:
+                            message.action = 6;
+                            break;
+                        case "LIVE_ACTION_KIND_RECLAIM_UNIT":
+                        case 7:
+                            message.action = 7;
+                            break;
+                        case "LIVE_ACTION_KIND_RECLAIM_FEATURE":
+                        case 8:
+                            message.action = 8;
+                            break;
+                        case "LIVE_ACTION_KIND_RECLAIM_AREA":
+                        case 9:
+                            message.action = 9;
+                            break;
+                        case "LIVE_ACTION_KIND_FACTORY_PRODUCE":
+                        case 10:
+                            message.action = 10;
+                            break;
+                        case "LIVE_ACTION_KIND_SET_RALLY":
+                        case 11:
+                            message.action = 11;
+                            break;
+                        case "LIVE_ACTION_KIND_QUEUE_EDIT":
+                        case 12:
+                            message.action = 12;
+                            break;
+                        case "LIVE_ACTION_KIND_TACTICAL_MODE":
+                        case 13:
+                            message.action = 13;
+                            break;
+                        default:
+                            if (typeof object.action === "number" && (object.action | 0) === object.action)
+                                message.action = object.action;
+                        }
+                    if (object.definitionId != null)
+                        message.definitionId = object.definitionId >>> 0;
+                    if (object.unitTarget != null) {
+                        if (!$util.isObject(object.unitTarget))
+                            throw $TypeError(".barc.browser.v1.TacticalQueueEntry.unitTarget: object expected");
+                        message.unitTarget = $root.barc.browser.v1.UnitReference.fromObject(object.unitTarget, _depth + 1);
+                    }
+                    if (object.featureTarget != null) {
+                        if (!$util.isObject(object.featureTarget))
+                            throw $TypeError(".barc.browser.v1.TacticalQueueEntry.featureTarget: object expected");
+                        message.featureTarget = $root.barc.browser.v1.FeatureReference.fromObject(object.featureTarget, _depth + 1);
+                    }
+                    if (object.position != null) {
+                        if (!$util.isObject(object.position))
+                            throw $TypeError(".barc.browser.v1.TacticalQueueEntry.position: object expected");
+                        message.position = $root.barc.browser.v1.Position3.fromObject(object.position, _depth + 1);
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalQueueEntry message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {barc.browser.v1.TacticalQueueEntry} message TacticalQueueEntry
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalQueueEntry.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.nativeTag = 0;
+                        object.action = options.enums === $String ? "LIVE_ACTION_KIND_UNSPECIFIED" : 0;
+                    }
+                    if (message.nativeTag != null && $Object.hasOwnProperty.call(message, "nativeTag"))
+                        object.nativeTag = message.nativeTag;
+                    if (message.action != null && $Object.hasOwnProperty.call(message, "action"))
+                        object.action = options.enums === $String ? $root.barc.browser.v1.LiveActionKind[message.action] === $undefined ? message.action : $root.barc.browser.v1.LiveActionKind[message.action] : message.action;
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        object.definitionId = message.definitionId;
+                    if (message.unitTarget != null && $Object.hasOwnProperty.call(message, "unitTarget"))
+                        object.unitTarget = $root.barc.browser.v1.UnitReference.toObject(message.unitTarget, options, _depth + 1);
+                    if (message.featureTarget != null && $Object.hasOwnProperty.call(message, "featureTarget"))
+                        object.featureTarget = $root.barc.browser.v1.FeatureReference.toObject(message.featureTarget, options, _depth + 1);
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        object.position = $root.barc.browser.v1.Position3.toObject(message.position, options, _depth + 1);
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalQueueEntry to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalQueueEntry.prototype.toJSON = function() {
+                    return TacticalQueueEntry.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalQueueEntry
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalQueueEntry
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalQueueEntry.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalQueueEntry";
+                };
+
+                return TacticalQueueEntry;
+            })();
+
+            v1.ActorTacticalState = (function() {
+
+                /**
+                 * Properties of an ActorTacticalState.
+                 * @typedef {Object} barc.browser.v1.ActorTacticalState.$Properties
+                 * @property {barc.browser.v1.UnitReference.$Properties|null} [actor] ActorTacticalState actor
+                 * @property {Long|null} [descriptorRevision] ActorTacticalState descriptorRevision
+                 * @property {Array.<barc.browser.v1.TacticalCommandDescriptor.$Properties>|null} [descriptors] ActorTacticalState descriptors
+                 * @property {Array.<barc.browser.v1.TacticalQueue.$Properties>|null} [queue] ActorTacticalState queue
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of an ActorTacticalState.
+                 * @memberof barc.browser.v1
+                 * @interface IActorTacticalState
+                 * @augments barc.browser.v1.ActorTacticalState.$Properties
+                 * @deprecated Use barc.browser.v1.ActorTacticalState.$Properties instead.
+                 */
+
+                /**
+                 * Shape of an ActorTacticalState.
+                 * @typedef {barc.browser.v1.ActorTacticalState.$Properties} barc.browser.v1.ActorTacticalState.$Shape
+                 */
+
+                /**
+                 * Constructs a new ActorTacticalState.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents an ActorTacticalState.
+                 * @constructor
+                 * @param {barc.browser.v1.ActorTacticalState.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const ActorTacticalState = function (properties) {
+                    this.descriptors = [];
+                    this.queue = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * ActorTacticalState actor.
+                 * @member {barc.browser.v1.UnitReference.$Properties|null|undefined} actor
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @instance
+                 */
+                ActorTacticalState.prototype.actor = null;
+
+                /**
+                 * ActorTacticalState descriptorRevision.
+                 * @member {Long} descriptorRevision
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @instance
+                 */
+                ActorTacticalState.prototype.descriptorRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * ActorTacticalState descriptors.
+                 * @member {Array.<barc.browser.v1.TacticalCommandDescriptor.$Properties>} descriptors
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @instance
+                 */
+                ActorTacticalState.prototype.descriptors = $util.emptyArray;
+
+                /**
+                 * ActorTacticalState queue.
+                 * @member {Array.<barc.browser.v1.TacticalQueue.$Properties>} queue
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @instance
+                 */
+                ActorTacticalState.prototype.queue = $util.emptyArray;
+
+                /**
+                 * Encodes the specified ActorTacticalState message. Does not implicitly {@link barc.browser.v1.ActorTacticalState.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {barc.browser.v1.ActorTacticalState.$Properties} message ActorTacticalState message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ActorTacticalState.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.actor != null && $Object.hasOwnProperty.call(message, "actor"))
+                        $root.barc.browser.v1.UnitReference.encode(message.actor, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.descriptorRevision != null && $Object.hasOwnProperty.call(message, "descriptorRevision") && (typeof message.descriptorRevision === "object" ? message.descriptorRevision.low || message.descriptorRevision.high : message.descriptorRevision !== 0))
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.descriptorRevision);
+                    if (message.descriptors != null && message.descriptors.length)
+                        for (let i = 0; i < message.descriptors.length; ++i)
+                            $root.barc.browser.v1.TacticalCommandDescriptor.encode(message.descriptors[i], writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.queue != null && message.queue.length)
+                        for (let i = 0; i < message.queue.length; ++i)
+                            $root.barc.browser.v1.TacticalQueue.encode(message.queue[i], writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified ActorTacticalState message, length delimited. Does not implicitly {@link barc.browser.v1.ActorTacticalState.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {barc.browser.v1.ActorTacticalState.$Properties} message ActorTacticalState message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ActorTacticalState.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes an ActorTacticalState message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ActorTacticalState & barc.browser.v1.ActorTacticalState.$Shape} ActorTacticalState
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ActorTacticalState.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.ActorTacticalState();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.actor = $root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.actor);
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.descriptorRevision = value;
+                                else
+                                    delete message.descriptorRevision;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.descriptors && message.descriptors.length))
+                                    message.descriptors = [];
+                                message.descriptors.push($root.barc.browser.v1.TacticalCommandDescriptor.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.queue && message.queue.length))
+                                    message.queue = [];
+                                message.queue.push($root.barc.browser.v1.TacticalQueue.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes an ActorTacticalState message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ActorTacticalState & barc.browser.v1.ActorTacticalState.$Shape} ActorTacticalState
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ActorTacticalState.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates an ActorTacticalState message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.ActorTacticalState} ActorTacticalState
+                 */
+                ActorTacticalState.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.ActorTacticalState)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.ActorTacticalState: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.ActorTacticalState();
+                    if (object.actor != null) {
+                        if (!$util.isObject(object.actor))
+                            throw $TypeError(".barc.browser.v1.ActorTacticalState.actor: object expected");
+                        message.actor = $root.barc.browser.v1.UnitReference.fromObject(object.actor, _depth + 1);
+                    }
+                    if (object.descriptorRevision != null)
+                        if (typeof object.descriptorRevision === "object" ? object.descriptorRevision.low || object.descriptorRevision.high : $Number(object.descriptorRevision) !== 0)
+                            if ($util.Long)
+                                message.descriptorRevision = $util.Long.fromValue(object.descriptorRevision, true);
+                            else if (typeof object.descriptorRevision === "string")
+                                message.descriptorRevision = $parseInt(object.descriptorRevision, 10);
+                            else if (typeof object.descriptorRevision === "number")
+                                message.descriptorRevision = object.descriptorRevision;
+                            else if (typeof object.descriptorRevision === "object")
+                                message.descriptorRevision = new $util.LongBits(object.descriptorRevision.low >>> 0, object.descriptorRevision.high >>> 0).toNumber(true);
+                    if (object.descriptors) {
+                        if (!$Array.isArray(object.descriptors))
+                            throw $TypeError(".barc.browser.v1.ActorTacticalState.descriptors: array expected");
+                        message.descriptors = $Array(object.descriptors.length);
+                        for (let i = 0; i < object.descriptors.length; ++i) {
+                            if (!$util.isObject(object.descriptors[i]))
+                                throw $TypeError(".barc.browser.v1.ActorTacticalState.descriptors: object expected");
+                            message.descriptors[i] = $root.barc.browser.v1.TacticalCommandDescriptor.fromObject(object.descriptors[i], _depth + 1);
+                        }
+                    }
+                    if (object.queue) {
+                        if (!$Array.isArray(object.queue))
+                            throw $TypeError(".barc.browser.v1.ActorTacticalState.queue: array expected");
+                        message.queue = $Array(object.queue.length);
+                        for (let i = 0; i < object.queue.length; ++i) {
+                            if (!$util.isObject(object.queue[i]))
+                                throw $TypeError(".barc.browser.v1.ActorTacticalState.queue: object expected");
+                            message.queue[i] = $root.barc.browser.v1.TacticalQueue.fromObject(object.queue[i], _depth + 1);
+                        }
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from an ActorTacticalState message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {barc.browser.v1.ActorTacticalState} message ActorTacticalState
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                ActorTacticalState.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults) {
+                        object.descriptors = [];
+                        object.queue = [];
+                    }
+                    if (options.defaults) {
+                        object.actor = null;
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.descriptorRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.descriptorRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                    }
+                    if (message.actor != null && $Object.hasOwnProperty.call(message, "actor"))
+                        object.actor = $root.barc.browser.v1.UnitReference.toObject(message.actor, options, _depth + 1);
+                    if (message.descriptorRevision != null && $Object.hasOwnProperty.call(message, "descriptorRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.descriptorRevision = typeof message.descriptorRevision === "number" ? $BigInt(message.descriptorRevision) : $util.Long.fromBits(message.descriptorRevision.low >>> 0, message.descriptorRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.descriptorRevision === "number")
+                            object.descriptorRevision = options.longs === $String ? $String(message.descriptorRevision) : message.descriptorRevision;
+                        else
+                            object.descriptorRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.descriptorRevision) : options.longs === $Number ? new $util.LongBits(message.descriptorRevision.low >>> 0, message.descriptorRevision.high >>> 0).toNumber(true) : message.descriptorRevision;
+                    if (message.descriptors && message.descriptors.length) {
+                        object.descriptors = $Array(message.descriptors.length);
+                        for (let j = 0; j < message.descriptors.length; ++j)
+                            object.descriptors[j] = $root.barc.browser.v1.TacticalCommandDescriptor.toObject(message.descriptors[j], options, _depth + 1);
+                    }
+                    if (message.queue && message.queue.length) {
+                        object.queue = $Array(message.queue.length);
+                        for (let j = 0; j < message.queue.length; ++j)
+                            object.queue[j] = $root.barc.browser.v1.TacticalQueue.toObject(message.queue[j], options, _depth + 1);
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this ActorTacticalState to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                ActorTacticalState.prototype.toJSON = function() {
+                    return ActorTacticalState.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for ActorTacticalState
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.ActorTacticalState
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                ActorTacticalState.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.ActorTacticalState";
+                };
+
+                return ActorTacticalState;
+            })();
+
+            v1.TacticalQueue = (function() {
+
+                /**
+                 * Properties of a TacticalQueue.
+                 * @typedef {Object} barc.browser.v1.TacticalQueue.$Properties
+                 * @property {barc.browser.v1.QueueDomain|null} [domain] TacticalQueue domain
+                 * @property {Long|null} [revision] TacticalQueue revision
+                 * @property {Array.<barc.browser.v1.TacticalQueueEntry.$Properties>|null} [entries] TacticalQueue entries
+                 * @property {boolean|null} [complete] TacticalQueue complete
+                 * @property {boolean|null} [repeat] TacticalQueue repeat
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalQueue.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalQueue
+                 * @augments barc.browser.v1.TacticalQueue.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalQueue.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalQueue.
+                 * @typedef {barc.browser.v1.TacticalQueue.$Properties} barc.browser.v1.TacticalQueue.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalQueue.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalQueue.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalQueue.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalQueue = function (properties) {
+                    this.entries = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalQueue domain.
+                 * @member {barc.browser.v1.QueueDomain} domain
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 */
+                TacticalQueue.prototype.domain = 0;
+
+                /**
+                 * TacticalQueue revision.
+                 * @member {Long} revision
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 */
+                TacticalQueue.prototype.revision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * TacticalQueue entries.
+                 * @member {Array.<barc.browser.v1.TacticalQueueEntry.$Properties>} entries
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 */
+                TacticalQueue.prototype.entries = $util.emptyArray;
+
+                /**
+                 * TacticalQueue complete.
+                 * @member {boolean} complete
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 */
+                TacticalQueue.prototype.complete = false;
+
+                /**
+                 * TacticalQueue repeat.
+                 * @member {boolean|null|undefined} repeat
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 */
+                TacticalQueue.prototype.repeat = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(TacticalQueue.prototype, "_repeat", {
+                    get: $util.oneOfGetter($oneOfFields = ["repeat"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified TacticalQueue message. Does not implicitly {@link barc.browser.v1.TacticalQueue.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {barc.browser.v1.TacticalQueue.$Properties} message TacticalQueue message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalQueue.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.domain != null && $Object.hasOwnProperty.call(message, "domain") && message.domain !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.domain);
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision") && (typeof message.revision === "object" ? message.revision.low || message.revision.high : message.revision !== 0))
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.revision);
+                    if (message.entries != null && message.entries.length)
+                        for (let i = 0; i < message.entries.length; ++i)
+                            $root.barc.browser.v1.TacticalQueueEntry.encode(message.entries[i], writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.complete != null && $Object.hasOwnProperty.call(message, "complete") && message.complete !== false)
+                        writer.uint32(/* id 4, wireType 0 =*/32).bool(message.complete);
+                    if (message.repeat != null && $Object.hasOwnProperty.call(message, "repeat"))
+                        writer.uint32(/* id 5, wireType 0 =*/40).bool(message.repeat);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalQueue message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalQueue.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {barc.browser.v1.TacticalQueue.$Properties} message TacticalQueue message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalQueue.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalQueue message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalQueue & barc.browser.v1.TacticalQueue.$Shape} TacticalQueue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalQueue.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalQueue();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.domain = value;
+                                else
+                                    delete message.domain;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.revision = value;
+                                else
+                                    delete message.revision;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.entries && message.entries.length))
+                                    message.entries = [];
+                                message.entries.push($root.barc.browser.v1.TacticalQueueEntry.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.bool())
+                                    message.complete = value;
+                                else
+                                    delete message.complete;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 0)
+                                    break;
+                                message.repeat = reader.bool();
+                                message._repeat = "repeat";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalQueue message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalQueue & barc.browser.v1.TacticalQueue.$Shape} TacticalQueue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalQueue.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalQueue message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalQueue} TacticalQueue
+                 */
+                TacticalQueue.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalQueue)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalQueue: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalQueue();
+                    if (object.domain !== 0 && (typeof object.domain !== "string" || $root.barc.browser.v1.QueueDomain[object.domain] !== 0))
+                        switch (object.domain) {
+                        case "QUEUE_DOMAIN_UNSPECIFIED":
+                        case 0:
+                            message.domain = 0;
+                            break;
+                        case "QUEUE_DOMAIN_ACTOR_ORDER":
+                        case 1:
+                            message.domain = 1;
+                            break;
+                        case "QUEUE_DOMAIN_FACTORY_PRODUCTION":
+                        case 2:
+                            message.domain = 2;
+                            break;
+                        case "QUEUE_DOMAIN_FACTORY_RALLY":
+                        case 3:
+                            message.domain = 3;
+                            break;
+                        default:
+                            if (typeof object.domain === "number" && (object.domain | 0) === object.domain)
+                                message.domain = object.domain;
+                        }
+                    if (object.revision != null)
+                        if (typeof object.revision === "object" ? object.revision.low || object.revision.high : $Number(object.revision) !== 0)
+                            if ($util.Long)
+                                message.revision = $util.Long.fromValue(object.revision, true);
+                            else if (typeof object.revision === "string")
+                                message.revision = $parseInt(object.revision, 10);
+                            else if (typeof object.revision === "number")
+                                message.revision = object.revision;
+                            else if (typeof object.revision === "object")
+                                message.revision = new $util.LongBits(object.revision.low >>> 0, object.revision.high >>> 0).toNumber(true);
+                    if (object.entries) {
+                        if (!$Array.isArray(object.entries))
+                            throw $TypeError(".barc.browser.v1.TacticalQueue.entries: array expected");
+                        message.entries = $Array(object.entries.length);
+                        for (let i = 0; i < object.entries.length; ++i) {
+                            if (!$util.isObject(object.entries[i]))
+                                throw $TypeError(".barc.browser.v1.TacticalQueue.entries: object expected");
+                            message.entries[i] = $root.barc.browser.v1.TacticalQueueEntry.fromObject(object.entries[i], _depth + 1);
+                        }
+                    }
+                    if (object.complete != null)
+                        if (object.complete)
+                            message.complete = $Boolean(object.complete);
+                    if (object.repeat != null)
+                        message.repeat = $Boolean(object.repeat);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalQueue message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {barc.browser.v1.TacticalQueue} message TacticalQueue
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalQueue.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults)
+                        object.entries = [];
+                    if (options.defaults) {
+                        object.domain = options.enums === $String ? "QUEUE_DOMAIN_UNSPECIFIED" : 0;
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.revision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.revision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                        object.complete = false;
+                    }
+                    if (message.domain != null && $Object.hasOwnProperty.call(message, "domain"))
+                        object.domain = options.enums === $String ? $root.barc.browser.v1.QueueDomain[message.domain] === $undefined ? message.domain : $root.barc.browser.v1.QueueDomain[message.domain] : message.domain;
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.revision = typeof message.revision === "number" ? $BigInt(message.revision) : $util.Long.fromBits(message.revision.low >>> 0, message.revision.high >>> 0, true).toBigInt();
+                        else if (typeof message.revision === "number")
+                            object.revision = options.longs === $String ? $String(message.revision) : message.revision;
+                        else
+                            object.revision = options.longs === $String ? $util.Long.prototype.toString.call(message.revision) : options.longs === $Number ? new $util.LongBits(message.revision.low >>> 0, message.revision.high >>> 0).toNumber(true) : message.revision;
+                    if (message.entries && message.entries.length) {
+                        object.entries = $Array(message.entries.length);
+                        for (let j = 0; j < message.entries.length; ++j)
+                            object.entries[j] = $root.barc.browser.v1.TacticalQueueEntry.toObject(message.entries[j], options, _depth + 1);
+                    }
+                    if (message.complete != null && $Object.hasOwnProperty.call(message, "complete"))
+                        object.complete = message.complete;
+                    if (message.repeat != null && $Object.hasOwnProperty.call(message, "repeat"))
+                        object.repeat = message.repeat;
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalQueue to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalQueue.prototype.toJSON = function() {
+                    return TacticalQueue.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalQueue
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalQueue.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalQueue";
+                };
+
+                return TacticalQueue;
+            })();
+
+            v1.ActorTacticalBinding = (function() {
+
+                /**
+                 * Properties of an ActorTacticalBinding.
+                 * @typedef {Object} barc.browser.v1.ActorTacticalBinding.$Properties
+                 * @property {barc.browser.v1.UnitReference.$Properties|null} [actor] ActorTacticalBinding actor
+                 * @property {Long|null} [descriptorRevision] ActorTacticalBinding descriptorRevision
+                 * @property {Array.<barc.browser.v1.QueueRevisionBinding.$Properties>|null} [queueRevisions] ActorTacticalBinding queueRevisions
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of an ActorTacticalBinding.
+                 * @memberof barc.browser.v1
+                 * @interface IActorTacticalBinding
+                 * @augments barc.browser.v1.ActorTacticalBinding.$Properties
+                 * @deprecated Use barc.browser.v1.ActorTacticalBinding.$Properties instead.
+                 */
+
+                /**
+                 * Shape of an ActorTacticalBinding.
+                 * @typedef {barc.browser.v1.ActorTacticalBinding.$Properties} barc.browser.v1.ActorTacticalBinding.$Shape
+                 */
+
+                /**
+                 * Constructs a new ActorTacticalBinding.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents an ActorTacticalBinding.
+                 * @constructor
+                 * @param {barc.browser.v1.ActorTacticalBinding.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const ActorTacticalBinding = function (properties) {
+                    this.queueRevisions = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * ActorTacticalBinding actor.
+                 * @member {barc.browser.v1.UnitReference.$Properties|null|undefined} actor
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @instance
+                 */
+                ActorTacticalBinding.prototype.actor = null;
+
+                /**
+                 * ActorTacticalBinding descriptorRevision.
+                 * @member {Long} descriptorRevision
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @instance
+                 */
+                ActorTacticalBinding.prototype.descriptorRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * ActorTacticalBinding queueRevisions.
+                 * @member {Array.<barc.browser.v1.QueueRevisionBinding.$Properties>} queueRevisions
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @instance
+                 */
+                ActorTacticalBinding.prototype.queueRevisions = $util.emptyArray;
+
+                /**
+                 * Encodes the specified ActorTacticalBinding message. Does not implicitly {@link barc.browser.v1.ActorTacticalBinding.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {barc.browser.v1.ActorTacticalBinding.$Properties} message ActorTacticalBinding message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ActorTacticalBinding.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.actor != null && $Object.hasOwnProperty.call(message, "actor"))
+                        $root.barc.browser.v1.UnitReference.encode(message.actor, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.descriptorRevision != null && $Object.hasOwnProperty.call(message, "descriptorRevision") && (typeof message.descriptorRevision === "object" ? message.descriptorRevision.low || message.descriptorRevision.high : message.descriptorRevision !== 0))
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.descriptorRevision);
+                    if (message.queueRevisions != null && message.queueRevisions.length)
+                        for (let i = 0; i < message.queueRevisions.length; ++i)
+                            $root.barc.browser.v1.QueueRevisionBinding.encode(message.queueRevisions[i], writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified ActorTacticalBinding message, length delimited. Does not implicitly {@link barc.browser.v1.ActorTacticalBinding.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {barc.browser.v1.ActorTacticalBinding.$Properties} message ActorTacticalBinding message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                ActorTacticalBinding.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes an ActorTacticalBinding message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ActorTacticalBinding & barc.browser.v1.ActorTacticalBinding.$Shape} ActorTacticalBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ActorTacticalBinding.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.ActorTacticalBinding();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.actor = $root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.actor);
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.descriptorRevision = value;
+                                else
+                                    delete message.descriptorRevision;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.queueRevisions && message.queueRevisions.length))
+                                    message.queueRevisions = [];
+                                message.queueRevisions.push($root.barc.browser.v1.QueueRevisionBinding.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes an ActorTacticalBinding message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ActorTacticalBinding & barc.browser.v1.ActorTacticalBinding.$Shape} ActorTacticalBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                ActorTacticalBinding.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates an ActorTacticalBinding message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.ActorTacticalBinding} ActorTacticalBinding
+                 */
+                ActorTacticalBinding.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.ActorTacticalBinding)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.ActorTacticalBinding: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.ActorTacticalBinding();
+                    if (object.actor != null) {
+                        if (!$util.isObject(object.actor))
+                            throw $TypeError(".barc.browser.v1.ActorTacticalBinding.actor: object expected");
+                        message.actor = $root.barc.browser.v1.UnitReference.fromObject(object.actor, _depth + 1);
+                    }
+                    if (object.descriptorRevision != null)
+                        if (typeof object.descriptorRevision === "object" ? object.descriptorRevision.low || object.descriptorRevision.high : $Number(object.descriptorRevision) !== 0)
+                            if ($util.Long)
+                                message.descriptorRevision = $util.Long.fromValue(object.descriptorRevision, true);
+                            else if (typeof object.descriptorRevision === "string")
+                                message.descriptorRevision = $parseInt(object.descriptorRevision, 10);
+                            else if (typeof object.descriptorRevision === "number")
+                                message.descriptorRevision = object.descriptorRevision;
+                            else if (typeof object.descriptorRevision === "object")
+                                message.descriptorRevision = new $util.LongBits(object.descriptorRevision.low >>> 0, object.descriptorRevision.high >>> 0).toNumber(true);
+                    if (object.queueRevisions) {
+                        if (!$Array.isArray(object.queueRevisions))
+                            throw $TypeError(".barc.browser.v1.ActorTacticalBinding.queueRevisions: array expected");
+                        message.queueRevisions = $Array(object.queueRevisions.length);
+                        for (let i = 0; i < object.queueRevisions.length; ++i) {
+                            if (!$util.isObject(object.queueRevisions[i]))
+                                throw $TypeError(".barc.browser.v1.ActorTacticalBinding.queueRevisions: object expected");
+                            message.queueRevisions[i] = $root.barc.browser.v1.QueueRevisionBinding.fromObject(object.queueRevisions[i], _depth + 1);
+                        }
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from an ActorTacticalBinding message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {barc.browser.v1.ActorTacticalBinding} message ActorTacticalBinding
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                ActorTacticalBinding.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults)
+                        object.queueRevisions = [];
+                    if (options.defaults) {
+                        object.actor = null;
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.descriptorRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.descriptorRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                    }
+                    if (message.actor != null && $Object.hasOwnProperty.call(message, "actor"))
+                        object.actor = $root.barc.browser.v1.UnitReference.toObject(message.actor, options, _depth + 1);
+                    if (message.descriptorRevision != null && $Object.hasOwnProperty.call(message, "descriptorRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.descriptorRevision = typeof message.descriptorRevision === "number" ? $BigInt(message.descriptorRevision) : $util.Long.fromBits(message.descriptorRevision.low >>> 0, message.descriptorRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.descriptorRevision === "number")
+                            object.descriptorRevision = options.longs === $String ? $String(message.descriptorRevision) : message.descriptorRevision;
+                        else
+                            object.descriptorRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.descriptorRevision) : options.longs === $Number ? new $util.LongBits(message.descriptorRevision.low >>> 0, message.descriptorRevision.high >>> 0).toNumber(true) : message.descriptorRevision;
+                    if (message.queueRevisions && message.queueRevisions.length) {
+                        object.queueRevisions = $Array(message.queueRevisions.length);
+                        for (let j = 0; j < message.queueRevisions.length; ++j)
+                            object.queueRevisions[j] = $root.barc.browser.v1.QueueRevisionBinding.toObject(message.queueRevisions[j], options, _depth + 1);
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this ActorTacticalBinding to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                ActorTacticalBinding.prototype.toJSON = function() {
+                    return ActorTacticalBinding.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for ActorTacticalBinding
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.ActorTacticalBinding
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                ActorTacticalBinding.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.ActorTacticalBinding";
+                };
+
+                return ActorTacticalBinding;
+            })();
+
+            v1.QueueRevisionBinding = (function() {
+
+                /**
+                 * Properties of a QueueRevisionBinding.
+                 * @typedef {Object} barc.browser.v1.QueueRevisionBinding.$Properties
+                 * @property {barc.browser.v1.QueueDomain|null} [domain] QueueRevisionBinding domain
+                 * @property {Long|null} [revision] QueueRevisionBinding revision
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a QueueRevisionBinding.
+                 * @memberof barc.browser.v1
+                 * @interface IQueueRevisionBinding
+                 * @augments barc.browser.v1.QueueRevisionBinding.$Properties
+                 * @deprecated Use barc.browser.v1.QueueRevisionBinding.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a QueueRevisionBinding.
+                 * @typedef {barc.browser.v1.QueueRevisionBinding.$Properties} barc.browser.v1.QueueRevisionBinding.$Shape
+                 */
+
+                /**
+                 * Constructs a new QueueRevisionBinding.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a QueueRevisionBinding.
+                 * @constructor
+                 * @param {barc.browser.v1.QueueRevisionBinding.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const QueueRevisionBinding = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * QueueRevisionBinding domain.
+                 * @member {barc.browser.v1.QueueDomain} domain
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @instance
+                 */
+                QueueRevisionBinding.prototype.domain = 0;
+
+                /**
+                 * QueueRevisionBinding revision.
+                 * @member {Long} revision
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @instance
+                 */
+                QueueRevisionBinding.prototype.revision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * Encodes the specified QueueRevisionBinding message. Does not implicitly {@link barc.browser.v1.QueueRevisionBinding.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {barc.browser.v1.QueueRevisionBinding.$Properties} message QueueRevisionBinding message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                QueueRevisionBinding.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.domain != null && $Object.hasOwnProperty.call(message, "domain") && message.domain !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.domain);
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision") && (typeof message.revision === "object" ? message.revision.low || message.revision.high : message.revision !== 0))
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.revision);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified QueueRevisionBinding message, length delimited. Does not implicitly {@link barc.browser.v1.QueueRevisionBinding.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {barc.browser.v1.QueueRevisionBinding.$Properties} message QueueRevisionBinding message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                QueueRevisionBinding.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a QueueRevisionBinding message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.QueueRevisionBinding & barc.browser.v1.QueueRevisionBinding.$Shape} QueueRevisionBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                QueueRevisionBinding.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.QueueRevisionBinding();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.domain = value;
+                                else
+                                    delete message.domain;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.revision = value;
+                                else
+                                    delete message.revision;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a QueueRevisionBinding message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.QueueRevisionBinding & barc.browser.v1.QueueRevisionBinding.$Shape} QueueRevisionBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                QueueRevisionBinding.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a QueueRevisionBinding message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.QueueRevisionBinding} QueueRevisionBinding
+                 */
+                QueueRevisionBinding.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.QueueRevisionBinding)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.QueueRevisionBinding: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.QueueRevisionBinding();
+                    if (object.domain !== 0 && (typeof object.domain !== "string" || $root.barc.browser.v1.QueueDomain[object.domain] !== 0))
+                        switch (object.domain) {
+                        case "QUEUE_DOMAIN_UNSPECIFIED":
+                        case 0:
+                            message.domain = 0;
+                            break;
+                        case "QUEUE_DOMAIN_ACTOR_ORDER":
+                        case 1:
+                            message.domain = 1;
+                            break;
+                        case "QUEUE_DOMAIN_FACTORY_PRODUCTION":
+                        case 2:
+                            message.domain = 2;
+                            break;
+                        case "QUEUE_DOMAIN_FACTORY_RALLY":
+                        case 3:
+                            message.domain = 3;
+                            break;
+                        default:
+                            if (typeof object.domain === "number" && (object.domain | 0) === object.domain)
+                                message.domain = object.domain;
+                        }
+                    if (object.revision != null)
+                        if (typeof object.revision === "object" ? object.revision.low || object.revision.high : $Number(object.revision) !== 0)
+                            if ($util.Long)
+                                message.revision = $util.Long.fromValue(object.revision, true);
+                            else if (typeof object.revision === "string")
+                                message.revision = $parseInt(object.revision, 10);
+                            else if (typeof object.revision === "number")
+                                message.revision = object.revision;
+                            else if (typeof object.revision === "object")
+                                message.revision = new $util.LongBits(object.revision.low >>> 0, object.revision.high >>> 0).toNumber(true);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a QueueRevisionBinding message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {barc.browser.v1.QueueRevisionBinding} message QueueRevisionBinding
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                QueueRevisionBinding.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.domain = options.enums === $String ? "QUEUE_DOMAIN_UNSPECIFIED" : 0;
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.revision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.revision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                    }
+                    if (message.domain != null && $Object.hasOwnProperty.call(message, "domain"))
+                        object.domain = options.enums === $String ? $root.barc.browser.v1.QueueDomain[message.domain] === $undefined ? message.domain : $root.barc.browser.v1.QueueDomain[message.domain] : message.domain;
+                    if (message.revision != null && $Object.hasOwnProperty.call(message, "revision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.revision = typeof message.revision === "number" ? $BigInt(message.revision) : $util.Long.fromBits(message.revision.low >>> 0, message.revision.high >>> 0, true).toBigInt();
+                        else if (typeof message.revision === "number")
+                            object.revision = options.longs === $String ? $String(message.revision) : message.revision;
+                        else
+                            object.revision = options.longs === $String ? $util.Long.prototype.toString.call(message.revision) : options.longs === $Number ? new $util.LongBits(message.revision.low >>> 0, message.revision.high >>> 0).toNumber(true) : message.revision;
+                    return object;
+                };
+
+                /**
+                 * Converts this QueueRevisionBinding to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                QueueRevisionBinding.prototype.toJSON = function() {
+                    return QueueRevisionBinding.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for QueueRevisionBinding
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.QueueRevisionBinding
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                QueueRevisionBinding.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.QueueRevisionBinding";
+                };
+
+                return QueueRevisionBinding;
+            })();
+
+            v1.TacticalObservation = (function() {
+
+                /**
+                 * Properties of a TacticalObservation.
+                 * @typedef {Object} barc.browser.v1.TacticalObservation.$Properties
+                 * @property {Uint8Array|null} [catalogueId] TacticalObservation catalogueId
+                 * @property {Long|null} [catalogueRevision] TacticalObservation catalogueRevision
+                 * @property {barc.browser.v1.TacticalEconomy.$Properties|null} [economy] TacticalObservation economy
+                 * @property {Array.<barc.browser.v1.ActorTacticalState.$Properties>|null} [actors] TacticalObservation actors
+                 * @property {Array.<barc.browser.v1.TacticalFeature.$Properties>|null} [features] TacticalObservation features
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalObservation.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalObservation
+                 * @augments barc.browser.v1.TacticalObservation.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalObservation.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalObservation.
+                 * @typedef {barc.browser.v1.TacticalObservation.$Properties} barc.browser.v1.TacticalObservation.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalObservation.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalObservation.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalObservation.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalObservation = function (properties) {
+                    this.actors = [];
+                    this.features = [];
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalObservation catalogueId.
+                 * @member {Uint8Array} catalogueId
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @instance
+                 */
+                TacticalObservation.prototype.catalogueId = $util.newBuffer([]);
+
+                /**
+                 * TacticalObservation catalogueRevision.
+                 * @member {Long} catalogueRevision
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @instance
+                 */
+                TacticalObservation.prototype.catalogueRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * TacticalObservation economy.
+                 * @member {barc.browser.v1.TacticalEconomy.$Properties|null|undefined} economy
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @instance
+                 */
+                TacticalObservation.prototype.economy = null;
+
+                /**
+                 * TacticalObservation actors.
+                 * @member {Array.<barc.browser.v1.ActorTacticalState.$Properties>} actors
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @instance
+                 */
+                TacticalObservation.prototype.actors = $util.emptyArray;
+
+                /**
+                 * TacticalObservation features.
+                 * @member {Array.<barc.browser.v1.TacticalFeature.$Properties>} features
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @instance
+                 */
+                TacticalObservation.prototype.features = $util.emptyArray;
+
+                /**
+                 * Encodes the specified TacticalObservation message. Does not implicitly {@link barc.browser.v1.TacticalObservation.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {barc.browser.v1.TacticalObservation.$Properties} message TacticalObservation message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalObservation.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId") && message.catalogueId.length)
+                        writer.uint32(/* id 1, wireType 2 =*/10).bytes(message.catalogueId);
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision") && (typeof message.catalogueRevision === "object" ? message.catalogueRevision.low || message.catalogueRevision.high : message.catalogueRevision !== 0))
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.catalogueRevision);
+                    if (message.economy != null && $Object.hasOwnProperty.call(message, "economy"))
+                        $root.barc.browser.v1.TacticalEconomy.encode(message.economy, writer.uint32(/* id 3, wireType 2 =*/26).fork(), _depth + 1).ldelim();
+                    if (message.actors != null && message.actors.length)
+                        for (let i = 0; i < message.actors.length; ++i)
+                            $root.barc.browser.v1.ActorTacticalState.encode(message.actors[i], writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
+                    if (message.features != null && message.features.length)
+                        for (let i = 0; i < message.features.length; ++i)
+                            $root.barc.browser.v1.TacticalFeature.encode(message.features[i], writer.uint32(/* id 5, wireType 2 =*/42).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalObservation message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalObservation.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {barc.browser.v1.TacticalObservation.$Properties} message TacticalObservation message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalObservation.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalObservation message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalObservation & barc.browser.v1.TacticalObservation.$Shape} TacticalObservation
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalObservation.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalObservation();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.bytes()).length)
+                                    message.catalogueId = value;
+                                else
+                                    delete message.catalogueId;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.catalogueRevision = value;
+                                else
+                                    delete message.catalogueRevision;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 2)
+                                    break;
+                                message.economy = $root.barc.browser.v1.TacticalEconomy.decode(reader, reader.uint32(), $undefined, _depth + 1, message.economy);
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.actors && message.actors.length))
+                                    message.actors = [];
+                                message.actors.push($root.barc.browser.v1.ActorTacticalState.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 2)
+                                    break;
+                                if (!(message.features && message.features.length))
+                                    message.features = [];
+                                message.features.push($root.barc.browser.v1.TacticalFeature.decode(reader, reader.uint32(), $undefined, _depth + 1));
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalObservation message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalObservation & barc.browser.v1.TacticalObservation.$Shape} TacticalObservation
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalObservation.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalObservation message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalObservation} TacticalObservation
+                 */
+                TacticalObservation.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalObservation)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalObservation: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalObservation();
+                    if (object.catalogueId != null)
+                        if (object.catalogueId.length)
+                            if (typeof object.catalogueId === "string")
+                                $util.base64.decode(object.catalogueId, message.catalogueId = $util.newBuffer($util.base64.length(object.catalogueId)), 0);
+                            else if (object.catalogueId.length >= 0)
+                                message.catalogueId = object.catalogueId;
+                    if (object.catalogueRevision != null)
+                        if (typeof object.catalogueRevision === "object" ? object.catalogueRevision.low || object.catalogueRevision.high : $Number(object.catalogueRevision) !== 0)
+                            if ($util.Long)
+                                message.catalogueRevision = $util.Long.fromValue(object.catalogueRevision, true);
+                            else if (typeof object.catalogueRevision === "string")
+                                message.catalogueRevision = $parseInt(object.catalogueRevision, 10);
+                            else if (typeof object.catalogueRevision === "number")
+                                message.catalogueRevision = object.catalogueRevision;
+                            else if (typeof object.catalogueRevision === "object")
+                                message.catalogueRevision = new $util.LongBits(object.catalogueRevision.low >>> 0, object.catalogueRevision.high >>> 0).toNumber(true);
+                    if (object.economy != null) {
+                        if (!$util.isObject(object.economy))
+                            throw $TypeError(".barc.browser.v1.TacticalObservation.economy: object expected");
+                        message.economy = $root.barc.browser.v1.TacticalEconomy.fromObject(object.economy, _depth + 1);
+                    }
+                    if (object.actors) {
+                        if (!$Array.isArray(object.actors))
+                            throw $TypeError(".barc.browser.v1.TacticalObservation.actors: array expected");
+                        message.actors = $Array(object.actors.length);
+                        for (let i = 0; i < object.actors.length; ++i) {
+                            if (!$util.isObject(object.actors[i]))
+                                throw $TypeError(".barc.browser.v1.TacticalObservation.actors: object expected");
+                            message.actors[i] = $root.barc.browser.v1.ActorTacticalState.fromObject(object.actors[i], _depth + 1);
+                        }
+                    }
+                    if (object.features) {
+                        if (!$Array.isArray(object.features))
+                            throw $TypeError(".barc.browser.v1.TacticalObservation.features: array expected");
+                        message.features = $Array(object.features.length);
+                        for (let i = 0; i < object.features.length; ++i) {
+                            if (!$util.isObject(object.features[i]))
+                                throw $TypeError(".barc.browser.v1.TacticalObservation.features: object expected");
+                            message.features[i] = $root.barc.browser.v1.TacticalFeature.fromObject(object.features[i], _depth + 1);
+                        }
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalObservation message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {barc.browser.v1.TacticalObservation} message TacticalObservation
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalObservation.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.arrays || options.defaults) {
+                        object.actors = [];
+                        object.features = [];
+                    }
+                    if (options.defaults) {
+                        if (options.bytes === $String)
+                            object.catalogueId = "";
+                        else {
+                            object.catalogueId = [];
+                            if (options.bytes !== $Array)
+                                object.catalogueId = $util.newBuffer(object.catalogueId);
+                        }
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.catalogueRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.catalogueRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                        object.economy = null;
+                    }
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId"))
+                        object.catalogueId = options.bytes === $String ? $util.base64.encode(message.catalogueId, 0, message.catalogueId.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.catalogueId) : message.catalogueId;
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.catalogueRevision = typeof message.catalogueRevision === "number" ? $BigInt(message.catalogueRevision) : $util.Long.fromBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.catalogueRevision === "number")
+                            object.catalogueRevision = options.longs === $String ? $String(message.catalogueRevision) : message.catalogueRevision;
+                        else
+                            object.catalogueRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.catalogueRevision) : options.longs === $Number ? new $util.LongBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0).toNumber(true) : message.catalogueRevision;
+                    if (message.economy != null && $Object.hasOwnProperty.call(message, "economy"))
+                        object.economy = $root.barc.browser.v1.TacticalEconomy.toObject(message.economy, options, _depth + 1);
+                    if (message.actors && message.actors.length) {
+                        object.actors = $Array(message.actors.length);
+                        for (let j = 0; j < message.actors.length; ++j)
+                            object.actors[j] = $root.barc.browser.v1.ActorTacticalState.toObject(message.actors[j], options, _depth + 1);
+                    }
+                    if (message.features && message.features.length) {
+                        object.features = $Array(message.features.length);
+                        for (let j = 0; j < message.features.length; ++j)
+                            object.features[j] = $root.barc.browser.v1.TacticalFeature.toObject(message.features[j], options, _depth + 1);
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalObservation to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalObservation.prototype.toJSON = function() {
+                    return TacticalObservation.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalObservation
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalObservation
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalObservation.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalObservation";
+                };
+
+                return TacticalObservation;
+            })();
+
+            v1.BuildTarget = (function() {
+
+                /**
+                 * Properties of a BuildTarget.
+                 * @typedef {Object} barc.browser.v1.BuildTarget.$Properties
+                 * @property {number|null} [definitionId] BuildTarget definitionId
+                 * @property {barc.browser.v1.Position3.$Properties|null} [position] BuildTarget position
+                 * @property {barc.browser.v1.BuildFacing|null} [facing] BuildTarget facing
+                 * @property {barc.browser.v1.TacticalQueuePolicy|null} [queuePolicy] BuildTarget queuePolicy
+                 * @property {Uint8Array|null} [catalogueId] BuildTarget catalogueId
+                 * @property {Long|null} [catalogueRevision] BuildTarget catalogueRevision
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a BuildTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IBuildTarget
+                 * @augments barc.browser.v1.BuildTarget.$Properties
+                 * @deprecated Use barc.browser.v1.BuildTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a BuildTarget.
+                 * @typedef {barc.browser.v1.BuildTarget.$Properties} barc.browser.v1.BuildTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new BuildTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a BuildTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.BuildTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const BuildTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * BuildTarget definitionId.
+                 * @member {number} definitionId
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 */
+                BuildTarget.prototype.definitionId = 0;
+
+                /**
+                 * BuildTarget position.
+                 * @member {barc.browser.v1.Position3.$Properties|null|undefined} position
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 */
+                BuildTarget.prototype.position = null;
+
+                /**
+                 * BuildTarget facing.
+                 * @member {barc.browser.v1.BuildFacing} facing
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 */
+                BuildTarget.prototype.facing = 0;
+
+                /**
+                 * BuildTarget queuePolicy.
+                 * @member {barc.browser.v1.TacticalQueuePolicy} queuePolicy
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 */
+                BuildTarget.prototype.queuePolicy = 0;
+
+                /**
+                 * BuildTarget catalogueId.
+                 * @member {Uint8Array} catalogueId
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 */
+                BuildTarget.prototype.catalogueId = $util.newBuffer([]);
+
+                /**
+                 * BuildTarget catalogueRevision.
+                 * @member {Long} catalogueRevision
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 */
+                BuildTarget.prototype.catalogueRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * Encodes the specified BuildTarget message. Does not implicitly {@link barc.browser.v1.BuildTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {barc.browser.v1.BuildTarget.$Properties} message BuildTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                BuildTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId") && message.definitionId !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.definitionId);
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        $root.barc.browser.v1.Position3.encode(message.position, writer.uint32(/* id 2, wireType 2 =*/18).fork(), _depth + 1).ldelim();
+                    if (message.facing != null && $Object.hasOwnProperty.call(message, "facing") && message.facing !== 0)
+                        writer.uint32(/* id 3, wireType 0 =*/24).int32(message.facing);
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy") && message.queuePolicy !== 0)
+                        writer.uint32(/* id 4, wireType 0 =*/32).int32(message.queuePolicy);
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId") && message.catalogueId.length)
+                        writer.uint32(/* id 5, wireType 2 =*/42).bytes(message.catalogueId);
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision") && (typeof message.catalogueRevision === "object" ? message.catalogueRevision.low || message.catalogueRevision.high : message.catalogueRevision !== 0))
+                        writer.uint32(/* id 6, wireType 0 =*/48).uint64(message.catalogueRevision);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified BuildTarget message, length delimited. Does not implicitly {@link barc.browser.v1.BuildTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {barc.browser.v1.BuildTarget.$Properties} message BuildTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                BuildTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a BuildTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.BuildTarget & barc.browser.v1.BuildTarget.$Shape} BuildTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                BuildTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.BuildTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.definitionId = value;
+                                else
+                                    delete message.definitionId;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 2)
+                                    break;
+                                message.position = $root.barc.browser.v1.Position3.decode(reader, reader.uint32(), $undefined, _depth + 1, message.position);
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.facing = value;
+                                else
+                                    delete message.facing;
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.queuePolicy = value;
+                                else
+                                    delete message.queuePolicy;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.bytes()).length)
+                                    message.catalogueId = value;
+                                else
+                                    delete message.catalogueId;
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.catalogueRevision = value;
+                                else
+                                    delete message.catalogueRevision;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a BuildTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.BuildTarget & barc.browser.v1.BuildTarget.$Shape} BuildTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                BuildTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a BuildTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.BuildTarget} BuildTarget
+                 */
+                BuildTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.BuildTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.BuildTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.BuildTarget();
+                    if (object.definitionId != null)
+                        if ($Number(object.definitionId) !== 0)
+                            message.definitionId = object.definitionId >>> 0;
+                    if (object.position != null) {
+                        if (!$util.isObject(object.position))
+                            throw $TypeError(".barc.browser.v1.BuildTarget.position: object expected");
+                        message.position = $root.barc.browser.v1.Position3.fromObject(object.position, _depth + 1);
+                    }
+                    if (object.facing !== 0 && (typeof object.facing !== "string" || $root.barc.browser.v1.BuildFacing[object.facing] !== 0))
+                        switch (object.facing) {
+                        case "BUILD_FACING_UNSPECIFIED":
+                        case 0:
+                            message.facing = 0;
+                            break;
+                        case "BUILD_FACING_NORTH":
+                        case 1:
+                            message.facing = 1;
+                            break;
+                        case "BUILD_FACING_EAST":
+                        case 2:
+                            message.facing = 2;
+                            break;
+                        case "BUILD_FACING_SOUTH":
+                        case 3:
+                            message.facing = 3;
+                            break;
+                        case "BUILD_FACING_WEST":
+                        case 4:
+                            message.facing = 4;
+                            break;
+                        default:
+                            if (typeof object.facing === "number" && (object.facing | 0) === object.facing)
+                                message.facing = object.facing;
+                        }
+                    if (object.queuePolicy !== 0 && (typeof object.queuePolicy !== "string" || $root.barc.browser.v1.TacticalQueuePolicy[object.queuePolicy] !== 0))
+                        switch (object.queuePolicy) {
+                        case "TACTICAL_QUEUE_POLICY_UNSPECIFIED":
+                        case 0:
+                            message.queuePolicy = 0;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REPLACE":
+                        case 1:
+                            message.queuePolicy = 1;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_APPEND":
+                        case 2:
+                            message.queuePolicy = 2;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY":
+                        case 3:
+                            message.queuePolicy = 3;
+                            break;
+                        default:
+                            if (typeof object.queuePolicy === "number" && (object.queuePolicy | 0) === object.queuePolicy)
+                                message.queuePolicy = object.queuePolicy;
+                        }
+                    if (object.catalogueId != null)
+                        if (object.catalogueId.length)
+                            if (typeof object.catalogueId === "string")
+                                $util.base64.decode(object.catalogueId, message.catalogueId = $util.newBuffer($util.base64.length(object.catalogueId)), 0);
+                            else if (object.catalogueId.length >= 0)
+                                message.catalogueId = object.catalogueId;
+                    if (object.catalogueRevision != null)
+                        if (typeof object.catalogueRevision === "object" ? object.catalogueRevision.low || object.catalogueRevision.high : $Number(object.catalogueRevision) !== 0)
+                            if ($util.Long)
+                                message.catalogueRevision = $util.Long.fromValue(object.catalogueRevision, true);
+                            else if (typeof object.catalogueRevision === "string")
+                                message.catalogueRevision = $parseInt(object.catalogueRevision, 10);
+                            else if (typeof object.catalogueRevision === "number")
+                                message.catalogueRevision = object.catalogueRevision;
+                            else if (typeof object.catalogueRevision === "object")
+                                message.catalogueRevision = new $util.LongBits(object.catalogueRevision.low >>> 0, object.catalogueRevision.high >>> 0).toNumber(true);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a BuildTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {barc.browser.v1.BuildTarget} message BuildTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                BuildTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.definitionId = 0;
+                        object.position = null;
+                        object.facing = options.enums === $String ? "BUILD_FACING_UNSPECIFIED" : 0;
+                        object.queuePolicy = options.enums === $String ? "TACTICAL_QUEUE_POLICY_UNSPECIFIED" : 0;
+                        if (options.bytes === $String)
+                            object.catalogueId = "";
+                        else {
+                            object.catalogueId = [];
+                            if (options.bytes !== $Array)
+                                object.catalogueId = $util.newBuffer(object.catalogueId);
+                        }
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.catalogueRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.catalogueRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                    }
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        object.definitionId = message.definitionId;
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        object.position = $root.barc.browser.v1.Position3.toObject(message.position, options, _depth + 1);
+                    if (message.facing != null && $Object.hasOwnProperty.call(message, "facing"))
+                        object.facing = options.enums === $String ? $root.barc.browser.v1.BuildFacing[message.facing] === $undefined ? message.facing : $root.barc.browser.v1.BuildFacing[message.facing] : message.facing;
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy"))
+                        object.queuePolicy = options.enums === $String ? $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] === $undefined ? message.queuePolicy : $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] : message.queuePolicy;
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId"))
+                        object.catalogueId = options.bytes === $String ? $util.base64.encode(message.catalogueId, 0, message.catalogueId.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.catalogueId) : message.catalogueId;
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.catalogueRevision = typeof message.catalogueRevision === "number" ? $BigInt(message.catalogueRevision) : $util.Long.fromBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.catalogueRevision === "number")
+                            object.catalogueRevision = options.longs === $String ? $String(message.catalogueRevision) : message.catalogueRevision;
+                        else
+                            object.catalogueRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.catalogueRevision) : options.longs === $Number ? new $util.LongBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0).toNumber(true) : message.catalogueRevision;
+                    return object;
+                };
+
+                /**
+                 * Converts this BuildTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                BuildTarget.prototype.toJSON = function() {
+                    return BuildTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for BuildTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.BuildTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                BuildTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.BuildTarget";
+                };
+
+                return BuildTarget;
+            })();
+
+            v1.FriendlyTarget = (function() {
+
+                /**
+                 * Properties of a FriendlyTarget.
+                 * @typedef {Object} barc.browser.v1.FriendlyTarget.$Properties
+                 * @property {barc.browser.v1.UnitReference.$Properties|null} [target] FriendlyTarget target
+                 * @property {barc.browser.v1.TacticalQueuePolicy|null} [queuePolicy] FriendlyTarget queuePolicy
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a FriendlyTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IFriendlyTarget
+                 * @augments barc.browser.v1.FriendlyTarget.$Properties
+                 * @deprecated Use barc.browser.v1.FriendlyTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a FriendlyTarget.
+                 * @typedef {barc.browser.v1.FriendlyTarget.$Properties} barc.browser.v1.FriendlyTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new FriendlyTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a FriendlyTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.FriendlyTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const FriendlyTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * FriendlyTarget target.
+                 * @member {barc.browser.v1.UnitReference.$Properties|null|undefined} target
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @instance
+                 */
+                FriendlyTarget.prototype.target = null;
+
+                /**
+                 * FriendlyTarget queuePolicy.
+                 * @member {barc.browser.v1.TacticalQueuePolicy} queuePolicy
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @instance
+                 */
+                FriendlyTarget.prototype.queuePolicy = 0;
+
+                /**
+                 * Encodes the specified FriendlyTarget message. Does not implicitly {@link barc.browser.v1.FriendlyTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {barc.browser.v1.FriendlyTarget.$Properties} message FriendlyTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FriendlyTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.target != null && $Object.hasOwnProperty.call(message, "target"))
+                        $root.barc.browser.v1.UnitReference.encode(message.target, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy") && message.queuePolicy !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).int32(message.queuePolicy);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified FriendlyTarget message, length delimited. Does not implicitly {@link barc.browser.v1.FriendlyTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {barc.browser.v1.FriendlyTarget.$Properties} message FriendlyTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FriendlyTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a FriendlyTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FriendlyTarget & barc.browser.v1.FriendlyTarget.$Shape} FriendlyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FriendlyTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.FriendlyTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.target = $root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.target);
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.queuePolicy = value;
+                                else
+                                    delete message.queuePolicy;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a FriendlyTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FriendlyTarget & barc.browser.v1.FriendlyTarget.$Shape} FriendlyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FriendlyTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a FriendlyTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.FriendlyTarget} FriendlyTarget
+                 */
+                FriendlyTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.FriendlyTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.FriendlyTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.FriendlyTarget();
+                    if (object.target != null) {
+                        if (!$util.isObject(object.target))
+                            throw $TypeError(".barc.browser.v1.FriendlyTarget.target: object expected");
+                        message.target = $root.barc.browser.v1.UnitReference.fromObject(object.target, _depth + 1);
+                    }
+                    if (object.queuePolicy !== 0 && (typeof object.queuePolicy !== "string" || $root.barc.browser.v1.TacticalQueuePolicy[object.queuePolicy] !== 0))
+                        switch (object.queuePolicy) {
+                        case "TACTICAL_QUEUE_POLICY_UNSPECIFIED":
+                        case 0:
+                            message.queuePolicy = 0;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REPLACE":
+                        case 1:
+                            message.queuePolicy = 1;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_APPEND":
+                        case 2:
+                            message.queuePolicy = 2;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY":
+                        case 3:
+                            message.queuePolicy = 3;
+                            break;
+                        default:
+                            if (typeof object.queuePolicy === "number" && (object.queuePolicy | 0) === object.queuePolicy)
+                                message.queuePolicy = object.queuePolicy;
+                        }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a FriendlyTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {barc.browser.v1.FriendlyTarget} message FriendlyTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                FriendlyTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.target = null;
+                        object.queuePolicy = options.enums === $String ? "TACTICAL_QUEUE_POLICY_UNSPECIFIED" : 0;
+                    }
+                    if (message.target != null && $Object.hasOwnProperty.call(message, "target"))
+                        object.target = $root.barc.browser.v1.UnitReference.toObject(message.target, options, _depth + 1);
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy"))
+                        object.queuePolicy = options.enums === $String ? $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] === $undefined ? message.queuePolicy : $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] : message.queuePolicy;
+                    return object;
+                };
+
+                /**
+                 * Converts this FriendlyTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                FriendlyTarget.prototype.toJSON = function() {
+                    return FriendlyTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for FriendlyTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.FriendlyTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                FriendlyTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.FriendlyTarget";
+                };
+
+                return FriendlyTarget;
+            })();
+
+            v1.FeatureTarget = (function() {
+
+                /**
+                 * Properties of a FeatureTarget.
+                 * @typedef {Object} barc.browser.v1.FeatureTarget.$Properties
+                 * @property {barc.browser.v1.FeatureReference.$Properties|null} [target] FeatureTarget target
+                 * @property {barc.browser.v1.TacticalQueuePolicy|null} [queuePolicy] FeatureTarget queuePolicy
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a FeatureTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IFeatureTarget
+                 * @augments barc.browser.v1.FeatureTarget.$Properties
+                 * @deprecated Use barc.browser.v1.FeatureTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a FeatureTarget.
+                 * @typedef {barc.browser.v1.FeatureTarget.$Properties} barc.browser.v1.FeatureTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new FeatureTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a FeatureTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.FeatureTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const FeatureTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * FeatureTarget target.
+                 * @member {barc.browser.v1.FeatureReference.$Properties|null|undefined} target
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @instance
+                 */
+                FeatureTarget.prototype.target = null;
+
+                /**
+                 * FeatureTarget queuePolicy.
+                 * @member {barc.browser.v1.TacticalQueuePolicy} queuePolicy
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @instance
+                 */
+                FeatureTarget.prototype.queuePolicy = 0;
+
+                /**
+                 * Encodes the specified FeatureTarget message. Does not implicitly {@link barc.browser.v1.FeatureTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {barc.browser.v1.FeatureTarget.$Properties} message FeatureTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FeatureTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.target != null && $Object.hasOwnProperty.call(message, "target"))
+                        $root.barc.browser.v1.FeatureReference.encode(message.target, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy") && message.queuePolicy !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).int32(message.queuePolicy);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified FeatureTarget message, length delimited. Does not implicitly {@link barc.browser.v1.FeatureTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {barc.browser.v1.FeatureTarget.$Properties} message FeatureTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FeatureTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a FeatureTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FeatureTarget & barc.browser.v1.FeatureTarget.$Shape} FeatureTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FeatureTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.FeatureTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.target = $root.barc.browser.v1.FeatureReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.target);
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.queuePolicy = value;
+                                else
+                                    delete message.queuePolicy;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a FeatureTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FeatureTarget & barc.browser.v1.FeatureTarget.$Shape} FeatureTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FeatureTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a FeatureTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.FeatureTarget} FeatureTarget
+                 */
+                FeatureTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.FeatureTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.FeatureTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.FeatureTarget();
+                    if (object.target != null) {
+                        if (!$util.isObject(object.target))
+                            throw $TypeError(".barc.browser.v1.FeatureTarget.target: object expected");
+                        message.target = $root.barc.browser.v1.FeatureReference.fromObject(object.target, _depth + 1);
+                    }
+                    if (object.queuePolicy !== 0 && (typeof object.queuePolicy !== "string" || $root.barc.browser.v1.TacticalQueuePolicy[object.queuePolicy] !== 0))
+                        switch (object.queuePolicy) {
+                        case "TACTICAL_QUEUE_POLICY_UNSPECIFIED":
+                        case 0:
+                            message.queuePolicy = 0;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REPLACE":
+                        case 1:
+                            message.queuePolicy = 1;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_APPEND":
+                        case 2:
+                            message.queuePolicy = 2;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY":
+                        case 3:
+                            message.queuePolicy = 3;
+                            break;
+                        default:
+                            if (typeof object.queuePolicy === "number" && (object.queuePolicy | 0) === object.queuePolicy)
+                                message.queuePolicy = object.queuePolicy;
+                        }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a FeatureTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {barc.browser.v1.FeatureTarget} message FeatureTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                FeatureTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.target = null;
+                        object.queuePolicy = options.enums === $String ? "TACTICAL_QUEUE_POLICY_UNSPECIFIED" : 0;
+                    }
+                    if (message.target != null && $Object.hasOwnProperty.call(message, "target"))
+                        object.target = $root.barc.browser.v1.FeatureReference.toObject(message.target, options, _depth + 1);
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy"))
+                        object.queuePolicy = options.enums === $String ? $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] === $undefined ? message.queuePolicy : $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] : message.queuePolicy;
+                    return object;
+                };
+
+                /**
+                 * Converts this FeatureTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                FeatureTarget.prototype.toJSON = function() {
+                    return FeatureTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for FeatureTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.FeatureTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                FeatureTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.FeatureTarget";
+                };
+
+                return FeatureTarget;
+            })();
+
+            v1.AreaTarget = (function() {
+
+                /**
+                 * Properties of an AreaTarget.
+                 * @typedef {Object} barc.browser.v1.AreaTarget.$Properties
+                 * @property {barc.browser.v1.Position3.$Properties|null} [center] AreaTarget center
+                 * @property {number|null} [radiusWorldUnits] AreaTarget radiusWorldUnits
+                 * @property {barc.browser.v1.TacticalQueuePolicy|null} [queuePolicy] AreaTarget queuePolicy
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of an AreaTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IAreaTarget
+                 * @augments barc.browser.v1.AreaTarget.$Properties
+                 * @deprecated Use barc.browser.v1.AreaTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of an AreaTarget.
+                 * @typedef {barc.browser.v1.AreaTarget.$Properties} barc.browser.v1.AreaTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new AreaTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents an AreaTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.AreaTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const AreaTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * AreaTarget center.
+                 * @member {barc.browser.v1.Position3.$Properties|null|undefined} center
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @instance
+                 */
+                AreaTarget.prototype.center = null;
+
+                /**
+                 * AreaTarget radiusWorldUnits.
+                 * @member {number} radiusWorldUnits
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @instance
+                 */
+                AreaTarget.prototype.radiusWorldUnits = 0;
+
+                /**
+                 * AreaTarget queuePolicy.
+                 * @member {barc.browser.v1.TacticalQueuePolicy} queuePolicy
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @instance
+                 */
+                AreaTarget.prototype.queuePolicy = 0;
+
+                /**
+                 * Encodes the specified AreaTarget message. Does not implicitly {@link barc.browser.v1.AreaTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {barc.browser.v1.AreaTarget.$Properties} message AreaTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                AreaTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.center != null && $Object.hasOwnProperty.call(message, "center"))
+                        $root.barc.browser.v1.Position3.encode(message.center, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.radiusWorldUnits != null && $Object.hasOwnProperty.call(message, "radiusWorldUnits") && !$Object.is(message.radiusWorldUnits, 0))
+                        writer.uint32(/* id 2, wireType 5 =*/21).float(message.radiusWorldUnits);
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy") && message.queuePolicy !== 0)
+                        writer.uint32(/* id 3, wireType 0 =*/24).int32(message.queuePolicy);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified AreaTarget message, length delimited. Does not implicitly {@link barc.browser.v1.AreaTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {barc.browser.v1.AreaTarget.$Properties} message AreaTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                AreaTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes an AreaTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.AreaTarget & barc.browser.v1.AreaTarget.$Shape} AreaTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                AreaTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.AreaTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.center = $root.barc.browser.v1.Position3.decode(reader, reader.uint32(), $undefined, _depth + 1, message.center);
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 5)
+                                    break;
+                                if (!$Object.is(value = reader.float(), 0))
+                                    message.radiusWorldUnits = value;
+                                else
+                                    delete message.radiusWorldUnits;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.queuePolicy = value;
+                                else
+                                    delete message.queuePolicy;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes an AreaTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.AreaTarget & barc.browser.v1.AreaTarget.$Shape} AreaTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                AreaTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates an AreaTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.AreaTarget} AreaTarget
+                 */
+                AreaTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.AreaTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.AreaTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.AreaTarget();
+                    if (object.center != null) {
+                        if (!$util.isObject(object.center))
+                            throw $TypeError(".barc.browser.v1.AreaTarget.center: object expected");
+                        message.center = $root.barc.browser.v1.Position3.fromObject(object.center, _depth + 1);
+                    }
+                    if (object.radiusWorldUnits != null)
+                        if (!$Object.is($Number(object.radiusWorldUnits), 0))
+                            message.radiusWorldUnits = $Number(object.radiusWorldUnits);
+                    if (object.queuePolicy !== 0 && (typeof object.queuePolicy !== "string" || $root.barc.browser.v1.TacticalQueuePolicy[object.queuePolicy] !== 0))
+                        switch (object.queuePolicy) {
+                        case "TACTICAL_QUEUE_POLICY_UNSPECIFIED":
+                        case 0:
+                            message.queuePolicy = 0;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REPLACE":
+                        case 1:
+                            message.queuePolicy = 1;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_APPEND":
+                        case 2:
+                            message.queuePolicy = 2;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY":
+                        case 3:
+                            message.queuePolicy = 3;
+                            break;
+                        default:
+                            if (typeof object.queuePolicy === "number" && (object.queuePolicy | 0) === object.queuePolicy)
+                                message.queuePolicy = object.queuePolicy;
+                        }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from an AreaTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {barc.browser.v1.AreaTarget} message AreaTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                AreaTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.center = null;
+                        object.radiusWorldUnits = 0;
+                        object.queuePolicy = options.enums === $String ? "TACTICAL_QUEUE_POLICY_UNSPECIFIED" : 0;
+                    }
+                    if (message.center != null && $Object.hasOwnProperty.call(message, "center"))
+                        object.center = $root.barc.browser.v1.Position3.toObject(message.center, options, _depth + 1);
+                    if (message.radiusWorldUnits != null && $Object.hasOwnProperty.call(message, "radiusWorldUnits"))
+                        object.radiusWorldUnits = options.json && !$isFinite(message.radiusWorldUnits) ? $String(message.radiusWorldUnits) : message.radiusWorldUnits;
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy"))
+                        object.queuePolicy = options.enums === $String ? $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] === $undefined ? message.queuePolicy : $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] : message.queuePolicy;
+                    return object;
+                };
+
+                /**
+                 * Converts this AreaTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                AreaTarget.prototype.toJSON = function() {
+                    return AreaTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for AreaTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.AreaTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                AreaTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.AreaTarget";
+                };
+
+                return AreaTarget;
+            })();
+
+            v1.FactoryProduceTarget = (function() {
+
+                /**
+                 * Properties of a FactoryProduceTarget.
+                 * @typedef {Object} barc.browser.v1.FactoryProduceTarget.$Properties
+                 * @property {number|null} [definitionId] FactoryProduceTarget definitionId
+                 * @property {number|null} [count] FactoryProduceTarget count
+                 * @property {barc.browser.v1.TacticalQueuePolicy|null} [queuePolicy] FactoryProduceTarget queuePolicy
+                 * @property {Uint8Array|null} [catalogueId] FactoryProduceTarget catalogueId
+                 * @property {Long|null} [catalogueRevision] FactoryProduceTarget catalogueRevision
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a FactoryProduceTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IFactoryProduceTarget
+                 * @augments barc.browser.v1.FactoryProduceTarget.$Properties
+                 * @deprecated Use barc.browser.v1.FactoryProduceTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a FactoryProduceTarget.
+                 * @typedef {barc.browser.v1.FactoryProduceTarget.$Properties} barc.browser.v1.FactoryProduceTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new FactoryProduceTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a FactoryProduceTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.FactoryProduceTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const FactoryProduceTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * FactoryProduceTarget definitionId.
+                 * @member {number} definitionId
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @instance
+                 */
+                FactoryProduceTarget.prototype.definitionId = 0;
+
+                /**
+                 * FactoryProduceTarget count.
+                 * @member {number} count
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @instance
+                 */
+                FactoryProduceTarget.prototype.count = 0;
+
+                /**
+                 * FactoryProduceTarget queuePolicy.
+                 * @member {barc.browser.v1.TacticalQueuePolicy} queuePolicy
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @instance
+                 */
+                FactoryProduceTarget.prototype.queuePolicy = 0;
+
+                /**
+                 * FactoryProduceTarget catalogueId.
+                 * @member {Uint8Array} catalogueId
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @instance
+                 */
+                FactoryProduceTarget.prototype.catalogueId = $util.newBuffer([]);
+
+                /**
+                 * FactoryProduceTarget catalogueRevision.
+                 * @member {Long} catalogueRevision
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @instance
+                 */
+                FactoryProduceTarget.prototype.catalogueRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * Encodes the specified FactoryProduceTarget message. Does not implicitly {@link barc.browser.v1.FactoryProduceTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {barc.browser.v1.FactoryProduceTarget.$Properties} message FactoryProduceTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FactoryProduceTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId") && message.definitionId !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.definitionId);
+                    if (message.count != null && $Object.hasOwnProperty.call(message, "count") && message.count !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.count);
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy") && message.queuePolicy !== 0)
+                        writer.uint32(/* id 3, wireType 0 =*/24).int32(message.queuePolicy);
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId") && message.catalogueId.length)
+                        writer.uint32(/* id 4, wireType 2 =*/34).bytes(message.catalogueId);
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision") && (typeof message.catalogueRevision === "object" ? message.catalogueRevision.low || message.catalogueRevision.high : message.catalogueRevision !== 0))
+                        writer.uint32(/* id 5, wireType 0 =*/40).uint64(message.catalogueRevision);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified FactoryProduceTarget message, length delimited. Does not implicitly {@link barc.browser.v1.FactoryProduceTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {barc.browser.v1.FactoryProduceTarget.$Properties} message FactoryProduceTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                FactoryProduceTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a FactoryProduceTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FactoryProduceTarget & barc.browser.v1.FactoryProduceTarget.$Shape} FactoryProduceTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FactoryProduceTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.FactoryProduceTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.definitionId = value;
+                                else
+                                    delete message.definitionId;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.uint32())
+                                    message.count = value;
+                                else
+                                    delete message.count;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.queuePolicy = value;
+                                else
+                                    delete message.queuePolicy;
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                if ((value = reader.bytes()).length)
+                                    message.catalogueId = value;
+                                else
+                                    delete message.catalogueId;
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.catalogueRevision = value;
+                                else
+                                    delete message.catalogueRevision;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a FactoryProduceTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FactoryProduceTarget & barc.browser.v1.FactoryProduceTarget.$Shape} FactoryProduceTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                FactoryProduceTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a FactoryProduceTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.FactoryProduceTarget} FactoryProduceTarget
+                 */
+                FactoryProduceTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.FactoryProduceTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.FactoryProduceTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.FactoryProduceTarget();
+                    if (object.definitionId != null)
+                        if ($Number(object.definitionId) !== 0)
+                            message.definitionId = object.definitionId >>> 0;
+                    if (object.count != null)
+                        if ($Number(object.count) !== 0)
+                            message.count = object.count >>> 0;
+                    if (object.queuePolicy !== 0 && (typeof object.queuePolicy !== "string" || $root.barc.browser.v1.TacticalQueuePolicy[object.queuePolicy] !== 0))
+                        switch (object.queuePolicy) {
+                        case "TACTICAL_QUEUE_POLICY_UNSPECIFIED":
+                        case 0:
+                            message.queuePolicy = 0;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REPLACE":
+                        case 1:
+                            message.queuePolicy = 1;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_APPEND":
+                        case 2:
+                            message.queuePolicy = 2;
+                            break;
+                        case "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY":
+                        case 3:
+                            message.queuePolicy = 3;
+                            break;
+                        default:
+                            if (typeof object.queuePolicy === "number" && (object.queuePolicy | 0) === object.queuePolicy)
+                                message.queuePolicy = object.queuePolicy;
+                        }
+                    if (object.catalogueId != null)
+                        if (object.catalogueId.length)
+                            if (typeof object.catalogueId === "string")
+                                $util.base64.decode(object.catalogueId, message.catalogueId = $util.newBuffer($util.base64.length(object.catalogueId)), 0);
+                            else if (object.catalogueId.length >= 0)
+                                message.catalogueId = object.catalogueId;
+                    if (object.catalogueRevision != null)
+                        if (typeof object.catalogueRevision === "object" ? object.catalogueRevision.low || object.catalogueRevision.high : $Number(object.catalogueRevision) !== 0)
+                            if ($util.Long)
+                                message.catalogueRevision = $util.Long.fromValue(object.catalogueRevision, true);
+                            else if (typeof object.catalogueRevision === "string")
+                                message.catalogueRevision = $parseInt(object.catalogueRevision, 10);
+                            else if (typeof object.catalogueRevision === "number")
+                                message.catalogueRevision = object.catalogueRevision;
+                            else if (typeof object.catalogueRevision === "object")
+                                message.catalogueRevision = new $util.LongBits(object.catalogueRevision.low >>> 0, object.catalogueRevision.high >>> 0).toNumber(true);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a FactoryProduceTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {barc.browser.v1.FactoryProduceTarget} message FactoryProduceTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                FactoryProduceTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.definitionId = 0;
+                        object.count = 0;
+                        object.queuePolicy = options.enums === $String ? "TACTICAL_QUEUE_POLICY_UNSPECIFIED" : 0;
+                        if (options.bytes === $String)
+                            object.catalogueId = "";
+                        else {
+                            object.catalogueId = [];
+                            if (options.bytes !== $Array)
+                                object.catalogueId = $util.newBuffer(object.catalogueId);
+                        }
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.catalogueRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.catalogueRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                    }
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        object.definitionId = message.definitionId;
+                    if (message.count != null && $Object.hasOwnProperty.call(message, "count"))
+                        object.count = message.count;
+                    if (message.queuePolicy != null && $Object.hasOwnProperty.call(message, "queuePolicy"))
+                        object.queuePolicy = options.enums === $String ? $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] === $undefined ? message.queuePolicy : $root.barc.browser.v1.TacticalQueuePolicy[message.queuePolicy] : message.queuePolicy;
+                    if (message.catalogueId != null && $Object.hasOwnProperty.call(message, "catalogueId"))
+                        object.catalogueId = options.bytes === $String ? $util.base64.encode(message.catalogueId, 0, message.catalogueId.length) : options.bytes === $Array ? $Array.prototype.slice.call(message.catalogueId) : message.catalogueId;
+                    if (message.catalogueRevision != null && $Object.hasOwnProperty.call(message, "catalogueRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.catalogueRevision = typeof message.catalogueRevision === "number" ? $BigInt(message.catalogueRevision) : $util.Long.fromBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.catalogueRevision === "number")
+                            object.catalogueRevision = options.longs === $String ? $String(message.catalogueRevision) : message.catalogueRevision;
+                        else
+                            object.catalogueRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.catalogueRevision) : options.longs === $Number ? new $util.LongBits(message.catalogueRevision.low >>> 0, message.catalogueRevision.high >>> 0).toNumber(true) : message.catalogueRevision;
+                    return object;
+                };
+
+                /**
+                 * Converts this FactoryProduceTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                FactoryProduceTarget.prototype.toJSON = function() {
+                    return FactoryProduceTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for FactoryProduceTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.FactoryProduceTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                FactoryProduceTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.FactoryProduceTarget";
+                };
+
+                return FactoryProduceTarget;
+            })();
+
+            v1.RallyTarget = (function() {
+
+                /**
+                 * Properties of a RallyTarget.
+                 * @typedef {Object} barc.browser.v1.RallyTarget.$Properties
+                 * @property {barc.browser.v1.Position3.$Properties|null} [position] RallyTarget position
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a RallyTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IRallyTarget
+                 * @augments barc.browser.v1.RallyTarget.$Properties
+                 * @deprecated Use barc.browser.v1.RallyTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a RallyTarget.
+                 * @typedef {barc.browser.v1.RallyTarget.$Properties} barc.browser.v1.RallyTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new RallyTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a RallyTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.RallyTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const RallyTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * RallyTarget position.
+                 * @member {barc.browser.v1.Position3.$Properties|null|undefined} position
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @instance
+                 */
+                RallyTarget.prototype.position = null;
+
+                /**
+                 * Encodes the specified RallyTarget message. Does not implicitly {@link barc.browser.v1.RallyTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {barc.browser.v1.RallyTarget.$Properties} message RallyTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                RallyTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        $root.barc.browser.v1.Position3.encode(message.position, writer.uint32(/* id 1, wireType 2 =*/10).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified RallyTarget message, length delimited. Does not implicitly {@link barc.browser.v1.RallyTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {barc.browser.v1.RallyTarget.$Properties} message RallyTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                RallyTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a RallyTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.RallyTarget & barc.browser.v1.RallyTarget.$Shape} RallyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                RallyTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.RallyTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 2)
+                                    break;
+                                message.position = $root.barc.browser.v1.Position3.decode(reader, reader.uint32(), $undefined, _depth + 1, message.position);
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a RallyTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.RallyTarget & barc.browser.v1.RallyTarget.$Shape} RallyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                RallyTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a RallyTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.RallyTarget} RallyTarget
+                 */
+                RallyTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.RallyTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.RallyTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.RallyTarget();
+                    if (object.position != null) {
+                        if (!$util.isObject(object.position))
+                            throw $TypeError(".barc.browser.v1.RallyTarget.position: object expected");
+                        message.position = $root.barc.browser.v1.Position3.fromObject(object.position, _depth + 1);
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a RallyTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {barc.browser.v1.RallyTarget} message RallyTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                RallyTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults)
+                        object.position = null;
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        object.position = $root.barc.browser.v1.Position3.toObject(message.position, options, _depth + 1);
+                    return object;
+                };
+
+                /**
+                 * Converts this RallyTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                RallyTarget.prototype.toJSON = function() {
+                    return RallyTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for RallyTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.RallyTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                RallyTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.RallyTarget";
+                };
+
+                return RallyTarget;
+            })();
+
+            v1.QueueInsertTarget = (function() {
+
+                /**
+                 * Properties of a QueueInsertTarget.
+                 * @typedef {Object} barc.browser.v1.QueueInsertTarget.$Properties
+                 * @property {number|null} [beforeNativeTag] QueueInsertTarget beforeNativeTag
+                 * @property {barc.browser.v1.LiveActionKind|null} [action] QueueInsertTarget action
+                 * @property {number|null} [definitionId] QueueInsertTarget definitionId
+                 * @property {barc.browser.v1.Position3.$Properties|null} [position] QueueInsertTarget position
+                 * @property {barc.browser.v1.UnitReference.$Properties|null} [unitTarget] QueueInsertTarget unitTarget
+                 * @property {barc.browser.v1.FeatureReference.$Properties|null} [featureTarget] QueueInsertTarget featureTarget
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a QueueInsertTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IQueueInsertTarget
+                 * @augments barc.browser.v1.QueueInsertTarget.$Properties
+                 * @deprecated Use barc.browser.v1.QueueInsertTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a QueueInsertTarget.
+                 * @typedef {barc.browser.v1.QueueInsertTarget.$Properties} barc.browser.v1.QueueInsertTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new QueueInsertTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a QueueInsertTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.QueueInsertTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const QueueInsertTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * QueueInsertTarget beforeNativeTag.
+                 * @member {number} beforeNativeTag
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 */
+                QueueInsertTarget.prototype.beforeNativeTag = 0;
+
+                /**
+                 * QueueInsertTarget action.
+                 * @member {barc.browser.v1.LiveActionKind} action
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 */
+                QueueInsertTarget.prototype.action = 0;
+
+                /**
+                 * QueueInsertTarget definitionId.
+                 * @member {number|null|undefined} definitionId
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 */
+                QueueInsertTarget.prototype.definitionId = null;
+
+                /**
+                 * QueueInsertTarget position.
+                 * @member {barc.browser.v1.Position3.$Properties|null|undefined} position
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 */
+                QueueInsertTarget.prototype.position = null;
+
+                /**
+                 * QueueInsertTarget unitTarget.
+                 * @member {barc.browser.v1.UnitReference.$Properties|null|undefined} unitTarget
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 */
+                QueueInsertTarget.prototype.unitTarget = null;
+
+                /**
+                 * QueueInsertTarget featureTarget.
+                 * @member {barc.browser.v1.FeatureReference.$Properties|null|undefined} featureTarget
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 */
+                QueueInsertTarget.prototype.featureTarget = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(QueueInsertTarget.prototype, "_definitionId", {
+                    get: $util.oneOfGetter($oneOfFields = ["definitionId"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(QueueInsertTarget.prototype, "_position", {
+                    get: $util.oneOfGetter($oneOfFields = ["position"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(QueueInsertTarget.prototype, "_unitTarget", {
+                    get: $util.oneOfGetter($oneOfFields = ["unitTarget"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                // Virtual OneOf for proto3 optional field
+                $Object.defineProperty(QueueInsertTarget.prototype, "_featureTarget", {
+                    get: $util.oneOfGetter($oneOfFields = ["featureTarget"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified QueueInsertTarget message. Does not implicitly {@link barc.browser.v1.QueueInsertTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {barc.browser.v1.QueueInsertTarget.$Properties} message QueueInsertTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                QueueInsertTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.beforeNativeTag != null && $Object.hasOwnProperty.call(message, "beforeNativeTag") && message.beforeNativeTag !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.beforeNativeTag);
+                    if (message.action != null && $Object.hasOwnProperty.call(message, "action") && message.action !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).int32(message.action);
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.definitionId);
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        $root.barc.browser.v1.Position3.encode(message.position, writer.uint32(/* id 4, wireType 2 =*/34).fork(), _depth + 1).ldelim();
+                    if (message.unitTarget != null && $Object.hasOwnProperty.call(message, "unitTarget"))
+                        $root.barc.browser.v1.UnitReference.encode(message.unitTarget, writer.uint32(/* id 5, wireType 2 =*/42).fork(), _depth + 1).ldelim();
+                    if (message.featureTarget != null && $Object.hasOwnProperty.call(message, "featureTarget"))
+                        $root.barc.browser.v1.FeatureReference.encode(message.featureTarget, writer.uint32(/* id 6, wireType 2 =*/50).fork(), _depth + 1).ldelim();
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified QueueInsertTarget message, length delimited. Does not implicitly {@link barc.browser.v1.QueueInsertTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {barc.browser.v1.QueueInsertTarget.$Properties} message QueueInsertTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                QueueInsertTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a QueueInsertTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.QueueInsertTarget & barc.browser.v1.QueueInsertTarget.$Shape} QueueInsertTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                QueueInsertTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.QueueInsertTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.beforeNativeTag = value;
+                                else
+                                    delete message.beforeNativeTag;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.action = value;
+                                else
+                                    delete message.action;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                message.definitionId = reader.uint32();
+                                message._definitionId = "definitionId";
+                                continue;
+                            }
+                        case 4: {
+                                if (wireType !== 2)
+                                    break;
+                                message.position = $root.barc.browser.v1.Position3.decode(reader, reader.uint32(), $undefined, _depth + 1, message.position);
+                                message._position = "position";
+                                continue;
+                            }
+                        case 5: {
+                                if (wireType !== 2)
+                                    break;
+                                message.unitTarget = $root.barc.browser.v1.UnitReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.unitTarget);
+                                message._unitTarget = "unitTarget";
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 2)
+                                    break;
+                                message.featureTarget = $root.barc.browser.v1.FeatureReference.decode(reader, reader.uint32(), $undefined, _depth + 1, message.featureTarget);
+                                message._featureTarget = "featureTarget";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a QueueInsertTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.QueueInsertTarget & barc.browser.v1.QueueInsertTarget.$Shape} QueueInsertTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                QueueInsertTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a QueueInsertTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.QueueInsertTarget} QueueInsertTarget
+                 */
+                QueueInsertTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.QueueInsertTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.QueueInsertTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.QueueInsertTarget();
+                    if (object.beforeNativeTag != null)
+                        if ($Number(object.beforeNativeTag) !== 0)
+                            message.beforeNativeTag = object.beforeNativeTag | 0;
+                    if (object.action !== 0 && (typeof object.action !== "string" || $root.barc.browser.v1.LiveActionKind[object.action] !== 0))
+                        switch (object.action) {
+                        case "LIVE_ACTION_KIND_UNSPECIFIED":
+                        case 0:
+                            message.action = 0;
+                            break;
+                        case "LIVE_ACTION_KIND_STOP":
+                        case 1:
+                            message.action = 1;
+                            break;
+                        case "LIVE_ACTION_KIND_MOVE":
+                        case 2:
+                            message.action = 2;
+                            break;
+                        case "LIVE_ACTION_KIND_ATTACK":
+                        case 3:
+                            message.action = 3;
+                            break;
+                        case "LIVE_ACTION_KIND_BUILD":
+                        case 4:
+                            message.action = 4;
+                            break;
+                        case "LIVE_ACTION_KIND_GUARD":
+                        case 5:
+                            message.action = 5;
+                            break;
+                        case "LIVE_ACTION_KIND_REPAIR":
+                        case 6:
+                            message.action = 6;
+                            break;
+                        case "LIVE_ACTION_KIND_RECLAIM_UNIT":
+                        case 7:
+                            message.action = 7;
+                            break;
+                        case "LIVE_ACTION_KIND_RECLAIM_FEATURE":
+                        case 8:
+                            message.action = 8;
+                            break;
+                        case "LIVE_ACTION_KIND_RECLAIM_AREA":
+                        case 9:
+                            message.action = 9;
+                            break;
+                        case "LIVE_ACTION_KIND_FACTORY_PRODUCE":
+                        case 10:
+                            message.action = 10;
+                            break;
+                        case "LIVE_ACTION_KIND_SET_RALLY":
+                        case 11:
+                            message.action = 11;
+                            break;
+                        case "LIVE_ACTION_KIND_QUEUE_EDIT":
+                        case 12:
+                            message.action = 12;
+                            break;
+                        case "LIVE_ACTION_KIND_TACTICAL_MODE":
+                        case 13:
+                            message.action = 13;
+                            break;
+                        default:
+                            if (typeof object.action === "number" && (object.action | 0) === object.action)
+                                message.action = object.action;
+                        }
+                    if (object.definitionId != null)
+                        message.definitionId = object.definitionId >>> 0;
+                    if (object.position != null) {
+                        if (!$util.isObject(object.position))
+                            throw $TypeError(".barc.browser.v1.QueueInsertTarget.position: object expected");
+                        message.position = $root.barc.browser.v1.Position3.fromObject(object.position, _depth + 1);
+                    }
+                    if (object.unitTarget != null) {
+                        if (!$util.isObject(object.unitTarget))
+                            throw $TypeError(".barc.browser.v1.QueueInsertTarget.unitTarget: object expected");
+                        message.unitTarget = $root.barc.browser.v1.UnitReference.fromObject(object.unitTarget, _depth + 1);
+                    }
+                    if (object.featureTarget != null) {
+                        if (!$util.isObject(object.featureTarget))
+                            throw $TypeError(".barc.browser.v1.QueueInsertTarget.featureTarget: object expected");
+                        message.featureTarget = $root.barc.browser.v1.FeatureReference.fromObject(object.featureTarget, _depth + 1);
+                    }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a QueueInsertTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {barc.browser.v1.QueueInsertTarget} message QueueInsertTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                QueueInsertTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.beforeNativeTag = 0;
+                        object.action = options.enums === $String ? "LIVE_ACTION_KIND_UNSPECIFIED" : 0;
+                    }
+                    if (message.beforeNativeTag != null && $Object.hasOwnProperty.call(message, "beforeNativeTag"))
+                        object.beforeNativeTag = message.beforeNativeTag;
+                    if (message.action != null && $Object.hasOwnProperty.call(message, "action"))
+                        object.action = options.enums === $String ? $root.barc.browser.v1.LiveActionKind[message.action] === $undefined ? message.action : $root.barc.browser.v1.LiveActionKind[message.action] : message.action;
+                    if (message.definitionId != null && $Object.hasOwnProperty.call(message, "definitionId"))
+                        object.definitionId = message.definitionId;
+                    if (message.position != null && $Object.hasOwnProperty.call(message, "position"))
+                        object.position = $root.barc.browser.v1.Position3.toObject(message.position, options, _depth + 1);
+                    if (message.unitTarget != null && $Object.hasOwnProperty.call(message, "unitTarget"))
+                        object.unitTarget = $root.barc.browser.v1.UnitReference.toObject(message.unitTarget, options, _depth + 1);
+                    if (message.featureTarget != null && $Object.hasOwnProperty.call(message, "featureTarget"))
+                        object.featureTarget = $root.barc.browser.v1.FeatureReference.toObject(message.featureTarget, options, _depth + 1);
+                    return object;
+                };
+
+                /**
+                 * Converts this QueueInsertTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                QueueInsertTarget.prototype.toJSON = function() {
+                    return QueueInsertTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for QueueInsertTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.QueueInsertTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                QueueInsertTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.QueueInsertTarget";
+                };
+
+                return QueueInsertTarget;
+            })();
+
+            v1.QueueEditTarget = (function() {
+
+                /**
+                 * Properties of a QueueEditTarget.
+                 * @typedef {Object} barc.browser.v1.QueueEditTarget.$Properties
+                 * @property {Long|null} [expectedQueueRevision] QueueEditTarget expectedQueueRevision
+                 * @property {barc.browser.v1.QueueEditKind|null} [kind] QueueEditTarget kind
+                 * @property {barc.browser.v1.QueueDomain|null} [domain] QueueEditTarget domain
+                 * @property {barc.browser.v1.QueueInsertTarget.$Properties|null} [insert] QueueEditTarget insert
+                 * @property {number|null} [removeNativeTag] QueueEditTarget removeNativeTag
+                 * @property {boolean|null} [repeat] QueueEditTarget repeat
+                 * @property {"insert"|"removeNativeTag"|"repeat"} [edit] QueueEditTarget edit
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a QueueEditTarget.
+                 * @memberof barc.browser.v1
+                 * @interface IQueueEditTarget
+                 * @augments barc.browser.v1.QueueEditTarget.$Properties
+                 * @deprecated Use barc.browser.v1.QueueEditTarget.$Properties instead.
+                 */
+
+                /**
+                 * Narrowed shape of a QueueEditTarget.
+                 * @typedef {{
+                 *   expectedQueueRevision?: Long|null;
+                 *   kind?: barc.browser.v1.QueueEditKind|null;
+                 *   domain?: barc.browser.v1.QueueDomain|null;
+                 *   insert?: barc.browser.v1.QueueInsertTarget.$Shape|null;
+                 *   removeNativeTag?: number|null;
+                 *   repeat?: boolean|null;
+                 *   $unknowns?: Array.<Uint8Array>;
+                 * } & (
+                 *   ({ edit?: undefined; insert?: null; removeNativeTag?: null; repeat?: null }|{ edit?: "insert"; insert: barc.browser.v1.QueueInsertTarget.$Shape; removeNativeTag?: null; repeat?: null }|{ edit?: "removeNativeTag"; insert?: null; removeNativeTag: number; repeat?: null }|{ edit?: "repeat"; insert?: null; removeNativeTag?: null; repeat: boolean })
+                 * )} barc.browser.v1.QueueEditTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new QueueEditTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a QueueEditTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.QueueEditTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const QueueEditTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * QueueEditTarget expectedQueueRevision.
+                 * @member {Long} expectedQueueRevision
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                QueueEditTarget.prototype.expectedQueueRevision = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+                /**
+                 * QueueEditTarget kind.
+                 * @member {barc.browser.v1.QueueEditKind} kind
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                QueueEditTarget.prototype.kind = 0;
+
+                /**
+                 * QueueEditTarget domain.
+                 * @member {barc.browser.v1.QueueDomain} domain
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                QueueEditTarget.prototype.domain = 0;
+
+                /**
+                 * QueueEditTarget insert.
+                 * @member {barc.browser.v1.QueueInsertTarget.$Properties|null|undefined} insert
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                QueueEditTarget.prototype.insert = null;
+
+                /**
+                 * QueueEditTarget removeNativeTag.
+                 * @member {number|null|undefined} removeNativeTag
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                QueueEditTarget.prototype.removeNativeTag = null;
+
+                /**
+                 * QueueEditTarget repeat.
+                 * @member {boolean|null|undefined} repeat
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                QueueEditTarget.prototype.repeat = null;
+
+                // OneOf field names bound to virtual getters and setters
+                let $oneOfFields;
+
+                /**
+                 * QueueEditTarget edit.
+                 * @member {"insert"|"removeNativeTag"|"repeat"|undefined} edit
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 */
+                $Object.defineProperty(QueueEditTarget.prototype, "edit", {
+                    get: $util.oneOfGetter($oneOfFields = ["insert", "removeNativeTag", "repeat"]),
+                    set: $util.oneOfSetter($oneOfFields)
+                });
+
+                /**
+                 * Encodes the specified QueueEditTarget message. Does not implicitly {@link barc.browser.v1.QueueEditTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {barc.browser.v1.QueueEditTarget.$Properties} message QueueEditTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                QueueEditTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.expectedQueueRevision != null && $Object.hasOwnProperty.call(message, "expectedQueueRevision") && (typeof message.expectedQueueRevision === "object" ? message.expectedQueueRevision.low || message.expectedQueueRevision.high : message.expectedQueueRevision !== 0))
+                        writer.uint32(/* id 1, wireType 0 =*/8).uint64(message.expectedQueueRevision);
+                    if (message.kind != null && $Object.hasOwnProperty.call(message, "kind") && message.kind !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).int32(message.kind);
+                    if (message.domain != null && $Object.hasOwnProperty.call(message, "domain") && message.domain !== 0)
+                        writer.uint32(/* id 3, wireType 0 =*/24).int32(message.domain);
+                    if (message.insert != null && $Object.hasOwnProperty.call(message, "insert"))
+                        $root.barc.browser.v1.QueueInsertTarget.encode(message.insert, writer.uint32(/* id 10, wireType 2 =*/82).fork(), _depth + 1).ldelim();
+                    if (message.removeNativeTag != null && $Object.hasOwnProperty.call(message, "removeNativeTag"))
+                        writer.uint32(/* id 11, wireType 0 =*/88).int32(message.removeNativeTag);
+                    if (message.repeat != null && $Object.hasOwnProperty.call(message, "repeat"))
+                        writer.uint32(/* id 12, wireType 0 =*/96).bool(message.repeat);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified QueueEditTarget message, length delimited. Does not implicitly {@link barc.browser.v1.QueueEditTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {barc.browser.v1.QueueEditTarget.$Properties} message QueueEditTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                QueueEditTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a QueueEditTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.QueueEditTarget & barc.browser.v1.QueueEditTarget.$Shape} QueueEditTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                QueueEditTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.QueueEditTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (typeof (value = reader.uint64()) === "object" ? value.low || value.high : value !== 0)
+                                    message.expectedQueueRevision = value;
+                                else
+                                    delete message.expectedQueueRevision;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.kind = value;
+                                else
+                                    delete message.kind;
+                                continue;
+                            }
+                        case 3: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.domain = value;
+                                else
+                                    delete message.domain;
+                                continue;
+                            }
+                        case 10: {
+                                if (wireType !== 2)
+                                    break;
+                                message.insert = $root.barc.browser.v1.QueueInsertTarget.decode(reader, reader.uint32(), $undefined, _depth + 1, message.insert);
+                                message.edit = "insert";
+                                continue;
+                            }
+                        case 11: {
+                                if (wireType !== 0)
+                                    break;
+                                message.removeNativeTag = reader.int32();
+                                message.edit = "removeNativeTag";
+                                continue;
+                            }
+                        case 12: {
+                                if (wireType !== 0)
+                                    break;
+                                message.repeat = reader.bool();
+                                message.edit = "repeat";
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a QueueEditTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.QueueEditTarget & barc.browser.v1.QueueEditTarget.$Shape} QueueEditTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                QueueEditTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a QueueEditTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.QueueEditTarget} QueueEditTarget
+                 */
+                QueueEditTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.QueueEditTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.QueueEditTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.QueueEditTarget();
+                    if (object.expectedQueueRevision != null)
+                        if (typeof object.expectedQueueRevision === "object" ? object.expectedQueueRevision.low || object.expectedQueueRevision.high : $Number(object.expectedQueueRevision) !== 0)
+                            if ($util.Long)
+                                message.expectedQueueRevision = $util.Long.fromValue(object.expectedQueueRevision, true);
+                            else if (typeof object.expectedQueueRevision === "string")
+                                message.expectedQueueRevision = $parseInt(object.expectedQueueRevision, 10);
+                            else if (typeof object.expectedQueueRevision === "number")
+                                message.expectedQueueRevision = object.expectedQueueRevision;
+                            else if (typeof object.expectedQueueRevision === "object")
+                                message.expectedQueueRevision = new $util.LongBits(object.expectedQueueRevision.low >>> 0, object.expectedQueueRevision.high >>> 0).toNumber(true);
+                    if (object.kind !== 0 && (typeof object.kind !== "string" || $root.barc.browser.v1.QueueEditKind[object.kind] !== 0))
+                        switch (object.kind) {
+                        case "QUEUE_EDIT_KIND_UNSPECIFIED":
+                        case 0:
+                            message.kind = 0;
+                            break;
+                        case "QUEUE_EDIT_KIND_INSERT":
+                        case 1:
+                            message.kind = 1;
+                            break;
+                        case "QUEUE_EDIT_KIND_REMOVE_TAG":
+                        case 2:
+                            message.kind = 2;
+                            break;
+                        case "QUEUE_EDIT_KIND_SET_REPEAT":
+                        case 3:
+                            message.kind = 3;
+                            break;
+                        default:
+                            if (typeof object.kind === "number" && (object.kind | 0) === object.kind)
+                                message.kind = object.kind;
+                        }
+                    if (object.domain !== 0 && (typeof object.domain !== "string" || $root.barc.browser.v1.QueueDomain[object.domain] !== 0))
+                        switch (object.domain) {
+                        case "QUEUE_DOMAIN_UNSPECIFIED":
+                        case 0:
+                            message.domain = 0;
+                            break;
+                        case "QUEUE_DOMAIN_ACTOR_ORDER":
+                        case 1:
+                            message.domain = 1;
+                            break;
+                        case "QUEUE_DOMAIN_FACTORY_PRODUCTION":
+                        case 2:
+                            message.domain = 2;
+                            break;
+                        case "QUEUE_DOMAIN_FACTORY_RALLY":
+                        case 3:
+                            message.domain = 3;
+                            break;
+                        default:
+                            if (typeof object.domain === "number" && (object.domain | 0) === object.domain)
+                                message.domain = object.domain;
+                        }
+                    if (object.insert != null) {
+                        if (!$util.isObject(object.insert))
+                            throw $TypeError(".barc.browser.v1.QueueEditTarget.insert: object expected");
+                        message.insert = $root.barc.browser.v1.QueueInsertTarget.fromObject(object.insert, _depth + 1);
+                    }
+                    if (object.removeNativeTag != null)
+                        message.removeNativeTag = object.removeNativeTag | 0;
+                    if (object.repeat != null)
+                        message.repeat = $Boolean(object.repeat);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a QueueEditTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {barc.browser.v1.QueueEditTarget} message QueueEditTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                QueueEditTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        if ($util.Long) {
+                            let long = new $util.Long(0, 0, true);
+                            object.expectedQueueRevision = options.longs === $String ? long.toString() : options.longs === $Number ? long.toNumber() : typeof $BigInt !== "undefined" && options.longs === $BigInt ? long.toBigInt() : long;
+                        } else
+                            object.expectedQueueRevision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
+                        object.kind = options.enums === $String ? "QUEUE_EDIT_KIND_UNSPECIFIED" : 0;
+                        object.domain = options.enums === $String ? "QUEUE_DOMAIN_UNSPECIFIED" : 0;
+                    }
+                    if (message.expectedQueueRevision != null && $Object.hasOwnProperty.call(message, "expectedQueueRevision"))
+                        if (typeof $BigInt !== "undefined" && options.longs === $BigInt)
+                            object.expectedQueueRevision = typeof message.expectedQueueRevision === "number" ? $BigInt(message.expectedQueueRevision) : $util.Long.fromBits(message.expectedQueueRevision.low >>> 0, message.expectedQueueRevision.high >>> 0, true).toBigInt();
+                        else if (typeof message.expectedQueueRevision === "number")
+                            object.expectedQueueRevision = options.longs === $String ? $String(message.expectedQueueRevision) : message.expectedQueueRevision;
+                        else
+                            object.expectedQueueRevision = options.longs === $String ? $util.Long.prototype.toString.call(message.expectedQueueRevision) : options.longs === $Number ? new $util.LongBits(message.expectedQueueRevision.low >>> 0, message.expectedQueueRevision.high >>> 0).toNumber(true) : message.expectedQueueRevision;
+                    if (message.kind != null && $Object.hasOwnProperty.call(message, "kind"))
+                        object.kind = options.enums === $String ? $root.barc.browser.v1.QueueEditKind[message.kind] === $undefined ? message.kind : $root.barc.browser.v1.QueueEditKind[message.kind] : message.kind;
+                    if (message.domain != null && $Object.hasOwnProperty.call(message, "domain"))
+                        object.domain = options.enums === $String ? $root.barc.browser.v1.QueueDomain[message.domain] === $undefined ? message.domain : $root.barc.browser.v1.QueueDomain[message.domain] : message.domain;
+                    if (message.insert != null && $Object.hasOwnProperty.call(message, "insert")) {
+                        object.insert = $root.barc.browser.v1.QueueInsertTarget.toObject(message.insert, options, _depth + 1);
+                        if (options.oneofs)
+                            object.edit = "insert";
+                    }
+                    if (message.removeNativeTag != null && $Object.hasOwnProperty.call(message, "removeNativeTag")) {
+                        object.removeNativeTag = message.removeNativeTag;
+                        if (options.oneofs)
+                            object.edit = "removeNativeTag";
+                    }
+                    if (message.repeat != null && $Object.hasOwnProperty.call(message, "repeat")) {
+                        object.repeat = message.repeat;
+                        if (options.oneofs)
+                            object.edit = "repeat";
+                    }
+                    return object;
+                };
+
+                /**
+                 * Converts this QueueEditTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                QueueEditTarget.prototype.toJSON = function() {
+                    return QueueEditTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for QueueEditTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.QueueEditTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                QueueEditTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.QueueEditTarget";
+                };
+
+                return QueueEditTarget;
+            })();
+
+            v1.TacticalModeTarget = (function() {
+
+                /**
+                 * Properties of a TacticalModeTarget.
+                 * @typedef {Object} barc.browser.v1.TacticalModeTarget.$Properties
+                 * @property {barc.browser.v1.TacticalDescriptorKind|null} [kind] TacticalModeTarget kind
+                 * @property {barc.browser.v1.TacticalModeValue|null} [value] TacticalModeTarget value
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+
+                /**
+                 * Properties of a TacticalModeTarget.
+                 * @memberof barc.browser.v1
+                 * @interface ITacticalModeTarget
+                 * @augments barc.browser.v1.TacticalModeTarget.$Properties
+                 * @deprecated Use barc.browser.v1.TacticalModeTarget.$Properties instead.
+                 */
+
+                /**
+                 * Shape of a TacticalModeTarget.
+                 * @typedef {barc.browser.v1.TacticalModeTarget.$Properties} barc.browser.v1.TacticalModeTarget.$Shape
+                 */
+
+                /**
+                 * Constructs a new TacticalModeTarget.
+                 * @memberof barc.browser.v1
+                 * @classdesc Represents a TacticalModeTarget.
+                 * @constructor
+                 * @param {barc.browser.v1.TacticalModeTarget.$Properties=} [properties] Properties to set
+                 * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
+                 */
+                const TacticalModeTarget = function (properties) {
+                    if (properties)
+                        for (let keys = $Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null && keys[i] !== "__proto__")
+                                this[keys[i]] = properties[keys[i]];
+                };
+
+                /**
+                 * TacticalModeTarget kind.
+                 * @member {barc.browser.v1.TacticalDescriptorKind} kind
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @instance
+                 */
+                TacticalModeTarget.prototype.kind = 0;
+
+                /**
+                 * TacticalModeTarget value.
+                 * @member {barc.browser.v1.TacticalModeValue} value
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @instance
+                 */
+                TacticalModeTarget.prototype.value = 0;
+
+                /**
+                 * Encodes the specified TacticalModeTarget message. Does not implicitly {@link barc.browser.v1.TacticalModeTarget.verify|verify} messages.
+                 * @function encode
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {barc.browser.v1.TacticalModeTarget.$Properties} message TacticalModeTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalModeTarget.encode = function (message, writer, _depth) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    if (message.kind != null && $Object.hasOwnProperty.call(message, "kind") && message.kind !== 0)
+                        writer.uint32(/* id 1, wireType 0 =*/8).int32(message.kind);
+                    if (message.value != null && $Object.hasOwnProperty.call(message, "value") && message.value !== 0)
+                        writer.uint32(/* id 2, wireType 0 =*/16).int32(message.value);
+                    if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
+                        for (let i = 0; i < message.$unknowns.length; ++i)
+                            writer.raw(message.$unknowns[i]);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified TacticalModeTarget message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalModeTarget.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {barc.browser.v1.TacticalModeTarget.$Properties} message TacticalModeTarget message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                TacticalModeTarget.encodeDelimited = function(message, writer) {
+                    return this.encode(message, (writer || $Writer.create()).fork()).ldelim();
+                };
+
+                /**
+                 * Decodes a TacticalModeTarget message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalModeTarget & barc.browser.v1.TacticalModeTarget.$Shape} TacticalModeTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalModeTarget.decode = function (reader, length, _end, _depth, _target) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $Reader.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let end, message, value;
+                    if (length === $undefined)
+                        end = reader.len;
+                    else {
+                        end = reader.pos + length;
+                        if (end > reader.len)
+                            throw $RangeError("index out of range");
+                        length = reader.len;
+                        reader.len = end;
+                    }
+                    message = _target || new $root.barc.browser.v1.TacticalModeTarget();
+                    while (reader.pos < end) {
+                        let start = reader.pos;
+                        let tag = reader.tag();
+                        if (tag === _end) {
+                            _end = $undefined;
+                            break;
+                        }
+                        let wireType = tag & 7;
+                        switch (tag >>>= 3) {
+                        case 1: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.kind = value;
+                                else
+                                    delete message.kind;
+                                continue;
+                            }
+                        case 2: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.value = value;
+                                else
+                                    delete message.value;
+                                continue;
+                            }
+                        }
+                        reader.skipType(wireType, _depth, tag);
+                        if (!reader.discardUnknown) {
+                            $util.makeProp(message, "$unknowns", false);
+                            (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                        }
+                    }
+                    if (length !== $undefined) {
+                        if (reader.pos !== end)
+                            throw $RangeError("index out of range");
+                        reader.len = length;
+                    }
+                    if (_end !== $undefined)
+                        throw $Error("missing end group");
+                    return message;
+                };
+
+                /**
+                 * Decodes a TacticalModeTarget message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalModeTarget & barc.browser.v1.TacticalModeTarget.$Shape} TacticalModeTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                TacticalModeTarget.decodeDelimited = function(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Creates a TacticalModeTarget message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {barc.browser.v1.TacticalModeTarget} TacticalModeTarget
+                 */
+                TacticalModeTarget.fromObject = function (object, _depth) {
+                    if (object instanceof $root.barc.browser.v1.TacticalModeTarget)
+                        return object;
+                    if (!$util.isObject(object))
+                        throw $TypeError(".barc.browser.v1.TacticalModeTarget: object expected");
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let message = new $root.barc.browser.v1.TacticalModeTarget();
+                    if (object.kind !== 0 && (typeof object.kind !== "string" || $root.barc.browser.v1.TacticalDescriptorKind[object.kind] !== 0))
+                        switch (object.kind) {
+                        case "TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED":
+                        case 0:
+                            message.kind = 0;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_BUILD":
+                        case 1:
+                            message.kind = 1;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_GUARD":
+                        case 2:
+                            message.kind = 2;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_REPAIR":
+                        case 3:
+                            message.kind = 3;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_RECLAIM_UNIT":
+                        case 4:
+                            message.kind = 4;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_RECLAIM_FEATURE":
+                        case 5:
+                            message.kind = 5;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_RECLAIM_AREA":
+                        case 6:
+                            message.kind = 6;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_FACTORY_PRODUCE":
+                        case 7:
+                            message.kind = 7;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_SET_RALLY":
+                        case 8:
+                            message.kind = 8;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_QUEUE_INSERT":
+                        case 9:
+                            message.kind = 9;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_QUEUE_REMOVE":
+                        case 10:
+                            message.kind = 10;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_QUEUE_REPEAT":
+                        case 11:
+                            message.kind = 11;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY":
+                        case 12:
+                            message.kind = 12;
+                            break;
+                        case "TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE":
+                        case 13:
+                            message.kind = 13;
+                            break;
+                        default:
+                            if (typeof object.kind === "number" && (object.kind | 0) === object.kind)
+                                message.kind = object.kind;
+                        }
+                    if (object.value !== 0 && (typeof object.value !== "string" || $root.barc.browser.v1.TacticalModeValue[object.value] !== 0))
+                        switch (object.value) {
+                        case "TACTICAL_MODE_VALUE_UNSPECIFIED":
+                        case 0:
+                            message.value = 0;
+                            break;
+                        case "TACTICAL_MODE_VALUE_DISABLED":
+                        case 1:
+                            message.value = 1;
+                            break;
+                        case "TACTICAL_MODE_VALUE_ENABLED":
+                        case 2:
+                            message.value = 2;
+                            break;
+                        default:
+                            if (typeof object.value === "number" && (object.value | 0) === object.value)
+                                message.value = object.value;
+                        }
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a TacticalModeTarget message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {barc.browser.v1.TacticalModeTarget} message TacticalModeTarget
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                TacticalModeTarget.toObject = function (message, options, _depth) {
+                    if (!options)
+                        options = {};
+                    if (_depth === $undefined)
+                        _depth = 0;
+                    if (_depth > $util.recursionLimit)
+                        throw $Error("max depth exceeded");
+                    let object = {};
+                    if (options.defaults) {
+                        object.kind = options.enums === $String ? "TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED" : 0;
+                        object.value = options.enums === $String ? "TACTICAL_MODE_VALUE_UNSPECIFIED" : 0;
+                    }
+                    if (message.kind != null && $Object.hasOwnProperty.call(message, "kind"))
+                        object.kind = options.enums === $String ? $root.barc.browser.v1.TacticalDescriptorKind[message.kind] === $undefined ? message.kind : $root.barc.browser.v1.TacticalDescriptorKind[message.kind] : message.kind;
+                    if (message.value != null && $Object.hasOwnProperty.call(message, "value"))
+                        object.value = options.enums === $String ? $root.barc.browser.v1.TacticalModeValue[message.value] === $undefined ? message.value : $root.barc.browser.v1.TacticalModeValue[message.value] : message.value;
+                    return object;
+                };
+
+                /**
+                 * Converts this TacticalModeTarget to JSON.
+                 * @function toJSON
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                TacticalModeTarget.prototype.toJSON = function() {
+                    return TacticalModeTarget.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                /**
+                 * Gets the type url for TacticalModeTarget
+                 * @function getTypeUrl
+                 * @memberof barc.browser.v1.TacticalModeTarget
+                 * @static
+                 * @param {string} [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns {string} The type url
+                 */
+                TacticalModeTarget.getTypeUrl = function(prefix) {
+                    if (prefix === $undefined)
+                        prefix = "type.googleapis.com";
+                    return prefix + "/barc.browser.v1.TacticalModeTarget";
+                };
+
+                return TacticalModeTarget;
             })();
 
             v1.LiveInputModifiers = (function() {

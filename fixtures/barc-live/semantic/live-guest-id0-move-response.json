@@ -21,6 +21,7 @@
         "lifetime": "9007199254741001"
       }
     ],
+    "actorTacticalBindings": [],
     "move": {
       "position": {
         "x": 512.5,

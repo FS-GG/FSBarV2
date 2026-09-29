@@ -26,6 +26,31 @@
       "endpoint": "live",
       "nativeProtocol": "LIVE_CONTROL_PROTOCOL_UNSPECIFIED",
       "outcome": "REFUSE_BEFORE_ARM"
+    },
+    {
+      "peer": "live-v1-client",
+      "requestedProfile": "barc-live-tactical-v1",
+      "endpoint": "live",
+      "nativeProtocol": "LIVE_CONTROL_PROTOCOL_V1",
+      "outcome": "REFUSE_TACTICAL_BEFORE_ARM"
+    },
+    {
+      "peer": "tactical-v1-client",
+      "requestedProfile": "barc-live-tactical-v1",
+      "endpoint": "live",
+      "nativeProtocol": "LIVE_CONTROL_PROTOCOL_TACTICAL_V1",
+      "tacticalRevision": 1,
+      "catalogueComplete": true,
+      "outcome": "ACCEPT"
+    },
+    {
+      "peer": "tactical-v1-client",
+      "requestedProfile": "barc-live-tactical-v1",
+      "endpoint": "live",
+      "nativeProtocol": "LIVE_CONTROL_PROTOCOL_TACTICAL_V1",
+      "tacticalRevision": 1,
+      "catalogueComplete": false,
+      "outcome": "REFUSE_TACTICAL_ACTIONS"
     }
   ]
 }
