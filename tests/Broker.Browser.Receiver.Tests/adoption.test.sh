@@ -10,11 +10,12 @@ trap cleanup EXIT
 tar -C "$clean_receiver" --exclude='./.git' -cf - . | tar -C "$work" -xf -
 git -C "$work" init -q
 
-mkdir -p "$work/authored" "$work/.agents/skills/local-owner"
+mkdir -p "$work/authored" "$work/.agents/skills/local-owner" "$work/Client/public/arena"
 printf '%s\n' 'user module' > "$work/authored/UserModule.fs"
 printf '%s\n' 'user config' > "$work/user.config"
 printf '%s\n' 'owner lifecycle' > "$work/.agents/skills/local-owner/SKILL.md"
-preserved_before="$(sha256sum "$work/authored/UserModule.fs" "$work/user.config" "$work/.agents/skills/local-owner/SKILL.md")"
+printf '%s\n' 'arena owner file' > "$work/Client/public/arena/owner-map.json"
+preserved_before="$(sha256sum "$work/authored/UserModule.fs" "$work/user.config" "$work/.agents/skills/local-owner/SKILL.md" "$work/Client/public/arena/owner-map.json")"
 
 source="$work/source"
 mkdir -p \
@@ -32,7 +33,7 @@ printf '\x00\x61\x73\x6d\x01\x00\x00\x00\x00\x00' > "$source/tests/Broker.Browse
 "$repo_root/scripts/package-barc-preview.sh" "$source" "$work/barc-preview.tar.gz" >/dev/null
 "$repo_root/scripts/adopt-barc-preview.sh" "$work/barc-preview.tar.gz" "$work" >/dev/null
 
-[[ "$preserved_before" == "$(sha256sum "$work/authored/UserModule.fs" "$work/user.config" "$work/.agents/skills/local-owner/SKILL.md")" ]] || {
+[[ "$preserved_before" == "$(sha256sum "$work/authored/UserModule.fs" "$work/user.config" "$work/.agents/skills/local-owner/SKILL.md" "$work/Client/public/arena/owner-map.json")" ]] || {
   echo "adoption changed unrelated/user/lifecycle files" >&2
   exit 1
 }
