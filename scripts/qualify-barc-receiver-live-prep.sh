@@ -30,8 +30,11 @@ jq -e '
   def safe_relative:
     (startswith("/") | not) and
     (split("/") | length > 0 and all(. != "" and . != "." and . != ".."));
-  .schema == "fsbar.barc-live-receiver-pins/v1" and
-  .profile == "barc-live-v1" and
+  ((.schema == "fsbar.barc-live-receiver-pins/v1" and .profile == "barc-live-v1" and
+    (has("protocolVersion") | not) and (has("tacticalRevision") | not) and
+    (has("guestAbiVersion") | not)) or
+   (.schema == "fsbar.barc-live-receiver-pins/v2" and .profile == "barc-live-tactical-v1" and
+    .protocolVersion == 2 and .tacticalRevision == 1 and .guestAbiVersion == 1)) and
   (.source.commit | test("^[0-9a-f]{40}$")) and
   (.files | type == "array" and length >= 7) and
   ([.files[] | select(.role != "dependency") | .role] | sort == ["clientCss","clientJs","codec","contract","customGuest","manualGuest","worker"]) and
@@ -122,19 +125,32 @@ done < <(jq -r '.files[] | [.sourcePath,.archivePath,.sha256] | @tsv' "$pins")
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 adapter="$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js"
 grep -F 'barc-live-v1' "$adapter" >/dev/null
+grep -F 'barc-live-tactical-v1' "$adapter" >/dev/null
 grep -F 'barc-preview-v1' "$adapter" >/dev/null
 grep -F 'searchParams.get("barc-profile")' "$adapter" >/dev/null
 
 archive_sha="$(sha256sum "$archive" | cut -d' ' -f1)"
 pins_sha="$(sha256sum "$pins" | cut -d' ' -f1)"
-jq -n --arg sourceCommit "$expected_commit" --arg archiveSha "$archive_sha" --arg pinsSha "$pins_sha" '
-  {schema:"fsbar.barc-live-receiver-preparation/v1",disposition:"prepared",profile:"barc-live-v1",
+profile="$(jq -r '.profile' "$pins")"
+protocol_version="$(jq -r '.protocolVersion // 1' "$pins")"
+tactical_revision="$(jq -r '.tacticalRevision // 0' "$pins")"
+guest_abi_version="$(jq -r '.guestAbiVersion // 1' "$pins")"
+receipt_schema="fsbar.barc-live-receiver-preparation/v1"
+[[ "$profile" == "barc-live-tactical-v1" ]] && receipt_schema="fsbar.barc-live-receiver-preparation/v2"
+jq -n --arg receiptSchema "$receipt_schema" --arg profile "$profile" \
+  --argjson protocolVersion "$protocol_version" --argjson tacticalRevision "$tactical_revision" \
+  --argjson guestAbiVersion "$guest_abi_version" --arg sourceCommit "$expected_commit" \
+  --arg archiveSha "$archive_sha" --arg pinsSha "$pins_sha" '
+  {schema:$receiptSchema,disposition:"prepared",profile:$profile,
+   negotiation:{protocolVersion:$protocolVersion,tacticalRevision:$tacticalRevision,guestAbiVersion:$guestAbiVersion,
+     explicitOptIn:($profile == "barc-live-tactical-v1")},
    source:{commit:$sourceCommit},archive:{sha256:$archiveSha,pinsSha256:$pinsSha,manifestVerified:true},
-   receiver:{route:"/barc/?barc-profile=barc-live-v1",previewRoutePreserved:true,
+   receiver:{route:("/barc/?barc-profile=" + $profile),previewRoutePreserved:true,
      publicScaffold:{templates:"0.15.0",sdd:"2.0.3"},pairingStorage:"memory-only"},
+   availability:{factoryRally:{complete:false,disposition:"unavailable-until-native-catalogue-complete"}},
    claims:{generatedBuild:false,pointerJourney:false,keyboardJourney:false,customGuestNativeEffect:false,
      actualNativeRuntime:false,publication:false,milestoneComplete:false},
-   pending:["joined Broker/Browser/native source","final live guest hashes","clean and retained receiver adoption","actual native pointer and keyboard journeys"]}' \
+   pending:["joined Broker/Browser/native source","matched native engine and complete factory-rally catalogue","final live guest hashes","clean and retained receiver adoption","actual native pointer and keyboard journeys"]}' \
   > "$evidence/qualification.json"
 chmod 0600 "$evidence/qualification.json"
 echo "$evidence/qualification.json"

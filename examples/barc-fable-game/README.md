@@ -47,13 +47,16 @@ scripts/qualify-barc-receiver-journey.sh \
 ## Live receiver preparation
 
 The preview route remains `/barc/` and omits the mount profile. A joined live
-candidate is an explicit opt-in at `/barc/?barc-profile=barc-live-v1`; unknown
+candidate is an explicit opt-in at `/barc/?barc-profile=barc-live-v1`; the
+tactical candidate uses `/barc/?barc-profile=barc-live-tactical-v1` and pins
+protocol 2, tactical revision 1, and guest ABI 1. Unknown
 profile values refuse before the product mount. Endpoint, session and credential
 values still come only from the product's visible controls or memory-only mount
 options.
 
 `scripts/package-barc-live-receiver.sh` consumes a reviewed
-`fsbar.barc-live-receiver-pins/v1` document from the joined owner. It requires the
+`fsbar.barc-live-receiver-pins/v1` legacy document or the tactical
+`fsbar.barc-live-receiver-pins/v2` document from the joined owner. It requires the
 exact joined source commit and hashes for the built client, stylesheet, Worker,
 generated codec/contract and two independently built guests. Every transitive
 runtime import is an additional `dependency` pin; unlisted files are excluded.
