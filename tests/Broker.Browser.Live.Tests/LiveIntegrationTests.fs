@@ -114,6 +114,7 @@ let tests = testList "production live boundary" [
         let sessionId = Session.id (BrokerState.session handle.Hub).Value
         let matchId = ByteString.CopyFrom(Array.init 16 byte)
         let source = reporter matchId
+        source.Protocol <- LiveControlProtocol.TacticalV1
 
         let capabilities = LiveNativeCapabilities.empty()
         capabilities.MaxActorCount <- 64u
@@ -129,6 +130,9 @@ let tests = testList "production live boundary" [
         capabilities.SupportsStop <- true
         capabilities.SupportsMove <- true
         capabilities.SupportsAttackVisibleUnit <- true
+        let tacticalCapabilities=NativeTacticalCapabilities.empty()
+        tacticalCapabilities.Profile<-"barc-live-tactical-v1";tacticalCapabilities.Revision<-1u;tacticalCapabilities.MaxCatalogueEntries<-16u;tacticalCapabilities.MaxCataloguePageEntries<-8u;tacticalCapabilities.MaxBuildOptionsPerActor<-8u;tacticalCapabilities.MaxQueueEntriesPerActor<-8u;tacticalCapabilities.MaxFeatureReferences<-8u;tacticalCapabilities.MaxFactoryProductionCount<-4u;tacticalCapabilities.MaxAreaRadiusWorldUnits<-256u;tacticalCapabilities.MaxCommandDescriptorsPerActor<-8u
+        capabilities.Tactical<-ValueSome tacticalCapabilities
 
         let invalidSource = reporter (ByteString.CopyFromUtf8("highbar-live-runtime-match-incarnation"))
         let invalidCapReport = LiveStateReport.empty()
@@ -172,10 +176,29 @@ let tests = testList "production live boundary" [
         let! (stateAck: LiveStateReportAck) = live.ReportLiveStateAsync(stateReport).ResponseAsync
         Expect.equal stateAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "production gRPC records exact basis and lifetime"
 
+        let page=TacticalCataloguePage.empty()
+        page.TacticalProfile<-"barc-live-tactical-v1";page.TacticalRevision<-1u;page.CatalogueId<-ByteString.CopyFrom(Array.create 16 0x31uy);page.CatalogueRevision<-9007199254741003UL;page.PageCount<-1u;page.Complete<-true
+        let content=NativeContentIdentity.empty()
+        content.EngineVersion<-"recoil";content.GameName<-"BAR";content.GameVersion<-"test";content.GameContentSha256<-ByteString.CopyFrom(Array.create 32 0x32uy);page.Content<-ValueSome content
+        let definition=NativeUnitDefinition.empty()
+        definition.DefinitionId<-501u;definition.InternalName<-"armcom";definition.DisplayName<-"Commander";definition.FootprintXCells<-4u;definition.FootprintZCells<-4u;page.Definitions.Add definition
+        let pageReport=LiveStateReport.empty()
+        pageReport.Reporter<-ValueSome source;pageReport.ReportSequence<-9007199254741003UL;pageReport.TacticalCatalogue<-page
+        let! (pageAck:LiveStateReportAck)=live.ReportLiveStateAsync(pageReport).ResponseAsync
+        Expect.equal pageAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "production gRPC assembles tactical catalogue"
+        let tacticalSnapshot=TacticalSnapshotMetadata.empty()
+        tacticalSnapshot.Basis<-ValueSome basis;tacticalSnapshot.CatalogueId<-page.CatalogueId;tacticalSnapshot.CatalogueRevision<-page.CatalogueRevision
+        let tacticalActor=NativeActorTacticalMetadata.empty()
+        tacticalActor.Actor<-ValueSome actorRef;tacticalActor.DescriptorRevision<-9007199254741005UL;tacticalSnapshot.Actors.Add tacticalActor
+        let tacticalReport=LiveStateReport.empty()
+        tacticalReport.Reporter<-ValueSome source;tacticalReport.ReportSequence<-9007199254741005UL;tacticalReport.TacticalSnapshot<-tacticalSnapshot
+        let! (tacticalAck:LiveStateReportAck)=live.ReportLiveStateAsync(tacticalReport).ResponseAsync
+        Expect.equal tacticalAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "production gRPC pairs tactical state to exact basis"
+
         let controlSub = LiveControlSubscribe.empty()
         controlSub.PluginId <- source.PluginId
         controlSub.SchemaVersion <- source.SchemaVersion
-        controlSub.Protocol <- LiveControlProtocol.V1
+        controlSub.Protocol <- LiveControlProtocol.TacticalV1
         controlSub.ControlChannelIncarnation <- "control-live"
         let controlCall = live.OpenLiveControlChannelAsync(controlSub)
         let seedBinding = LiveBinding.empty()
@@ -184,7 +207,7 @@ let tests = testList "production live boundary" [
         let commandSub = LiveCommandSubscribe.empty()
         commandSub.PluginId <- source.PluginId
         commandSub.SchemaVersion <- source.SchemaVersion
-        commandSub.Protocol <- LiveControlProtocol.V1
+        commandSub.Protocol <- LiveControlProtocol.TacticalV1
         commandSub.Binding <- ValueSome seedBinding
         let commandCall = live.OpenLiveCommandChannelAsync(commandSub)
         do! Task.Delay 50
@@ -254,11 +277,13 @@ let tests = testList "production live boundary" [
         let socket = new ClientWebSocket()
         socket.Options.SetRequestHeader("Origin", origin)
         do! socket.ConnectAsync(Uri(sprintf "ws://127.0.0.1:%d/barc-live" browserPort), CancellationToken.None)
-        let auth = ClientAuth(Game="bar",ProtocolVersion="1.0.0",Profile="barc-live-v1",Credential="secret-live",Origin=origin,ExpectedSessionId=ByteString.CopyFrom(sessionId.ToByteArray()))
+        let auth = ClientAuth(Game="bar",ProtocolVersion="1.0.0",Profile="barc-live-tactical-v1",Credential="secret-live",Origin=origin,ExpectedSessionId=ByteString.CopyFrom(sessionId.ToByteArray()))
         do! send socket (LiveClientEnvelope(Authenticate=auth))
         let! (bootstrap: LiveServerEnvelope) = receive socket
         let! (observation: LiveServerEnvelope) = receive socket
-        Expect.equal bootstrap.Bootstrap.LiveProfile "barc-live-v1" "live profile is explicitly negotiated"
+        Expect.equal bootstrap.Bootstrap.LiveProfile "barc-live-tactical-v1" "production WebSocket negotiates tactical profile"
+        Expect.equal bootstrap.Bootstrap.TacticalCatalogue.Definitions.Count 1 "complete native catalogue crosses production WebSocket"
+        Expect.isNotNull observation.Observation.Tactical "paired tactical observation crosses production WebSocket"
         Expect.equal observation.Observation.Basis.StateSequence basis.StateSequence "production observation pairs with native metadata"
         Expect.equal observation.Observation.Units[0].Reference.Id 0UL "legal unit zero crosses WebSocket as a present reference"
 
@@ -283,10 +308,16 @@ let tests = testList "production live boundary" [
         laterMetadata.Units.Add(actor.Clone())
         let laterReport = LiveStateReport.empty()
         laterReport.Reporter <- ValueSome source
-        laterReport.ReportSequence <- stateReport.ReportSequence + 2UL
+        laterReport.ReportSequence <- tacticalReport.ReportSequence + 2UL
         laterReport.Snapshot <- laterMetadata
         let! (laterAck: LiveStateReportAck) = live.ReportLiveStateAsync(laterReport).ResponseAsync
         Expect.equal laterAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "metadata arriving second is recorded"
+        let laterTactical=tacticalSnapshot.Clone()
+        laterTactical.Basis<-ValueSome laterBasis
+        let laterTacticalReport=LiveStateReport.empty()
+        laterTacticalReport.Reporter<-ValueSome source;laterTacticalReport.ReportSequence<-laterReport.ReportSequence+2UL;laterTacticalReport.TacticalSnapshot<-laterTactical
+        let! (laterTacticalAck:LiveStateReportAck)=live.ReportLiveStateAsync(laterTacticalReport).ResponseAsync
+        Expect.equal laterTacticalAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "tactical metadata arrives for the same production basis"
         LiveControl.noteMetadataReported laterBasis.StateSequence (BrokerState.liveControl handle.Hub)
         LiveControl.noteMetadataReported laterBasis.StateSequence (BrokerState.liveControl handle.Hub)
         let! (pairedObservation: LiveServerEnvelope) = receive socket
@@ -359,10 +390,16 @@ let tests = testList "production live boundary" [
         raceMetadata.Units.Add(actor.Clone())
         let raceReport=LiveStateReport.empty()
         raceReport.Reporter<-ValueSome source
-        raceReport.ReportSequence<-laterReport.ReportSequence+2UL
+        raceReport.ReportSequence<-laterTacticalReport.ReportSequence+2UL
         raceReport.Snapshot<-raceMetadata
         let! (raceAck:LiveStateReportAck)=live.ReportLiveStateAsync(raceReport).ResponseAsync
         Expect.equal raceAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "newer native basis is recorded before the browser handles it"
+        let raceTactical=tacticalSnapshot.Clone()
+        raceTactical.Basis<-ValueSome raceBasis
+        let raceTacticalReport=LiveStateReport.empty()
+        raceTacticalReport.Reporter<-ValueSome source;raceTacticalReport.ReportSequence<-raceReport.ReportSequence+2UL;raceTacticalReport.TacticalSnapshot<-raceTactical
+        let! (raceTacticalAck:LiveStateReportAck)=live.ReportLiveStateAsync(raceTacticalReport).ResponseAsync
+        Expect.equal raceTacticalAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "matching tactical basis releases the production observation"
         let staleSubmit=submit.Clone()
         staleSubmit.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         staleSubmit.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())

@@ -312,9 +312,9 @@ module Gateway =
         match BrokerState.session hub, bytesGuid auth.ExpectedSessionId with
         | Some session, Some expected
             when origin=config.allowedOrigin && auth.Origin=origin && auth.Game=Game
-              && auth.ProtocolVersion=ProtocolVersion && auth.Profile="barc-live-v1"
+              && auth.ProtocolVersion=ProtocolVersion && (auth.Profile="barc-live-v1" || auth.Profile="barc-live-tactical-v1")
               && auth.Credential=config.credential && DateTimeOffset.UtcNow<=config.credentialExpiresAt
-              && expected=config.credentialSessionId && expected=Session.id session -> Ok expected
+              && expected=config.credentialSessionId && expected=Session.id session -> Ok(expected,auth.Profile)
         | _ -> Error "live browser credential, origin, protocol, or session refused"
 
     let private runLiveSocket hub (config: LiveConfig) (context: HttpContext) = task {
@@ -337,9 +337,9 @@ module Gateway =
                     | Ok message ->
                         match authenticateLive config origin message.Authenticate hub with
                         | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
-                        | Ok sessionId ->
+                        | Ok(sessionId,profile) ->
                             let state=BrokerState.liveControl hub
-                            match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
+                            match LiveBoundary.provisionBootstrapForProfile profile sessionId config.perspectiveId state with
                             | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                             | Ok bootstrap ->
                                 use connectionCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
@@ -361,8 +361,9 @@ module Gateway =
                                     | Snapshot.Current current when current.sessionId=sessionId ->
                                         let preview=(observation current).Observation
                                         match LiveBoundary.observation preview state with
-                                        | Ok envelope -> PreparedCurrent(current.sequence,envelope)
+                                        | Ok envelope when profile<>"barc-live-tactical-v1" || not(isNull envelope.Observation.Tactical) -> PreparedCurrent(current.sequence,envelope)
                                         | Error _ -> PreparedUnavailable
+                                        | _ -> PreparedUnavailable
                                     | Snapshot.Stale(staleSessionId,lastSequence,receivedSequence,detail) when staleSessionId=sessionId ->
                                         PreparedStale(lastSequence,receivedSequence,detail)
                                     | _ -> PreparedSessionChanged
@@ -430,7 +431,7 @@ module Gateway =
                                             let terminal=value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused
                                             let replacement =
                                                 if terminal then
-                                                    match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
+                                                    match LiveBoundary.provisionBootstrapForProfile profile sessionId config.perspectiveId state with
                                                     | Error detail -> Error detail
                                                     | Ok bootstrap ->
                                                         let prepared=BrokerState.browserLatest hub |> Option.map prepareObservation

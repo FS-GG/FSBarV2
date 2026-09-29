@@ -12,6 +12,19 @@ module LiveControl =
         { parentId: Guid; inputId: Guid; sessionId: Guid; controllerId: Guid
           controllerIncarnation: string; authorityEpoch: uint64; moduleSha256: byte[]
           moduleGeneration: uint64; basis: NativeObservationBasis; actors: NativeUnitReference list; action: Action }
+    type TacticalQueueBinding = { domain: NativeQueueDomain; revision: uint64 }
+    type TacticalActor =
+        { reference: NativeUnitReference; descriptorRevision: uint64
+          queueRevisions: TacticalQueueBinding list }
+    type TacticalAction =
+        | Build of NativeBuildIntent | Guard of NativeFriendlyTargetIntent | Repair of NativeFriendlyTargetIntent
+        | ReclaimUnit of NativeFriendlyTargetIntent | ReclaimFeature of NativeReclaimFeatureIntent
+        | ReclaimArea of NativeReclaimAreaIntent | FactoryProduce of NativeFactoryProduceIntent
+        | SetRally of NativeSetRallyIntent | QueueEdit of NativeQueueEditIntent | TacticalMode of NativeTacticalModeIntent
+    type TacticalSubmission =
+        { parentId: Guid; inputId: Guid; sessionId: Guid; controllerId: Guid
+          controllerIncarnation: string; authorityEpoch: uint64; moduleSha256: byte[]
+          moduleGeneration: uint64; basis: NativeObservationBasis; actors: TacticalActor list; action: TacticalAction }
     type FeedbackStage = BrokerAdmission | NativeAdmission | NativeDispatch | Unknown
     type FeedbackStatus = Accepted | Rejected | Applied | Skipped | Expired | UnknownStatus
     type Feedback =
@@ -75,6 +88,10 @@ module LiveControl =
           commandChannel: Channel<CommandDelivery>; mutable controlClaim: string option
           mutable commandClaim: string option; mutable reporter: LiveStateReporter option
           mutable capabilities: LiveNativeCapabilities option; mutable snapshot: LiveSnapshotMetadata option
+          tacticalPages: SortedDictionary<uint32,TacticalCataloguePage>
+          mutable tacticalCatalogueIdentity: struct(ByteString * uint64 * uint32) option
+          mutable tacticalCatalogue: TacticalCataloguePage list option
+          mutable tacticalSnapshot: TacticalSnapshotMetadata option
           mutable snapshotReceivedAt: DateTimeOffset; mutable lastReportSequence: uint64; mutable controller: Controller option
           mutable nextControlSequence: uint64; mutable nextBatchSequence: uint64
           mutable nextCorrelation: uint64; mutable nextResultSequence: uint64; mutable nextControllerStateSequence: uint64
@@ -90,6 +107,7 @@ module LiveControl =
         if parentCapacity <= 0 then invalidArg "parentCapacity" "must be positive"
         { gate=obj(); parentCapacity=parentCapacity; controlChannel=bounded 16; commandChannel=bounded parentCapacity
           controlClaim=None; commandClaim=None; reporter=None; capabilities=None; snapshot=None
+          tacticalPages=SortedDictionary(); tacticalCatalogueIdentity=None; tacticalCatalogue=None; tacticalSnapshot=None
           snapshotReceivedAt=DateTimeOffset.MinValue; lastReportSequence=0UL; controller=None; nextControlSequence=1UL
           nextBatchSequence=1UL; nextCorrelation=1UL; nextResultSequence=1UL; nextControllerStateSequence=1UL
           parents=HashSet(); identities=Dictionary(); completedParents=HashSet(); completedParentOrder=Queue()
@@ -101,10 +119,91 @@ module LiveControl =
         not (String.IsNullOrWhiteSpace reporter.PluginId)
         && not (String.IsNullOrWhiteSpace reporter.ProcessIncarnation)
         && not (String.IsNullOrWhiteSpace reporter.StateChannelIncarnation)
-        && reporter.MatchIncarnation.Length = 16 && reporter.Protocol = LiveControlProtocol.V1
+        && reporter.MatchIncarnation.Length = 16
+        && (reporter.Protocol = LiveControlProtocol.V1 || reporter.Protocol = LiveControlProtocol.TacticalV1)
     let private sameReporter (a: LiveStateReporter) (b: LiveStateReporter) =
         a.PluginId=b.PluginId && a.ProcessIncarnation=b.ProcessIncarnation
         && a.StateChannelIncarnation=b.StateChannelIncarnation && bytesEqual a.MatchIncarnation b.MatchIncarnation
+        && a.Protocol=b.Protocol
+
+    let private finiteOptional (value: ValueOption<float32>) =
+        value |> ValueOption.forall Single.IsFinite
+    let private equalBasis (a: NativeObservationBasis) (b: NativeObservationBasis) =
+        a.StateSequence=b.StateSequence && a.Frame=b.Frame && bytesEqual a.Token b.Token
+        && bytesEqual a.MatchIncarnation b.MatchIncarnation && a.ProcessIncarnation=b.ProcessIncarnation
+        && a.StateChannelIncarnation=b.StateChannelIncarnation
+    let private validTacticalCapabilities (value: NativeTacticalCapabilities) =
+        value.Profile="barc-live-tactical-v1" && value.Revision=1u
+        && value.MaxCatalogueEntries>0u && value.MaxCataloguePageEntries>0u
+        && value.MaxCataloguePageEntries<=value.MaxCatalogueEntries
+        && value.MaxBuildOptionsPerActor>0u && value.MaxQueueEntriesPerActor>0u
+        && value.MaxFeatureReferences>0u && value.MaxFactoryProductionCount>0u
+        && value.MaxAreaRadiusWorldUnits>0u && value.MaxCommandDescriptorsPerActor>0u
+    let private validDefinition maxOptions (value: NativeUnitDefinition) =
+        value.DefinitionId>0u && not(String.IsNullOrWhiteSpace value.InternalName)
+        && not(String.IsNullOrWhiteSpace value.DisplayName)
+        && value.FootprintXCells>0u && value.FootprintZCells>0u
+        && value.BuildOptionDefinitionIds.Count<=int maxOptions
+        && value.BuildOptionDefinitionIds |> Seq.forall ((<>)0u)
+        && value.BuildOptionDefinitionIds |> Seq.distinct |> Seq.length = value.BuildOptionDefinitionIds.Count
+        && (value.Cost |> ValueOption.forall(fun cost->finiteOptional cost.Metal && finiteOptional cost.Energy && finiteOptional cost.BuildTime))
+    let private validCataloguePage (caps: NativeTacticalCapabilities) (page: TacticalCataloguePage) =
+        let validContent =
+            match page.Content with
+            | ValueSome content ->
+                not (String.IsNullOrWhiteSpace content.EngineVersion)
+                && not (String.IsNullOrWhiteSpace content.GameName)
+                && not (String.IsNullOrWhiteSpace content.GameVersion)
+                && content.GameContentSha256.Length=32
+            | ValueNone -> false
+        page.TacticalProfile=caps.Profile && page.TacticalRevision=caps.Revision
+        && validContent
+        && page.CatalogueId.Length=16 && page.CatalogueRevision>0UL
+        && page.PageCount>0u && page.PageIndex<page.PageCount
+        && page.Definitions.Count<=int caps.MaxCataloguePageEntries
+        && page.Definitions |> Seq.forall (validDefinition caps.MaxBuildOptionsPerActor)
+        && (page.Definitions |> Seq.map(fun d->d.DefinitionId) |> Seq.distinct |> Seq.length)=page.Definitions.Count
+        && ((page.PageIndex+1u=page.PageCount && page.NextPageToken.IsEmpty) || (page.PageIndex+1u<page.PageCount && not page.NextPageToken.IsEmpty))
+    let private validPosition (caps: LiveNativeCapabilities) (value: NativePosition3) =
+        Single.IsFinite value.X && Single.IsFinite value.Z
+        && finiteOptional value.Elevation
+        && value.X>=caps.MinWorldX && value.X<=caps.MaxWorldXInclusive
+        && value.Z>=caps.MinWorldZ && value.Z<=caps.MaxWorldZInclusive
+    let private validEconomyValue (value: NativeEconomyValue) =
+        not(String.IsNullOrWhiteSpace value.ResourceName) && not(String.IsNullOrWhiteSpace value.Unit)
+        && finiteOptional value.Current && finiteOptional value.Storage
+        && finiteOptional value.IncomePerSecond && finiteOptional value.UsagePerSecond
+    let private validTacticalSnapshot (caps: LiveNativeCapabilities) (catalogue: TacticalCataloguePage list) (baseSnapshot: LiveSnapshotMetadata) (value: TacticalSnapshotMetadata) =
+        let tactical=caps.Tactical.Value
+        let definitions=catalogue |> Seq.collect(fun p->p.Definitions) |> Seq.map(fun d->d.DefinitionId) |> Set.ofSeq
+        let ownRefs=baseSnapshot.Units |> Seq.choose(fun u-> if u.Eligibility=NativeLiveUnitEligibility.NativeLiveUnitOwnedActor then u.Reference |> ValueOption.toOption |> Option.map(fun r->struct(r.Id,r.Lifetime)) else None) |> Set.ofSeq
+        let validQueue (q:NativeObservedQueue) =
+            let uniqueTags=(q.Entries |> Seq.map(fun entry->entry.NativeTag) |> Seq.distinct |> Seq.length)=q.Entries.Count
+            q.Domain<>NativeQueueDomain.Unspecified && q.Revision>0UL
+            && q.Entries.Count<=int tactical.MaxQueueEntriesPerActor && uniqueTags
+        value.Basis.IsSome && baseSnapshot.Basis.IsSome && equalBasis value.Basis.Value baseSnapshot.Basis.Value
+        && value.CatalogueId.Span.SequenceEqual(catalogue.Head.CatalogueId.Span) && value.CatalogueRevision=catalogue.Head.CatalogueRevision
+        && value.Actors.Count<=int caps.MaxActorCount && value.Features.Count<=int tactical.MaxFeatureReferences
+        && (value.Actors |> Seq.map(fun a->a.Actor |> ValueOption.map(fun r->r.Id) |> ValueOption.defaultValue UInt32.MaxValue) |> Seq.distinct |> Seq.length)=value.Actors.Count
+        && value.Actors |> Seq.forall(fun actor ->
+            actor.Actor |> ValueOption.exists(fun reference->reference.Lifetime>0UL && ownRefs.Contains(struct(reference.Id,reference.Lifetime)))
+            && actor.DescriptorRevision>0UL && actor.Descriptors.Count<=int tactical.MaxCommandDescriptorsPerActor
+            && (actor.Descriptors |> Seq.map(fun d->d.Kind) |> Seq.distinct |> Seq.length)=actor.Descriptors.Count
+            && (actor.Descriptors |> Seq.forall(fun d->
+                d.Kind<>NativeTacticalDescriptorKind.Unspecified
+                && match d.Kind,d.NativeCommandId with
+                   | NativeTacticalDescriptorKind.NativeTacticalDescriptorBarConstructionPriority,ValueSome id -> id=34571 && d.AllowedModeValues.Count>0
+                   | NativeTacticalDescriptorKind.NativeTacticalDescriptorBarCloakDesire,ValueSome id -> id=37382 && d.AllowedModeValues.Count>0
+                   | NativeTacticalDescriptorKind.NativeTacticalDescriptorBarConstructionPriority,_
+                   | NativeTacticalDescriptorKind.NativeTacticalDescriptorBarCloakDesire,_ -> false
+                   | _,ValueNone -> true
+                   | _ -> false))
+            && actor.Descriptors |> Seq.forall(fun d-> d.AllowedDefinitionIds |> Seq.forall definitions.Contains)
+            && (actor.Queue |> Seq.map(fun q->q.Domain) |> Seq.distinct |> Seq.length)=actor.Queue.Count
+            && (actor.Queue |> Seq.forall validQueue))
+        && (value.Features |> Seq.map(fun f->f.Reference |> ValueOption.map(fun r->r.Id) |> ValueOption.defaultValue UInt32.MaxValue) |> Seq.distinct |> Seq.length)=value.Features.Count
+        && value.Features |> Seq.forall(fun f->f.Reference |> ValueOption.exists(fun reference->reference.Lifetime>0UL) && f.DefinitionId>0u && Single.IsFinite f.WorldX && Single.IsFinite f.WorldZ && finiteOptional f.Elevation && finiteOptional f.ReclaimLeft)
+        && (value.Economy |> ValueOption.forall(fun economy->economy.Metal |> ValueOption.exists validEconomyValue && economy.Energy |> ValueOption.exists validEconomyValue))
 
     let reportState (report: LiveStateReport) receivedAt state = lock state.gate (fun () ->
         match report.Reporter with
@@ -130,8 +229,14 @@ module LiveControl =
                      && Single.IsFinite capabilities.MinWorldZ && Single.IsFinite capabilities.MaxWorldZInclusive
                      && capabilities.MinWorldX <= capabilities.MaxWorldXInclusive
                      && capabilities.MinWorldZ <= capabilities.MaxWorldZInclusive
-                     && capabilities.SupportsStop && capabilities.SupportsMove && capabilities.SupportsAttackVisibleUnit ->
+                     && capabilities.SupportsStop && capabilities.SupportsMove && capabilities.SupportsAttackVisibleUnit
+                     && ((reporter.Protocol=LiveControlProtocol.V1 && capabilities.Tactical.IsNone)
+                         || (reporter.Protocol=LiveControlProtocol.TacticalV1 && capabilities.Tactical |> ValueOption.exists validTacticalCapabilities)) ->
                 state.capabilities <- Some capabilities
+                state.tacticalPages.Clear()
+                state.tacticalCatalogueIdentity <- None
+                state.tacticalCatalogue <- None
+                state.tacticalSnapshot <- None
                 state.lastReportSequence <- report.ReportSequence
                 LiveStateReportDisposition.LiveStateReportRecorded
             | ValueSome (LiveStateReport.Types.Body.Snapshot snapshot) ->
@@ -151,7 +256,46 @@ module LiveControl =
                                 | ValueNone -> false)
                          && (snapshot.Units |> Seq.choose (fun unit -> unit.Reference |> ValueOption.toOption |> Option.map (fun reference -> reference.Id)) |> Seq.distinct |> Seq.length) = snapshot.Units.Count ->
                     state.snapshot <- Some snapshot
+                    if state.tacticalSnapshot |> Option.exists(fun tactical->not(tactical.Basis |> ValueOption.exists(equalBasis basis))) then
+                        state.tacticalSnapshot <- None
                     state.snapshotReceivedAt <- receivedAt
+                    state.lastReportSequence <- report.ReportSequence
+                    LiveStateReportDisposition.LiveStateReportRecorded
+                | _ -> LiveStateReportDisposition.LiveStateReportRefused
+            | ValueSome (LiveStateReport.Types.Body.TacticalCatalogue page) ->
+                match state.capabilities with
+                | Some caps when reporter.Protocol=LiveControlProtocol.TacticalV1 && caps.Tactical.IsSome && validCataloguePage caps.Tactical.Value page ->
+                    let identity=struct(page.CatalogueId,page.CatalogueRevision,page.PageCount)
+                    let identityChanged =
+                        state.tacticalCatalogueIdentity
+                        |> Option.exists(fun prior->let struct(id,revision,count)=prior in not(bytesEqual id page.CatalogueId && revision=page.CatalogueRevision && count=page.PageCount))
+                    let consistentContent =
+                        identityChanged || (state.tacticalPages.Values
+                        |> Seq.tryHead
+                        |> Option.forall(fun prior->prior.Content.Value.ToByteArray().AsSpan().SequenceEqual(page.Content.Value.ToByteArray().AsSpan())))
+                    if not consistentContent then LiveStateReportDisposition.LiveStateReportRefused else
+                        match state.tacticalCatalogueIdentity with
+                        | Some prior when let struct(id,revision,count)=prior in not(bytesEqual id page.CatalogueId && revision=page.CatalogueRevision && count=page.PageCount) ->
+                            state.tacticalPages.Clear()
+                            state.tacticalCatalogue <- None
+                        | _ -> ()
+                        state.tacticalCatalogueIdentity <- Some identity
+                        state.tacticalPages[page.PageIndex] <- page.Clone()
+                        state.tacticalSnapshot <- None
+                        if state.tacticalPages.Count=int page.PageCount then
+                            let pages=state.tacticalPages.Values |> Seq.toList
+                            let definitions=pages |> Seq.collect(fun p->p.Definitions) |> Seq.toList
+                            if pages |> List.forall(fun p->p.Complete)
+                               && definitions.Length<=int caps.Tactical.Value.MaxCatalogueEntries
+                               && (definitions |> Seq.map(fun d->d.DefinitionId) |> Seq.distinct |> Seq.length)=definitions.Length then
+                                state.tacticalCatalogue <- Some pages
+                        state.lastReportSequence <- report.ReportSequence
+                        LiveStateReportDisposition.LiveStateReportRecorded
+                | _ -> LiveStateReportDisposition.LiveStateReportRefused
+            | ValueSome (LiveStateReport.Types.Body.TacticalSnapshot snapshot) ->
+                match state.capabilities,state.snapshot,state.tacticalCatalogue with
+                | Some caps,Some baseSnapshot,Some catalogue when reporter.Protocol=LiveControlProtocol.TacticalV1 && validTacticalSnapshot caps catalogue baseSnapshot snapshot ->
+                    state.tacticalSnapshot <- Some(snapshot.Clone())
                     state.lastReportSequence <- report.ReportSequence
                     LiveStateReportDisposition.LiveStateReportRecorded
                 | _ -> LiveStateReportDisposition.LiveStateReportRefused
@@ -162,7 +306,9 @@ module LiveControl =
         state.nextControllerStateSequence <- sequence + 1UL
         { stateSequence=sequence; binding=controller.binding; stage=stage; reason=reason }
     let claimControl (subscribe: LiveControlSubscribe) state = lock state.gate (fun () ->
-        if subscribe.Protocol<>LiveControlProtocol.V1 || String.IsNullOrWhiteSpace subscribe.ControlChannelIncarnation then Unavailable "invalid live control subscription"
+        if (subscribe.Protocol<>LiveControlProtocol.V1 && subscribe.Protocol<>LiveControlProtocol.TacticalV1)
+           || String.IsNullOrWhiteSpace subscribe.ControlChannelIncarnation
+           || state.reporter |> Option.exists(fun reporter->reporter.Protocol<>subscribe.Protocol) then Unavailable "invalid live control subscription"
         else match state.controlClaim with
              | Some _ -> AlreadyClaimed
              | None ->
@@ -182,7 +328,9 @@ module LiveControl =
     let claimCommands (subscribe: LiveCommandSubscribe) state = lock state.gate (fun () ->
         match subscribe.Binding with
         | ValueNone -> Unavailable "invalid live command subscription"
-        | ValueSome binding when subscribe.Protocol<>LiveControlProtocol.V1 || String.IsNullOrWhiteSpace binding.CommandChannelIncarnation -> Unavailable "invalid live command subscription"
+        | ValueSome binding when (subscribe.Protocol<>LiveControlProtocol.V1 && subscribe.Protocol<>LiveControlProtocol.TacticalV1)
+                                 || String.IsNullOrWhiteSpace binding.CommandChannelIncarnation
+                                 || state.reporter |> Option.exists(fun reporter->reporter.Protocol<>subscribe.Protocol) -> Unavailable "invalid live command subscription"
         | ValueSome binding ->
             match state.commandClaim with
             | Some _ -> AlreadyClaimed
@@ -566,6 +714,245 @@ module LiveControl =
             | _ -> Error "live controller is not native-confirmed")
         result
 
+    let private tacticalShape action =
+        match action with
+        | Build _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorBuild,NativeQueueDomain.ActorOrder
+        | Guard _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorGuard,NativeQueueDomain.ActorOrder
+        | Repair _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorRepair,NativeQueueDomain.ActorOrder
+        | ReclaimUnit _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimUnit,NativeQueueDomain.ActorOrder
+        | ReclaimFeature _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimFeature,NativeQueueDomain.ActorOrder
+        | ReclaimArea _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimArea,NativeQueueDomain.ActorOrder
+        | FactoryProduce _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce,NativeQueueDomain.FactoryProduction
+        | SetRally _ -> NativeTacticalDescriptorKind.NativeTacticalDescriptorSetRally,NativeQueueDomain.FactoryRally
+        | QueueEdit value ->
+            let kind = match value.Kind with
+                       | NativeQueueEditKind.Insert -> NativeTacticalDescriptorKind.NativeTacticalDescriptorQueueInsert
+                       | NativeQueueEditKind.RemoveTag -> NativeTacticalDescriptorKind.NativeTacticalDescriptorQueueRemove
+                       | NativeQueueEditKind.SetRepeat -> NativeTacticalDescriptorKind.NativeTacticalDescriptorQueueRepeat
+                       | _ -> NativeTacticalDescriptorKind.Unspecified
+            kind,value.Domain
+        | TacticalMode value -> value.Kind,NativeQueueDomain.ActorOrder
+    let private queueOptions policy =
+        match policy with
+        | NativeQueuePolicy.Replace -> Some(0u,CommandConflictPolicy.CommandConflictReplaceCurrent)
+        | NativeQueuePolicy.Append -> Some(32u,CommandConflictPolicy.CommandConflictQueueAfterCurrent)
+        | NativeQueuePolicy.RejectIfBusy -> Some(0u,CommandConflictPolicy.CommandConflictRejectIfBusy)
+        | _ -> None
+    let private tacticalCount action = match action with FactoryProduce value -> int value.Count | _ -> 1
+    let private vector x y z =
+        let value=Vector3.empty()
+        value.X<-x; value.Y<-y; value.Z<-z
+        value
+    let private translateTactical (actor:NativeUnitReference) (action:TacticalAction) =
+        let ai=AICommand.empty()
+        let mutable conflict=CommandConflictPolicy.CommandConflictReplaceCurrent
+        let semantic,native =
+            match action with
+            | Build value ->
+                let options,policy=queueOptions value.QueuePolicy |> Option.get
+                let command=BuildUnitCommand.empty()
+                command.UnitId<-int actor.Id
+                command.Options<-options
+                command.ToBuildUnitDefId<-int value.DefinitionId
+                command.BuildPosition<-ValueSome(vector value.Position.Value.X (value.Position.Value.Elevation |> ValueOption.defaultValue 0.0f) value.Position.Value.Z)
+                command.Facing<-int value.Facing
+                ai.BuildUnit<-command
+                conflict<-policy
+                LiveSemanticAction.Build,NativeTacticalCommand.Types.Action.Build(value.Clone())
+            | Guard value | Repair value | ReclaimUnit value ->
+                let options,policy=queueOptions value.QueuePolicy |> Option.get
+                conflict<-policy
+                let target=value.Target.Value
+                match action with
+                | Guard _ ->
+                    let c=GuardCommand.empty()
+                    c.UnitId<-int actor.Id; c.Options<-options; c.GuardUnitId<-int target.Id; ai.Guard<-c
+                | Repair _ ->
+                    let c=RepairCommand.empty()
+                    c.UnitId<-int actor.Id; c.Options<-options; c.RepairUnitId<-int target.Id; ai.Repair<-c
+                | _ ->
+                    let c=ReclaimUnitCommand.empty()
+                    c.UnitId<-int actor.Id; c.Options<-options; c.ReclaimUnitId<-int target.Id; ai.ReclaimUnit<-c
+                (match action with Guard _->LiveSemanticAction.Guard|Repair _->LiveSemanticAction.Repair|_->LiveSemanticAction.ReclaimUnit),
+                (match action with Guard _->NativeTacticalCommand.Types.Action.Guard(value.Clone())|Repair _->NativeTacticalCommand.Types.Action.Repair(value.Clone())|_->NativeTacticalCommand.Types.Action.ReclaimUnit(value.Clone()))
+            | ReclaimFeature value ->
+                let options,policy=queueOptions value.QueuePolicy |> Option.get
+                conflict<-policy
+                let c=ReclaimFeatureCommand.empty()
+                c.UnitId<-int actor.Id; c.Options<-options; c.FeatureId<-int value.Target.Value.Id; ai.ReclaimFeature<-c
+                LiveSemanticAction.ReclaimFeature,NativeTacticalCommand.Types.Action.ReclaimFeature(value.Clone())
+            | ReclaimArea value ->
+                let options,policy=queueOptions value.QueuePolicy |> Option.get
+                conflict<-policy
+                let p=value.Center.Value
+                let c=ReclaimAreaCommand.empty()
+                c.UnitId<-int actor.Id; c.Options<-options; c.Position<-ValueSome(vector p.X (p.Elevation |> ValueOption.defaultValue 0.0f) p.Z); c.Radius<-value.RadiusWorldUnits; ai.ReclaimArea<-c
+                LiveSemanticAction.ReclaimArea,NativeTacticalCommand.Types.Action.ReclaimArea(value.Clone())
+            | FactoryProduce value ->
+                let options,policy=queueOptions value.QueuePolicy |> Option.get
+                conflict<-policy
+                let one=value.Clone()
+                one.Count<-1u
+                let c=BuildUnitCommand.empty()
+                c.UnitId<-int actor.Id; c.Options<-options; c.ToBuildUnitDefId<-int value.DefinitionId; ai.BuildUnit<-c
+                LiveSemanticAction.FactoryProduce,NativeTacticalCommand.Types.Action.FactoryProduce(one)
+            | SetRally value ->
+                let p=value.Position.Value
+                let c=MoveUnitCommand.empty()
+                c.UnitId<-int actor.Id; c.Options<-0u; c.ToPosition<-ValueSome(vector p.X (p.Elevation |> ValueOption.defaultValue 0.0f) p.Z); ai.MoveUnit<-c
+                LiveSemanticAction.SetRally,NativeTacticalCommand.Types.Action.SetRally(value.Clone())
+            | QueueEdit value ->
+                match value.Kind with
+                | NativeQueueEditKind.SetRepeat ->
+                    let c=SetRepeatCommand.empty()
+                    c.UnitId<-int actor.Id; c.Options<-(if value.Domain=NativeQueueDomain.FactoryProduction then 64u else 0u); c.Repeat<-value.Repeat; ai.SetRepeat<-c
+                | _ ->
+                    let c=CustomCommand.empty()
+                    c.UnitId<-int actor.Id
+                    c.Options<-(if value.Domain=NativeQueueDomain.FactoryProduction then 64u else 0u)
+                    if value.Kind=NativeQueueEditKind.RemoveTag then
+                        c.CommandId<-2
+                        c.Params.Add(float32 value.RemoveNativeTag)
+                    else
+                        c.CommandId<-1
+                        let insert=value.Insert
+                        let commandId,parameters =
+                            match insert.Action with
+                            | LiveSemanticAction.MoveReplace -> 10,[insert.Position.Value.X;insert.Position.Value.Elevation |> ValueOption.defaultValue 0.0f;insert.Position.Value.Z]
+                            | LiveSemanticAction.Build -> -(int insert.DefinitionId.Value),[insert.Position.Value.X;insert.Position.Value.Elevation |> ValueOption.defaultValue 0.0f;insert.Position.Value.Z;2.0f]
+                            | LiveSemanticAction.FactoryProduce -> -(int insert.DefinitionId.Value),[]
+                            | LiveSemanticAction.Guard -> 25,[float32 insert.UnitTarget.Value.Id]
+                            | LiveSemanticAction.Repair -> 40,[float32 insert.UnitTarget.Value.Id]
+                            | LiveSemanticAction.ReclaimUnit -> 90,[float32 insert.UnitTarget.Value.Id]
+                            | _ -> 0,[]
+                        c.Params.Add(float32 insert.BeforeNativeTag)
+                        c.Params.Add(float32 commandId)
+                        c.Params.Add(0.0f)
+                        c.Params.Add(parameters)
+                    ai.Custom<-c
+                LiveSemanticAction.QueueEdit,NativeTacticalCommand.Types.Action.QueueEdit(value.Clone())
+            | TacticalMode value ->
+                let c=CustomCommand.empty()
+                c.UnitId<-int actor.Id; c.Options<-0u; c.CommandId<-(if value.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBarConstructionPriority then 34571 else 37382)
+                c.Params.Add(if value.Value=NativeTacticalModeValue.Enabled then 1.0f else 0.0f)
+                ai.Custom<-c
+                (if value.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBarConstructionPriority then LiveSemanticAction.BarConstructionPriority else LiveSemanticAction.BarCloakDesire),NativeTacticalCommand.Types.Action.TacticalMode(value.Clone())
+        ai,conflict,semantic,native
+    let admitTactical (submission:TacticalSubmission) now state =
+        let mutable published=[]
+        lock state.gate (fun () ->
+            match state.controller,state.capabilities,state.snapshot,state.tacticalCatalogue,state.tacticalSnapshot,state.reporter with
+            | Some controller,Some caps,Some snapshot,Some catalogue,Some tactical,Some reporter when reporter.Protocol=LiveControlProtocol.TacticalV1 && controller.stage=NativeConfirmed && now<controller.leaseExpiresAt ->
+                let countPerActor=tacticalCount submission.action
+                let childCount=submission.actors.Length*countPerActor
+                let basis=snapshot.Basis.Value
+                let descriptorKind,domain=tacticalShape submission.action
+                let bindingMismatch=submission.sessionId<>Guid(controller.binding.BrokerSessionId.ToByteArray()) || submission.controllerId<>Guid(controller.binding.ControllerId.ToByteArray()) || submission.controllerIncarnation<>controller.binding.ControllerIncarnation || submission.authorityEpoch<>controller.binding.AuthorityEpoch || submission.moduleGeneration<>controller.binding.ModuleGeneration || not(submission.moduleSha256.AsSpan().SequenceEqual(controller.binding.ModuleSha256.Span))
+                let owned= snapshot.Units |> Seq.choose(fun u->if u.Eligibility=NativeLiveUnitEligibility.NativeLiveUnitOwnedActor then u.Reference |> ValueOption.toOption else None) |> Seq.toList
+                let actorMetadata reference=tactical.Actors |> Seq.tryFind(fun a->a.Actor |> ValueOption.exists(sameRef reference))
+                let definitionIds=catalogue |> Seq.collect(fun p->p.Definitions) |> Seq.map(fun d->d.DefinitionId) |> Set.ofSeq
+                let queueFor actor = actor.Queue |> Seq.tryFind(fun q->q.Domain=domain && q.Complete)
+                let validInsert (insert:NativeQueueInsertIntent) =
+                    let position = insert.Position |> ValueOption.exists(validPosition caps)
+                    let target = insert.UnitTarget |> ValueOption.exists(fun t->owned |> List.exists(sameRef t))
+                    match insert.Action with
+                    | LiveSemanticAction.MoveReplace -> domain=NativeQueueDomain.ActorOrder && position
+                    | LiveSemanticAction.Build -> domain=NativeQueueDomain.ActorOrder && insert.DefinitionId |> ValueOption.exists definitionIds.Contains && position
+                    | LiveSemanticAction.FactoryProduce -> domain=NativeQueueDomain.FactoryProduction && insert.DefinitionId |> ValueOption.exists definitionIds.Contains
+                    | LiveSemanticAction.Guard | LiveSemanticAction.Repair | LiveSemanticAction.ReclaimUnit -> domain=NativeQueueDomain.ActorOrder && target
+                    | _ -> false
+                let reject detail =
+                    published <-
+                        [0..childCount-1]
+                        |> List.map(fun index->
+                            let actor=submission.actors[index/countPerActor].reference
+                            {resultSequence=state.nextResultSequence+uint64 index;parentId=submission.parentId;inputId=submission.inputId;sessionId=submission.sessionId;controllerId=submission.controllerId;controllerIncarnation=submission.controllerIncarnation;moduleGeneration=submission.moduleGeneration;moduleSha256=Array.copy submission.moduleSha256;authorityEpoch=submission.authorityEpoch;basis=submission.basis.Clone();batchSequence=0UL;correlationId=0UL;childIndex=index;childCount=childCount;actor=cloneRef actor;stage=BrokerAdmission;status=Rejected;detail=detail;nativeFrame=None;commandChannelIncarnation=controller.binding.CommandChannelIncarnation})
+                    state.nextResultSequence<-state.nextResultSequence+uint64 childCount
+                    rememberCompletedParent submission.parentId state
+                    for value in published do publish state value
+                    Ok published
+                let actionValid =
+                    match submission.action with
+                    | Build v -> v.DefinitionId>0u && definitionIds.Contains v.DefinitionId && v.Position |> ValueOption.exists(validPosition caps) && v.Facing<>NativeBuildFacing.Unspecified && queueOptions v.QueuePolicy |> Option.isSome
+                    | Guard v | Repair v | ReclaimUnit v -> v.Target |> ValueOption.exists(fun t->owned |> List.exists(sameRef t)) && queueOptions v.QueuePolicy |> Option.isSome
+                    | ReclaimFeature v -> v.Target |> ValueOption.exists(fun target->tactical.Features |> Seq.exists(fun f->f.Reference |> ValueOption.exists(fun current->current.Id=target.Id && current.Lifetime=target.Lifetime))) && queueOptions v.QueuePolicy |> Option.isSome
+                    | ReclaimArea v -> v.Center |> ValueOption.exists(validPosition caps) && Single.IsFinite v.RadiusWorldUnits && v.RadiusWorldUnits>0f && v.RadiusWorldUnits<=float32 caps.Tactical.Value.MaxAreaRadiusWorldUnits && queueOptions v.QueuePolicy |> Option.isSome
+                    | FactoryProduce v -> v.DefinitionId>0u && definitionIds.Contains v.DefinitionId && v.Count>0u && v.Count<=caps.Tactical.Value.MaxFactoryProductionCount && queueOptions v.QueuePolicy |> Option.isSome
+                    | SetRally v -> v.Position |> ValueOption.exists(validPosition caps)
+                    | QueueEdit v ->
+                        v.Domain<>NativeQueueDomain.Unspecified && v.ExpectedQueueRevision>0UL && v.Kind<>NativeQueueEditKind.Unspecified
+                        && (match v.Kind,v.Edit with
+                            | NativeQueueEditKind.Insert,ValueSome(NativeQueueEditIntent.Types.Edit.Insert insert) -> validInsert insert
+                            | NativeQueueEditKind.RemoveTag,ValueSome(NativeQueueEditIntent.Types.Edit.RemoveNativeTag _) -> true
+                            | NativeQueueEditKind.SetRepeat,ValueSome(NativeQueueEditIntent.Types.Edit.Repeat _) -> v.Domain<>NativeQueueDomain.FactoryRally
+                            | _ -> false)
+                    | TacticalMode v -> (v.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBarConstructionPriority || v.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBarCloakDesire) && v.Value<>NativeTacticalModeValue.Unspecified
+                if bindingMismatch then Error "live tactical submission identity mismatch"
+                elif submission.actors.Length<1 || childCount>64 || submission.actors |> List.exists(fun a->a.reference.Lifetime=0UL || a.reference.Id>caps.MaxNativeUnitId) then Error "live tactical actors or expanded child count are invalid"
+                elif submission.actors |> List.map(fun a->a.reference.Id) |> Set.ofList |> Set.count<>submission.actors.Length then Error "live tactical actors must be distinct"
+                elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId then Error "live parent or result capacity exhausted"
+                elif not(sameBasis submission.basis basis) then reject "broker refused stale tactical observation basis; refresh the current observation"
+                elif not(tactical.Basis |> ValueOption.exists(sameBasis basis)) then reject "broker refused incomplete tactical metadata for the current observation basis"
+                elif now-state.snapshotReceivedAt>TimeSpan.FromMilliseconds(float caps.MaxObservationAgeMs) then reject "broker refused expired tactical observation basis"
+                elif not actionValid || descriptorKind=NativeTacticalDescriptorKind.Unspecified then reject "broker refused invalid or unavailable tactical action"
+                elif state.parents.Count>=state.parentCapacity || state.identities.Count+childCount>state.parentCapacity*64 then Error "live parent or result capacity exhausted"
+                else
+                    let descriptorAllows (descriptor:NativeTacticalCommandDescriptor) =
+                        if descriptor.Kind<>descriptorKind || descriptor.Disabled then false else
+                        match submission.action with
+                        | Build value -> descriptor.AllowedDefinitionIds.Contains value.DefinitionId
+                        | FactoryProduce value -> descriptor.AllowedDefinitionIds.Contains value.DefinitionId
+                        | TacticalMode value -> descriptor.AllowedModeValues.Contains value.Value
+                        | _ -> true
+                    let queueEditAllows (queue:NativeObservedQueue) =
+                        match submission.action with
+                        | QueueEdit value when value.Kind=NativeQueueEditKind.RemoveTag -> queue.Entries |> Seq.exists(fun entry->entry.NativeTag=value.RemoveNativeTag)
+                        | QueueEdit value when value.Kind=NativeQueueEditKind.Insert ->
+                            match value.Edit with
+                            | ValueSome(NativeQueueEditIntent.Types.Edit.Insert insert) -> queue.Entries |> Seq.exists(fun entry->entry.NativeTag=insert.BeforeNativeTag)
+                            | _ -> false
+                        | _ -> true
+                    let checkedActors=submission.actors |> List.map(fun requested->
+                        match actorMetadata requested.reference with
+                        | Some metadata when requested.descriptorRevision=metadata.DescriptorRevision
+                            && metadata.Descriptors |> Seq.exists descriptorAllows
+                            && requested.queueRevisions |> List.exists(fun q->q.domain=domain && queueFor metadata |> Option.exists(fun current->current.Revision=q.revision && queueEditAllows current)) -> Some(requested,metadata)
+                        | _ -> None)
+                    if checkedActors |> List.exists Option.isNone then reject "broker refused stale or unavailable actor capability or queue revision"
+                    else
+                        let deadline=state.snapshotReceivedAt.AddMilliseconds(float caps.MaxObservationAgeMs)
+                        let expanded=checkedActors |> List.choose id |> List.collect(fun pair->List.replicate countPerActor pair)
+                        let batches=expanded |> List.mapi(fun index (requested,_) ->
+                            let batchSeq=state.nextBatchSequence+uint64 index
+                            let correlation=state.nextCorrelation+uint64 index
+                            let ai,conflict,semantic,nativeAction=translateTactical requested.reference submission.action
+                            let batch=CommandBatch.empty()
+                            batch.BatchSeq<-batchSeq; batch.TargetUnitId<-requested.reference.Id; batch.ClientCommandId<-ValueSome correlation; batch.ConflictPolicy<-conflict; batch.Commands.Add ai; batch.BasedOnFrame<-ValueSome basis.Frame; batch.BasedOnStateSeq<-ValueSome basis.StateSequence
+                            let gen=UnitGeneration.empty()
+                            gen.UnitId<-requested.reference.Id; gen.Generation<-requested.reference.Lifetime; batch.TargetGeneration<-ValueSome gen
+                            let attribution=LiveCommandAttribution.empty()
+                            attribution.ParentId<-uuidBytes submission.parentId; attribution.InputId<-uuidBytes submission.inputId; attribution.ChildIndex<-uint32 index; attribution.ChildCount<-uint32 childCount
+                            let command=NativeTacticalCommand.empty()
+                            command.CatalogueId<-tactical.CatalogueId; command.CatalogueRevision<-tactical.CatalogueRevision; command.ActorDescriptorRevision<-requested.descriptorRevision; command.QueueDomain<-domain; command.ExpectedQueueRevision<-(requested.queueRevisions |> List.find(fun q->q.domain=domain)).revision; command.Action<-ValueSome nativeAction
+                            let live=LiveCommandBatch.empty()
+                            live.Batch<-ValueSome batch; live.Binding<-ValueSome controller.binding; live.Attribution<-ValueSome attribution; live.Basis<-ValueSome basis; live.Actor<-ValueSome(cloneRef requested.reference); live.SemanticAction<-semantic; live.TacticalCommand<-ValueSome command; live.RemainingBasisValidityMs<-remainingMs now deadline; live.RemainingCommandLifetimeMs<-remainingMs now deadline; live.RemainingLeaseValidityMs<-remainingMs now controller.leaseExpiresAt
+                            let feedback={resultSequence=state.nextResultSequence+uint64 index;parentId=submission.parentId;inputId=submission.inputId;sessionId=submission.sessionId;controllerId=submission.controllerId;controllerIncarnation=submission.controllerIncarnation;moduleGeneration=submission.moduleGeneration;moduleSha256=Array.copy submission.moduleSha256;authorityEpoch=submission.authorityEpoch;basis=basis.Clone();batchSequence=batchSeq;correlationId=correlation;childIndex=index;childCount=childCount;actor=cloneRef requested.reference;stage=BrokerAdmission;status=Accepted;detail="broker admitted tactical child";nativeFrame=None;commandChannelIncarnation=controller.binding.CommandChannelIncarnation}
+                            live,feedback)
+                        if state.commandChannel.Writer.TryWrite {batches=batches|>List.map fst} then
+                            state.parents.Add submission.parentId|>ignore
+                            state.nextBatchSequence<-state.nextBatchSequence+uint64 childCount
+                            state.nextCorrelation<-state.nextCorrelation+uint64 childCount
+                            state.nextResultSequence<-state.nextResultSequence+uint64 childCount
+                            let resultDeadline=(min deadline controller.leaseExpiresAt).Add resultFeedbackAllowance
+                            for _,feedback in batches do
+                                let key=struct(feedback.commandChannelIncarnation,feedback.batchSequence,feedback.correlationId)
+                                state.identities[key]<-{feedback=feedback;deadline=resultDeadline;admissionSeen=false;dispatchSeen=false;pendingDispatch=None}
+                            published<-batches|>List.map snd
+                            for value in published do publish state value
+                            Ok published
+                        else Error "live command channel is full"
+            | _ -> Error "tactical live state is incomplete or controller is not native-confirmed")
+
     let private dispatchFeedback (identity: Identity) (dispatch: CommandDispatchEvent) state =
         let applied = dispatch.Status = CommandDispatchStatus.CommandDispatchApplied
         let item =
@@ -648,6 +1035,8 @@ module LiveControl =
     let maxRetainedResults state = uint32 (state.parentCapacity * 64 * 3)
     let latestCapabilities state = lock state.gate (fun () -> state.capabilities)
     let latestSnapshotMetadata state = lock state.gate (fun () -> state.snapshot)
+    let latestTacticalCatalogue state = lock state.gate (fun () -> state.tacticalCatalogue |> Option.map(List.map(fun page->page.Clone())))
+    let latestTacticalSnapshot state = lock state.gate (fun () -> state.tacticalSnapshot |> Option.map(fun snapshot->snapshot.Clone()))
     let currentBinding state = lock state.gate (fun () -> state.controller |> Option.map (fun controller -> controller.binding))
     let reset (detail: string) state =
         let terminal = lock state.gate (fun () ->
@@ -666,6 +1055,10 @@ module LiveControl =
             state.reporter <- None
             state.capabilities <- None
             state.snapshot <- None
+            state.tacticalPages.Clear()
+            state.tacticalCatalogueIdentity <- None
+            state.tacticalCatalogue <- None
+            state.tacticalSnapshot <- None
             state.lastReportSequence <- 0UL
             state.controller <- None
             state.parents.Clear()

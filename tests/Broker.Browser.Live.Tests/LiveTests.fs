@@ -112,8 +112,94 @@ let setupState state now =
 
 let setup capacity now = setupState (LiveControl.create capacity) now
 
+let setupTactical now =
+    let state=LiveControl.create 4
+    let reporter=LiveStateReporter.empty()
+    reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
+    let caps=LiveNativeCapabilities.empty()
+    caps.MaxActorCount<-64u;caps.MaxBatchCommands<-1u;caps.MaxNativeUnitId<-31999u;caps.SnapshotCadenceCeilingFrames<-30u;caps.MaxObservationAgeMs<-2000u;caps.MaxReportedUnits<-64u;caps.MapWidthCells<-1024u;caps.MapHeightCells<-1024u;caps.MaxWorldXInclusive<-8191f;caps.MaxWorldZInclusive<-8191f;caps.SupportsStop<-true;caps.SupportsMove<-true;caps.SupportsAttackVisibleUnit<-true
+    let tacticalCaps=NativeTacticalCapabilities.empty()
+    tacticalCaps.Profile<-"barc-live-tactical-v1";tacticalCaps.Revision<-1u;tacticalCaps.MaxCatalogueEntries<-16u;tacticalCaps.MaxCataloguePageEntries<-8u;tacticalCaps.MaxBuildOptionsPerActor<-8u;tacticalCaps.MaxQueueEntriesPerActor<-8u;tacticalCaps.MaxFeatureReferences<-8u;tacticalCaps.MaxFactoryProductionCount<-4u;tacticalCaps.MaxAreaRadiusWorldUnits<-256u;tacticalCaps.MaxCommandDescriptorsPerActor<-8u
+    caps.Tactical<-ValueSome tacticalCaps
+    let report body sequence =
+        let value=LiveStateReport.empty()
+        value.Reporter<-ValueSome reporter;value.ReportSequence<-sequence;value.Body<-ValueSome body
+        LiveControl.reportState value now state
+    Expect.equal (report (LiveStateReport.Types.Body.Capabilities caps) 1UL) LiveStateReportDisposition.LiveStateReportRecorded "tactical capabilities"
+    let basis=NativeObservationBasis.empty()
+    basis.Token<-bytes16 "basis-t";basis.StateSequence<-9007199254741101UL;basis.Frame<-800u;basis.MatchIncarnation<-reporter.MatchIncarnation;basis.ProcessIncarnation<-reporter.ProcessIncarnation;basis.StateChannelIncarnation<-reporter.StateChannelIncarnation;basis.SnapshotSendMonotonicNs<-9007199254741103UL;basis.EffectiveCadenceFrames<-30u
+    let snapshot=LiveSnapshotMetadata.empty()
+    snapshot.Basis<-ValueSome basis
+    let actor=NativeLiveUnitMetadata.empty()
+    actor.Reference<-ValueSome(nativeRef 0u 9007199254741105UL);actor.Eligibility<-NativeLiveUnitEligibility.NativeLiveUnitOwnedActor;snapshot.Units.Add actor
+    Expect.equal (report (LiveStateReport.Types.Body.Snapshot snapshot) 2UL) LiveStateReportDisposition.LiveStateReportRecorded "base snapshot"
+    let page=TacticalCataloguePage.empty()
+    page.TacticalProfile<-"barc-live-tactical-v1";page.TacticalRevision<-1u;page.CatalogueId<-bytes16 "catalogue";page.CatalogueRevision<-9007199254741107UL;page.PageCount<-1u;page.Complete<-true
+    let content=NativeContentIdentity.empty()
+    content.EngineVersion<-"recoil";content.GameName<-"BAR";content.GameVersion<-"test";content.GameContentSha256<-ByteString.CopyFrom(Array.create 32 7uy);page.Content<-ValueSome content
+    let definition=NativeUnitDefinition.empty()
+    definition.DefinitionId<-42u;definition.InternalName<-"armmex";definition.DisplayName<-"Metal Extractor";definition.FootprintXCells<-4u;definition.FootprintZCells<-4u;page.Definitions.Add definition
+    Expect.equal (report (LiveStateReport.Types.Body.TacticalCatalogue page) 3UL) LiveStateReportDisposition.LiveStateReportRecorded "complete catalogue"
+    let tactical=TacticalSnapshotMetadata.empty()
+    tactical.Basis<-ValueSome basis;tactical.CatalogueId<-page.CatalogueId;tactical.CatalogueRevision<-page.CatalogueRevision
+    let metadata=NativeActorTacticalMetadata.empty()
+    metadata.Actor<-ValueSome(nativeRef 0u 9007199254741105UL);metadata.DescriptorRevision<-9007199254741109UL
+    let descriptor=NativeTacticalCommandDescriptor.empty()
+    descriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce;descriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add descriptor
+    let queue=NativeObservedQueue.empty()
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;metadata.Queue.Add queue;tactical.Actors.Add metadata
+    Expect.equal (report (LiveStateReport.Types.Body.TacticalSnapshot tactical) 4UL) LiveStateReportDisposition.LiveStateReportRecorded "paired tactical snapshot"
+    let control=LiveControlSubscribe.empty()
+    control.PluginId<-"highbar";control.SchemaVersion<-"1.1.0";control.Protocol<-LiveControlProtocol.TacticalV1;control.ControlChannelIncarnation<-"control-t"
+    let controlLease=match LiveControl.claimControl control state with LiveControl.Claimed lease->lease|other->failtestf "control %A" other
+    let initial=LiveBinding.empty()
+    initial.PluginId<-"highbar";initial.CommandChannelIncarnation<-"command-t"
+    let commands=LiveCommandSubscribe.empty()
+    commands.Protocol<-LiveControlProtocol.TacticalV1;commands.SchemaVersion<-"1.1.0";commands.Binding<-ValueSome initial
+    let commandLease=match LiveControl.claimCommands commands state with LiveControl.Claimed lease->lease|other->failtestf "commands %A" other
+    state,controlLease,commandLease,basis,metadata,page
+
 [<Tests>]
 let tests=testList "live broker boundary" [
+    testCase "tactical catalogue and queue revisions reserve every expanded child before native emission" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,13,0,0,TimeSpan.Zero)
+        let state,controlLease,commandLease,basis,metadata,_=setupTactical now
+        let session=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x61uy
+        Expect.isOk (LiveControl.requestBrowserArm session provisional.controllerId provisional.controllerIncarnation provisional.authorityEpoch moduleHash 3UL 2000u now state) "arm"
+        let mutable directive=Unchecked.defaultof<LiveControlDirective>
+        Expect.isTrue(controlLease.reader.TryRead(&directive)) "arm directive"
+        let ack=LiveControlAckReport.empty()
+        ack.Binding<-directive.Binding;ack.ControlSequence<-directive.ControlSequence;ack.Kind<-directive.Kind;ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        LiveControl.reportControlAck ack now state|>ignore
+        let bootstrap=Expect.wantOk(LiveBoundary.provisionBootstrapForProfile "barc-live-tactical-v1" session "team-0" state) "complete tactical bootstrap"
+        Expect.equal bootstrap.Bootstrap.TacticalCatalogue.Definitions.Count 1 "complete catalogue is assembled before exposure"
+        let controller=ControllerIdentity(SessionId=ByteString.CopyFrom(session.ToByteArray()),ControllerId=ByteString.CopyFrom(provisional.controllerId.ToByteArray()),ControllerIncarnation=provisional.controllerIncarnation,AuthorityEpoch=provisional.authorityEpoch)
+        let browserBasis=ObservationBasis(Token=basis.Token,StateSequence=basis.StateSequence,NativeFrame=basis.Frame,MatchId=basis.MatchIncarnation,ProcessIncarnation=basis.ProcessIncarnation,StateChannelIncarnation=basis.StateChannelIncarnation)
+        let request=SubmitLiveIntent(ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Controller=controller,Module=LiveModuleIdentity(Sha256=ByteString.CopyFrom(moduleHash),Generation=3UL),Basis=browserBasis)
+        let intent=LiveIntent(FactoryProduce=FactoryProduceTarget(DefinitionId=42u,Count=2u,QueuePolicy=TacticalQueuePolicy.Append,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision))
+        intent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        let actorBinding=ActorTacticalBinding(Actor=UnitReference(Id=0UL,Lifetime=9007199254741105UL),DescriptorRevision=metadata.DescriptorRevision)
+        actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.FactoryProduction,Revision=12UL))
+        intent.ActorTacticalBindings.Add actorBinding
+        request.Intent<-intent
+        let refused=Expect.wantOk(LiveBoundary.submit session request now state) "stale queue revision is a correlated terminal refusal"
+        Expect.equal refused.Length 2 "every expanded child receives a refusal"
+        Expect.isTrue (refused |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "refusal is explicit broker admission feedback"
+        let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "refused parent emits no child"
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        actorBinding.QueueRevisions[0].Revision<-9007199254741111UL
+        let admitted=Expect.wantOk(LiveBoundary.submit session request now state) "valid factory count expands through browser boundary"
+        Expect.equal admitted.Length 2 "all children reserved"
+        Expect.isTrue(commandLease.reader.TryRead(&delivery)) "one atomic delivery"
+        Expect.equal delivery.batches.Length 2 "count expands to exact children"
+        for child in delivery.batches do
+            Expect.equal child.Batch.Value.Commands.Count 1 "one translated native command"
+            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Options 32u "append uses SHIFT32"
+            Expect.equal child.TacticalCommand.Value.FactoryProduce.Count 1u "each child count is one"
+            Expect.equal child.TacticalCommand.Value.ExpectedQueueRevision 9007199254741111UL "lossless >2^53 queue revision"
     testTask "native metadata arms independently and atomically emits one fenced child per actor" {
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 8 now
