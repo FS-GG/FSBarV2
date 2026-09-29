@@ -40,8 +40,8 @@ async function armBundled(page, journey, clientSha256) {
 async function captureSubmissions(page, product, journey) {
   const codecPath = `${product.receiverRoot}/Client/public/barc-preview/src/Broker.Browser.Contracts/generated/codec.js`;
   const { canonicalObject, v1 } = await import(pathToFileURL(codecPath)); const rows=[];
-  page.on("websocket", socket => socket.on("framesent", payload => {
-    try { const value=canonicalObject(v1.LiveClientEnvelope,Uint8Array.from(payload)); if(value.body!=="submit")return; const i=value.submit.intent,a=i.actors[0],raw=Buffer.from(value.submit.module.sha256,"base64"); rows.push({schema:"fsbar.barc-live-browser-submit/v1",journeyId:journey.id,parentId:value.submit.parentId,inputId:value.submit.inputId,moduleSha256:raw.toString("hex"),moduleGeneration:value.submit.module.generation,actor:{id:a.id??"0",lifetime:a.lifetime},action:i.action==="move"?{kind:"Move",policy:i.move.policy,target:{x:i.move.position.x??0,z:i.move.position.z??0}}:i.action==="attack"?{kind:"Attack",targetActor:{id:i.attack.target.id??"0",lifetime:i.attack.target.lifetime}}:{kind:"Stop"}}) } catch {}
+  page.on("websocket", socket => socket.on("framesent", event => {
+    try { const payload=event?.payload; if(typeof payload==="string"||!payload)return; const value=canonicalObject(v1.LiveClientEnvelope,Uint8Array.from(payload)); if(value.body!=="submit")return; const i=value.submit.intent,a=i.actors[0],raw=Buffer.from(value.submit.module.sha256,"base64"); rows.push({schema:"fsbar.barc-live-browser-submit/v1",journeyId:journey.id,parentId:value.submit.parentId,inputId:value.submit.inputId,moduleSha256:raw.toString("hex"),moduleGeneration:value.submit.module.generation,actor:{id:a.id??"0",lifetime:a.lifetime},action:i.action==="move"?{kind:"Move",policy:i.move.policy,target:{x:i.move.position.x??0,z:i.move.position.z??0}}:i.action==="attack"?{kind:"Attack",targetActor:{id:i.attack.target.id??"0",lifetime:i.attack.target.lifetime}}:{kind:"Stop"}}) } catch {}
   })); return rows;
 }
 async function persistAndVerify(journey, rows) {
