@@ -1,0 +1,139 @@
+  C Broker.Protocol.LiveControl.Action.Attack(target:NativeUnitReference)
+  C Broker.Protocol.LiveControl.Action.Move(x:Single, z:Single, append:Boolean)
+  C Broker.Protocol.LiveControl.Action.Stop()
+  C Broker.Protocol.LiveControl.ClaimResult`1.AlreadyClaimed()
+  C Broker.Protocol.LiveControl.ClaimResult`1.Claimed(Item:a)
+  C Broker.Protocol.LiveControl.ClaimResult`1.Unavailable(Item:String)
+  C Broker.Protocol.LiveControl.ControllerStage.ArmRequested()
+  C Broker.Protocol.LiveControl.ControllerStage.ControllerExpired()
+  C Broker.Protocol.LiveControl.ControllerStage.ControllerRefused()
+  C Broker.Protocol.LiveControl.ControllerStage.NativeConfirmed()
+  C Broker.Protocol.LiveControl.ControllerStage.RevokeRequested()
+  C Broker.Protocol.LiveControl.ControllerStage.Revoked()
+  C Broker.Protocol.LiveControl.FeedbackStage.BrokerAdmission()
+  C Broker.Protocol.LiveControl.FeedbackStage.NativeAdmission()
+  C Broker.Protocol.LiveControl.FeedbackStage.NativeDispatch()
+  C Broker.Protocol.LiveControl.FeedbackStage.Unknown()
+  C Broker.Protocol.LiveControl.FeedbackStatus.Accepted()
+  C Broker.Protocol.LiveControl.FeedbackStatus.Applied()
+  C Broker.Protocol.LiveControl.FeedbackStatus.Expired()
+  C Broker.Protocol.LiveControl.FeedbackStatus.Rejected()
+  C Broker.Protocol.LiveControl.FeedbackStatus.Skipped()
+  C Broker.Protocol.LiveControl.FeedbackStatus.UnknownStatus()
+  C Broker.Protocol.LiveControl.NativeAdmissionDisposition.NativeDuplicate()
+  C Broker.Protocol.LiveControl.NativeAdmissionDisposition.NativeNotOwned()
+  C Broker.Protocol.LiveControl.NativeAdmissionDisposition.NativeRecorded()
+  F Broker.Protocol.LiveControl.CommandDelivery.batches : FSharpList<LiveCommandBatch>
+  F Broker.Protocol.LiveControl.CommandLease.incarnation : String
+  F Broker.Protocol.LiveControl.CommandLease.reader : ChannelReader<CommandDelivery>
+  F Broker.Protocol.LiveControl.ControlLease.incarnation : String
+  F Broker.Protocol.LiveControl.ControlLease.reader : ChannelReader<LiveControlDirective>
+  F Broker.Protocol.LiveControl.ControllerUpdate.binding : LiveBinding
+  F Broker.Protocol.LiveControl.ControllerUpdate.reason : String
+  F Broker.Protocol.LiveControl.ControllerUpdate.stage : ControllerStage
+  F Broker.Protocol.LiveControl.ControllerUpdate.stateSequence : UInt64
+  F Broker.Protocol.LiveControl.Feedback.actor : NativeUnitReference
+  F Broker.Protocol.LiveControl.Feedback.authorityEpoch : UInt64
+  F Broker.Protocol.LiveControl.Feedback.basis : NativeObservationBasis
+  F Broker.Protocol.LiveControl.Feedback.batchSequence : UInt64
+  F Broker.Protocol.LiveControl.Feedback.childCount : Int32
+  F Broker.Protocol.LiveControl.Feedback.childIndex : Int32
+  F Broker.Protocol.LiveControl.Feedback.commandChannelIncarnation : String
+  F Broker.Protocol.LiveControl.Feedback.controllerId : Guid
+  F Broker.Protocol.LiveControl.Feedback.controllerIncarnation : String
+  F Broker.Protocol.LiveControl.Feedback.correlationId : UInt64
+  F Broker.Protocol.LiveControl.Feedback.detail : String
+  F Broker.Protocol.LiveControl.Feedback.inputId : Guid
+  F Broker.Protocol.LiveControl.Feedback.moduleGeneration : UInt64
+  F Broker.Protocol.LiveControl.Feedback.moduleSha256 : Byte[]
+  F Broker.Protocol.LiveControl.Feedback.nativeFrame : FSharpOption<UInt32>
+  F Broker.Protocol.LiveControl.Feedback.parentId : Guid
+  F Broker.Protocol.LiveControl.Feedback.resultSequence : UInt64
+  F Broker.Protocol.LiveControl.Feedback.sessionId : Guid
+  F Broker.Protocol.LiveControl.Feedback.stage : FeedbackStage
+  F Broker.Protocol.LiveControl.Feedback.status : FeedbackStatus
+  F Broker.Protocol.LiveControl.ProvisionalController.authorityEpoch : UInt64
+  F Broker.Protocol.LiveControl.ProvisionalController.controllerId : Guid
+  F Broker.Protocol.LiveControl.ProvisionalController.controllerIncarnation : String
+  F Broker.Protocol.LiveControl.ProvisionalController.sessionId : Guid
+  F Broker.Protocol.LiveControl.State.broadcaster : Broadcaster
+  F Broker.Protocol.LiveControl.State.capabilities : FSharpOption<LiveNativeCapabilities>
+  F Broker.Protocol.LiveControl.State.commandChannel : Channel<CommandDelivery>
+  F Broker.Protocol.LiveControl.State.commandClaim : FSharpOption<String>
+  F Broker.Protocol.LiveControl.State.completed : HashSet<ValueTuple`3>
+  F Broker.Protocol.LiveControl.State.completedOrder : Queue<ValueTuple`3>
+  F Broker.Protocol.LiveControl.State.completedParentOrder : Queue<Guid>
+  F Broker.Protocol.LiveControl.State.completedParents : HashSet<Guid>
+  F Broker.Protocol.LiveControl.State.controlChannel : Channel<LiveControlDirective>
+  F Broker.Protocol.LiveControl.State.controlClaim : FSharpOption<String>
+  F Broker.Protocol.LiveControl.State.controller : FSharpOption<Controller>
+  F Broker.Protocol.LiveControl.State.controllerBroadcaster : ControllerBroadcaster
+  F Broker.Protocol.LiveControl.State.gate : Object
+  F Broker.Protocol.LiveControl.State.identities : Dictionary<ValueTuple`3,Identity>
+  F Broker.Protocol.LiveControl.State.lastReportSequence : UInt64
+  F Broker.Protocol.LiveControl.State.metadataBroadcaster : MetadataBroadcaster
+  F Broker.Protocol.LiveControl.State.nextAuthorityEpoch : UInt64
+  F Broker.Protocol.LiveControl.State.nextBatchSequence : UInt64
+  F Broker.Protocol.LiveControl.State.nextControlSequence : UInt64
+  F Broker.Protocol.LiveControl.State.nextControllerStateSequence : UInt64
+  F Broker.Protocol.LiveControl.State.nextCorrelation : UInt64
+  F Broker.Protocol.LiveControl.State.nextResultSequence : UInt64
+  F Broker.Protocol.LiveControl.State.parentCapacity : Int32
+  F Broker.Protocol.LiveControl.State.parents : HashSet<Guid>
+  F Broker.Protocol.LiveControl.State.provisionalControllers : Dictionary<Guid,ProvisionalController>
+  F Broker.Protocol.LiveControl.State.provisionalOrder : Queue<Guid>
+  F Broker.Protocol.LiveControl.State.reporter : FSharpOption<LiveStateReporter>
+  F Broker.Protocol.LiveControl.State.snapshot : FSharpOption<LiveSnapshotMetadata>
+  F Broker.Protocol.LiveControl.State.snapshotReceivedAt : DateTimeOffset
+  F Broker.Protocol.LiveControl.Submission.action : Action
+  F Broker.Protocol.LiveControl.Submission.actors : FSharpList<NativeUnitReference>
+  F Broker.Protocol.LiveControl.Submission.authorityEpoch : UInt64
+  F Broker.Protocol.LiveControl.Submission.basis : NativeObservationBasis
+  F Broker.Protocol.LiveControl.Submission.controllerId : Guid
+  F Broker.Protocol.LiveControl.Submission.controllerIncarnation : String
+  F Broker.Protocol.LiveControl.Submission.inputId : Guid
+  F Broker.Protocol.LiveControl.Submission.moduleGeneration : UInt64
+  F Broker.Protocol.LiveControl.Submission.moduleSha256 : Byte[]
+  F Broker.Protocol.LiveControl.Submission.parentId : Guid
+  F Broker.Protocol.LiveControl.Submission.sessionId : Guid
+M Broker.Protocol.LiveControl.admit(submission:Submission, now:DateTimeOffset, state:State) : FSharpResult<FSharpList`1,String>
+M Broker.Protocol.LiveControl.blocksLegacyGameplay(state:State) : Boolean
+M Broker.Protocol.LiveControl.claimCommands(subscribe:LiveCommandSubscribe, state:State) : ClaimResult<CommandLease>
+M Broker.Protocol.LiveControl.claimControl(subscribe:LiveControlSubscribe, state:State) : ClaimResult<ControlLease>
+M Broker.Protocol.LiveControl.controllerUpdates(state:State) : IObservable<ControllerUpdate>
+M Broker.Protocol.LiveControl.create(parentCapacity:Int32) : State
+M Broker.Protocol.LiveControl.currentBinding(state:State) : FSharpOption<LiveBinding>
+M Broker.Protocol.LiveControl.feedback(state:State) : IObservable<Feedback>
+M Broker.Protocol.LiveControl.latestCapabilities(state:State) : FSharpOption<LiveNativeCapabilities>
+M Broker.Protocol.LiveControl.latestSnapshotMetadata(state:State) : FSharpOption<LiveSnapshotMetadata>
+M Broker.Protocol.LiveControl.maxPendingParents(state:State) : UInt32
+M Broker.Protocol.LiveControl.maxRetainedResults(state:State) : UInt32
+M Broker.Protocol.LiveControl.metadataReports(state:State) : IObservable<UInt64>
+M Broker.Protocol.LiveControl.noteDispatch(dispatch:CommandDispatchEvent, state:State) : Boolean
+M Broker.Protocol.LiveControl.noteMetadataReported(sequence:UInt64, state:State) : Void
+M Broker.Protocol.LiveControl.provisionController(sessionId:Guid, state:State) : ProvisionalController
+M Broker.Protocol.LiveControl.releaseCommands(incarnation:String, state:State) : Void
+M Broker.Protocol.LiveControl.releaseControl(incarnation:String, state:State) : Void
+M Broker.Protocol.LiveControl.releaseProvisionalController(controllerId:Guid, state:State) : Void
+M Broker.Protocol.LiveControl.reportControlAck(report:LiveControlAckReport, now:DateTimeOffset, state:State) : LiveControlAckDisposition
+M Broker.Protocol.LiveControl.reportNativeAdmission(pluginId:String, channelIncarnation:String, result:CommandBatchResult, state:State) : NativeAdmissionDisposition
+M Broker.Protocol.LiveControl.reportState(report:LiveStateReport, receivedAt:DateTimeOffset, state:State) : LiveStateReportDisposition
+M Broker.Protocol.LiveControl.requestArm(binding:LiveBinding, leaseDurationMs:UInt32, now:DateTimeOffset, state:State) : FSharpResult<Unit,String>
+M Broker.Protocol.LiveControl.requestBrowserArm(sessionId:Guid, controllerId:Guid, controllerIncarnation:String, authorityEpoch:UInt64, moduleSha256:Byte[], moduleGeneration:UInt64, leaseDurationMs:UInt32, now:DateTimeOffset, state:State) : FSharpResult<Unit,String>
+M Broker.Protocol.LiveControl.requestRenew(binding:LiveBinding, leaseDurationMs:UInt32, now:DateTimeOffset, state:State) : FSharpResult<Unit,String>
+M Broker.Protocol.LiveControl.requestRevoke(binding:LiveBinding, reason:String, now:DateTimeOffset, state:State) : FSharpResult<Unit,String>
+M Broker.Protocol.LiveControl.reset(detail:String, state:State) : Void
+T Broker.Protocol.LiveControl.Action : union
+T Broker.Protocol.LiveControl.ClaimResult`1 : union
+T Broker.Protocol.LiveControl.CommandDelivery : record
+T Broker.Protocol.LiveControl.CommandLease : record
+T Broker.Protocol.LiveControl.ControlLease : record
+T Broker.Protocol.LiveControl.ControllerStage : union
+T Broker.Protocol.LiveControl.ControllerUpdate : record
+T Broker.Protocol.LiveControl.Feedback : record
+T Broker.Protocol.LiveControl.FeedbackStage : union
+T Broker.Protocol.LiveControl.FeedbackStatus : union
+T Broker.Protocol.LiveControl.NativeAdmissionDisposition : union
+T Broker.Protocol.LiveControl.ProvisionalController : record
+T Broker.Protocol.LiveControl.State : record
+T Broker.Protocol.LiveControl.Submission : record
