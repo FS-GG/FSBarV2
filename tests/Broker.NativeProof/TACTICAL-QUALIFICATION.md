@@ -27,16 +27,22 @@ BARC_TACTICAL_HANDOFF=/private/handoff.json \
   npm --prefix tests/Broker.NativeProof run test:tactical
 ```
 
-Pointer covers construction, repair and lifetime-bound feature reclaim.
-Keyboard covers bounded factory count, rally, current production-queue edit,
-repeat and selected BAR mode. The imported guest covers ordered multi-actor
-fanout, combat and a locally refused unavailable action with zero submission.
+Pointer and keyboard each cover construction and economy, guard, repair,
+lifetime-bound unit/feature/area reclaim, exact factory count and rally,
+current queue insert/remove/repeat, reject-if-busy, a deliberate stale-revision
+pair, both selected BAR modes, mixed-child outcomes and combat. The imported
+guest separately proves its pinned policy action and a locally refused
+unavailable action with zero submission.
 The driver records decoded submit/result/observation frames to new mode-0600
 files and omits authentication frames. Native and engine traces remain private.
 
-Acceptance still requires later observations proving the configured building,
-health, feature/resource, produced-unit/rally, queue/repeat/mode and combat
-effects. `assertCanonicalLifecycle` additionally requires broker admission,
-native admission and applied dispatch for every child. The parent must reject
-missing effects, missing children, stale identities, fixture mode, reused
+Acceptance waits for observations newer than each correlated native dispatch
+frame. It requires new construction to reach complete health, repair to raise
+health, reclaim targets to diminish or disappear with a resource gain beyond
+passive income, exactly two new factory units, a produced unit at rally,
+changed queue revisions/tags/repeat and mode values, and combat health loss.
+Factory fanout is actor count times requested count. Every child retains its
+broker/native/dispatch or unknown terminal outcome; mixed applied/refused
+parents are preserved rather than flattened. The parent must reject missing or
+preexisting effects, missing children, stale identities, fixture mode, reused
 credentials, wrong pins or any public/default installation claim.
