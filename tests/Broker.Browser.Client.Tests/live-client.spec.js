@@ -18,7 +18,7 @@ const observation = refs => ({ preview:{ sessionId,sequence:basis.stateSequence,
   { id:"88",observation:"OBSERVATION_KIND_RADAR",position:{x:6144,z:6144} },
 ],features:[]},basis,units:refs.map(([reference,kind])=>({reference,observation:kind})) });
 const fullObservation = observation([[ref0,"OBSERVATION_KIND_OWN"],[ref31999,"OBSERVATION_KIND_OWN"],[visual77,"OBSERVATION_KIND_VISUAL"],[radar88,"OBSERVATION_KIND_RADAR"]]);
-let server, port, sockets, submissions, armRequests, auth;
+let server, port, sockets, submissions, armRequests, auth, canonicalFeedback, heldFeedback, resultSequence, revocations;
 const routes=[["/client/","src/Broker.Browser.Client/dist/"],["/src/Broker.Browser.Wasm/","src/Broker.Browser.Wasm/"],["/guests/","tests/Broker.Browser.Wasm.Tests/generated/"]];
 
 test.beforeAll(async()=>{
@@ -26,11 +26,13 @@ test.beforeAll(async()=>{
   sockets=new WebSocketServer({noServer:true});server.on("upgrade",(request,socket,head)=>sockets.handleUpgrade(request,socket,head,ws=>sockets.emit("connection",ws)));
   sockets.on("connection",ws=>{ws.once("message",raw=>{
     auth=canonicalObject(v1.LiveClientEnvelope,raw);let currentController=controller,activeModule=null,stateSequence=0;
-    ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...bootstrap,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:fullObservation}));
+    const negotiated=canonicalFeedback?{...bootstrap,limits:{...bootstrap.limits,maxPendingParents:2}}:bootstrap;
+    ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...negotiated,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:fullObservation}));
     ws.on("message",bytes=>{const message=canonicalObject(v1.LiveClientEnvelope,bytes);
       if(message.body==="arm"){armRequests.push(message.arm);activeModule=message.arm.module;ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:String(++stateSequence),controller:currentController,module:activeModule,stage:"CONTROLLER_STAGE_ARM_NATIVE_CONFIRMED"}}))}
-      else if(message.body==="submit"){submissions.push(message.submit);const intent=message.submit.intent;ws.send(encodeObject(v1.LiveServerEnvelope,{result:{resultSequence:String(submissions.length),parentId:message.submit.parentId,inputId:message.submit.inputId,module:message.submit.module,basis:message.submit.basis,controller:currentController,childIndex:0,childCount:intent.actors.length,actor:intent.actors[0],stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED",disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:430,commandChannelIncarnation:"command-live-1"}}))}
+      else if(message.body==="submit"){submissions.push(message.submit);const intent=message.submit.intent;if(canonicalFeedback)heldFeedback.push({ws,submit:message.submit,controller:currentController});else ws.send(encodeObject(v1.LiveServerEnvelope,{result:{resultSequence:String(++resultSequence),parentId:message.submit.parentId,inputId:message.submit.inputId,module:message.submit.module,basis:message.submit.basis,controller:currentController,childIndex:0,childCount:intent.actors.length,actor:intent.actors[0],stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED",disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:430,commandChannelIncarnation:"command-live-1"}}))}
       else if(message.body==="revoke"){
+        revocations.push(message.revoke.reason);
         ws.send(encodeObject(v1.LiveServerEnvelope,{controllerState:{stateSequence:String(++stateSequence),controller:currentController,module:activeModule,stage:"CONTROLLER_STAGE_REVOKE_NATIVE_CONFIRMED",reason:message.revoke.reason}}));
         const nextEpoch=(BigInt(currentController.authorityEpoch)+1n).toString();currentController={sessionId,controllerId:Buffer.alloc(16,Number(BigInt(nextEpoch)%251n)+1).toString("base64"),controllerIncarnation:`controller-live-${nextEpoch}`,authorityEpoch:nextEpoch};activeModule=null;
         ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...bootstrap,controller:currentController}}));ws.send(encodeObject(v1.LiveServerEnvelope,{observation:fullObservation}));
@@ -39,7 +41,7 @@ test.beforeAll(async()=>{
   })});
   await new Promise(resolveListen=>server.listen(0,"127.0.0.1",resolveListen));port=server.address().port;
 });
-test.beforeEach(()=>{submissions=[];armRequests=[];auth=null});
+test.beforeEach(()=>{submissions=[];armRequests=[];auth=null;canonicalFeedback=false;heldFeedback=[];resultSequence=0;revocations=[]});
 test.afterAll(()=>new Promise(resolveClose=>server.close(resolveClose)));
 
 async function arm(page, guest="Manual guest") {
@@ -59,6 +61,18 @@ test("pointer and independent keyboard actions pass through the real guest befor
 
   const map=page.getByLabel(/Live tactical map/);await map.focus();await page.keyboard.press("Tab");await page.keyboard.press("s");await page.keyboard.press("ArrowRight");await page.keyboard.press("Enter");await page.keyboard.press("a");await page.keyboard.press("Enter");
   await expect.poll(()=>submissions.length).toBe(6);expect(submissions.slice(3).map(value=>value.intent.action)).toEqual(["stop","move","attack"]);expect(submissions.slice(3).every(value=>value.intent.actors[0].lifetime===ref31999.lifetime)).toBe(true);
+});
+
+test("two canonical result lifecycles cross the real Worker without revoking authority",async({page})=>{
+  canonicalFeedback=true;await arm(page);await page.locator('[data-unit-id="0"]').click();await page.getByRole("button",{name:"Stop"}).click();await expect.poll(()=>submissions.length).toBe(1);
+  await page.getByLabel("Target X").fill("512.5");await page.getByLabel("Target Z").fill("1024.25");await page.getByRole("button",{name:"Move",exact:true}).click();await expect.poll(()=>submissions.length).toBe(2);
+  const before=await page.evaluate(()=>window.__barcWorkerCompletions.process);
+  for(const pending of heldFeedback.splice(0,2))for(const [stage,status] of [["LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_DISPATCH","LIVE_RESULT_STATUS_APPLIED"]]){
+    const intent=pending.submit.intent;pending.ws.send(encodeObject(v1.LiveServerEnvelope,{result:{resultSequence:String(++resultSequence),parentId:pending.submit.parentId,inputId:pending.submit.inputId,module:pending.submit.module,basis:pending.submit.basis,controller:pending.controller,childIndex:0,childCount:intent.actors.length,actor:intent.actors[0],stage,status,disposition:"LIVE_RESULT_DISPOSITION_RECORDED",nativeFrame:stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH"?430:undefined,commandChannelIncarnation:"command-live-1"}}))
+  }
+  await expect.poll(()=>page.evaluate(()=>window.__barcWorkerCompletions.process)).toBe(before+6);
+  await expect(page.locator(".authority")).toContainText("arm native confirmed");expect(revocations).toEqual([]);
+  await page.getByRole("button",{name:"Stop"}).click();await expect.poll(()=>submissions.length).toBe(3);
 });
 
 test("custom imported policy filters ID0 and changes semantic Move policy",async({page})=>{
