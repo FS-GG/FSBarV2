@@ -129,6 +129,17 @@ let tests = testList "production live boundary" [
         capabilities.SupportsStop <- true
         capabilities.SupportsMove <- true
         capabilities.SupportsAttackVisibleUnit <- true
+
+        let invalidSource = reporter (ByteString.CopyFromUtf8("highbar-live-runtime-match-incarnation"))
+        let invalidCapReport = LiveStateReport.empty()
+        invalidCapReport.Reporter <- ValueSome invalidSource
+        invalidCapReport.ReportSequence <- 9007199254740991UL
+        invalidCapReport.Capabilities <- capabilities.Clone()
+        let! (invalidCapAck: LiveStateReportAck) = live.ReportLiveStateAsync(invalidCapReport).ResponseAsync
+        Expect.equal invalidCapAck.ReportSequence invalidCapReport.ReportSequence "refusal identifies the exact native report"
+        Expect.equal invalidCapAck.Disposition LiveStateReportDisposition.LiveStateReportRefused "non-16-byte match incarnation is refused through the production RPC"
+        Expect.isNone (LiveControl.latestCapabilities (BrokerState.liveControl handle.Hub)) "refused reporter installs no live capability"
+
         let capReport = LiveStateReport.empty()
         capReport.Reporter <- ValueSome source
         capReport.ReportSequence <- 9007199254740993UL
