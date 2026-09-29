@@ -26,6 +26,7 @@ FSBar source `698dacd8`.
 | Role | Version or source | SHA-256 or tree |
 | --- | --- | --- |
 | FSBar joined source | `698dacd8deba1fd20b31057f66068ee7d72894b7` | tree `3b47f8ad89b7cf14f9ae9339270adeffa92e3a90` |
+| FSBar delivered source | [PR #5](https://github.com/FS-GG/FSBarV2/pull/5), merge `f1a18c52246b88e958344cb3bcc87f3c2035a62e` | tree `51140c912b0cc58f7b795094fce3eb4712eee963` |
 | HighBar qualified source | `488d57f67a48fc90ef8c6415f032c14ce75289fa` | tree `0c5d8b0d25ad759d502903c53f8ca4c0546a0cd1` |
 | HighBar delivered source | [PR #2](https://github.com/FS-GG/HighBarV3/pull/2), merge `680b62480bfb60a19b3591b7250e03787e1f93d1` | tree `0c5d8b0d25ad759d502903c53f8ca4c0546a0cd1` |
 | Live native contract | `live_control.proto` | `34e37fd62bcac2758cb6383deae34d3523cb40ce3470034b1fb2ee2ba3bbc240` |
@@ -120,14 +121,18 @@ The corrected J4-b and J5-b journeys are the rows accepted above.
 
 ## Delivery status
 
-Local native qualification is ready. HighBar PR #2 merged at
+Local native qualification and paired source delivery are complete. HighBar PR #2 merged at
 `2026-09-29T04:10:54Z`; a fresh fetch verified selected `master` at merge
 `680b62480bfb60a19b3591b7250e03787e1f93d1`, whose tree exactly matches the
-qualified native tree. Authoritative PR/default-branch readback for the paired
-FSBar source remains pending, so BARC-01.4f and the overall `.4` outcome remain
-open. The forks currently provide no hosted checks or branch protection; all
-checks represented here are local. Public BAR publication, installed-fleet
-support, and upstream adoption remain `.7` work.
+qualified native tree. FSBar PR #5 merged at `2026-09-29T04:19:53Z`; a fresh
+fetch verified selected `main` at merge
+`f1a18c52246b88e958344cb3bcc87f3c2035a62e`. Its tree differs from the qualified
+runtime tree because it adds this roadmap and evidence report; a source
+comparison verified the application, contracts, and tests are identical to
+qualified source `698dacd8deba1fd20b31057f66068ee7d72894b7`. BARC-01.4a–.4f are complete.
+The forks currently provide no hosted checks or branch protection; all checks
+represented here are local. Public BAR publication, installed-fleet support,
+and upstream adoption remain `.7` work.
 
 Telemetry was not configured for this work. Native collaboration usage and
 efficiency remain unknown; no counts are inferred from the 66 result stages.
