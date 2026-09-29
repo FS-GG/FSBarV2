@@ -113,7 +113,7 @@ let setupState state now =
 let setup capacity now = setupState (LiveControl.create capacity) now
 
 let setupTactical now =
-    let state=LiveControl.create 4
+    let state=LiveControl.create 8
     let reporter=LiveStateReporter.empty()
     reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
     let caps=LiveNativeCapabilities.empty()
@@ -146,8 +146,12 @@ let setupTactical now =
     metadata.Actor<-ValueSome(nativeRef 0u 9007199254741105UL);metadata.DescriptorRevision<-9007199254741109UL
     let descriptor=NativeTacticalCommandDescriptor.empty()
     descriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce;descriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add descriptor
+    let buildDescriptor=NativeTacticalCommandDescriptor.empty()
+    buildDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorBuild;buildDescriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add buildDescriptor
     let queue=NativeObservedQueue.empty()
-    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;metadata.Queue.Add queue;tactical.Actors.Add metadata
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;metadata.Queue.Add queue
+    let actorQueue=NativeObservedQueue.empty()
+    actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
     Expect.equal (report (LiveStateReport.Types.Body.TacticalSnapshot tactical) 4UL) LiveStateReportDisposition.LiveStateReportRecorded "paired tactical snapshot"
     let control=LiveControlSubscribe.empty()
     control.PluginId<-"highbar";control.SchemaVersion<-"1.1.0";control.Protocol<-LiveControlProtocol.TacticalV1;control.ControlChannelIncarnation<-"control-t"
@@ -354,6 +358,20 @@ let tests=testList "live broker boundary" [
             Expect.equal child.Batch.Value.Commands[0].BuildUnit.Options 32u "append uses SHIFT32"
             Expect.equal child.TacticalCommand.Value.FactoryProduce.Count 1u "each child count is one"
             Expect.equal child.TacticalCommand.Value.ExpectedQueueRevision 9007199254741111UL "lossless >2^53 queue revision"
+        actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.ActorOrder,Revision=9007199254741113UL))
+        for facing,expectedEngineFacing in [BuildFacing.North,2;BuildFacing.East,1;BuildFacing.South,0;BuildFacing.West,3] do
+            request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+            let build=BuildTarget(DefinitionId=42u,Position=Position3(X=1792f,Z=1856f),Facing=facing,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
+            let buildIntent=LiveIntent(Build=build)
+            buildIntent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+            buildIntent.ActorTacticalBindings.Add(actorBinding.Clone())
+            request.Intent<-buildIntent
+            let accepted=Expect.wantOk(LiveBoundary.submit session request now state) "valid build facing is admitted"
+            Expect.equal accepted.Length 1 "one build child reserved"
+            Expect.isTrue(commandLease.reader.TryRead(&delivery)) "build delivery emitted"
+            let child=delivery.batches.Head
+            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Facing expectedEngineFacing "legacy command uses the engine-facing ordinal"
+            Expect.equal child.TacticalCommand.Value.Build.Facing (enum<NativeBuildFacing>(int facing)) "tactical command retains the protocol-facing enum"
     testTask "native metadata arms independently and atomically emits one fenced child per actor" {
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 8 now

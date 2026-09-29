@@ -743,6 +743,15 @@ module LiveControl =
         let value=Vector3.empty()
         value.X<-x; value.Y<-y; value.Z<-z
         value
+    let private engineBuildFacing facing =
+        // BuildUnitCommand carries the engine ABI ordinal, which differs from
+        // the stable tactical protocol enum retained in NativeTacticalCommand.
+        match facing with
+        | NativeBuildFacing.North -> 2
+        | NativeBuildFacing.East -> 1
+        | NativeBuildFacing.South -> 0
+        | NativeBuildFacing.West -> 3
+        | _ -> -1
     let private translateTactical (actor:NativeUnitReference) (action:TacticalAction) =
         let ai=AICommand.empty()
         let mutable conflict=CommandConflictPolicy.CommandConflictReplaceCurrent
@@ -755,7 +764,7 @@ module LiveControl =
                 command.Options<-options
                 command.ToBuildUnitDefId<-int value.DefinitionId
                 command.BuildPosition<-ValueSome(vector value.Position.Value.X (value.Position.Value.Elevation |> ValueOption.defaultValue 0.0f) value.Position.Value.Z)
-                command.Facing<-int value.Facing
+                command.Facing<-engineBuildFacing value.Facing
                 ai.BuildUnit<-command
                 conflict<-policy
                 LiveSemanticAction.Build,NativeTacticalCommand.Types.Action.Build(value.Clone())
