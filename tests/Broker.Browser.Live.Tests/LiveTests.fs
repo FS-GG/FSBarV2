@@ -324,7 +324,7 @@ let tests=testList "live broker boundary" [
         Expect.isError (LiveBoundary.submit session request now state) "a submission cannot survive loss of the paired native baseline"
         Expect.isFalse (commandLease.reader.TryRead(&delivery)) "lost baseline emits zero native commands"
 
-    testCase "reordered and late native results preserve the accepted parent or remain unknown" <| fun _ ->
+    testCase "reordered results and replacement preserve accepted identities" <| fun _ ->
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 4 now
         let session=Guid.NewGuid()
@@ -375,19 +375,105 @@ let tests=testList "live broker boundary" [
         Expect.equal firstTerminal.Length 1 "reordered and duplicate feedback yields one terminal event"
         Expect.equal firstTerminal.Head.nativeFrame (Some 901u) "terminal event retains the actual dispatch frame"
 
-        let timedParent,timedInput=Guid.NewGuid(),Guid.NewGuid()
-        Expect.isOk (LiveControl.admit (makeSubmission timedParent timedInput) now state) "second parent admitted"
-        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "timed child emitted once"
-        let timedChild=delivery.batches.Head.Batch.Value
-        LiveControl.reset "native result timeout" state
-        let unknown=observed |> Seq.find(fun value->value.parentId=timedParent && value.stage=LiveControl.Unknown)
-        Expect.equal unknown.inputId timedInput "timeout keeps the accepted input identity"
-        Expect.equal unknown.basis.StateSequence basis.StateSequence "timeout keeps the accepted full basis"
-        Expect.equal unknown.moduleGeneration 9007199254741013UL "timeout keeps the accepted module identity"
-        admission.BatchSeq<-timedChild.BatchSeq
-        admission.ClientCommandId<-timedChild.ClientCommandId.Value
+        let replacedParent,replacedInput=Guid.NewGuid(),Guid.NewGuid()
+        Expect.isOk (LiveControl.admit (makeSubmission replacedParent replacedInput) now state) "second parent admitted"
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "replaced child emitted once"
+        let replacedChild=delivery.batches.Head.Batch.Value
+        LiveControl.reset "native session replaced" state
+        let unknown=observed |> Seq.find(fun value->value.parentId=replacedParent && value.stage=LiveControl.Unknown)
+        Expect.equal unknown.inputId replacedInput "replacement keeps the accepted input identity"
+        Expect.equal unknown.basis.StateSequence basis.StateSequence "replacement keeps the accepted full basis"
+        Expect.equal unknown.moduleGeneration 9007199254741013UL "replacement keeps the accepted module identity"
+        admission.BatchSeq<-replacedChild.BatchSeq
+        admission.ClientCommandId<-replacedChild.ClientCommandId.Value
         Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeNotOwned "late result after replacement cannot satisfy current state"
-        dispatch.BatchSeq<-timedChild.BatchSeq
-        dispatch.ClientCommandId<-timedChild.ClientCommandId.Value
+        dispatch.BatchSeq<-replacedChild.BatchSeq
+        dispatch.ClientCommandId<-replacedChild.ClientCommandId.Value
         Expect.isFalse (LiveControl.noteDispatch dispatch state) "late dispatch after replacement is not attached to another parent"
+
+    testCase "missing native outcome expires once while live channels remain healthy" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
+        let state,controlLease,commandLease,basis=setup 1 now
+        let session=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x73uy
+        Expect.isOk (LiveControl.requestBrowserArm session provisional.controllerId provisional.controllerIncarnation provisional.authorityEpoch moduleHash 9007199254741013UL 10000u now state) "arm"
+        let mutable directive=Unchecked.defaultof<LiveControlDirective>
+        Expect.isTrue (controlLease.reader.TryRead(&directive)) "arm directive available"
+        let ack=LiveControlAckReport.empty()
+        ack.Binding<-directive.Binding
+        ack.ControlSequence<-directive.ControlSequence
+        ack.Kind<-directive.Kind
+        ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        Expect.equal (LiveControl.reportControlAck ack now state) LiveControlAckDisposition.LiveControlAckRecorded "arm confirmed"
+        let binding=LiveControl.currentBinding state |> Option.get
+        let submission parent input selectedBasis : LiveControl.Submission =
+            { parentId=parent;inputId=input;sessionId=session;controllerId=provisional.controllerId
+              controllerIncarnation=provisional.controllerIncarnation;authorityEpoch=provisional.authorityEpoch
+              moduleSha256=moduleHash;moduleGeneration=9007199254741013UL;basis=selectedBasis
+              actors=[nativeRef 0u 9007199254740999UL];action=LiveControl.Stop }
+        let observed=ResizeArray<LiveControl.Feedback>()
+        use _subscription=
+            (LiveControl.feedback state).Subscribe
+                { new IObserver<LiveControl.Feedback> with
+                    member _.OnNext value=observed.Add value
+                    member _.OnError _=()
+                    member _.OnCompleted()=() }
+
+        let expiredParent,expiredInput=Guid.NewGuid(),Guid.NewGuid()
+        Expect.isOk (LiveControl.admit (submission expiredParent expiredInput (basis.Clone())) now state) "parent admitted"
+        let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "child emitted exactly once"
+        let expiredChild=delivery.batches.Head.Batch.Value
+        Expect.equal (LiveControl.expirePendingResults (now.AddMilliseconds 3999) state) 0 "dispatch fence plus feedback allowance has not elapsed"
+        Expect.equal (LiveControl.expirePendingResults (now.AddMilliseconds 4000) state) 1 "maintenance expires the missing native outcome"
+        Expect.equal (LiveControl.expirePendingResults (now.AddMilliseconds 4500) state) 0 "maintenance is idempotent"
+        let terminals=observed |> Seq.filter(fun item->item.parentId=expiredParent && item.stage=LiveControl.Unknown) |> Seq.toList
+        Expect.equal terminals.Length 1 "one visible unknown terminal is published"
+        let terminal=terminals.Head
+        Expect.equal terminal.inputId expiredInput "unknown preserves the accepted input"
+        Expect.equal terminal.basis basis "unknown preserves the full accepted basis"
+        Expect.equal terminal.controllerIncarnation provisional.controllerIncarnation "unknown preserves the controller"
+        Expect.equal terminal.moduleGeneration 9007199254741013UL "unknown preserves the module"
+        Expect.isSome (LiveControl.currentBinding state) "result expiry does not reset the healthy controller"
+        Expect.isOk (LiveControl.requestRenew binding 10000u (now.AddMilliseconds 4500) state) "healthy priority control path remains usable"
+
+        let admission=CommandBatchResult.empty()
+        admission.BatchSeq<-expiredChild.BatchSeq
+        admission.ClientCommandId<-expiredChild.ClientCommandId.Value
+        admission.Status<-CommandBatchStatus.CommandBatchAccepted
+        Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeDuplicate "late admission cannot reopen an expired identity"
+        let dispatch=CommandDispatchEvent.empty()
+        dispatch.ChannelIncarnation<-binding.CommandChannelIncarnation
+        dispatch.BatchSeq<-expiredChild.BatchSeq
+        dispatch.ClientCommandId<-expiredChild.ClientCommandId.Value
+        dispatch.Status<-CommandDispatchStatus.CommandDispatchApplied
+        dispatch.Frame<-999u
+        Expect.isTrue (LiveControl.noteDispatch dispatch state) "late dispatch is idempotently owned"
+        Expect.equal (observed |> Seq.filter(fun item->item.parentId=expiredParent && item.stage=LiveControl.Unknown) |> Seq.length) 1 "late feedback publishes no second terminal"
+        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "expired parent is never re-emitted"
+
+        let reporter=LiveStateReporter.empty()
+        reporter.PluginId<-"highbar"
+        reporter.SchemaVersion<-"1.0.0"
+        reporter.Protocol<-LiveControlProtocol.V1
+        reporter.ProcessIncarnation<-"process-1"
+        reporter.MatchIncarnation<-bytes16 "match"
+        reporter.StateChannelIncarnation<-"state-1"
+        let refreshedBasis=basis.Clone()
+        refreshedBasis.Token<-bytes16 "basis-2"
+        refreshedBasis.StateSequence<-9007199254741007UL
+        refreshedBasis.Frame<-701u
+        refreshedBasis.SnapshotSendMonotonicNs<-9007199254741009UL
+        let refreshed=(LiveControl.latestSnapshotMetadata state |> Option.get).Clone()
+        refreshed.Basis<-ValueSome refreshedBasis
+        let refresh=LiveStateReport.empty()
+        refresh.Reporter<-ValueSome reporter
+        refresh.ReportSequence<-9007199254741011UL
+        refresh.Snapshot<-refreshed
+        Expect.equal (LiveControl.reportState refresh (now.AddMilliseconds 4500) state) LiveStateReportDisposition.LiveStateReportRecorded "fresh native metadata arrives without replacing the live channels"
+        let nextParent,nextInput=Guid.NewGuid(),Guid.NewGuid()
+        Expect.isOk (LiveControl.admit (submission nextParent nextInput (refreshedBasis.Clone())) (now.AddMilliseconds 4500) state) "expired result capacity is reusable"
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "only the distinct parent emits after capacity release"
+        Expect.isError (LiveControl.admit (submission expiredParent (Guid.NewGuid()) (refreshedBasis.Clone())) (now.AddMilliseconds 4500) state) "completed parent replay remains refused"
 ]

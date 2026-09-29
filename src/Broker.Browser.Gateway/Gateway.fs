@@ -429,10 +429,12 @@ module Gateway =
                                 let renewTask = task {
                                     while true do
                                         do! Task.Delay(TimeSpan.FromMilliseconds 500.0, connectionCts.Token)
+                                        let now=DateTimeOffset.UtcNow
+                                        LiveControl.expirePendingResults now state |> ignore
                                         match BrokerState.session hub with
                                         | Some current when Session.id current=sessionId ->
                                             match ownedBinding with
-                                            | Some binding -> LiveControl.requestRenew binding 2000u DateTimeOffset.UtcNow state |> ignore
+                                            | Some binding -> LiveControl.requestRenew binding 2000u now state |> ignore
                                             | None -> ()
                                         | _ -> raise SessionChanged }
                                 let observed=[|receiveTask:>Task;outputTask:>Task;renewTask:>Task|]

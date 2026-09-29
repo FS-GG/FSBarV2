@@ -36,7 +36,8 @@ module LiveControl =
           mutable leaseExpiresAt: DateTimeOffset; mutable moduleGeneration: uint64
           mutable renewPending: bool; mutable pendingLeaseMs: uint32; mutable pendingDeadline: DateTimeOffset }
     type Identity =
-        { feedback: Feedback; mutable admissionSeen: bool; mutable dispatchSeen: bool }
+        { feedback: Feedback; deadline: DateTimeOffset
+          mutable admissionSeen: bool; mutable dispatchSeen: bool }
     type Broadcaster() =
         let observers = ResizeArray<IObserver<Feedback>>()
         let gate = obj()
@@ -380,6 +381,9 @@ module LiveControl =
         copy.Lifetime <- value.Lifetime
         copy
     let private remainingMs (now: DateTimeOffset) (expiry: DateTimeOffset) = max 1u (uint32 (max 0.0 (expiry-now).TotalMilliseconds))
+    // A native command can only dispatch through the earlier observation/lease fence. Keep a
+    // small, bounded interval after that fence for its terminal report to cross the transport.
+    let private resultFeedbackAllowance = TimeSpan.FromSeconds 2.0
     let private publish state value = state.broadcaster.Push value
     let private rememberCompleted key state =
         if state.completed.Add key then state.completedOrder.Enqueue key
@@ -439,6 +443,7 @@ module LiveControl =
                             Error "move target is outside live map bounds"
                         | _ ->
                             let count = submission.actors.Length
+                            let deadline = state.snapshotReceivedAt.AddMilliseconds(float caps.MaxObservationAgeMs)
                             let batches =
                                 submission.actors
                                 |> List.mapi (fun index actor ->
@@ -489,7 +494,6 @@ module LiveControl =
                                     attribution.InputId <- uuidBytes submission.inputId
                                     attribution.ChildIndex <- uint32 index
                                     attribution.ChildCount <- uint32 count
-                                    let deadline = state.snapshotReceivedAt.AddMilliseconds(float caps.MaxObservationAgeMs)
                                     let live = LiveCommandBatch.empty()
                                     live.Batch <- ValueSome batch
                                     live.Binding <- ValueSome controller.binding
@@ -520,9 +524,13 @@ module LiveControl =
                                 state.nextBatchSequence <- state.nextBatchSequence + uint64 count
                                 state.nextCorrelation <- state.nextCorrelation + uint64 count
                                 state.nextResultSequence <- state.nextResultSequence + uint64 count
+                                let dispatchDeadline = min deadline controller.leaseExpiresAt
+                                let resultDeadline = dispatchDeadline.Add resultFeedbackAllowance
                                 for _, feedback in batches do
                                     let key = struct(feedback.commandChannelIncarnation, feedback.batchSequence, feedback.correlationId)
-                                    state.identities[key] <- { feedback = feedback; admissionSeen = false; dispatchSeen = false }
+                                    state.identities[key] <-
+                                        { feedback = feedback; deadline = resultDeadline
+                                          admissionSeen = false; dispatchSeen = false }
                                 published <- batches |> List.map snd
                                 Ok published
                             else
@@ -574,6 +582,25 @@ module LiveControl =
             | _ -> false)
         feedback |> Option.iter (publish state)
         handled
+    let expirePendingResults (now: DateTimeOffset) state =
+        let expired = lock state.gate (fun () ->
+            let due =
+                state.identities
+                |> Seq.choose (fun pair -> if now >= pair.Value.deadline then Some(pair.Key, pair.Value) else None)
+                |> Seq.toList
+            due
+            |> List.map (fun (key, identity) ->
+                let item =
+                    { identity.feedback with
+                        resultSequence = state.nextResultSequence
+                        stage = Unknown
+                        status = UnknownStatus
+                        detail = "native live result deadline elapsed" }
+                state.nextResultSequence <- state.nextResultSequence + 1UL
+                finishIdentity key identity state
+                item))
+        for item in expired do publish state item
+        expired.Length
     let feedback state = state.broadcaster :> IObservable<Feedback>
     let controllerUpdates state = state.controllerBroadcaster :> IObservable<ControllerUpdate>
     let noteMetadataReported sequence state = state.metadataBroadcaster.Push sequence

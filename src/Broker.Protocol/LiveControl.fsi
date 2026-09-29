@@ -91,6 +91,9 @@ module LiveControl =
     val admit : submission:Submission -> now:DateTimeOffset -> state:State -> Result<Feedback list,string>
     val reportNativeAdmission : pluginId:string -> channelIncarnation:string -> result:CommandBatchResult -> state:State -> NativeAdmissionDisposition
     val noteDispatch : dispatch:CommandDispatchEvent -> state:State -> bool
+    /// Expire terminal native outcomes after the command's dispatch fences plus a bounded
+    /// transport allowance. Returns the number of child identities completed as unknown.
+    val expirePendingResults : now:DateTimeOffset -> state:State -> int
     val blocksLegacyGameplay : state:State -> bool
     val maxPendingParents : state:State -> uint32
     val maxRetainedResults : state:State -> uint32
