@@ -281,6 +281,7 @@ let tests = testList "production live boundary" [
         do! send socket (LiveClientEnvelope(Submit=submit))
         let! (brokerResult: LiveServerEnvelope) = receive socket
         Expect.equal brokerResult.Result.Stage LiveResultStage.BrokerAdmission "broker admission has one observable result path"
+        Expect.equal brokerResult.Result.Disposition LiveResultDisposition.Recorded "production Gateway marks broadcast feedback as an accepted result record"
         Expect.equal brokerResult.Result.ChildCount 1u "result capacity is reserved per expanded child"
         Expect.equal brokerResult.Result.Basis.StateSequence laterBasis.StateSequence "result preserves the exact observation basis"
         Expect.equal brokerResult.Result.Controller.ControllerId controller.ControllerId "result preserves the exact controller"

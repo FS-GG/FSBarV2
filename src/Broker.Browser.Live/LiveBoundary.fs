@@ -43,6 +43,7 @@ module LiveBoundary =
         result.Basis<-ObservationBasis(Token=feedback.basis.Token,StateSequence=feedback.basis.StateSequence,NativeFrame=feedback.basis.Frame,MatchId=feedback.basis.MatchIncarnation,ProcessIncarnation=feedback.basis.ProcessIncarnation,StateChannelIncarnation=feedback.basis.StateChannelIncarnation)
         result.Stage <- match feedback.stage with LiveControl.BrokerAdmission->LiveResultStage.BrokerAdmission | LiveControl.NativeAdmission->LiveResultStage.NativeAdmission | LiveControl.NativeDispatch->LiveResultStage.NativeDispatch | LiveControl.Unknown->LiveResultStage.Unknown
         result.Status <- match feedback.status with LiveControl.Accepted->LiveResultStatus.Accepted | LiveControl.Rejected->LiveResultStatus.Rejected | LiveControl.Applied->LiveResultStatus.Applied | LiveControl.Skipped->LiveResultStatus.Skipped | LiveControl.Expired->LiveResultStatus.Expired | LiveControl.UnknownStatus->LiveResultStatus.Unknown
+        result.Disposition <- LiveResultDisposition.Recorded
         feedback.nativeFrame |> Option.iter(fun frame->result.NativeFrame<-frame)
         Broker.Browser.Contracts.LiveServerEnvelope(Result=result)
     let controllerEnvelope (update: LiveControl.ControllerUpdate) =
