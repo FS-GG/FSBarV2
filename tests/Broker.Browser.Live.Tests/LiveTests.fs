@@ -314,12 +314,25 @@ let tests=testList "live broker boundary" [
             change candidate
             Expect.isError (LiveBoundary.submit session candidate now state) (name+" mismatch refused")
 
+        let stale=request.Clone()
+        stale.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        stale.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        stale.Basis.StateSequence<-stale.Basis.StateSequence-1UL
+        match LiveBoundary.submit session stale now state with
+        | Ok [ rejected ] ->
+            Expect.equal rejected.Stage LiveResultStage.BrokerAdmission "stale displayed basis is a broker-stage refusal"
+            Expect.equal rejected.Status LiveResultStatus.Rejected "stale displayed basis is terminally rejected"
+            Expect.equal rejected.Disposition LiveResultDisposition.Recorded "the correlated refusal is a recorded result"
+            Expect.equal rejected.ParentId stale.ParentId "refusal preserves the pending browser parent"
+            Expect.equal rejected.Basis.StateSequence stale.Basis.StateSequence "refusal echoes the exact stale basis"
+        | other -> failtestf "expected one correlated stale-basis refusal, got %A" other
+
         let second=LiveControl.provisionController session state
         Expect.isError
             (LiveControl.requestBrowserArm session second.controllerId second.controllerIncarnation second.authorityEpoch moduleHash 2UL 2000u now state)
             "the single controller slot cannot be replaced while confirmed"
         let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
-        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "all mismatches and slot contention emit zero native commands"
+        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "all mismatches, stale-basis refusal, and slot contention emit zero native commands"
         LiveControl.reset "production snapshot baseline lost" state
         Expect.isError (LiveBoundary.submit session request now state) "a submission cannot survive loss of the paired native baseline"
         Expect.isFalse (commandLease.reader.TryRead(&delivery)) "lost baseline emits zero native commands"

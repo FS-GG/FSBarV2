@@ -221,15 +221,16 @@ let tests = testList "production live boundary" [
         let feedbackBarrier =
             { new IObserver<LiveControl.Feedback> with
                 member _.OnNext value =
-                    if value.stage=LiveControl.BrokerAdmission
+                    if value.stage=LiveControl.BrokerAdmission && value.status=LiveControl.Accepted
                        && Interlocked.CompareExchange(&blockFirstAdmission,1,0)=0 then
                         admissionPublishing.TrySetResult(()) |> ignore
                         if not (concurrentFeedPublished.Task.Wait(TimeSpan.FromSeconds 3.0)) then
                             raise(TimeoutException "concurrent production feed did not reach the Gateway barrier")
                 member _.OnError _ = ()
                 member _.OnCompleted() = () }
-        let concurrentIdleSequence=basis.StateSequence+4UL
-        let concurrentSequence=basis.StateSequence+5UL
+        let raceSequence=basis.StateSequence+4UL
+        let concurrentIdleSequence=basis.StateSequence+5UL
+        let concurrentSequence=basis.StateSequence+6UL
         let feedBarrier =
             { new IObserver<Snapshot.BrowserFeed> with
                 member _.OnNext value =
@@ -290,11 +291,6 @@ let tests = testList "production live boundary" [
         LiveControl.noteMetadataReported laterBasis.StateSequence (BrokerState.liveControl handle.Hub)
         let! (pairedObservation: LiveServerEnvelope) = receive socket
         Expect.equal pairedObservation.Observation.Basis.StateSequence laterBasis.StateSequence "metadata arrival replays the exact already-materialized sequence"
-        let recoverableFeed =
-            match BrokerState.browserLatest handle.Hub with
-            | Some(Snapshot.Current current) -> current
-            | _ -> failtest "paired production feed was unavailable before the regular delta"
-
         // HighBar emits this regular delta immediately after each periodic
         // complete snapshot. It updates economy without invalidating the
         // unit/lifetime basis or emitting an unpaired live observation.
@@ -343,6 +339,47 @@ let tests = testList "production live boundary" [
         let submit = SubmitLiveIntent(ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Controller=controller,Module=moduleId,Basis=pairedObservation.Observation.Basis)
         submit.Intent <- LiveIntent(Stop=StopAction())
         submit.Intent.Actors.Add(UnitReference(Id=0UL,Lifetime=actorRef.Lifetime))
+
+        // Reproduce the real keyboard race: a newer native basis reaches the
+        // broker before its observation reaches the browser, which submits the
+        // still-displayed older basis. The exact fence must reject visibly and
+        // keep the socket/controller alive for a fresh-basis submission.
+        let raceBasis=laterBasis.Clone()
+        raceBasis.Token<-ByteString.CopyFrom(Array.init 16 (fun index -> byte(index+32)))
+        raceBasis.StateSequence<-raceSequence
+        raceBasis.Frame<-laterBasis.Frame+1u
+        raceBasis.SnapshotSendMonotonicNs<-laterBasis.SnapshotSendMonotonicNs+2UL
+        let raceUpdate=StateUpdate.empty()
+        raceUpdate.Seq<-raceBasis.StateSequence
+        raceUpdate.Frame<-raceBasis.Frame
+        raceUpdate.Snapshot<-snapshot.Clone()
+        do! push.RequestStream.WriteAsync raceUpdate
+        let raceMetadata=LiveSnapshotMetadata.empty()
+        raceMetadata.Basis<-ValueSome raceBasis
+        raceMetadata.Units.Add(actor.Clone())
+        let raceReport=LiveStateReport.empty()
+        raceReport.Reporter<-ValueSome source
+        raceReport.ReportSequence<-laterReport.ReportSequence+2UL
+        raceReport.Snapshot<-raceMetadata
+        let! (raceAck:LiveStateReportAck)=live.ReportLiveStateAsync(raceReport).ResponseAsync
+        Expect.equal raceAck.Disposition LiveStateReportDisposition.LiveStateReportRecorded "newer native basis is recorded before the browser handles it"
+        let staleSubmit=submit.Clone()
+        staleSubmit.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        staleSubmit.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        do! send socket (LiveClientEnvelope(Submit=staleSubmit))
+        let! (raceObservation:LiveServerEnvelope)=receive socket
+        let! (staleRefusal:LiveServerEnvelope)=receive socket
+        Expect.equal raceObservation.Observation.Basis.StateSequence raceBasis.StateSequence "browser receives the newer current basis already paired by the broker"
+        Expect.equal staleRefusal.Result.Stage LiveResultStage.BrokerAdmission "stale displayed input receives a broker-stage result"
+        Expect.equal staleRefusal.Result.Status LiveResultStatus.Rejected "stale displayed input is terminally refused"
+        Expect.equal staleRefusal.Result.ParentId staleSubmit.ParentId "refusal preserves the exact pending parent"
+        Expect.equal staleRefusal.Result.Basis.StateSequence laterBasis.StateSequence "refusal echoes the browser's stale displayed basis"
+        Expect.equal socket.State WebSocketState.Open "expected stale-basis refusal does not terminate the live socket"
+        submit.Basis<-raceObservation.Observation.Basis.Clone()
+        let recoverableFeed =
+            match BrokerState.browserLatest handle.Hub with
+            | Some(Snapshot.Current current) when current.sequence=raceBasis.StateSequence -> current
+            | _ -> failtest "fresh paired production feed was unavailable after stale-basis refusal"
         do! send socket (LiveClientEnvelope(Submit=submit))
         do! admissionPublishing.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
         let concurrentIdle=DeltaEvent.empty()
@@ -368,7 +405,7 @@ let tests = testList "production live boundary" [
         Expect.equal brokerResult.Result.Stage LiveResultStage.BrokerAdmission "broker admission has one observable result path"
         Expect.equal brokerResult.Result.Disposition LiveResultDisposition.Recorded "production Gateway marks broadcast feedback as an accepted result record"
         Expect.equal brokerResult.Result.ChildCount 1u "result capacity is reserved per expanded child"
-        Expect.equal brokerResult.Result.Basis.StateSequence laterBasis.StateSequence "result preserves the exact observation basis"
+        Expect.equal brokerResult.Result.Basis.StateSequence raceBasis.StateSequence "result preserves the refreshed observation basis"
         Expect.equal brokerResult.Result.Controller.ControllerId controller.ControllerId "result preserves the exact controller"
         Expect.equal brokerResult.Result.Module.Sha256 moduleId.Sha256 "result preserves the exact module hash"
         let! hasCommand = commandCall.ResponseStream.MoveNext(CancellationToken.None)
@@ -391,7 +428,7 @@ let tests = testList "production live boundary" [
         let dispatchDelta = StateDelta.empty()
         dispatchDelta.Events.Add dispatchEvent
         let dispatchUpdate = StateUpdate.empty()
-        dispatchUpdate.Seq <- laterBasis.StateSequence + 4UL
+        dispatchUpdate.Seq <- laterBasis.StateSequence + 5UL
         dispatchUpdate.Frame <- dispatch.Frame
         dispatchUpdate.Delta <- dispatchDelta
         do! push.RequestStream.WriteAsync dispatchUpdate
@@ -464,16 +501,16 @@ let tests = testList "production live boundary" [
             Expect.equal terminal.Result.Stage LiveResultStage.NativeDispatch "native dispatch remains terminal"
             Expect.equal terminal.Result.Status LiveResultStatus.Applied "the next parent completes exactly once"
         }
-        do! completeAdditionalParent 5UL
-
         do! completeAdditionalParent 6UL
+
+        do! completeAdditionalParent 7UL
         Expect.equal socket.State WebSocketState.Open "released parent capacity accepts and completes a third submission on the same production WebSocket"
 
-        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+6UL) (laterBasis.StateSequence+8UL) "state sequence gap" handle.Hub
+        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+7UL) (laterBasis.StateSequence+9UL) "state sequence gap" handle.Hub
         let! (stale:LiveServerEnvelope)=receive socket
         Expect.equal stale.Observation.Preview.Validity.Status ValidityStatus.Stale "a materializer gap is delivered explicitly instead of silently ending the socket"
         Expect.equal stale.Observation.Preview.Sequence stale.Observation.Basis.StateSequence "stale delivery retains the last fully paired facts and basis"
-        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+8UL) "the stale notification preserves the received sequence"
+        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+9UL) "the stale notification preserves the received sequence"
         Expect.equal socket.State WebSocketState.Open "a stale feed notification leaves the authenticated connection available for explicit revoke and recovery"
         BrokerState.applyBrowserObservation source.PluginId recoverableFeed handle.Hub
 
@@ -499,7 +536,7 @@ let tests = testList "production live boundary" [
         Expect.equal revoked.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.RevokeNativeConfirmed "old binding is confirmed revoked"
         Expect.isGreaterThan replacement.Bootstrap.Controller.AuthorityEpoch controller.AuthorityEpoch "replacement bootstrap carries a newer broker epoch"
         Expect.notEqual replacement.Bootstrap.Controller.ControllerId controller.ControllerId "replacement bootstrap carries a fresh controller identity"
-        Expect.equal replacementObservation.Observation.Basis.StateSequence laterBasis.StateSequence "replacement immediately replays the same truthful paired observation"
+        Expect.equal replacementObservation.Observation.Basis.StateSequence raceBasis.StateSequence "replacement immediately replays the same truthful paired observation"
 
         BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow handle.Hub
         let closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)

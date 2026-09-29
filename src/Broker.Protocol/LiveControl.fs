@@ -406,21 +406,41 @@ module LiveControl =
             | Some controller, Some caps, Some snapshot
                 when controller.stage = NativeConfirmed && now < controller.leaseExpiresAt ->
                 let basis = snapshot.Basis.Value
-                let identityMismatch =
+                let bindingMismatch =
                     submission.sessionId <> Guid(controller.binding.BrokerSessionId.ToByteArray())
                     || submission.controllerId <> Guid(controller.binding.ControllerId.ToByteArray())
                     || submission.controllerIncarnation <> controller.binding.ControllerIncarnation
                     || submission.authorityEpoch <> controller.binding.AuthorityEpoch
                     || submission.moduleGeneration <> controller.binding.ModuleGeneration
                     || not (submission.moduleSha256.AsSpan().SequenceEqual(controller.binding.ModuleSha256.Span))
-                    || not (sameBasis submission.basis basis)
-                if identityMismatch then
-                    Error "live submission identity or basis mismatch"
+                if bindingMismatch then
+                    Error "live submission identity mismatch"
                 elif submission.actors.Length < 1 || submission.actors.Length > 64
                      || submission.actors |> List.exists (fun a -> a.Lifetime = 0UL || a.Id > caps.MaxNativeUnitId) then
                     Error "live actors are invalid"
                 elif submission.actors |> List.map (fun a -> a.Id) |> Set.ofList |> Set.count <> submission.actors.Length then
                     Error "live actors must be distinct"
+                elif not (sameBasis submission.basis basis) then
+                    let count=submission.actors.Length
+                    published <-
+                        submission.actors
+                        |> List.mapi (fun index actor ->
+                            { resultSequence=state.nextResultSequence+uint64 index
+                              parentId=submission.parentId;inputId=submission.inputId
+                              sessionId=submission.sessionId;controllerId=submission.controllerId
+                              controllerIncarnation=submission.controllerIncarnation
+                              moduleGeneration=submission.moduleGeneration;moduleSha256=Array.copy submission.moduleSha256
+                              authorityEpoch=submission.authorityEpoch;basis=submission.basis.Clone()
+                              batchSequence=0UL;correlationId=0UL;childIndex=index;childCount=count
+                              actor=cloneRef actor;stage=BrokerAdmission;status=Rejected
+                              detail="broker refused stale observation basis; refresh the current observation"
+                              nativeFrame=None;commandChannelIncarnation=controller.binding.CommandChannelIncarnation })
+                    state.nextResultSequence<-state.nextResultSequence+uint64 count
+                    // This is a terminal broker refusal, so it reserves no native/result
+                    // capacity and emits no command. Publish under the same state gate as
+                    // accepted admission to preserve the global result sequence.
+                    for value in published do publish state value
+                    Ok published
                 elif now - state.snapshotReceivedAt > TimeSpan.FromMilliseconds(float caps.MaxObservationAgeMs) then
                     Error "live observation basis expired"
                 elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId
