@@ -256,6 +256,37 @@ let tests = testList "production live boundary" [
         LiveControl.noteMetadataReported laterBasis.StateSequence (BrokerState.liveControl handle.Hub)
         let! (pairedObservation: LiveServerEnvelope) = receive socket
         Expect.equal pairedObservation.Observation.Basis.StateSequence laterBasis.StateSequence "metadata arrival replays the exact already-materialized sequence"
+        let recoverableFeed =
+            match BrokerState.browserLatest handle.Hub with
+            | Some(Snapshot.Current current) -> current
+            | _ -> failtest "paired production feed was unavailable before the regular delta"
+
+        // HighBar emits this regular delta immediately after each periodic
+        // complete snapshot. It updates economy without invalidating the
+        // unit/lifetime basis or emitting an unpaired live observation.
+        let economy=EconomyTickEvent.empty()
+        economy.Metal<-42.5f
+        economy.MetalIncome<-7.25f
+        economy.MetalStorage<-1000.0f
+        economy.Energy<-300.0f
+        economy.EnergyIncome<-11.0f
+        economy.EnergyStorage<-2000.0f
+        let economyEvent=DeltaEvent.empty()
+        economyEvent.EconomyTick<-economy
+        let economyDelta=StateDelta.empty()
+        economyDelta.Events.Add economyEvent
+        let economyUpdate=StateUpdate.empty()
+        economyUpdate.Seq<-laterBasis.StateSequence+1UL
+        economyUpdate.Frame<-laterBasis.Frame
+        economyUpdate.Delta<-economyDelta
+        do! push.RequestStream.WriteAsync economyUpdate
+        let economyDeadline=DateTimeOffset.UtcNow.AddSeconds 3.0
+        while (match BrokerState.browserLatest handle.Hub with
+               | Some(Snapshot.Current current) -> current.sequence<>(laterBasis.StateSequence+1UL)
+               | _ -> true) do
+            if DateTimeOffset.UtcNow>economyDeadline then failtest "regular economy delta did not materialize"
+            do! Task.Delay 10
+        Expect.equal socket.State WebSocketState.Open "regular native economy delta does not terminate the live Gateway"
 
         let controller = bootstrap.Bootstrap.Controller.Clone()
         let moduleId = LiveModuleIdentity(Sha256=ByteString.CopyFrom(Array.create 32 0x42uy),Generation=9007199254741005UL)
@@ -300,13 +331,13 @@ let tests = testList "production live boundary" [
         dispatch.CommandIndex <- 0u
         dispatch.TargetUnitId <- child.Batch.Value.TargetUnitId
         dispatch.Status <- CommandDispatchStatus.CommandDispatchApplied
-        dispatch.Frame <- laterBasis.Frame + 1u
+        dispatch.Frame <- laterBasis.Frame + 2u
         let dispatchEvent = DeltaEvent.empty()
         dispatchEvent.CommandDispatch <- dispatch
         let dispatchDelta = StateDelta.empty()
         dispatchDelta.Events.Add dispatchEvent
         let dispatchUpdate = StateUpdate.empty()
-        dispatchUpdate.Seq <- laterBasis.StateSequence + 1UL
+        dispatchUpdate.Seq <- laterBasis.StateSequence + 2UL
         dispatchUpdate.Frame <- dispatch.Frame
         dispatchUpdate.Delta <- dispatchDelta
         do! push.RequestStream.WriteAsync dispatchUpdate
@@ -379,20 +410,16 @@ let tests = testList "production live boundary" [
             Expect.equal terminal.Result.Stage LiveResultStage.NativeDispatch "native dispatch remains terminal"
             Expect.equal terminal.Result.Status LiveResultStatus.Applied "the next parent completes exactly once"
         }
-        do! completeAdditionalParent 2UL
-
         do! completeAdditionalParent 3UL
+
+        do! completeAdditionalParent 4UL
         Expect.equal socket.State WebSocketState.Open "released parent capacity accepts and completes a third submission on the same production WebSocket"
 
-        let recoverableFeed =
-            match BrokerState.browserLatest handle.Hub with
-            | Some(Snapshot.Current current) -> current
-            | _ -> failtest "current production feed was unavailable before invalidation"
-        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+3UL) (laterBasis.StateSequence+5UL) "state sequence gap" handle.Hub
+        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+4UL) (laterBasis.StateSequence+6UL) "state sequence gap" handle.Hub
         let! (stale:LiveServerEnvelope)=receive socket
         Expect.equal stale.Observation.Preview.Validity.Status ValidityStatus.Stale "a materializer gap is delivered explicitly instead of silently ending the socket"
         Expect.equal stale.Observation.Preview.Sequence stale.Observation.Basis.StateSequence "stale delivery retains the last fully paired facts and basis"
-        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+5UL) "the stale notification preserves the received sequence"
+        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+6UL) "the stale notification preserves the received sequence"
         Expect.equal socket.State WebSocketState.Open "a stale feed notification leaves the authenticated connection available for explicit revoke and recovery"
         BrokerState.applyBrowserObservation source.PluginId recoverableFeed handle.Hub
 

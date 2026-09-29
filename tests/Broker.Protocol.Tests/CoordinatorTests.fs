@@ -45,8 +45,30 @@ let private mkDelta (seqNo: uint64) (frame: uint32) (nonempty: bool) =
     let delta = StateDelta.empty()
     if nonempty then
         let event = DeltaEvent.empty()
-        event.EconomyTick <- EconomyTickEvent.empty()
+        let idle = UnitIdleEvent.empty()
+        idle.UnitId <- 7
+        event.UnitIdle <- idle
         delta.Events.Add(event)
+    let upd = StateUpdate.empty()
+    upd.Seq <- seqNo
+    upd.Frame <- frame
+    upd.Delta <- delta
+    upd
+
+let private mkEconomyDelta (seqNo: uint64) (frame: uint32) =
+    let economy = EconomyTickEvent.empty()
+    economy.Metal <- 42.5f
+    economy.MetalIncome <- 7.25f
+    economy.MetalUsage <- 2.0f
+    economy.MetalStorage <- 1000.0f
+    economy.Energy <- 300.0f
+    economy.EnergyIncome <- 11.0f
+    economy.EnergyUsage <- 5.0f
+    economy.EnergyStorage <- 2000.0f
+    let event = DeltaEvent.empty()
+    event.EconomyTick <- economy
+    let delta = StateDelta.empty()
+    delta.Events.Add(event)
     let upd = StateUpdate.empty()
     upd.Seq <- seqNo
     upd.Frame <- frame
@@ -164,6 +186,71 @@ let wireConvertTests =
                 Expect.equal browser.units.[1].health None "hidden health remains absent"
                 Expect.equal browser.teamEconomy.Value.metal.expenditure None "unsupported expenditure remains absent"
             | other -> failtestf "expected NewSnapshot, got %A" other
+        }
+
+        test "regular economy delta advances the materialized browser state without invalidating units" {
+            let baseline = mkStateUpdate 60UL 30u
+            let own = OwnUnit.empty()
+            own.UnitId <- 7u
+            own.DefId <- 303u
+            own.TeamId <- 2
+            own.Position <- ValueSome(position 3.0f 400.0f -5.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let v1, _ = WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+            let v2, result = WireConvert.applyHighBarStateUpdate (mkEconomyDelta 61UL 30u) v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "economy preserves the complete unit baseline"
+            match result with
+            | WireConvert.NewSnapshot (_, browser) ->
+                Expect.equal browser.sequence 61UL "the regular native delta advances browser sequence"
+                Expect.equal browser.units.Length 1 "existing unit facts remain materialized"
+                Expect.equal browser.teamEconomy.Value.metal.current (Some 42.5) "economy current value is applied"
+                Expect.equal browser.teamEconomy.Value.metal.income (Some 7.25) "economy income is applied"
+                Expect.equal browser.teamEconomy.Value.metal.expenditure None "unsupported expenditure remains unavailable"
+            | other -> failtestf "expected materialized economy update, got %A" other
+        }
+
+        test "mixed economy and command dispatch applies economy without weakening dispatch correlation" {
+            let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
+            let update = mkEconomyDelta 2UL 2u
+            let dispatch = DeltaEvent.empty()
+            let dispatchEvent = CommandDispatchEvent.empty()
+            dispatchEvent.BatchSeq <- 1UL
+            dispatchEvent.ClientCommandId <- 1UL
+            dispatch.CommandDispatch <- dispatchEvent
+            update.Delta.Events.Add dispatch
+            let v2, result = WireConvert.applyHighBarStateUpdate update v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "the known atomic delta remains materializable"
+            match result with
+            | WireConvert.NewSnapshot (_, browser) -> Expect.equal browser.sequence 2UL "mixed known arms advance once"
+            | other -> failtestf "expected materialized mixed delta, got %A" other
+        }
+
+        test "economy delta before a baseline cannot fabricate current state" {
+            let view, result =
+                WireConvert.applyHighBarStateUpdate
+                    (mkEconomyDelta 1UL 1u)
+                    WireConvert.emptyRunningView
+            Expect.isFalse (WireConvert.hasValidBaseline view) "economy cannot establish a unit baseline"
+            match result with
+            | WireConvert.Invalidated (_, 1UL, detail) ->
+                Expect.stringContains detail "before a complete baseline" "the refusal identifies the missing baseline"
+            | other -> failtestf "expected Invalidated, got %A" other
+        }
+
+        test "unset delta arm remains fail closed" {
+            let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
+            let event=DeltaEvent.empty()
+            let delta=StateDelta.empty()
+            delta.Events.Add event
+            let update=StateUpdate.empty()
+            update.Seq<-2UL
+            update.Frame<-2u
+            update.Delta<-delta
+            let v2, result=WireConvert.applyHighBarStateUpdate update v1
+            Expect.isFalse (WireConvert.hasValidBaseline v2) "an unknown or unset arm invalidates the baseline"
+            match result with
+            | WireConvert.Invalidated (1UL,2UL,_) -> ()
+            | other -> failtestf "expected Invalidated, got %A" other
         }
 
         test "nonempty delta before a baseline cannot fabricate a snapshot" {

@@ -461,6 +461,25 @@ module WireConvert =
                   expenditure = None }
             Some ({ teamId = None; metal = metal; energy = energy } : Snapshot.TeamEconomy)
 
+    let private economyTickToObserved (e: Highbar.V1.EconomyTickEvent) =
+        let values =
+            [ e.Metal; e.MetalIncome; e.MetalUsage; e.MetalStorage
+              e.Energy; e.EnergyIncome; e.EnergyUsage; e.EnergyStorage ]
+        if values |> List.exists (Single.IsFinite >> not) then
+            Error "economy tick contains a non-finite value"
+        else
+            let metal : Snapshot.ResourceAmount =
+                { current = Some (float e.Metal)
+                  storage = Some (float e.MetalStorage)
+                  income = Some (float e.MetalIncome)
+                  expenditure = None }
+            let energy : Snapshot.ResourceAmount =
+                { current = Some (float e.Energy)
+                  storage = Some (float e.EnergyStorage)
+                  income = Some (float e.EnergyIncome)
+                  expenditure = None }
+            Ok ({ teamId = None; metal = metal; energy = energy } : Snapshot.TeamEconomy)
+
     let private snapshotFromView (view: RunningView) : Snapshot.GameStateSnapshot =
         let unitList = view.units |> Map.toList |> List.map snd
         let featureList = view.features |> Map.toList |> List.map snd
@@ -567,11 +586,41 @@ module WireConvert =
                      && (delta.Events
                          |> Seq.forall (fun event ->
                              match event.Kind with
-                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _) -> true
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _)
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick _) -> true
                              | _ -> false)) ->
-                // Dispatch feedback is consumed by HighBarCoordinatorService
-                // and intentionally does not mutate the materialized snapshot.
-                { view with lastSeq = Some recvSeq }, KeepAliveOnly
+                // Dispatch feedback is consumed independently by
+                // HighBarCoordinatorService. EconomyTick is the regular
+                // producer delta emitted immediately after a complete
+                // snapshot and can be applied without weakening unit,
+                // lifetime, ownership, or visibility fences.
+                let economies =
+                    delta.Events
+                    |> Seq.choose (fun event ->
+                        match event.Kind with
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick economy) -> Some economy
+                        | _ -> None)
+                    |> Seq.toList
+                match economies with
+                | [] -> { view with lastSeq = Some recvSeq }, KeepAliveOnly
+                | [ _ ] when not view.baselineValid ->
+                    { view with lastSeq = Some recvSeq },
+                    Invalidated (previousSeq, recvSeq, "economy tick received before a complete baseline")
+                | [ economy ] ->
+                    match economyTickToObserved economy with
+                    | Error detail ->
+                        { view with lastSeq = Some recvSeq; baselineValid = false },
+                        Invalidated (previousSeq, recvSeq, detail)
+                    | Ok teamEconomy ->
+                        let view' =
+                            { view with
+                                lastSeq = Some recvSeq
+                                teamEconomy = Some teamEconomy
+                                lastFrame = int64 update.Frame }
+                        view', NewSnapshot (snapshotFromView view', browserObservationFromView view')
+                | _ ->
+                    { view with lastSeq = Some recvSeq; baselineValid = false },
+                    Invalidated (previousSeq, recvSeq, "StateDelta contains multiple economy ticks")
             | ValueSome (Highbar.V1.StateUpdate.Types.Payload.Delta delta) when delta.Events.Count > 0 ->
                 let detail =
                     if view.baselineValid then
