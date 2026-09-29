@@ -5,7 +5,7 @@ use core::{ptr, slice};
 pub const ABI_VERSION: u32 = 1;
 pub const MAX_SELECTION: usize = 64;
 pub const MAX_SESSION_BYTES: usize = 64;
-pub const MAX_OUTPUT_BYTES: usize = 2048;
+pub const MAX_OUTPUT_BYTES: usize = 8192;
 
 #[derive(Clone, Copy)]
 pub struct Position3 {

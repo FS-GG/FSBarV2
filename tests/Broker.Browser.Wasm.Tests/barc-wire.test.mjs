@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { requestIdentity, validateGuestResponse } from "../../src/Broker.Browser.Wasm/barc-wire.js";
+import { encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
 
 const wire = (name) => readFile(new URL(`../../fixtures/barc-browser/wire/${name}.bin`, import.meta.url));
+const liveWire = (name) => readFile(new URL(`../../fixtures/barc-live/wire/${name}.bin`, import.meta.url));
+const liveSemantic = async name => JSON.parse(await readFile(new URL(`../../fixtures/barc-live/semantic/${name}.json`, import.meta.url), "utf8"));
 const varint = (value) => {
   const bytes = [];
   for (let current = BigInt(value);;) {
@@ -50,4 +53,24 @@ test("empty and zero Move unit identities are refused", async () => {
     const move = [...blob(1, packed), ...blob(2, [])];
     assert.throws(() => validateGuestResponse(response(identity, move), identity), /nonzero unit identities/);
   }
+});
+
+test("tactical ABI output retains exact actor and catalogue revisions", async () => {
+  const responseValue = await liveSemantic("tactical-guest-build-response");
+  const expected = requestIdentity(encodeObject(v1.LiveGuestRequest, {
+    inputId: responseValue.inputId, sessionId: responseValue.sessionId, moduleGeneration: responseValue.moduleGeneration,
+    basis: responseValue.basis, manualInput:{source:"LIVE_INPUT_SOURCE_KEYBOARD",modifiers:{},action:responseValue.intent},
+  }));
+  const bytes = new Uint8Array(await liveWire("tactical-guest-build-response"));
+  assert.deepEqual(validateGuestResponse(bytes, expected), bytes);
+});
+
+test("unknown tactical queue insertion actions are refused inside the Worker", async () => {
+  const responseValue = await liveSemantic("tactical-guest-unknown-action-response");
+  const expected = requestIdentity(encodeObject(v1.LiveGuestRequest, {
+    inputId: responseValue.inputId, sessionId: responseValue.sessionId, moduleGeneration: responseValue.moduleGeneration,
+    basis: responseValue.basis, manualInput:{source:"LIVE_INPUT_SOURCE_KEYBOARD",modifiers:{},action:responseValue.intent},
+  }));
+  const bytes = new Uint8Array(await liveWire("tactical-guest-unknown-action-response"));
+  assert.throws(() => validateGuestResponse(bytes, expected), /insertion action is unknown/);
 });
