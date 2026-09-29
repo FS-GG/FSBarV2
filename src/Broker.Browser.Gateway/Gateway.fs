@@ -51,6 +51,12 @@ module Gateway =
           credentialSessionId: Guid; credentialExpiresAt: DateTimeOffset; perspectiveId: string
           authTimeout: TimeSpan; closeTimeout: TimeSpan; maxFrameBytes: int }
 
+    type private PreparedLiveObservation =
+        | PreparedCurrent of sequence: uint64 * envelope: LiveServerEnvelope
+        | PreparedStale of lastSequence: uint64 * receivedSequence: uint64 * detail: string
+        | PreparedSessionChanged
+        | PreparedUnavailable
+
     let defaultLiveConfig url origin credential sessionId =
         { url=url; path="/barc-live"; allowedOrigin=origin; credential=credential
           credentialSessionId=sessionId; credentialExpiresAt=DateTimeOffset.UtcNow.AddMinutes 5.0
@@ -344,47 +350,73 @@ module Gateway =
                                 let mutable lastObservationSequence: uint64 option=None
                                 let mutable lastObservationEnvelope: LiveServerEnvelope option=None
                                 let mutable lastStaleIdentity: struct(uint64 * uint64) option=None
+                                let mutable observationGeneration=0UL
                                 let enqueueLocked detail envelope =
                                     if not (outputs.Writer.TryWrite envelope) then
                                         outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore
                                         false
                                     else true
-                                let enqueueObservationLocked value =
+                                let prepareObservation value =
                                     match value with
                                     | Snapshot.Current current when current.sessionId=sessionId ->
-                                        if lastObservationSequence<>Some current.sequence then
-                                            let preview=(observation current).Observation
-                                            match LiveBoundary.observation preview state with
-                                            | Ok envelope when enqueueLocked "live observation delivery capacity exhausted" envelope ->
-                                                lastObservationSequence<-Some current.sequence
+                                        let preview=(observation current).Observation
+                                        match LiveBoundary.observation preview state with
+                                        | Ok envelope -> PreparedCurrent(current.sequence,envelope)
+                                        | Error _ -> PreparedUnavailable
+                                    | Snapshot.Stale(staleSessionId,lastSequence,receivedSequence,detail) when staleSessionId=sessionId ->
+                                        PreparedStale(lastSequence,receivedSequence,detail)
+                                    | _ -> PreparedSessionChanged
+                                let enqueuePreparedObservationLocked generation prepared =
+                                    if generation=observationGeneration then
+                                        match prepared with
+                                        | PreparedCurrent(sequence,envelope) ->
+                                            match lastObservationSequence with
+                                            | Some prior when sequence<=prior -> ()
+                                            | _ when enqueueLocked "live observation delivery capacity exhausted" envelope ->
+                                                lastObservationSequence<-Some sequence
                                                 lastObservationEnvelope<-Some(envelope.Clone())
                                                 lastStaleIdentity<-None
                                             | _ -> ()
-                                    | Snapshot.Stale(staleSessionId,lastSequence,receivedSequence,detail) when staleSessionId=sessionId ->
-                                        let identity=struct(lastSequence,receivedSequence)
-                                        match lastObservationEnvelope with
-                                        | Some prior when lastStaleIdentity<>Some identity ->
-                                            let stale=prior.Clone()
-                                            // Retain the last fully paired facts and basis. The validity
-                                            // reports the gap without inventing a snapshot for lastSequence.
-                                            stale.Observation.Preview.Validity<-
-                                                validity ValidityStatus.Stale lastSequence (Some receivedSequence) detail
-                                            if enqueueLocked "live stale observation delivery capacity exhausted" stale then
-                                                lastStaleIdentity<-Some identity
-                                        | _ -> ()
-                                    | _ -> outputs.Writer.TryComplete(SessionChanged) |> ignore
+                                        | PreparedStale(lastSequence,receivedSequence,detail) ->
+                                            let identity=struct(lastSequence,receivedSequence)
+                                            let superseded=
+                                                match lastObservationSequence with
+                                                | Some delivered -> receivedSequence<=delivered
+                                                | None -> false
+                                            if not superseded then
+                                                match lastObservationEnvelope with
+                                                | Some prior when lastStaleIdentity<>Some identity ->
+                                                    let stale=prior.Clone()
+                                                    // Retain the last fully paired facts and basis. The validity
+                                                    // reports the gap without inventing a snapshot for lastSequence.
+                                                    stale.Observation.Preview.Validity<-
+                                                        validity ValidityStatus.Stale lastSequence (Some receivedSequence) detail
+                                                    if enqueueLocked "live stale observation delivery capacity exhausted" stale then
+                                                        lastStaleIdentity<-Some identity
+                                                | _ -> ()
+                                        | PreparedSessionChanged -> outputs.Writer.TryComplete(SessionChanged) |> ignore
+                                        | PreparedUnavailable -> ()
+                                let prepareAndEnqueueObservation value =
+                                    // Projection consults BrokerState/LiveControl. Never perform it while
+                                    // holding outputGate: admission feedback is synchronously published while
+                                    // holding LiveControl's gate to preserve broker-before-native ordering.
+                                    let generation=lock outputGate (fun () -> observationGeneration)
+                                    let prepared=prepareObservation value
+                                    lock outputGate (fun () -> enqueuePreparedObservationLocked generation prepared)
                                 let feedObserver =
                                     { new IObserver<Snapshot.BrowserFeed> with
-                                        member _.OnNext value = lock outputGate (fun () -> enqueueObservationLocked value)
+                                        member _.OnNext value = prepareAndEnqueueObservation value
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let metadataObserver =
                                     { new IObserver<uint64> with
                                         member _.OnNext sequence =
-                                            lock outputGate (fun () ->
+                                            let generation=lock outputGate (fun () -> observationGeneration)
+                                            let prepared=
                                                 match BrokerState.browserLatest hub with
-                                                | Some(Snapshot.Current current as feed) when current.sequence=sequence -> enqueueObservationLocked feed
-                                                | _ -> ())
+                                                | Some(Snapshot.Current current as feed) when current.sequence=sequence -> prepareObservation feed
+                                                | _ -> PreparedUnavailable
+                                            lock outputGate (fun () -> enqueuePreparedObservationLocked generation prepared)
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = () }
                                 let resultObserver =
@@ -395,16 +427,35 @@ module Gateway =
                                 let controllerObserver =
                                     { new IObserver<LiveControl.ControllerUpdate> with
                                         member _.OnNext value =
-                                            lock outputGate (fun () ->
-                                                if enqueueLocked "live controller delivery capacity exhausted" (LiveBoundary.controllerEnvelope value)
-                                                   && (value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused) then
+                                            let terminal=value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused
+                                            let replacement =
+                                                if terminal then
                                                     match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
-                                                    | Ok replacement when enqueueLocked "live replacement bootstrap delivery capacity exhausted" replacement ->
-                                                        provisionalControllerId <- bytesGuid replacement.Bootstrap.Controller.ControllerId
+                                                    | Error detail -> Error detail
+                                                    | Ok bootstrap ->
+                                                        let prepared=BrokerState.browserLatest hub |> Option.map prepareObservation
+                                                        Ok(Some(bootstrap,prepared))
+                                                else Ok None
+                                            let mutable unusedControllerId=None
+                                            lock outputGate (fun () ->
+                                                if enqueueLocked "live controller delivery capacity exhausted" (LiveBoundary.controllerEnvelope value) then
+                                                    match replacement with
+                                                    | Ok(Some(bootstrap,prepared)) when enqueueLocked "live replacement bootstrap delivery capacity exhausted" bootstrap ->
+                                                        unusedControllerId<-provisionalControllerId
+                                                        provisionalControllerId<-bytesGuid bootstrap.Bootstrap.Controller.ControllerId
+                                                        observationGeneration<-observationGeneration+1UL
                                                         lastObservationSequence<-None
-                                                        BrokerState.browserLatest hub |> Option.iter enqueueObservationLocked
-                                                    | Ok _ -> ()
-                                                    | Error detail -> outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore)
+                                                        lastObservationEnvelope<-None
+                                                        lastStaleIdentity<-None
+                                                        prepared |> Option.iter (enqueuePreparedObservationLocked observationGeneration)
+                                                    | Ok(Some(bootstrap,_)) -> unusedControllerId<-bytesGuid bootstrap.Bootstrap.Controller.ControllerId
+                                                    | Ok None -> ()
+                                                    | Error detail -> outputs.Writer.TryComplete(InvalidOperationException detail) |> ignore
+                                                else
+                                                    match replacement with
+                                                    | Ok(Some(bootstrap,_)) -> unusedControllerId<-bytesGuid bootstrap.Bootstrap.Controller.ControllerId
+                                                    | _ -> ())
+                                            unusedControllerId |> Option.iter (fun controllerId -> LiveControl.releaseProvisionalController controllerId state)
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let latest,feedSubscription=BrokerState.subscribeBrowserFeed feedObserver hub
@@ -413,7 +464,7 @@ module Gateway =
                                 use resultSubscription=(LiveControl.feedback state).Subscribe resultObserver
                                 use controllerSubscription=(LiveControl.controllerUpdates state).Subscribe controllerObserver
                                 let mutable ownedBinding: LiveBinding option = None
-                                latest |> Option.iter (fun value -> lock outputGate (fun () -> enqueueObservationLocked value))
+                                latest |> Option.iter prepareAndEnqueueObservation
                                 let receiveTask=task {
                                     while socket.State=WebSocketState.Open do
                                         let! frame=receiveOne socket config.maxFrameBytes connectionCts.Token

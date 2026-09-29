@@ -210,6 +210,39 @@ let tests = testList "production live boundary" [
             if DateTimeOffset.UtcNow > deadline then failtest "production observation did not materialize"
             do! Task.Delay 10
 
+        // Force the former Gateway lock inversion without relying on scheduler luck.
+        // Broker admission publishes synchronously while holding the live-state gate.
+        // Once that publication is paused here, a real coordinator economy delta enters
+        // the production feed. Projection must wait for live state without owning the
+        // Gateway output gate, so the admission result can be serialized first.
+        let admissionPublishing=TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let concurrentFeedPublished=TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let mutable blockFirstAdmission=0
+        let feedbackBarrier =
+            { new IObserver<LiveControl.Feedback> with
+                member _.OnNext value =
+                    if value.stage=LiveControl.BrokerAdmission
+                       && Interlocked.CompareExchange(&blockFirstAdmission,1,0)=0 then
+                        admissionPublishing.TrySetResult(()) |> ignore
+                        if not (concurrentFeedPublished.Task.Wait(TimeSpan.FromSeconds 3.0)) then
+                            raise(TimeoutException "concurrent production feed did not reach the Gateway barrier")
+                member _.OnError _ = ()
+                member _.OnCompleted() = () }
+        let concurrentSequence=basis.StateSequence+4UL
+        let feedBarrier =
+            { new IObserver<Snapshot.BrowserFeed> with
+                member _.OnNext value =
+                    match value with
+                    | Snapshot.Current current when current.sequence=concurrentSequence ->
+                        concurrentFeedPublished.TrySetResult(()) |> ignore
+                    | _ -> ()
+                member _.OnError _ = ()
+                member _.OnCompleted() = () }
+        let feedbackBarrierSubscription: IDisposable =
+            (LiveControl.feedback (BrokerState.liveControl handle.Hub)).Subscribe feedbackBarrier
+        let feedBarrierSubscription: IDisposable =
+            (BrokerState.browserFeed handle.Hub).Subscribe feedBarrier
+
         let origin = "http://127.0.0.1:4179"
         let browserPort = freePort()
         let! (gateway: Microsoft.Extensions.Hosting.IHost) =
@@ -310,6 +343,15 @@ let tests = testList "production live boundary" [
         submit.Intent <- LiveIntent(Stop=StopAction())
         submit.Intent.Actors.Add(UnitReference(Id=0UL,Lifetime=actorRef.Lifetime))
         do! send socket (LiveClientEnvelope(Submit=submit))
+        do! admissionPublishing.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let concurrentEconomyUpdate=StateUpdate.empty()
+        concurrentEconomyUpdate.Seq<-concurrentSequence
+        concurrentEconomyUpdate.Frame<-laterBasis.Frame
+        concurrentEconomyUpdate.Delta<-economyDelta.Clone()
+        let concurrentWrite=push.RequestStream.WriteAsync concurrentEconomyUpdate
+        let! concurrentCompleted=Task.WhenAny(concurrentWrite,Task.Delay(TimeSpan.FromSeconds 3.0))
+        Expect.isTrue (Object.ReferenceEquals(concurrentCompleted,concurrentWrite)) "coordinator feed and broker admission complete without a Gateway/live-state lock cycle"
+        do! concurrentWrite
         let! (brokerResult: LiveServerEnvelope) = receive socket
         Expect.equal brokerResult.Result.Stage LiveResultStage.BrokerAdmission "broker admission has one observable result path"
         Expect.equal brokerResult.Result.Disposition LiveResultDisposition.Recorded "production Gateway marks broadcast feedback as an accepted result record"
@@ -337,7 +379,7 @@ let tests = testList "production live boundary" [
         let dispatchDelta = StateDelta.empty()
         dispatchDelta.Events.Add dispatchEvent
         let dispatchUpdate = StateUpdate.empty()
-        dispatchUpdate.Seq <- laterBasis.StateSequence + 2UL
+        dispatchUpdate.Seq <- laterBasis.StateSequence + 3UL
         dispatchUpdate.Frame <- dispatch.Frame
         dispatchUpdate.Delta <- dispatchDelta
         do! push.RequestStream.WriteAsync dispatchUpdate
@@ -410,16 +452,16 @@ let tests = testList "production live boundary" [
             Expect.equal terminal.Result.Stage LiveResultStage.NativeDispatch "native dispatch remains terminal"
             Expect.equal terminal.Result.Status LiveResultStatus.Applied "the next parent completes exactly once"
         }
-        do! completeAdditionalParent 3UL
-
         do! completeAdditionalParent 4UL
+
+        do! completeAdditionalParent 5UL
         Expect.equal socket.State WebSocketState.Open "released parent capacity accepts and completes a third submission on the same production WebSocket"
 
-        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+4UL) (laterBasis.StateSequence+6UL) "state sequence gap" handle.Hub
+        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+5UL) (laterBasis.StateSequence+7UL) "state sequence gap" handle.Hub
         let! (stale:LiveServerEnvelope)=receive socket
         Expect.equal stale.Observation.Preview.Validity.Status ValidityStatus.Stale "a materializer gap is delivered explicitly instead of silently ending the socket"
         Expect.equal stale.Observation.Preview.Sequence stale.Observation.Basis.StateSequence "stale delivery retains the last fully paired facts and basis"
-        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+6UL) "the stale notification preserves the received sequence"
+        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+7UL) "the stale notification preserves the received sequence"
         Expect.equal socket.State WebSocketState.Open "a stale feed notification leaves the authenticated connection available for explicit revoke and recovery"
         BrokerState.applyBrowserObservation source.PluginId recoverableFeed handle.Hub
 
@@ -458,6 +500,8 @@ let tests = testList "production live boundary" [
         with :? WebSocketException -> closed <- true
         Expect.isTrue closed "session replacement closes the authenticated live socket"
         closeTimeout.Dispose()
+        feedbackBarrierSubscription.Dispose()
+        feedBarrierSubscription.Dispose()
         socket.Dispose()
         do! gateway.StopAsync()
         (gateway :> IDisposable).Dispose()
