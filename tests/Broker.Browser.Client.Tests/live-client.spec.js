@@ -71,6 +71,22 @@ test("pointer and independent keyboard actions pass through the real guest befor
   await expect.poll(()=>submissions.length).toBe(6);expect(submissions.slice(3).map(value=>value.intent.action)).toEqual(["stop","move","attack"]);expect(submissions.slice(3).every(value=>value.intent.actors[0].lifetime===ref31999.lifetime)).toBe(true);
 });
 
+test("repeated real pointer clicks cycle overlapping own actors",async({page})=>{
+  const overlap={id:"17",lifetime:"9007199254741021"};
+  tacticalObservationOverride={...tacticalObservation,
+    preview:{...tacticalObservation.preview,units:[...tacticalObservation.preview.units,{id:"17",definitionId:503,teamId:0,observation:"OBSERVATION_KIND_OWN",position:{x:1024,z:1024}}]},
+    units:[...tacticalObservation.units,{reference:overlap,observation:"OBSERVATION_KIND_OWN"}],
+    tactical:{...tacticalObservation.tactical,actors:[...tacticalObservation.tactical.actors,actorTactical(overlap)]}};
+  await arm(page,"Manual guest","barc-live-tactical-v1");
+  const target=page.locator('[data-unit-id="0"]');let box=await target.boundingBox();expect(box).not.toBeNull();
+  await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+  await expect(page.locator(".selection")).toContainText(`Actors 17:${overlap.lifetime}`);
+  box=await target.boundingBox();expect(box).not.toBeNull();
+  await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+  await expect(page.locator(".selection")).toContainText(`Actors 0:${ref0.lifetime}`);
+  await expect(page.locator(".selection")).toContainText("Repeated clicks cycle overlapping actors");
+});
+
 test("two canonical result lifecycles cross the real Worker without revoking authority",async({page})=>{
   canonicalFeedback=true;await arm(page);await page.locator('[data-unit-id="0"]').click();await page.getByRole("button",{name:"Stop"}).click();await expect.poll(()=>submissions.length).toBe(1);
   await page.getByLabel("Target X").fill("512.5");await page.getByLabel("Target Z").fill("1024.25");await page.getByRole("button",{name:"Move",exact:true}).click();await expect.poll(()=>submissions.length).toBe(2);
