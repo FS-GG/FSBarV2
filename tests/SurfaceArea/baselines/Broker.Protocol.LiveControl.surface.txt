@@ -103,6 +103,7 @@ M Broker.Protocol.LiveControl.claimControl(subscribe:LiveControlSubscribe, state
 M Broker.Protocol.LiveControl.controllerUpdates(state:State) : IObservable<ControllerUpdate>
 M Broker.Protocol.LiveControl.create(parentCapacity:Int32) : State
 M Broker.Protocol.LiveControl.currentBinding(state:State) : FSharpOption<LiveBinding>
+M Broker.Protocol.LiveControl.expirePendingResults(now:DateTimeOffset, state:State) : Int32
 M Broker.Protocol.LiveControl.feedback(state:State) : IObservable<Feedback>
 M Broker.Protocol.LiveControl.latestCapabilities(state:State) : FSharpOption<LiveNativeCapabilities>
 M Broker.Protocol.LiveControl.latestSnapshotMetadata(state:State) : FSharpOption<LiveSnapshotMetadata>
