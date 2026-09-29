@@ -588,9 +588,21 @@ module WireConvert =
                              match event.Kind with
                              | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch _)
                              | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick _) -> true
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle idle) ->
+                                 // UnitIdle changes order state, which the browser snapshot
+                                 // does not project. It is fact-preserving only for an owned
+                                 // unit already established by the complete baseline. Refuse
+                                 // absent/negative IDs so lifecycle or ownership drift cannot
+                                 // be hidden as a keepalive.
+                                 idle.UnitId >= 0
+                                 && view.browserUnits
+                                    |> List.exists (fun unit ->
+                                        unit.observation = Snapshot.Own
+                                        && unit.id = uint64 idle.UnitId)
                              | _ -> false)) ->
                 // Dispatch feedback is consumed independently by
-                // HighBarCoordinatorService. EconomyTick is the regular
+                // HighBarCoordinatorService. UnitIdle preserves the last
+                // complete owned-unit facts. EconomyTick is the regular
                 // producer delta emitted immediately after a complete
                 // snapshot and can be applied without weakening unit,
                 // lifetime, ownership, or visibility fences.

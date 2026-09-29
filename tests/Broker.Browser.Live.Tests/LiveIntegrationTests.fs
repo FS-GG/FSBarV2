@@ -228,7 +228,8 @@ let tests = testList "production live boundary" [
                             raise(TimeoutException "concurrent production feed did not reach the Gateway barrier")
                 member _.OnError _ = ()
                 member _.OnCompleted() = () }
-        let concurrentSequence=basis.StateSequence+4UL
+        let concurrentIdleSequence=basis.StateSequence+4UL
+        let concurrentSequence=basis.StateSequence+5UL
         let feedBarrier =
             { new IObserver<Snapshot.BrowserFeed> with
                 member _.OnNext value =
@@ -344,6 +345,17 @@ let tests = testList "production live boundary" [
         submit.Intent.Actors.Add(UnitReference(Id=0UL,Lifetime=actorRef.Lifetime))
         do! send socket (LiveClientEnvelope(Submit=submit))
         do! admissionPublishing.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let concurrentIdle=DeltaEvent.empty()
+        let concurrentIdleEvent=UnitIdleEvent.empty()
+        concurrentIdleEvent.UnitId<-0
+        concurrentIdle.UnitIdle<-concurrentIdleEvent
+        let concurrentIdleDelta=StateDelta.empty()
+        concurrentIdleDelta.Events.Add concurrentIdle
+        let concurrentIdleUpdate=StateUpdate.empty()
+        concurrentIdleUpdate.Seq<-concurrentIdleSequence
+        concurrentIdleUpdate.Frame<-laterBasis.Frame
+        concurrentIdleUpdate.Delta<-concurrentIdleDelta
+        do! push.RequestStream.WriteAsync concurrentIdleUpdate
         let concurrentEconomyUpdate=StateUpdate.empty()
         concurrentEconomyUpdate.Seq<-concurrentSequence
         concurrentEconomyUpdate.Frame<-laterBasis.Frame
@@ -379,7 +391,7 @@ let tests = testList "production live boundary" [
         let dispatchDelta = StateDelta.empty()
         dispatchDelta.Events.Add dispatchEvent
         let dispatchUpdate = StateUpdate.empty()
-        dispatchUpdate.Seq <- laterBasis.StateSequence + 3UL
+        dispatchUpdate.Seq <- laterBasis.StateSequence + 4UL
         dispatchUpdate.Frame <- dispatch.Frame
         dispatchUpdate.Delta <- dispatchDelta
         do! push.RequestStream.WriteAsync dispatchUpdate
@@ -452,16 +464,16 @@ let tests = testList "production live boundary" [
             Expect.equal terminal.Result.Stage LiveResultStage.NativeDispatch "native dispatch remains terminal"
             Expect.equal terminal.Result.Status LiveResultStatus.Applied "the next parent completes exactly once"
         }
-        do! completeAdditionalParent 4UL
-
         do! completeAdditionalParent 5UL
+
+        do! completeAdditionalParent 6UL
         Expect.equal socket.State WebSocketState.Open "released parent capacity accepts and completes a third submission on the same production WebSocket"
 
-        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+5UL) (laterBasis.StateSequence+7UL) "state sequence gap" handle.Hub
+        BrokerState.invalidateBrowserFeed (laterBasis.StateSequence+6UL) (laterBasis.StateSequence+8UL) "state sequence gap" handle.Hub
         let! (stale:LiveServerEnvelope)=receive socket
         Expect.equal stale.Observation.Preview.Validity.Status ValidityStatus.Stale "a materializer gap is delivered explicitly instead of silently ending the socket"
         Expect.equal stale.Observation.Preview.Sequence stale.Observation.Basis.StateSequence "stale delivery retains the last fully paired facts and basis"
-        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+7UL) "the stale notification preserves the received sequence"
+        Expect.equal stale.Observation.Preview.Validity.ReceivedSequence (laterBasis.StateSequence+8UL) "the stale notification preserves the received sequence"
         Expect.equal socket.State WebSocketState.Open "a stale feed notification leaves the authenticated connection available for explicit revoke and recovery"
         BrokerState.applyBrowserObservation source.PluginId recoverableFeed handle.Hub
 

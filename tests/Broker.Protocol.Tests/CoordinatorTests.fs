@@ -209,6 +209,69 @@ let wireConvertTests =
             | other -> failtestf "expected materialized economy update, got %A" other
         }
 
+        test "owned unit idle preserves a valid baseline through the following economy tick" {
+            let baseline = mkStateUpdate 66UL 840u
+            let own = OwnUnit.empty()
+            own.UnitId <- 9983u
+            own.DefId <- 303u
+            own.TeamId <- 0
+            own.Position <- ValueSome(position 2048.0f 321.458f 2048.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let v1, _ = WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            let idle=DeltaEvent.empty()
+            let idleEvent=UnitIdleEvent.empty()
+            idleEvent.UnitId<-9983
+            idle.UnitIdle<-idleEvent
+            let idleDelta=StateDelta.empty()
+            idleDelta.Events.Add idle
+            let idleUpdate=StateUpdate.empty()
+            idleUpdate.Seq<-67UL
+            idleUpdate.Frame<-870u
+            idleUpdate.Delta<-idleDelta
+            let v2, idleResult=WireConvert.applyHighBarStateUpdate idleUpdate v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "idle for the established owned unit retains the complete baseline"
+            match idleResult with
+            | WireConvert.KeepAliveOnly -> ()
+            | other -> failtestf "expected fact-preserving idle, got %A" other
+
+            let v3, economyResult=WireConvert.applyHighBarStateUpdate (mkEconomyDelta 68UL 870u) v2
+            Expect.isTrue (WireConvert.hasValidBaseline v3) "the next regular economy tick remains materializable"
+            match economyResult with
+            | WireConvert.NewSnapshot (_, browser) ->
+                Expect.equal browser.sequence 68UL "economy advances after the idle event"
+                Expect.equal browser.units.Length 1 "idle does not remove or rewrite owned-unit facts"
+                Expect.equal browser.units.Head.id 9983UL "the exact owned actor remains present"
+            | other -> failtestf "expected economy snapshot after idle, got %A" other
+        }
+
+        test "unit idle for an unknown or invalid actor remains fail closed" {
+            let baseline = mkStateUpdate 1UL 1u
+            let own = OwnUnit.empty()
+            own.UnitId <- 7u
+            own.Position <- ValueSome(position 1.0f 2.0f 3.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let v1, _ = WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            for unitId in [ 8; -1 ] do
+                let idle=DeltaEvent.empty()
+                let idleEvent=UnitIdleEvent.empty()
+                idleEvent.UnitId<-unitId
+                idle.UnitIdle<-idleEvent
+                let delta=StateDelta.empty()
+                delta.Events.Add idle
+                let update=StateUpdate.empty()
+                update.Seq<-2UL
+                update.Frame<-2u
+                update.Delta<-delta
+                let view, result=WireConvert.applyHighBarStateUpdate update v1
+                Expect.isFalse (WireConvert.hasValidBaseline view) "idle outside the established own-unit set invalidates"
+                match result with
+                | WireConvert.Invalidated (1UL,2UL,detail) ->
+                    Expect.stringContains detail "does not materialize" "refusal remains explicit"
+                | other -> failtestf "expected unknown idle refusal, got %A" other
+        }
+
         test "mixed economy and command dispatch applies economy without weakening dispatch correlation" {
             let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
             let update = mkEconomyDelta 2UL 2u
