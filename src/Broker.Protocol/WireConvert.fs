@@ -527,6 +527,21 @@ module WireConvert =
                        unit.observation = Snapshot.Own
                        && unit.id = uint64 idle.UnitId)
             let isSupportedIdle idle = view.baselineValid && isKnownOwnedIdle idle
+            let hasObservedEnemy id observation =
+                id >= 0
+                && view.browserUnits
+                   |> List.exists (fun unit ->
+                       unit.id = uint64 id
+                       && unit.observation = observation)
+            let isSupportedLeaveLos (event: Highbar.V1.EnemyLeaveLOSEvent) =
+                view.baselineValid && hasObservedEnemy event.EnemyId Snapshot.Visual
+            let isSupportedLeaveRadar (event: Highbar.V1.EnemyLeaveRadarEvent) =
+                view.baselineValid
+                && event.EnemyId >= 0
+                && view.browserUnits
+                   |> List.exists (fun unit ->
+                       unit.id = uint64 event.EnemyId
+                       && unit.observation <> Snapshot.Own)
             let unsupportedArmName (event: Highbar.V1.DeltaEvent) =
                 match event.Kind with
                 | ValueNone -> Some "unset"
@@ -534,6 +549,8 @@ module WireConvert =
                 | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick _) -> None
                 | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle idle) when isSupportedIdle idle -> None
                 | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitIdle _) -> Some "unit_idle"
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos event) when isSupportedLeaveLos event -> None
+                | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar event) when isSupportedLeaveRadar event -> None
                 | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitCreated _) -> Some "unit_created"
                 | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitFinished _) -> Some "unit_finished"
                 | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.UnitDamaged _) -> Some "unit_damaged"
@@ -656,6 +673,10 @@ module WireConvert =
                                  // absent/negative IDs so lifecycle or ownership drift cannot
                                  // be hidden as a keepalive.
                                  isSupportedIdle idle
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos event) ->
+                                 isSupportedLeaveLos event
+                             | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar event) ->
+                                 isSupportedLeaveRadar event
                              | _ -> false)) ->
                 // Dispatch feedback is consumed independently by
                 // HighBarCoordinatorService. UnitIdle preserves the last
@@ -670,8 +691,43 @@ module WireConvert =
                         | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EconomyTick economy) -> Some economy
                         | _ -> None)
                     |> Seq.toList
+                // Validate every arm against the original coherent baseline above,
+                // then apply all withdrawals together. This lets the native producer
+                // report LOS and radar loss for one enemy in the same frame without
+                // the first removal making the second arm appear inconsistent.
+                let removedEnemyIds =
+                    delta.Events
+                    |> Seq.choose (fun event ->
+                        match event.Kind with
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveLos leave) ->
+                            Some(uint64 leave.EnemyId)
+                        | ValueSome (Highbar.V1.DeltaEvent.Types.Kind.EnemyLeaveRadar leave)
+                            when hasObservedEnemy leave.EnemyId Snapshot.Radar ->
+                            Some(uint64 leave.EnemyId)
+                        | _ -> None)
+                    |> Set.ofSeq
+                let viewAfterWithdrawals =
+                    if Set.isEmpty removedEnemyIds then
+                        { view with lastSeq = Some recvSeq }
+                    else
+                        let browserUnits =
+                            view.browserUnits
+                            |> List.filter (fun unit ->
+                                unit.observation = Snapshot.Own
+                                || not (Set.contains unit.id removedEnemyIds))
+                        let units =
+                            removedEnemyIds
+                            |> Seq.fold (fun current id -> Map.remove (uint32 id) current) view.units
+                        { view with
+                            lastSeq = Some recvSeq
+                            browserUnits = browserUnits
+                            units = units
+                            lastFrame = int64 update.Frame }
                 match economies with
-                | [] -> { view with lastSeq = Some recvSeq }, KeepAliveOnly
+                | [] when Set.isEmpty removedEnemyIds -> viewAfterWithdrawals, KeepAliveOnly
+                | [] ->
+                    viewAfterWithdrawals,
+                    NewSnapshot (snapshotFromView viewAfterWithdrawals, browserObservationFromView viewAfterWithdrawals)
                 | [ _ ] when not view.baselineValid ->
                     { view with lastSeq = Some recvSeq },
                     Invalidated (previousSeq, recvSeq, "economy tick received before a complete baseline")
@@ -682,8 +738,7 @@ module WireConvert =
                         Invalidated (previousSeq, recvSeq, detail)
                     | Ok teamEconomy ->
                         let view' =
-                            { view with
-                                lastSeq = Some recvSeq
+                            { viewAfterWithdrawals with
                                 teamEconomy = Some teamEconomy
                                 lastFrame = int64 update.Frame }
                         view', NewSnapshot (snapshotFromView view', browserObservationFromView view')

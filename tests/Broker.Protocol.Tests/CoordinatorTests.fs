@@ -301,6 +301,115 @@ let wireConvertTests =
             | other -> failtestf "expected unsupported arm diagnostics, got %A" other
         }
 
+        test "simultaneous LOS and radar loss withdraws the original visual fact atomically" {
+            let baseline=mkStateUpdate 7UL 210u
+            let own=OwnUnit.empty()
+            own.UnitId<-9983u
+            own.Position<-ValueSome(position 2048.0f 321.0f 2048.0f)
+            baseline.Snapshot.OwnUnits.Add own
+            let disappearing=EnemyUnit.empty()
+            disappearing.UnitId<-21347u
+            disappearing.DefId<-501u
+            disappearing.TeamId<-1
+            disappearing.Position<-ValueSome(position 2200.0f 320.0f 2100.0f)
+            disappearing.Health<-100.0f
+            let retained=EnemyUnit.empty()
+            retained.UnitId<-28820u
+            retained.DefId<-502u
+            retained.TeamId<-1
+            retained.Position<-ValueSome(position 2168.0f 329.0f 2048.0f)
+            retained.Health<-280.0f
+            baseline.Snapshot.VisibleEnemies.Add disappearing
+            baseline.Snapshot.VisibleEnemies.Add retained
+            let v1, _=WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            let leaveLos=DeltaEvent.empty()
+            let leaveLosEvent=EnemyLeaveLOSEvent.empty()
+            leaveLosEvent.EnemyId<-21347
+            leaveLos.EnemyLeaveLos<-leaveLosEvent
+            let losOnlyDelta=StateDelta.empty()
+            losOnlyDelta.Events.Add leaveLos
+            let losOnlyUpdate=StateUpdate.empty()
+            losOnlyUpdate.Seq<-8UL
+            losOnlyUpdate.Frame<-211u
+            losOnlyUpdate.Delta<-losOnlyDelta
+            let _, losOnlyResult=WireConvert.applyHighBarStateUpdate losOnlyUpdate v1
+            match losOnlyResult with
+            | WireConvert.NewSnapshot (_,browser) ->
+                Expect.isFalse (browser.units |> List.exists (fun unit -> unit.id=21347UL)) "LOS loss alone withdraws the visual fact instead of inventing Radar"
+            | other -> failtestf "expected conservative LOS withdrawal, got %A" other
+
+            let leaveRadar=DeltaEvent.empty()
+            let leaveRadarEvent=EnemyLeaveRadarEvent.empty()
+            leaveRadarEvent.EnemyId<-21347
+            leaveRadar.EnemyLeaveRadar<-leaveRadarEvent
+            let delta=StateDelta.empty()
+            delta.Events.Add leaveLos
+            delta.Events.Add leaveRadar
+            let update=StateUpdate.empty()
+            update.Seq<-8UL
+            update.Frame<-211u
+            update.Delta<-delta
+            let v2, result=WireConvert.applyHighBarStateUpdate update v1
+
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "a consecutive visibility withdrawal preserves the coherent baseline"
+            match result with
+            | WireConvert.NewSnapshot (_,browser) ->
+                Expect.equal browser.sequence 8UL "the withdrawal advances the exact producer sequence"
+                Expect.isFalse (browser.units |> List.exists (fun unit -> unit.id=21347UL)) "the lost target has no invented visual or radar fact"
+                Expect.isTrue (browser.units |> List.exists (fun unit -> unit.id=9983UL && unit.observation=Snapshot.Own)) "owned facts remain intact"
+                Expect.isTrue (browser.units |> List.exists (fun unit -> unit.id=28820UL && unit.observation=Snapshot.Visual)) "unrelated visible targets remain intact"
+            | other -> failtestf "expected materialized visibility withdrawal, got %A" other
+
+            let v3, economyResult=WireConvert.applyHighBarStateUpdate (mkEconomyDelta 9UL 211u) v2
+            Expect.isTrue (WireConvert.hasValidBaseline v3) "the next regular economy delta remains valid"
+            match economyResult with
+            | WireConvert.NewSnapshot (_,browser) ->
+                Expect.isFalse (browser.units |> List.exists (fun unit -> unit.id=21347UL)) "the withdrawn target cannot reappear without producer facts"
+            | other -> failtestf "expected economy after visibility withdrawal, got %A" other
+        }
+
+        test "radar loss removes radar-only fact while incoherent LOS loss remains fail closed" {
+            let baseline=mkStateUpdate 1UL 1u
+            let radar=RadarBlip.empty()
+            radar.BlipId<-21347u
+            radar.Position<-ValueSome(position 2200.0f 0.0f 2100.0f)
+            baseline.Snapshot.RadarEnemies.Add radar
+            let v1, _=WireConvert.applyHighBarStateUpdate baseline WireConvert.emptyRunningView
+
+            let leaveRadar=DeltaEvent.empty()
+            let leaveRadarEvent=EnemyLeaveRadarEvent.empty()
+            leaveRadarEvent.EnemyId<-21347
+            leaveRadar.EnemyLeaveRadar<-leaveRadarEvent
+            let radarDelta=StateDelta.empty()
+            radarDelta.Events.Add leaveRadar
+            let radarUpdate=StateUpdate.empty()
+            radarUpdate.Seq<-2UL
+            radarUpdate.Frame<-2u
+            radarUpdate.Delta<-radarDelta
+            let v2, radarResult=WireConvert.applyHighBarStateUpdate radarUpdate v1
+            Expect.isTrue (WireConvert.hasValidBaseline v2) "radar loss for the established radar fact is coherent"
+            match radarResult with
+            | WireConvert.NewSnapshot (_,browser) -> Expect.isEmpty browser.units "radar loss withdraws the radar-only observation"
+            | other -> failtestf "expected radar withdrawal, got %A" other
+
+            let leaveLos=DeltaEvent.empty()
+            let leaveLosEvent=EnemyLeaveLOSEvent.empty()
+            leaveLosEvent.EnemyId<-21347
+            leaveLos.EnemyLeaveLos<-leaveLosEvent
+            let losDelta=StateDelta.empty()
+            losDelta.Events.Add leaveLos
+            let losUpdate=StateUpdate.empty()
+            losUpdate.Seq<-2UL
+            losUpdate.Frame<-2u
+            losUpdate.Delta<-losDelta
+            let refused, refusedResult=WireConvert.applyHighBarStateUpdate losUpdate v1
+            Expect.isFalse (WireConvert.hasValidBaseline refused) "LOS loss without an established visual fact remains invalid"
+            match refusedResult with
+            | WireConvert.Invalidated (_,_,detail) -> Expect.stringContains detail "enemy_leave_los=1" "the incoherent arm stays diagnostic"
+            | other -> failtestf "expected incoherent LOS refusal, got %A" other
+        }
+
         test "mixed economy and command dispatch applies economy without weakening dispatch correlation" {
             let v1, _ = WireConvert.applyHighBarStateUpdate (mkStateUpdate 1UL 1u) WireConvert.emptyRunningView
             let update = mkEconomyDelta 2UL 2u
