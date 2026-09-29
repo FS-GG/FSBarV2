@@ -57,7 +57,7 @@ stages. In total, 23 browser submissions produced 22 accepted actions and 66
 ordered `BrokerAdmission → NativeAdmission → NativeDispatch` stages. No accepted
 journey had an active-browser stale observation or a rejected native stage.
 
-| Journey | Accepted actions/stages | Sanitized manifest SHA-256 | Sanitized outcome SHA-256 |
+| Journey | Accepted actions/stages | Retained private manifest SHA-256 | Retained private outcome SHA-256 |
 | --- | ---: | --- | --- |
 | Local pointer | 5 / 15 | `89f124e4c73233c08193472daa9c23d2aa815375ff52c269fe89c9fae5c3f0fe` | `f2e1050bcf546114c5f151fd42d170455968fb2a255a2690ebdd8821c7a37ed0` |
 | Local keyboard | 5 / 15 | `8d2146ffac530110560b69c189bca18dedbbf1d1985f063e19543251bf532341` | `74f7b25d0cba91d87b282424cf0baf6e0285ebf30024b724fc85b4ef8bbc8ddc` |
@@ -113,7 +113,7 @@ claim late-game or 64-actor native capacity.
 
 Two preliminary driver attempts are excluded: generated pointer attempt J4-a
 serialized a queue burst, and generated keyboard attempt J5-a retained a
-relative cursor target. Their sanitized adjudication hashes are respectively
+relative cursor target. Their retained private adjudication hashes are respectively
 `a7d9e64b8a368087473588d17c71dc3140fd9f93a6699ef7e09748642adaa9eb`
 and `a50c4cc8e0cf9467f0d68fb8e90a5e27cf63467914a7f570d57a88a95cbe4e9d`.
 The corrected J4-b and J5-b journeys are the rows accepted above.
