@@ -314,6 +314,13 @@ let tests=testList "live broker boundary" [
             change candidate
             Expect.isError (LiveBoundary.submit session candidate now state) (name+" mismatch refused")
 
+        let observed=ResizeArray<LiveControl.Feedback>()
+        use _subscription=
+            (LiveControl.feedback state).Subscribe
+                { new IObserver<LiveControl.Feedback> with
+                    member _.OnNext value=observed.Add value
+                    member _.OnError _=()
+                    member _.OnCompleted()=() }
         let stale=request.Clone()
         stale.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         stale.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
@@ -326,13 +333,26 @@ let tests=testList "live broker boundary" [
             Expect.equal rejected.ParentId stale.ParentId "refusal preserves the pending browser parent"
             Expect.equal rejected.Basis.StateSequence stale.Basis.StateSequence "refusal echoes the exact stale basis"
         | other -> failtestf "expected one correlated stale-basis refusal, got %A" other
+        Expect.equal observed.Count 1 "the first stale parent has one terminal feedback record"
+        Expect.isError (LiveBoundary.submit session stale now state) "the same stale parent cannot emit a second terminal refusal"
+        let rewritten=stale.Clone()
+        rewritten.Basis<-browserBasis.Clone()
+        Expect.isError (LiveBoundary.submit session rewritten now state) "a terminally refused parent cannot be rewritten against a fresh basis"
+        Expect.equal observed.Count 1 "duplicate and rewritten terminal parents emit no additional feedback"
+        let fresh=request.Clone()
+        fresh.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        fresh.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        Expect.isOk (LiveBoundary.submit session fresh now state) "a new parent on the current basis remains admissible"
+        Expect.equal observed.Count 2 "the fresh parent publishes its broker admission once"
 
         let second=LiveControl.provisionController session state
         Expect.isError
             (LiveControl.requestBrowserArm session second.controllerId second.controllerIncarnation second.authorityEpoch moduleHash 2UL 2000u now state)
             "the single controller slot cannot be replaced while confirmed"
         let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
-        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "all mismatches, stale-basis refusal, and slot contention emit zero native commands"
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "the fresh current-basis parent emits one native delivery"
+        Expect.equal delivery.batches.Length 1 "only the fresh parent emits a native child"
+        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "mismatches, stale refusal, duplicate, rewrite, and slot contention emit no native commands"
         LiveControl.reset "production snapshot baseline lost" state
         Expect.isError (LiveBoundary.submit session request now state) "a submission cannot survive loss of the paired native baseline"
         Expect.isFalse (commandLease.reader.TryRead(&delivery)) "lost baseline emits zero native commands"

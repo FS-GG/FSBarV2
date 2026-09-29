@@ -391,14 +391,16 @@ module LiveControl =
         let limit = state.parentCapacity * 64
         while state.completedOrder.Count > limit do
             state.completed.Remove(state.completedOrder.Dequeue()) |> ignore
+    let private rememberCompletedParent parentId state =
+        if state.completedParents.Add parentId then state.completedParentOrder.Enqueue parentId
+        while state.completedParentOrder.Count > state.parentCapacity do
+            state.completedParents.Remove(state.completedParentOrder.Dequeue()) |> ignore
     let private finishIdentity key (identity: Identity) state =
         state.identities.Remove key |> ignore
         rememberCompleted key state
         if state.identities.Values |> Seq.exists (fun item -> item.feedback.parentId = identity.feedback.parentId) |> not then
             state.parents.Remove identity.feedback.parentId |> ignore
-            if state.completedParents.Add identity.feedback.parentId then state.completedParentOrder.Enqueue identity.feedback.parentId
-            while state.completedParentOrder.Count > state.parentCapacity do
-                state.completedParents.Remove(state.completedParentOrder.Dequeue()) |> ignore
+            rememberCompletedParent identity.feedback.parentId state
     let admit (submission: Submission) now state =
         let mutable published = []
         let result = lock state.gate (fun () ->
@@ -420,6 +422,8 @@ module LiveControl =
                     Error "live actors are invalid"
                 elif submission.actors |> List.map (fun a -> a.Id) |> Set.ofList |> Set.count <> submission.actors.Length then
                     Error "live actors must be distinct"
+                elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId then
+                    Error "live parent or result capacity exhausted"
                 elif not (sameBasis submission.basis basis) then
                     let count=submission.actors.Length
                     published <-
@@ -436,6 +440,7 @@ module LiveControl =
                               detail="broker refused stale observation basis; refresh the current observation"
                               nativeFrame=None;commandChannelIncarnation=controller.binding.CommandChannelIncarnation })
                     state.nextResultSequence<-state.nextResultSequence+uint64 count
+                    rememberCompletedParent submission.parentId state
                     // This is a terminal broker refusal, so it reserves no native/result
                     // capacity and emits no command. Publish under the same state gate as
                     // accepted admission to preserve the global result sequence.
@@ -443,8 +448,7 @@ module LiveControl =
                     Ok published
                 elif now - state.snapshotReceivedAt > TimeSpan.FromMilliseconds(float caps.MaxObservationAgeMs) then
                     Error "live observation basis expired"
-                elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId
-                     || state.parents.Count >= state.parentCapacity
+                elif state.parents.Count >= state.parentCapacity
                      || state.identities.Count + submission.actors.Length > state.parentCapacity * 64 then
                     Error "live parent or result capacity exhausted"
                 else
