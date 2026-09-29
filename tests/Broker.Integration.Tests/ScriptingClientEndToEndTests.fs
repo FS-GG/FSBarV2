@@ -141,6 +141,8 @@ let scriptingClientE2E =
             try
                 use channel = channelFor port
                 let client = new ScriptingClient.ScriptingClientClient(channel)
+                let! coordinator = ReadyCoordinator.connect channel handle.Hub "admin-guest-e2e" |> Async.AwaitTask
+                use _ = coordinator
                 let! _ =
                     client.HelloAsync(mkHello "admin-attacker" (System.Version(1, 0))).ResponseAsync
                     |> Async.AwaitTask

@@ -7,10 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SyntheticCoordinator.fs" />
+    <Compile Include="ReadyCoordinator.fs" />
     <Compile Include="ScriptingClientEndToEndTests.fs" />
     <Compile Include="AuditLifecycleTests.fs" />
     <Compile Include="AdminElevationTests.fs" />
-    <Compile Include="SyntheticCoordinator.fs" />
     <Compile Include="CoordinatorE2ETests.fs" />
     <Compile Include="CoordinatorCommandTests.fs" />
     <Compile Include="CoordinatorLoadTests.fs" />
