@@ -73,17 +73,29 @@ test("pointer and independent keyboard actions pass through the real guest befor
 
 test("repeated real pointer clicks cycle overlapping own actors",async({page})=>{
   const overlap={id:"17",lifetime:"9007199254741021"};
-  tacticalObservationOverride={...tacticalObservation,
+  const overlapping={...tacticalObservation,
     preview:{...tacticalObservation.preview,units:[...tacticalObservation.preview.units,{id:"17",definitionId:503,teamId:0,observation:"OBSERVATION_KIND_OWN",position:{x:1024,z:1024}}]},
     units:[...tacticalObservation.units,{reference:overlap,observation:"OBSERVATION_KIND_OWN"}],
     tactical:{...tacticalObservation.tactical,actors:[...tacticalObservation.tactical.actors,actorTactical(overlap)]}};
+  tacticalObservationOverride=overlapping;
   await arm(page,"Manual guest","barc-live-tactical-v1");
   const target=page.locator('[data-unit-id="0"]');let box=await target.boundingBox();expect(box).not.toBeNull();
   await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
   await expect(page.locator(".selection")).toContainText(`Actors 17:${overlap.lifetime}`);
+  const nextBasis={...basis,stateSequence:"9007199254740994",nativeFrame:428}, reordered={...overlapping,basis:nextBasis,
+    preview:{...overlapping.preview,sequence:nextBasis.stateSequence,validity:{status:"VALIDITY_STATUS_CURRENT",lastSequence:nextBasis.stateSequence},units:[overlapping.preview.units.at(-1),...overlapping.preview.units.slice(0,-1)]},
+    units:[overlapping.units.at(-1),...overlapping.units.slice(0,-1)],tactical:{...overlapping.tactical,economy:{...overlapping.tactical.economy,sampleFrame:nextBasis.nativeFrame}}};
+  [...sockets.clients][0].send(encodeObject(v1.LiveServerEnvelope,{observation:reordered}));
+  await expect.poll(()=>page.locator("circle.unit.own").evaluateAll(nodes=>nodes.map(node=>node.dataset.unitId))).toEqual(["17","0","31999"]);
   box=await target.boundingBox();expect(box).not.toBeNull();
   await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
   await expect(page.locator(".selection")).toContainText(`Actors 0:${ref0.lifetime}`);
+  box=await target.boundingBox();await page.keyboard.down("Control");try{await page.mouse.click(box.x+box.width/2,box.y+box.height/2)}finally{await page.keyboard.up("Control")}
+  await expect(page.locator(".selection")).toContainText(`Actors 0:${ref0.lifetime}, 17:${overlap.lifetime}`);
+  box=await target.boundingBox();await page.keyboard.down("Shift");try{await page.mouse.click(box.x+box.width/2,box.y+box.height/2)}finally{await page.keyboard.up("Shift")}
+  await expect(page.locator(".target")).toContainText(`Friendly 0:${ref0.lifetime}`);await expect(page.locator(".selection")).toContainText(`Actors 0:${ref0.lifetime}, 17:${overlap.lifetime}`);
+  box=await target.boundingBox();await page.keyboard.down("Shift");try{await page.mouse.click(box.x+box.width/2,box.y+box.height/2)}finally{await page.keyboard.up("Shift")}
+  await expect(page.locator(".target")).toContainText(`Friendly 17:${overlap.lifetime}`);await expect(page.locator(".selection")).toContainText(`Actors 0:${ref0.lifetime}, 17:${overlap.lifetime}`);
   await expect(page.locator(".selection")).toContainText("Repeated clicks cycle overlapping actors");
 });
 
