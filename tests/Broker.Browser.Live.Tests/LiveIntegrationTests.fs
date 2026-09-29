@@ -293,6 +293,48 @@ let tests = testList "production live boundary" [
         Expect.equal child.Actor.Value.Lifetime actorRef.Lifetime "native child preserves >2^53 lifetime"
         Expect.equal child.Batch.Value.Commands.Count 1 "live wrapper carries exactly one matching command"
 
+        let dispatch = CommandDispatchEvent.empty()
+        dispatch.BatchSeq <- child.Batch.Value.BatchSeq
+        dispatch.ClientCommandId <- child.Batch.Value.ClientCommandId.Value
+        dispatch.ChannelIncarnation <- child.Binding.Value.CommandChannelIncarnation
+        dispatch.CommandIndex <- 0u
+        dispatch.TargetUnitId <- child.Batch.Value.TargetUnitId
+        dispatch.Status <- CommandDispatchStatus.CommandDispatchApplied
+        dispatch.Frame <- laterBasis.Frame + 1u
+        let dispatchEvent = DeltaEvent.empty()
+        dispatchEvent.CommandDispatch <- dispatch
+        let dispatchDelta = StateDelta.empty()
+        dispatchDelta.Events.Add dispatchEvent
+        let dispatchUpdate = StateUpdate.empty()
+        dispatchUpdate.Seq <- laterBasis.StateSequence + 1UL
+        dispatchUpdate.Frame <- dispatch.Frame
+        dispatchUpdate.Delta <- dispatchDelta
+        do! push.RequestStream.WriteAsync dispatchUpdate
+
+        let earlyResult = receive socket
+        let! earlyCompletion = Task.WhenAny(earlyResult :> Task, Task.Delay 150)
+        Expect.isFalse (Object.ReferenceEquals(earlyCompletion, earlyResult :> Task)) "dispatch is not published before its matching native admission"
+
+        let admissionResult = CommandBatchResult.empty()
+        admissionResult.BatchSeq <- child.Batch.Value.BatchSeq
+        admissionResult.ClientCommandId <- child.Batch.Value.ClientCommandId.Value
+        admissionResult.Status <- CommandBatchStatus.CommandBatchAccepted
+        admissionResult.AcceptedCommandCount <- 1u
+        let admissionReport = CommandBatchResultReport.empty()
+        admissionReport.PluginId <- source.PluginId
+        admissionReport.SchemaVersion <- source.SchemaVersion
+        admissionReport.ChannelIncarnation <- child.Binding.Value.CommandChannelIncarnation
+        admissionReport.Result <- ValueSome admissionResult
+        let! (admissionAck: CommandBatchResultReportAck) = coordinator.ReportCommandBatchResultAsync(admissionReport).ResponseAsync
+        Expect.equal admissionAck.Disposition CommandBatchResultReportDisposition.CommandBatchResultRecorded "matching admission records after early dispatch"
+        let! (nativeAdmission: LiveServerEnvelope) = earlyResult
+        let! (nativeDispatch: LiveServerEnvelope) = receive socket
+        Expect.equal nativeAdmission.Result.Stage LiveResultStage.NativeAdmission "Gateway publishes native admission before buffered dispatch"
+        Expect.equal nativeAdmission.Result.Status LiveResultStatus.Accepted "accepted native admission remains truthful"
+        Expect.equal nativeDispatch.Result.Stage LiveResultStage.NativeDispatch "buffered dispatch follows admission"
+        Expect.equal nativeDispatch.Result.Status LiveResultStatus.Applied "the one terminal dispatch remains applied"
+        Expect.equal nativeDispatch.Result.ParentId brokerResult.Result.ParentId "both native stages retain the reserved parent"
+
         do! send socket (LiveClientEnvelope(Revoke=RevokeController(Controller=controller,Reason="test rearm")))
         let! (revokeRequested: LiveServerEnvelope) = receive socket
         Expect.equal revokeRequested.ControllerState.Stage Broker.Browser.Contracts.ControllerStage.RevokeRequested "browser disarms while native revoke is pending"

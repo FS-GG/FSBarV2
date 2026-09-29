@@ -365,12 +365,18 @@ let tests=testList "live broker boundary" [
         dispatch.Status<-CommandDispatchStatus.CommandDispatchApplied
         dispatch.Frame<-901u
         Expect.isTrue (LiveControl.noteDispatch dispatch state) "dispatch may arrive before admission feedback"
+        Expect.isFalse
+            (observed |> Seq.exists(fun value->value.parentId=firstParent && value.stage=LiveControl.NativeDispatch))
+            "early dispatch remains buffered until matching admission"
         let admission=CommandBatchResult.empty()
         admission.BatchSeq<-child.BatchSeq
         admission.ClientCommandId<-child.ClientCommandId.Value
         admission.Status<-CommandBatchStatus.CommandBatchAccepted
-        Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeDuplicate "late admission cannot reopen a dispatch-completed identity"
+        Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeRecorded "matching admission releases buffered dispatch"
+        Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeDuplicate "admission retry remains duplicate"
         Expect.isTrue (LiveControl.noteDispatch dispatch state) "duplicate dispatch is idempotently owned"
+        let orderedStages=observed |> Seq.filter(fun value->value.parentId=firstParent) |> Seq.map(fun value->value.stage) |> Seq.toList
+        Expect.equal orderedStages [LiveControl.BrokerAdmission;LiveControl.NativeAdmission;LiveControl.NativeDispatch] "browser feedback is canonically ordered"
         let firstTerminal=observed |> Seq.filter(fun value->value.parentId=firstParent && value.stage=LiveControl.NativeDispatch) |> Seq.toList
         Expect.equal firstTerminal.Length 1 "reordered and duplicate feedback yields one terminal event"
         Expect.equal firstTerminal.Head.nativeFrame (Some 901u) "terminal event retains the actual dispatch frame"
@@ -425,6 +431,14 @@ let tests=testList "live broker boundary" [
         let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
         Expect.isTrue (commandLease.reader.TryRead(&delivery)) "child emitted exactly once"
         let expiredChild=delivery.batches.Head.Batch.Value
+        let dispatch=CommandDispatchEvent.empty()
+        dispatch.ChannelIncarnation<-binding.CommandChannelIncarnation
+        dispatch.BatchSeq<-expiredChild.BatchSeq
+        dispatch.ClientCommandId<-expiredChild.ClientCommandId.Value
+        dispatch.Status<-CommandDispatchStatus.CommandDispatchApplied
+        dispatch.Frame<-999u
+        Expect.isTrue (LiveControl.noteDispatch dispatch state) "early dispatch is reserved while admission is missing"
+        Expect.isFalse (observed |> Seq.exists(fun item->item.parentId=expiredParent && item.stage=LiveControl.NativeDispatch)) "reserved dispatch is not terminal feedback yet"
         Expect.equal (LiveControl.expirePendingResults (now.AddMilliseconds 3999) state) 0 "dispatch fence plus feedback allowance has not elapsed"
         Expect.equal (LiveControl.expirePendingResults (now.AddMilliseconds 4000) state) 1 "maintenance expires the missing native outcome"
         Expect.equal (LiveControl.expirePendingResults (now.AddMilliseconds 4500) state) 0 "maintenance is idempotent"
@@ -443,12 +457,6 @@ let tests=testList "live broker boundary" [
         admission.ClientCommandId<-expiredChild.ClientCommandId.Value
         admission.Status<-CommandBatchStatus.CommandBatchAccepted
         Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeDuplicate "late admission cannot reopen an expired identity"
-        let dispatch=CommandDispatchEvent.empty()
-        dispatch.ChannelIncarnation<-binding.CommandChannelIncarnation
-        dispatch.BatchSeq<-expiredChild.BatchSeq
-        dispatch.ClientCommandId<-expiredChild.ClientCommandId.Value
-        dispatch.Status<-CommandDispatchStatus.CommandDispatchApplied
-        dispatch.Frame<-999u
         Expect.isTrue (LiveControl.noteDispatch dispatch state) "late dispatch is idempotently owned"
         Expect.equal (observed |> Seq.filter(fun item->item.parentId=expiredParent && item.stage=LiveControl.Unknown) |> Seq.length) 1 "late feedback publishes no second terminal"
         Expect.isFalse (commandLease.reader.TryRead(&delivery)) "expired parent is never re-emitted"

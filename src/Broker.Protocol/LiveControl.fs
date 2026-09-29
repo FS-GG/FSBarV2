@@ -37,7 +37,8 @@ module LiveControl =
           mutable renewPending: bool; mutable pendingLeaseMs: uint32; mutable pendingDeadline: DateTimeOffset }
     type Identity =
         { feedback: Feedback; deadline: DateTimeOffset
-          mutable admissionSeen: bool; mutable dispatchSeen: bool }
+          mutable admissionSeen: bool; mutable dispatchSeen: bool
+          mutable pendingDispatch: CommandDispatchEvent option }
     type Broadcaster() =
         let observers = ResizeArray<IObserver<Feedback>>()
         let gate = obj()
@@ -530,19 +531,29 @@ module LiveControl =
                                     let key = struct(feedback.commandChannelIncarnation, feedback.batchSequence, feedback.correlationId)
                                     state.identities[key] <-
                                         { feedback = feedback; deadline = resultDeadline
-                                          admissionSeen = false; dispatchSeen = false }
+                                          admissionSeen = false; dispatchSeen = false; pendingDispatch = None }
                                 published <- batches |> List.map snd
+                                // Publish broker admission before the delivery can acquire the
+                                // state lock to report native admission or dispatch feedback.
+                                for value in published do publish state value
                                 Ok published
                             else
                                 Error "live command channel is full"
             | _ -> Error "live controller is not native-confirmed")
-        for value in published do publish state value
         result
+
+    let private dispatchFeedback (identity: Identity) (dispatch: CommandDispatchEvent) state =
+        let applied = dispatch.Status = CommandDispatchStatus.CommandDispatchApplied
+        let item =
+            { identity.feedback with resultSequence = state.nextResultSequence; stage = NativeDispatch
+                                     status = if applied then Applied else Skipped
+                                     detail = string dispatch.Status; nativeFrame = Some dispatch.Frame }
+        state.nextResultSequence <- state.nextResultSequence + 1UL
+        item
 
     let reportNativeAdmission (pluginId: string) channelIncarnation result state =
         ignore pluginId
-        let mutable feedback = None
-        let disposition = lock state.gate (fun () ->
+        lock state.gate (fun () ->
             let key = struct(channelIncarnation, result.BatchSeq, result.ClientCommandId)
             match state.identities.TryGetValue key with
             | true, identity when not identity.admissionSeen ->
@@ -553,35 +564,32 @@ module LiveControl =
                                              status = if accepted then Accepted else Rejected
                                              detail = if result.Issues.Count = 0 then string result.Status else result.Issues[0].Detail }
                 state.nextResultSequence <- state.nextResultSequence + 1UL
-                feedback <- Some item
-                if not accepted then finishIdentity key identity state
+                publish state item
+                match identity.pendingDispatch with
+                | Some dispatch ->
+                    publish state (dispatchFeedback identity dispatch state)
+                    finishIdentity key identity state
+                | None when not accepted -> finishIdentity key identity state
+                | None -> ()
                 NativeRecorded
             | true, _ -> NativeDuplicate
             | false, _ when state.completed.Contains key -> NativeDuplicate
             | _ -> NativeNotOwned)
-        feedback |> Option.iter (publish state)
-        disposition
     let noteDispatch dispatch state =
-        let mutable feedback = None
-        let handled = lock state.gate (fun () ->
+        lock state.gate (fun () ->
             let key = struct(dispatch.ChannelIncarnation, dispatch.BatchSeq, dispatch.ClientCommandId)
             match state.identities.TryGetValue key with
             | true, identity when not identity.dispatchSeen ->
                 identity.dispatchSeen <- true
-                let applied = dispatch.Status = CommandDispatchStatus.CommandDispatchApplied
-                let item =
-                    { identity.feedback with resultSequence = state.nextResultSequence; stage = NativeDispatch
-                                             status = if applied then Applied else Skipped
-                                             detail = string dispatch.Status; nativeFrame = Some dispatch.Frame }
-                state.nextResultSequence <- state.nextResultSequence + 1UL
-                feedback <- Some item
-                finishIdentity key identity state
+                if identity.admissionSeen then
+                    publish state (dispatchFeedback identity dispatch state)
+                    finishIdentity key identity state
+                else
+                    identity.pendingDispatch <- Some(dispatch.Clone())
                 true
             | true, _ -> true
             | false, _ when state.completed.Contains key -> true
             | _ -> false)
-        feedback |> Option.iter (publish state)
-        handled
     let expirePendingResults (now: DateTimeOffset) state =
         let expired = lock state.gate (fun () ->
             let due =
