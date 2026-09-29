@@ -6,6 +6,8 @@ open Google.Protobuf
 open Highbar.V1
 open Broker.Protocol
 open Broker.Core
+open Broker.Browser.Contracts
+open Broker.Browser.Live
 
 let bytes16 (text: string) =
     ByteString.CopyFrom(Array.append (System.Text.Encoding.ASCII.GetBytes text) (Array.zeroCreate 16) |> Array.take 16)
@@ -263,4 +265,129 @@ let tests=testList "live broker boundary" [
         late.ControlSequence<-arm.ControlSequence
         late.Kind<-arm.Kind
         Expect.equal (LiveControl.reportControlAck late (now.AddMilliseconds 101) isolated) LiveControlAckDisposition.LiveControlAckRefused "ACK cannot extend an already-expired native lease window"
+
+    testCase "browser identity matrix and occupied controller slot refuse without native emission" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
+        let state,controlLease,commandLease,basis=setup 8 now
+        let session=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x61uy
+        Expect.isOk (LiveControl.requestBrowserArm session provisional.controllerId provisional.controllerIncarnation provisional.authorityEpoch moduleHash 9007199254741011UL 2000u now state) "arm"
+        let mutable directive=Unchecked.defaultof<LiveControlDirective>
+        Expect.isTrue (controlLease.reader.TryRead(&directive)) "arm directive"
+        let ack=LiveControlAckReport.empty()
+        ack.Binding<-directive.Binding
+        ack.ControlSequence<-directive.ControlSequence
+        ack.Kind<-directive.Kind
+        ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        Expect.equal (LiveControl.reportControlAck ack now state) LiveControlAckDisposition.LiveControlAckRecorded "arm confirmed"
+
+        let controller =
+            ControllerIdentity(
+                SessionId=ByteString.CopyFrom(session.ToByteArray()),
+                ControllerId=ByteString.CopyFrom(provisional.controllerId.ToByteArray()),
+                ControllerIncarnation=provisional.controllerIncarnation,
+                AuthorityEpoch=provisional.authorityEpoch)
+        let moduleId=LiveModuleIdentity(Sha256=ByteString.CopyFrom(moduleHash),Generation=9007199254741011UL)
+        let browserBasis=
+            ObservationBasis(
+                Token=basis.Token, StateSequence=basis.StateSequence, NativeFrame=basis.Frame,
+                MatchId=basis.MatchIncarnation, ProcessIncarnation=basis.ProcessIncarnation,
+                StateChannelIncarnation=basis.StateChannelIncarnation)
+        let request=SubmitLiveIntent(
+                        ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),
+                        InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),
+                        Controller=controller,Module=moduleId,Basis=browserBasis)
+        request.Intent<-LiveIntent(Stop=StopAction())
+        request.Intent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254740999UL))
+
+        let refusals =
+            [ "session", fun (value:SubmitLiveIntent) -> value.Controller.SessionId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+              "module", fun value -> value.Module.Sha256<-ByteString.CopyFrom(Array.create 32 0x62uy)
+              "module generation", fun value -> value.Module.Generation<-value.Module.Generation+1UL
+              "epoch", fun value -> value.Controller.AuthorityEpoch<-value.Controller.AuthorityEpoch+1UL
+              "controller incarnation", fun value -> value.Controller.ControllerIncarnation<-"wrong-controller" ]
+        for name,change in refusals do
+            let candidate=request.Clone()
+            candidate.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+            candidate.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+            change candidate
+            Expect.isError (LiveBoundary.submit session candidate now state) (name+" mismatch refused")
+
+        let second=LiveControl.provisionController session state
+        Expect.isError
+            (LiveControl.requestBrowserArm session second.controllerId second.controllerIncarnation second.authorityEpoch moduleHash 2UL 2000u now state)
+            "the single controller slot cannot be replaced while confirmed"
+        let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
+        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "all mismatches and slot contention emit zero native commands"
+        LiveControl.reset "production snapshot baseline lost" state
+        Expect.isError (LiveBoundary.submit session request now state) "a submission cannot survive loss of the paired native baseline"
+        Expect.isFalse (commandLease.reader.TryRead(&delivery)) "lost baseline emits zero native commands"
+
+    testCase "reordered and late native results preserve the accepted parent or remain unknown" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
+        let state,controlLease,commandLease,basis=setup 4 now
+        let session=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x71uy
+        Expect.isOk (LiveControl.requestBrowserArm session provisional.controllerId provisional.controllerIncarnation provisional.authorityEpoch moduleHash 9007199254741013UL 2000u now state) "arm"
+        let mutable directive=Unchecked.defaultof<LiveControlDirective>
+        controlLease.reader.TryRead(&directive)|>ignore
+        let ack=LiveControlAckReport.empty()
+        ack.Binding<-directive.Binding
+        ack.ControlSequence<-directive.ControlSequence
+        ack.Kind<-directive.Kind
+        ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        LiveControl.reportControlAck ack now state|>ignore
+        let binding=LiveControl.currentBinding state |> Option.get
+        let makeSubmission parent input : LiveControl.Submission =
+            { parentId=parent;inputId=input;sessionId=session;controllerId=provisional.controllerId
+              controllerIncarnation=provisional.controllerIncarnation;authorityEpoch=provisional.authorityEpoch
+              moduleSha256=moduleHash;moduleGeneration=9007199254741013UL;basis=basis.Clone()
+              actors=[nativeRef 0u 9007199254740999UL];action=LiveControl.Stop }
+        let observed=ResizeArray<LiveControl.Feedback>()
+        use _subscription=
+            (LiveControl.feedback state).Subscribe
+                { new IObserver<LiveControl.Feedback> with
+                    member _.OnNext value=observed.Add value
+                    member _.OnError _=()
+                    member _.OnCompleted()=() }
+
+        let firstParent,firstInput=Guid.NewGuid(),Guid.NewGuid()
+        Expect.isOk (LiveControl.admit (makeSubmission firstParent firstInput) now state) "first parent admitted"
+        let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "first child emitted"
+        let child=delivery.batches.Head.Batch.Value
+        let dispatch=CommandDispatchEvent.empty()
+        dispatch.ChannelIncarnation<-binding.CommandChannelIncarnation
+        dispatch.BatchSeq<-child.BatchSeq
+        dispatch.ClientCommandId<-child.ClientCommandId.Value
+        dispatch.Status<-CommandDispatchStatus.CommandDispatchApplied
+        dispatch.Frame<-901u
+        Expect.isTrue (LiveControl.noteDispatch dispatch state) "dispatch may arrive before admission feedback"
+        let admission=CommandBatchResult.empty()
+        admission.BatchSeq<-child.BatchSeq
+        admission.ClientCommandId<-child.ClientCommandId.Value
+        admission.Status<-CommandBatchStatus.CommandBatchAccepted
+        Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeDuplicate "late admission cannot reopen a dispatch-completed identity"
+        Expect.isTrue (LiveControl.noteDispatch dispatch state) "duplicate dispatch is idempotently owned"
+        let firstTerminal=observed |> Seq.filter(fun value->value.parentId=firstParent && value.stage=LiveControl.NativeDispatch) |> Seq.toList
+        Expect.equal firstTerminal.Length 1 "reordered and duplicate feedback yields one terminal event"
+        Expect.equal firstTerminal.Head.nativeFrame (Some 901u) "terminal event retains the actual dispatch frame"
+
+        let timedParent,timedInput=Guid.NewGuid(),Guid.NewGuid()
+        Expect.isOk (LiveControl.admit (makeSubmission timedParent timedInput) now state) "second parent admitted"
+        Expect.isTrue (commandLease.reader.TryRead(&delivery)) "timed child emitted once"
+        let timedChild=delivery.batches.Head.Batch.Value
+        LiveControl.reset "native result timeout" state
+        let unknown=observed |> Seq.find(fun value->value.parentId=timedParent && value.stage=LiveControl.Unknown)
+        Expect.equal unknown.inputId timedInput "timeout keeps the accepted input identity"
+        Expect.equal unknown.basis.StateSequence basis.StateSequence "timeout keeps the accepted full basis"
+        Expect.equal unknown.moduleGeneration 9007199254741013UL "timeout keeps the accepted module identity"
+        admission.BatchSeq<-timedChild.BatchSeq
+        admission.ClientCommandId<-timedChild.ClientCommandId.Value
+        Expect.equal (LiveControl.reportNativeAdmission "highbar" binding.CommandChannelIncarnation admission state) LiveControl.NativeNotOwned "late result after replacement cannot satisfy current state"
+        dispatch.BatchSeq<-timedChild.BatchSeq
+        dispatch.ClientCommandId<-timedChild.ClientCommandId.Value
+        Expect.isFalse (LiveControl.noteDispatch dispatch state) "late dispatch after replacement is not attached to another parent"
 ]

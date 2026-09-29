@@ -45,6 +45,58 @@ let private reporter matchId =
 
 [<Tests>]
 let tests = testList "production live boundary" [
+    testTask "gateway refuses unselected origin and wrong broker session before provisioning authority" {
+        let grpcPort = freePort()
+        let! (handle: ServerHost.ServerHandle) =
+            ServerHost.start
+                { ServerHost.defaultOptions with listenAddress = sprintf "127.0.0.1:%d" grpcPort }
+                (System.Version(1, 0)) ignore CancellationToken.None
+        let channel = GrpcChannel.ForAddress(sprintf "http://127.0.0.1:%d" grpcPort)
+        let coordinator = HighBarCoordinator.HighBarCoordinatorClient(channel)
+        let heartbeat = HeartbeatRequest.empty()
+        heartbeat.PluginId <- "highbar-live-auth"
+        heartbeat.SchemaVersion <- "1.0.0"
+        let! _ = coordinator.HeartbeatAsync(heartbeat).ResponseAsync
+        let sessionId = Session.id (BrokerState.session handle.Hub).Value
+        let origin = "http://127.0.0.1:4181"
+        let browserPort = freePort()
+        let! (gateway: Microsoft.Extensions.Hosting.IHost) =
+            Gateway.startLiveAsync handle.Hub
+                (Gateway.defaultLiveConfig (sprintf "http://127.0.0.1:%d" browserPort) origin "secret-live-auth" sessionId)
+                CancellationToken.None
+        let endpoint=Uri(sprintf "ws://127.0.0.1:%d/barc-live" browserPort)
+
+        let wrongOrigin = new ClientWebSocket()
+        wrongOrigin.Options.SetRequestHeader("Origin", "http://127.0.0.1:4182")
+        let mutable originRefused=false
+        try do! wrongOrigin.ConnectAsync(endpoint,CancellationToken.None)
+        with :? WebSocketException -> originRefused<-true
+        Expect.isTrue originRefused "an unselected browser Origin is refused at the HTTP upgrade boundary"
+
+        let wrongSession = new ClientWebSocket()
+        wrongSession.Options.SetRequestHeader("Origin",origin)
+        do! wrongSession.ConnectAsync(endpoint,CancellationToken.None)
+        let auth=ClientAuth(
+                    Game="bar",ProtocolVersion="1.0.0",Profile="barc-live-v1",
+                    Credential="secret-live-auth",Origin=origin,
+                    ExpectedSessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()))
+        do! send wrongSession (LiveClientEnvelope(Authenticate=auth))
+        let buffer=Array.zeroCreate<byte> 256
+        let mutable sessionRefused=false
+        try
+            let! (received:ValueWebSocketReceiveResult)=wrongSession.ReceiveAsync(Memory<byte>(buffer),CancellationToken.None).AsTask()
+            sessionRefused<-received.MessageType=WebSocketMessageType.Close
+        with :? WebSocketException -> sessionRefused<-true
+        Expect.isTrue sessionRefused "a credential for another broker session is refused before bootstrap"
+        Expect.isNone (LiveControl.currentBinding (BrokerState.liveControl handle.Hub)) "authentication refusals create no controller authority"
+        wrongOrigin.Dispose()
+        wrongSession.Dispose()
+
+        do! gateway.StopAsync()
+        (gateway :> IDisposable).Dispose()
+        do! handle.DisposeAsync().AsTask()
+        channel.Dispose()
+    }
     testTask "native report, authenticated WebSocket, authority ACK, and ID0 command share exact identities" {
         let grpcPort = freePort()
         let! (handle: ServerHost.ServerHandle) =
