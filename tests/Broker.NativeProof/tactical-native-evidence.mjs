@@ -44,7 +44,7 @@ export function isExactStaleBasisRefusal(rows,submit){
 }
 export function isFreshPhysicalReplacement(stale,fresh,observations){
   const sameSource=(left,right)=>left?.matchId===right?.matchId&&left?.processIncarnation===right?.processIncarnation&&left?.stateChannelIncarnation===right?.stateChannelIncarnation;
-  return Boolean(stale?.parentId&&fresh?.parentId&&stale?.inputId&&fresh?.inputId&&fresh.parentId!==stale.parentId&&fresh.inputId!==stale.inputId&&sameSource(stale.basis,fresh.basis)&&BigInt(fresh.basis.stateSequence)>BigInt(stale.basis.stateSequence)&&fresh.intent?.action===stale.intent?.action&&JSON.stringify(fresh.intent?.actors)===JSON.stringify(stale.intent?.actors)&&observations.some(value=>JSON.stringify(value.basis)===JSON.stringify(fresh.basis)));
+  return Boolean(stale?.parentId&&fresh?.parentId&&stale?.inputId&&fresh?.inputId&&fresh.parentId!==stale.parentId&&fresh.inputId!==stale.inputId&&JSON.stringify(fresh.controller)===JSON.stringify(stale.controller)&&JSON.stringify(fresh.module)===JSON.stringify(stale.module)&&sameSource(stale.basis,fresh.basis)&&BigInt(fresh.basis.stateSequence)>BigInt(stale.basis.stateSequence)&&fresh.intent?.action===stale.intent?.action&&JSON.stringify(fresh.intent?.actors)===JSON.stringify(stale.intent?.actors)&&observations.some(value=>JSON.stringify(value.basis)===JSON.stringify(fresh.basis)));
 }
 const refId=value=>String(value?.id??0),sameRef=(a,b)=>refId(a)===b.id&&String(a?.lifetime??0)===b.lifetime;
 const observedRef=(observation,reference)=>observation?.units?.find(value=>sameRef(value.reference,reference));

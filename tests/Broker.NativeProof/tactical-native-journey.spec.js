@@ -60,9 +60,10 @@ async function trigger(page,live,rows,source,family,{expectation="applied",effec
   const before=rows.filter(x=>x.kind==="submit").length,action={kind:"action",family,source,beforeObservation:latest(rows),observationCount:observations(rows).length};rows.push(action);await physicalSubmit(page,live,source);await expect.poll(()=>rows.filter(x=>x.kind==="submit").length,{timeout:30000}).toBe(before+1);let submit=rows.filter(x=>x.kind==="submit")[before].value;
   const count=plannedChildCount(submit.intent);await expect.poll(()=>new Set(rows.filter(x=>x.kind==="result"&&x.value.parentId===submit.parentId&&terminal(x.value)).map(x=>x.value.childIndex)).size,{timeout:30000}).toBe(count);
   if(expectation==="applied"&&isExactStaleBasisRefusal(rows,submit)){
-    const staleSequence=BigInt(submit.basis.stateSequence);action.submitCount=2;action.causalSubmitOrdinal=1;action.staleBasisRefresh={rejectedStateSequence:submit.basis.stateSequence};
+    const staleSequence=BigInt(submit.basis.stateSequence);action.submitCount=2;action.causalSubmitOrdinal=1;action.staleBasisRefresh={rejectedStateSequence:submit.basis.stateSequence,originalBeforeObservation:action.beforeObservation,originalObservationCount:action.observationCount};
     await expect(live.locator(".result")).toContainText("LIVE_RESULT_STAGE_BROKER_ADMISSION: LIVE_RESULT_STATUS_REJECTED");
     await expect.poll(()=>BigInt(latest(rows)?.basis?.stateSequence??0)>staleSequence,{timeout:30000}).toBe(true);
+    action.beforeObservation=latest(rows);action.observationCount=observations(rows).length;
     await physicalSubmit(page,live,source);await expect.poll(()=>rows.filter(x=>x.kind==="submit").length,{timeout:30000}).toBe(before+2);submit=rows.filter(x=>x.kind==="submit")[before+1].value;
     expect(isFreshPhysicalReplacement(rows.filter(x=>x.kind==="submit")[before].value,submit,observations(rows))).toBeTruthy();action.staleBasisRefresh.freshStateSequence=submit.basis.stateSequence;
   }
