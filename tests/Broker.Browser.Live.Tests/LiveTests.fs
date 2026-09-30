@@ -189,6 +189,8 @@ let setupTactical now =
     descriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce;descriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add descriptor
     let buildDescriptor=NativeTacticalCommandDescriptor.empty()
     buildDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorBuild;buildDescriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add buildDescriptor
+    let reclaimAreaDescriptor=NativeTacticalCommandDescriptor.empty()
+    reclaimAreaDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimArea;metadata.Descriptors.Add reclaimAreaDescriptor
     let queue=NativeObservedQueue.empty()
     queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;metadata.Queue.Add queue
     let actorQueue=NativeObservedQueue.empty()
@@ -422,7 +424,7 @@ let tests=testList "live broker boundary" [
         Expect.equal (LiveControl.latestTacticalSnapshot replacementState |> Option.get).Features[300].Reference.Value.Lifetime 9007199254999999UL "only the fresh replacement lifetime becomes current"
 
 
-    testCase "tactical catalogue and queue revisions reserve every expanded child before native emission" <| fun _ ->
+    testCase "tactical revisions reserve children and ReclaimArea emits the canonical native command" <| fun _ ->
         let now=DateTimeOffset(2026,9,29,13,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis,metadata,_=setupTactical now
         let session=Guid.NewGuid()
@@ -497,6 +499,28 @@ let tests=testList "live broker boundary" [
             let child=delivery.batches.Head
             Expect.equal child.Batch.Value.Commands[0].BuildUnit.Facing expectedEngineFacing "legacy command uses the engine-facing ordinal"
             Expect.equal child.TacticalCommand.Value.Build.Facing (enum<NativeBuildFacing>(int facing)) "tactical command retains the protocol-facing enum"
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        let reclaimArea=AreaTarget(Center=Position3(X=1800f,Elevation=331.25f,Z=1736f),RadiusWorldUnits=96f,QueuePolicy=TacticalQueuePolicy.Replace)
+        let reclaimAreaIntent=LiveIntent(ReclaimArea=reclaimArea)
+        reclaimAreaIntent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        reclaimAreaIntent.ActorTacticalBindings.Add(actorBinding.Clone())
+        request.Intent<-reclaimAreaIntent
+        let reclaimed=Expect.wantOk(LiveBoundary.submit session request now state) "valid ReclaimArea is admitted"
+        Expect.equal reclaimed.Length 1 "one ReclaimArea child reserved"
+        Expect.isTrue(commandLease.reader.TryRead(&delivery)) "ReclaimArea delivery emitted"
+        let child=delivery.batches.Head
+        match child.Batch.Value.Commands[0].Command with
+        | ValueSome(AICommand.Types.Command.ReclaimInArea command) ->
+            Expect.equal command.UnitId 0 "canonical command retains the actor"
+            Expect.equal command.Options 0u "replace uses no queue option bits"
+            Expect.equal command.Position.Value.X 1800f "canonical command retains center X"
+            Expect.equal command.Position.Value.Y 331.25f "canonical command retains center elevation"
+            Expect.equal command.Position.Value.Z 1736f "canonical command retains center Z"
+            Expect.equal command.Radius 96f "canonical command retains radius"
+        | other -> failtestf "expected canonical ReclaimInArea command, got %A" other
+        Expect.equal child.SemanticAction LiveSemanticAction.ReclaimArea "browser semantic remains ReclaimArea"
+        Expect.equal child.TacticalCommand.Value.ReclaimArea.Center.Value.X 1800f "tactical command retains center"
+        Expect.equal child.TacticalCommand.Value.ReclaimArea.RadiusWorldUnits 96f "tactical command retains radius"
     testTask "native metadata arms independently and atomically emits one fenced child per actor" {
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 8 now
