@@ -386,6 +386,8 @@ export function createLiveRuntime(root, options, emit) {
   q("[data-action=move]").addEventListener("click",()=>{const x=elements.targetX.valueAsNumber,z=elements.targetZ.valueAsNumber;if(finite(x)&&finite(z))move("LIVE_INPUT_SOURCE_POINTER",{x,z},elements.policy.value==="MOVE_POLICY_APPEND")});
   q("[data-action=stop]").addEventListener("click",()=>stop("LIVE_INPUT_SOURCE_POINTER")); q("[data-action=attack]").addEventListener("click",()=>attack("LIVE_INPUT_SOURCE_POINTER"));
   q("[data-action=tactical]").addEventListener("click",()=>tacticalAction("LIVE_INPUT_SOURCE_POINTER"));
+  const updateTargetFromControls=()=>{const x=elements.targetX.valueAsNumber,z=elements.targetZ.valueAsNumber;if(finite(x)&&finite(z)){target={x,z};render()}};
+  elements.targetX.addEventListener("input",updateTargetFromControls);elements.targetZ.addEventListener("input",updateTargetFromControls);
   elements.policy.addEventListener("change",()=>movePolicy=elements.policy.value);
   for (const control of [elements.tacticalAction,elements.definition,elements.facing,elements.queuePolicy,elements.productionCount,elements.areaRadius,elements.queueDomain,elements.queueEntry,elements.queueOperation,elements.modeKind,elements.modeValue]) control.addEventListener("change",render);
   elements.file.addEventListener("change",async()=>{const file=elements.file.files[0];if(file?.size>MAX_MODULE)revoke("Module exceeds its import bound.");else if(file)await loadModule(file.name,new Uint8Array(await file.arrayBuffer()));elements.file.value=""});

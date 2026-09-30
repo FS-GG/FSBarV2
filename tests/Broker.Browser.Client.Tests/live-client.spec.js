@@ -198,11 +198,13 @@ test("tactical pointer and keyboard controls cross the real Worker with exact bi
   await page.locator('[data-unit-id="0"]').click();
 
   await page.locator('[name="tactical-action"]').selectOption("build");
+  await page.getByLabel("Target X").fill("1800");
+  await page.getByLabel("Target Z").fill("1864");
   await page.getByLabel("Facing").selectOption("BUILD_FACING_WEST");
   await page.getByLabel("Queue policy").selectOption("TACTICAL_QUEUE_POLICY_APPEND");
   await page.getByRole("button",{name:"Send tactical command"}).click();
   await expect.poll(()=>submissions.length).toBe(1);
-  expect(submissions[0].intent.build).toMatchObject({definitionId:710,facing:"BUILD_FACING_WEST",queuePolicy:"TACTICAL_QUEUE_POLICY_APPEND",catalogueId,catalogueRevision});
+  expect(submissions[0].intent.build).toMatchObject({definitionId:710,position:{x:1800,z:1864},facing:"BUILD_FACING_WEST",queuePolicy:"TACTICAL_QUEUE_POLICY_APPEND",catalogueId,catalogueRevision});
   expect(submissions[0].intent.actorTacticalBindings).toEqual([{actor:{lifetime:ref0.lifetime},descriptorRevision,queueRevisions:[{domain:"QUEUE_DOMAIN_ACTOR_ORDER",revision:"9007199254741015"}]}]);
 
   await page.locator('[data-feature-id="0"]').click();
