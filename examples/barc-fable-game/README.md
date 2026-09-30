@@ -73,3 +73,9 @@ exactly one entry for every named role.
 with that joined source. Its receipt is deliberately `prepared`: clean/retained
 generation, both input journeys, imported-guest native effect and publication
 remain false until the final Native/Broker/Browser join and actual runtime proof.
+
+The generated-workspace qualifier reads the adopted live pins, verifies and
+serves the exact pinned guest paths, and records the selected profile in its
+receipt. Its separate retained-adoption check applies that same candidate archive
+over owner modules, configuration, lifecycle files and arena files, then proves a
+second application refuses without changing the receiver.

@@ -8,12 +8,21 @@ import { WebSocketServer } from "ws";
 const receiverUrl = process.env.BARC_RECEIVER_URL;
 const receiverRoot = process.env.BARC_RECEIVER_ROOT;
 if (!receiverUrl || !receiverRoot) throw new Error("BARC_RECEIVER_URL and BARC_RECEIVER_ROOT are required");
+const tacticalProfile = process.env.BARC_RECEIVER_PROFILE === "barc-live-tactical-v1";
+test.skip(!tacticalProfile, "requires a tactical receiver archive");
 
 // Keep the staged generated module below this package so its bare imports
 // resolve to the test's exact protobufjs/long dependencies.
-const stage = await mkdtemp(resolve(import.meta.dirname, "node_modules/.barc-receiver-tactical-codec-"));
-await cp(resolve(receiverRoot, "Client/public/barc-preview/src/Broker.Browser.Contracts/generated"), resolve(stage, "generated"), { recursive: true });
-const { canonicalObject, encodeObject, v1 } = await import(pathToFileURL(resolve(stage, "generated/codec.js")).href);
+const stage = tacticalProfile
+  ? await mkdtemp(resolve(import.meta.dirname, "node_modules/.barc-receiver-tactical-codec-"))
+  : null;
+if (tacticalProfile) {
+  await cp(resolve(receiverRoot, "Client/public/barc-preview/src/Broker.Browser.Contracts/generated"), resolve(stage, "generated"), { recursive: true });
+}
+const tacticalCodec = tacticalProfile
+  ? await import(pathToFileURL(resolve(stage, "generated/codec.js")).href)
+  : {};
+const { canonicalObject, encodeObject, v1 } = tacticalCodec;
 
 const sessionUuid = "33221100-5544-7766-8899-aabbccddeeff", sessionId = "ABEiM0RVZneImaq7zN3u/w==";
 const actor0 = { id:"0", lifetime:"9007199254740999" }, actor31999 = { id:"31999", lifetime:"9007199254741001" };
