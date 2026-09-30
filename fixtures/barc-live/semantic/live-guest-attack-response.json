@@ -17,6 +17,7 @@
         "lifetime": "9007199254740999"
       }
     ],
+    "actorTacticalBindings": [],
     "attack": {
       "target": {
         "id": "77",

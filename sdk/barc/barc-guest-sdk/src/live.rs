@@ -3,6 +3,7 @@ use super::{PreviewPolicy, MAX_OUTPUT_BYTES, MAX_SELECTION, MAX_SESSION_BYTES, P
 const MAX_IDENTITY_BYTES: usize = 64;
 const MAX_BASIS_BYTES: usize = 512;
 const MAX_PENDING_INPUTS: usize = 8;
+const MAX_INTENT_BYTES: usize = 4096;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitReference { pub id: u64, pub lifetime: u64 }
@@ -15,6 +16,7 @@ enum Action {
     Stop,
     Move { position: Position3, policy: MovePolicy },
     Attack { target: UnitReference },
+    Tactical { bytes: [u8; MAX_INTENT_BYTES], length: usize },
 }
 
 struct LiveRequest {
@@ -118,10 +120,20 @@ impl LiveGuestState {
             }
             LiveInput::Action { actors, count, action } => {
                 if !self.same_basis(&request.basis[..request.basis_len]) { return Err(23); }
+                if let Action::Tactical { .. } = action {
+                    let accepted = actors[..count].iter().copied().all(|actor| P::retain_live_actor(actor.id, actor.lifetime));
+                    if accepted {
+                        for (index, actor) in actors[..count].iter().copied().enumerate() {
+                            request_action_actor(&mut request, index, actor);
+                        }
+                        Some((request.action_actors(), count, action))
+                    } else { None }
+                } else {
                 let mut retained = 0;
                 for actor in actors[..count].iter().copied() {
-                    if self.is_selected(actor) && self.is_observed(actor, 1)
-                        && P::retain_live_actor(actor.id, actor.lifetime) {
+                    let accepted = self.is_selected(actor) && self.is_observed(actor, 1)
+                        && P::retain_live_actor(actor.id, actor.lifetime);
+                    if accepted {
                         request_action_actor(&mut request, retained, actor);
                         retained += 1;
                     }
@@ -135,6 +147,7 @@ impl LiveGuestState {
                         if !self.is_observed(target, 2) || actors[..count].contains(&target) { return Err(23); }
                     }
                     Some((request.action_actors(), retained, transformed))
+                }
                 }
             }
         };
@@ -212,10 +225,10 @@ fn decode_request(bytes: &[u8]) -> Option<LiveRequest> {
 
 fn decode_initialize(bytes:&[u8])->Option<LiveInput>{
     let mut r=Reader::new(bytes); let mut preview=None; let mut profile_ok=false; let mut module_generation=0;
-    while !r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,2)=>preview=Some(decode_live_preview_bootstrap(r.blob()?)?),(2,2)=>profile_ok=r.blob()?==b"barc-live-v1",(4,2)=>module_generation=decode_module_generation(r.blob()?)?,(_,w)=>r.skip(w)?}}
+    while !r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,2)=>preview=Some(decode_live_preview_bootstrap(r.blob()?)?),(2,2)=>{let p=r.blob()?;profile_ok=p==b"barc-live-v1"||p==b"barc-live-tactical-v1"},(4,2)=>module_generation=decode_module_generation(r.blob()?)?,(_,w)=>r.skip(w)?}}
     let(session,session_len)=preview?;(profile_ok&&module_generation!=0).then_some(LiveInput::Initialize{session,session_len,module_generation})
 }
-fn decode_live_preview_bootstrap(bytes:&[u8])->Option<([u8;MAX_SESSION_BYTES],usize)>{let mut r=Reader::new(bytes);let mut ok=false;let mut session=None;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(3,2)=>ok=r.blob()?==b"barc-live-v1",(4,2)=>session=Some(copy::<MAX_SESSION_BYTES>(r.blob()?)?),(_,w)=>r.skip(w)?}}if ok{session}else{None}}
+fn decode_live_preview_bootstrap(bytes:&[u8])->Option<([u8;MAX_SESSION_BYTES],usize)>{let mut r=Reader::new(bytes);let mut ok=false;let mut session=None;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(3,2)=>{let p=r.blob()?;ok=p==b"barc-live-v1"||p==b"barc-live-tactical-v1"},(4,2)=>session=Some(copy::<MAX_SESSION_BYTES>(r.blob()?)?),(_,w)=>r.skip(w)?}}if ok{session}else{None}}
 fn decode_module_generation(bytes:&[u8])->Option<u64>{let mut r=Reader::new(bytes);let mut generation=0;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(2,0)=>generation=r.varint()?,(_,w)=>r.skip(w)?}}Some(generation)}
 
 fn decode_ref(bytes:&[u8])->Option<UnitReference>{let mut r=Reader::new(bytes);let mut id=0;let mut life=0;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,0)=>id=r.varint()?,(2,0)=>life=r.varint()?,(_,w)=>r.skip(w)?}}(life!=0).then_some(UnitReference{id,lifetime:life})}
@@ -232,7 +245,7 @@ fn decode_refs(bytes:&[u8])->Option<([UnitReference;MAX_SELECTION],usize)>{let m
 
 fn decode_manual(bytes:&[u8])->Option<LiveInput>{let mut r=Reader::new(bytes);let mut source=0;let mut result=None;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,0)=>source=r.varint()?,(10,2)=>{let(a,n)=decode_refs(r.blob()?)?;result=Some(LiveInput::Select{actors:a,count:n})},(11,2)=>{let(a,n,x)=decode_intent(r.blob()?)?;result=Some(LiveInput::Action{actors:a,count:n,action:x})},(_,w)=>r.skip(w)?}}if !(1..=2).contains(&source){return None}result}
 
-fn decode_intent(bytes:&[u8])->Option<([UnitReference;MAX_SELECTION],usize,Action)>{let mut r=Reader::new(bytes);let mut actors=[UnitReference::default();MAX_SELECTION];let mut count=0;let mut action=None;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,2)=>{if count==MAX_SELECTION{return None}let v=decode_ref(r.blob()?)?;if actors[..count].contains(&v){return None}actors[count]=v;count+=1},(10,2)=>{r.blob()?;action=Some(Action::Stop)},(11,2)=>action=Some(decode_move(r.blob()?)?),(12,2)=>action=Some(decode_attack(r.blob()?)?),(_,w)=>r.skip(w)?}}if count==0{return None}Some((actors,count,action?))}
+fn decode_intent(bytes:&[u8])->Option<([UnitReference;MAX_SELECTION],usize,Action)>{if bytes.len()>MAX_INTENT_BYTES{return None}let mut r=Reader::new(bytes);let mut actors=[UnitReference::default();MAX_SELECTION];let mut count=0;let mut action=None;let mut tactical=false;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,2)=>{if count==MAX_SELECTION{return None}let v=decode_ref(r.blob()?)?;if actors[..count].contains(&v){return None}actors[count]=v;count+=1},(10,2)=>{r.blob()?;action=Some(Action::Stop)},(11,2)=>action=Some(decode_move(r.blob()?)?),(12,2)=>action=Some(decode_attack(r.blob()?)?),(13..=22,2)=>{r.blob()?;if tactical{return None}tactical=true},(_,w)=>r.skip(w)?}}if count==0{return None}if tactical{let mut raw=[0;MAX_INTENT_BYTES];raw[..bytes.len()].copy_from_slice(bytes);action=Some(Action::Tactical{bytes:raw,length:bytes.len()})}Some((actors,count,action?))}
 fn decode_move(bytes:&[u8])->Option<Action>{let mut r=Reader::new(bytes);let mut position=None;let mut policy=None;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,2)=>position=Some(decode_position(r.blob()?)?),(2,0)=>policy=Some(match r.varint()?{1=>MovePolicy::Replace,2=>MovePolicy::Append,_=>return None}),(_,w)=>r.skip(w)?}}Some(Action::Move{position:position?,policy:policy?})}
 fn decode_position(bytes:&[u8])->Option<Position3>{let mut r=Reader::new(bytes);let(mut x,mut e,mut z)=(0.0,None,0.0);while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,5)=>x=r.f32()?,(2,5)=>e=Some(r.f32()?),(3,5)=>z=r.f32()?,(_,w)=>r.skip(w)?}}Some(Position3{x,elevation:e,z})}
 fn decode_attack(bytes:&[u8])->Option<Action>{let mut r=Reader::new(bytes);let mut target=None;while!r.done(){let k=r.varint()?;match(k>>3,(k&7)as u8){(1,2)=>target=Some(decode_ref(r.blob()?)?),( _,w)=>r.skip(w)?}}Some(Action::Attack{target:target?})}
@@ -240,9 +253,26 @@ fn decode_attack(bytes:&[u8])->Option<Action>{let mut r=Reader::new(bytes);let m
 struct Writer<'a>{b:&'a mut[u8],n:usize} impl<'a>Writer<'a>{fn new(b:&'a mut[u8])->Self{Self{b,n:0}}fn raw(&mut self,v:&[u8])->Option<()>{let e=self.n.checked_add(v.len())?;self.b.get_mut(self.n..e)?.copy_from_slice(v);self.n=e;Some(())}fn varint(&mut self,mut v:u64)->Option<()>{loop{let mut b=(v&127)as u8;v>>=7;if v!=0{b|=128}self.raw(&[b])?;if v==0{return Some(())}}}fn key(&mut self,f:u8,w:u8)->Option<()>{self.varint(u64::from((f<<3)|w))}fn blob(&mut self,f:u8,v:&[u8])->Option<()>{self.key(f,2)?;self.varint(v.len()as u64)?;self.raw(v)}}
 fn enc_ref(out:&mut[u8],r:UnitReference)->Option<usize>{let mut w=Writer::new(out);if r.id!=0{w.key(1,0)?;w.varint(r.id)?}w.key(2,0)?;w.varint(r.lifetime)?;Some(w.n)}
 fn enc_position(out:&mut[u8],p:Position3)->Option<usize>{let mut w=Writer::new(out);w.key(1,5)?;w.raw(&p.x.to_le_bytes())?;if let Some(e)=p.elevation{w.key(2,5)?;w.raw(&e.to_le_bytes())?}w.key(3,5)?;w.raw(&p.z.to_le_bytes())?;Some(w.n)}
-fn enc_intent(out:&mut[u8],actors:&[UnitReference],action:Action)->Option<usize>{let mut w=Writer::new(out);for actor in actors{let mut b=[0;32];let n=enc_ref(&mut b,*actor)?;w.blob(1,&b[..n])?}match action{Action::Stop=>w.blob(10,&[])?,Action::Move{position,policy}=>{let mut p=[0;32];let pn=enc_position(&mut p,position)?;let mut m=[0;64];let mut mw=Writer::new(&mut m);mw.blob(1,&p[..pn])?;mw.key(2,0)?;mw.varint(policy as u64)?;let n=mw.n;w.blob(11,&m[..n])?},Action::Attack{target}=>{let mut rb=[0;32];let rn=enc_ref(&mut rb,target)?;let mut a=[0;40];let mut aw=Writer::new(&mut a);aw.blob(1,&rb[..rn])?;let n=aw.n;w.blob(12,&a[..n])?}}Some(w.n)}
-fn encode_response(out:&mut[u8],request:&LiveRequest,intent:Option<(&[UnitReference],usize,Action)>)->Option<usize>{let mut w=Writer::new(out);w.blob(1,&request.input_id[..request.input_id_len])?;w.blob(2,&request.session[..request.session_len])?;w.key(3,0)?;w.varint(request.module_generation)?;w.blob(4,&request.basis[..request.basis_len])?;w.key(5,0)?;w.varint(1)?;if let Some((actors,count,action))=intent{let mut b=[0;1536];let n=enc_intent(&mut b,&actors[..count],action)?;w.blob(10,&b[..n])?}Some(w.n)}
+fn enc_intent(out:&mut[u8],actors:&[UnitReference],action:Action)->Option<usize>{if let Action::Tactical{bytes,length}=action{out.get_mut(..length)?.copy_from_slice(&bytes[..length]);return Some(length)}let mut w=Writer::new(out);for actor in actors{let mut b=[0;32];let n=enc_ref(&mut b,*actor)?;w.blob(1,&b[..n])?}match action{Action::Stop=>w.blob(10,&[])?,Action::Move{position,policy}=>{let mut p=[0;32];let pn=enc_position(&mut p,position)?;let mut m=[0;64];let mut mw=Writer::new(&mut m);mw.blob(1,&p[..pn])?;mw.key(2,0)?;mw.varint(policy as u64)?;let n=mw.n;w.blob(11,&m[..n])?},Action::Attack{target}=>{let mut rb=[0;32];let rn=enc_ref(&mut rb,target)?;let mut a=[0;40];let mut aw=Writer::new(&mut a);aw.blob(1,&rb[..rn])?;let n=aw.n;w.blob(12,&a[..n])?},Action::Tactical{..}=>unreachable!()}Some(w.n)}
+fn encode_response(out:&mut[u8],request:&LiveRequest,intent:Option<(&[UnitReference],usize,Action)>)->Option<usize>{let mut w=Writer::new(out);w.blob(1,&request.input_id[..request.input_id_len])?;w.blob(2,&request.session[..request.session_len])?;w.key(3,0)?;w.varint(request.module_generation)?;w.blob(4,&request.basis[..request.basis_len])?;w.key(5,0)?;w.varint(1)?;if let Some((actors,count,action))=intent{let mut b=[0;MAX_INTENT_BYTES];let n=enc_intent(&mut b,&actors[..count],action)?;w.blob(10,&b[..n])?}Some(w.n)}
 
 // Added to the private decoded representation after the type definition to
 // keep response actor storage bounded and allocation-free.
 fn request_action_actor(request:&mut LiveRequest,index:usize,value:UnitReference){request.scratch[index]=value}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tactical_intent_is_retained_as_typed_protobuf() {
+        let source = [0x0a, 0x02, 0x10, 0x05, 0x6a, 0x00];
+        let (actors, count, action) = decode_intent(&source).expect("typed tactical intent");
+        assert_eq!(count, 1);
+        assert_eq!(actors[0].lifetime, 5);
+        assert!(matches!(action, Action::Tactical { .. }));
+        let mut output = [0; 64];
+        let length = enc_intent(&mut output, &actors[..count], action).expect("encoded tactical intent");
+        assert_eq!(&output[..length], source);
+    }
+}

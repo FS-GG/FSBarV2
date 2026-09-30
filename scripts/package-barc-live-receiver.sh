@@ -28,8 +28,11 @@ jq -e '
   def safe_relative:
     (startswith("/") | not) and
     (split("/") | length > 0 and all(. != "" and . != "." and . != ".."));
-  .schema == "fsbar.barc-live-receiver-pins/v1" and
-  .profile == "barc-live-v1" and
+  ((.schema == "fsbar.barc-live-receiver-pins/v1" and .profile == "barc-live-v1" and
+    (has("protocolVersion") | not) and (has("tacticalRevision") | not) and
+    (has("guestAbiVersion") | not)) or
+   (.schema == "fsbar.barc-live-receiver-pins/v2" and .profile == "barc-live-tactical-v1" and
+    .protocolVersion == 2 and .tacticalRevision == 1 and .guestAbiVersion == 1)) and
   (.source.commit | test("^[0-9a-f]{40}$")) and
   (.files | type == "array" and length >= 7) and
   ([.files[] | select(.role != "dependency") | .role] | sort == ["clientCss","clientJs","codec","contract","customGuest","manualGuest","worker"]) and

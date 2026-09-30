@@ -9,7 +9,11 @@ loaded as raw WASM bytes through the same host, without rebuilding host code.
 Both artifacts keep ABI version 1 and also support the live profile. The manual
 policy preserves the operator's semantic action. The independent custom policy
 retains odd actor identities and swaps Move replace and append, demonstrating a
-policy change without host rebuild or native command bits.
+policy change without host rebuild or native command bits. For tactical
+actions, the manual guest preserves the complete typed intention. The custom
+guest suppresses an atomic tactical parent when its odd-identity policy removes
+an actor, so the imported module changes useful `.5` policy without claiming a
+native game effect.
 
 Run `scripts/build-barc-guests.sh` with the pinned Rust 1.90.0 toolchain. The
 script also derives hostile modules for the browser watchdog tests; generated

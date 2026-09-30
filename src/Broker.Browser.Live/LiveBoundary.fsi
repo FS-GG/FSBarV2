@@ -11,4 +11,5 @@ module LiveBoundary =
     val feedbackEnvelope : feedback:LiveControl.Feedback -> LiveServerEnvelope
     val controllerEnvelope : update:LiveControl.ControllerUpdate -> LiveServerEnvelope
     val provisionBootstrap : sessionId:Guid -> perspectiveId:string -> state:LiveControl.State -> Result<LiveServerEnvelope,string>
+    val provisionBootstrapForProfile : profile:string -> sessionId:Guid -> perspectiveId:string -> state:LiveControl.State -> Result<LiveServerEnvelope,string>
     val observation : value:Observation -> state:LiveControl.State -> Result<LiveServerEnvelope,string>

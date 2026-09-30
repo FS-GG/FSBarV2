@@ -11,6 +11,14 @@ only the validated `LiveIntent` returned by that guest. Selection is bound to
 producer lifetimes; focus loss, hidden pages, module/session replacement and
 controller expiry revoke gameplay input. Omitting `profile` preserves preview.
 
+`profile: "barc-live-tactical-v1"` selects revision 1 tactical control. Its
+build menu, economy values, features, actor capabilities, and queues come only
+from one complete producer catalogue and matching observation. Disabled or
+missing descriptors and incomplete factory-rally queues remain visibly
+unavailable. Every tactical intent carries the selected actors' exact
+descriptor and relevant queue revisions through the same Worker and ABI-1
+guest path used by legacy live control.
+
 ```js
 import { mount } from "./assets/barc-preview.js";
 

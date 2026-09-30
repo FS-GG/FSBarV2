@@ -205,6 +205,36 @@ test("ABI1 manual and custom guests consume lifetime-bound live inputs and emit 
   }
 });
 
+test("ABI1 manual guest preserves tactical bindings while imported policy changes a tactical intention", async ({ page }) => {
+  const bootstrap = (await liveSemantic("tactical-bootstrap")).bootstrap;
+  const observation = (await liveSemantic("tactical-observation")).observation;
+  const expected = (await liveSemantic("tactical-guest-build-response")).intent;
+  const sessionId = bootstrap.preview.sessionId, moduleGeneration = bootstrap.module.generation, basis = observation.basis;
+  const request = (inputId, input) => encodeObject(v1.LiveGuestRequest, { inputId, sessionId, moduleGeneration, basis, ...input });
+  const initialize = request("AAAAAAAAAAAAAAAAAAAAAQ==", { initialize: bootstrap });
+  const observed = request("AQEBAQEBAQEBAQEBAQEBAQ==", { observation });
+  const selected = request("AgICAgICAgICAgICAgICAg==", { manualInput:{ source:"LIVE_INPUT_SOURCE_POINTER", modifiers:{}, select:{ actors:expected.actors } } });
+  const tactical = request("u7u7u8zMTd2O7v///////w==", { manualInput:{ source:"LIVE_INPUT_SOURCE_KEYBOARD", modifiers:{}, action:expected } });
+
+  expect((await install(page, "manual-preview")).state).toBe("completed");
+  expect((await call(page, "initialize", initialize)).state).toBe("completed");
+  expect((await call(page, "process", observed)).state).toBe("completed");
+  expect((await call(page, "process", selected)).state).toBe("completed");
+  const tacticalResult = await call(page, "process", tactical);
+  expect(tacticalResult.state).toBe("completed");
+  const manual = canonicalObject(v1.LiveGuestResponse, Uint8Array.from(tacticalResult.output));
+  expect(manual.intent).toEqual(expected);
+  expect(manual.intent.actorTacticalBindings[0].descriptorRevision).toBe("9007199254741013");
+  expect(manual.intent.build.catalogueRevision).toBe("9007199254741011");
+
+  expect((await install(page, "custom-preview")).state).toBe("completed");
+  expect((await call(page, "initialize", initialize)).state).toBe("completed");
+  expect((await call(page, "process", observed)).state).toBe("completed");
+  expect((await call(page, "process", selected)).state).toBe("completed");
+  const imported = canonicalObject(v1.LiveGuestResponse, Uint8Array.from((await call(page, "process", tactical)).output));
+  expect(imported.intent).toBeUndefined();
+});
+
 test("selection survives current snapshots, drops lost ownership, and reapplies custom policy", async ({ page }) => {
   const sessionId = Array.from(Buffer.from("00112233445566778899aabbccddeeff", "hex"));
   const sequence = "9007199254740993";

@@ -1,0 +1,109 @@
+{
+  "observation": {
+    "units": [
+      {
+        "reference": {
+          "lifetime": "9007199254740999"
+        },
+        "observation": "OBSERVATION_KIND_OWN"
+      }
+    ],
+    "preview": {
+      "units": [],
+      "features": [],
+      "sessionId": "ERERESIiQzOERFVVVVVVVQ==",
+      "sequence": "9007199254740993",
+      "perspectiveId": "team-0",
+      "validity": {
+        "status": "VALIDITY_STATUS_CURRENT",
+        "lastSequence": "9007199254740993"
+      }
+    },
+    "basis": {
+      "token": "AQIDBAUGBwgJCgsMDQ4PEA==",
+      "stateSequence": "9007199254740993",
+      "nativeFrame": 427,
+      "matchId": "qqqqqru7TMyN3e7u7u7u7g==",
+      "processIncarnation": "process-live-1",
+      "stateChannelIncarnation": "state-live-1"
+    },
+    "tactical": {
+      "actors": [
+        {
+          "descriptors": [
+            {
+              "allowedDefinitionIds": [
+                710
+              ],
+              "allowedModeValues": [],
+              "kind": "TACTICAL_DESCRIPTOR_BUILD"
+            },
+            {
+              "allowedDefinitionIds": [],
+              "allowedModeValues": [
+                "TACTICAL_MODE_VALUE_DISABLED",
+                "TACTICAL_MODE_VALUE_ENABLED"
+              ],
+              "kind": "TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY",
+              "observedModeValue": "TACTICAL_MODE_VALUE_ENABLED"
+            }
+          ],
+          "queue": [
+            {
+              "entries": [
+                {
+                  "nativeTag": 2147483647,
+                  "action": "LIVE_ACTION_KIND_FACTORY_PRODUCE",
+                  "definitionId": 710
+                }
+              ],
+              "domain": "QUEUE_DOMAIN_FACTORY_PRODUCTION",
+              "revision": "9007199254741015",
+              "complete": true,
+              "repeat": false
+            }
+          ],
+          "actor": {
+            "lifetime": "9007199254740999"
+          },
+          "descriptorRevision": "9007199254741013"
+        }
+      ],
+      "features": [
+        {
+          "reference": {
+            "lifetime": "9007199254741017"
+          },
+          "definitionId": 91,
+          "position": {
+            "x": 1400,
+            "elevation": 12.5,
+            "z": 1600
+          },
+          "reclaimLeft": 0.75
+        }
+      ],
+      "catalogueId": "UlJSUlJSUlJSUlJSUlJSUg==",
+      "catalogueRevision": "9007199254741011",
+      "economy": {
+        "perspectiveId": "team-0",
+        "sampleFrame": 427,
+        "metal": {
+          "resourceName": "metal",
+          "unit": "resource",
+          "current": 500,
+          "storage": 1000,
+          "incomePerSecond": 8.5,
+          "usagePerSecond": 4
+        },
+        "energy": {
+          "resourceName": "energy",
+          "unit": "resource",
+          "current": 2500,
+          "storage": 5000
+        }
+      }
+    }
+  },
+  "body": "observation"
+}

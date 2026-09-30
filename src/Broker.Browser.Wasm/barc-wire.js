@@ -104,16 +104,59 @@ const liveReference = bytes => {
   return { id, lifetime };
 };
 
+const validateBinding = bytes => {
+  const reader = new Reader(bytes); let actor = null, revision = 0n; const domains = new Set();
+  while (!reader.done) { const key=reader.varint(),field=Number(key>>3n),wire=Number(key&7n);
+    if(field===1&&wire===2)actor=liveReference(reader.lengthDelimited());
+    else if(field===2&&wire===0)revision=reader.varint();
+    else if(field===3&&wire===2){const queue=new Reader(reader.lengthDelimited());let domain=0n,queueRevision=0n;while(!queue.done){const q=queue.varint(),f=Number(q>>3n),w=Number(q&7n);if(f===1&&w===0)domain=queue.varint();else if(f===2&&w===0)queueRevision=queue.varint();else queue.skip(w)}if(![1n,2n,3n].includes(domain)||queueRevision===0n||domains.has(domain.toString()))invalid("tactical queue revision binding is invalid");domains.add(domain.toString())}
+    else reader.skip(wire);
+  }
+  if(!actor||revision===0n)invalid("tactical actor binding is incomplete");return actor;
+};
+
+const validateTacticalAction = (field, bytes) => {
+  const reader=new Reader(bytes);let definition=0n,count=0n,position=null,reference=null,policy=0n,catalogue=null,catalogueRevision=0n,facing=0n,radius=null,expectedRevision=0n,editKind=0n,domain=0n,editField=0,modeKind=0n,modeValue=0n;
+  while(!reader.done){const key=reader.varint(),f=Number(key>>3n),w=Number(key&7n);
+    if([13,19].includes(field)&&f===1&&w===0)definition=reader.varint();
+    else if(field===19&&f===2&&w===0)count=reader.varint();
+    else if((field===13&&f===2||field===18&&f===1||field===20&&f===1)&&w===2)position=reader.lengthDelimited();
+    else if([14,15,16,17].includes(field)&&f===1&&w===2)reference=liveReference(reader.lengthDelimited());
+    else if(([14,15,16,17].includes(field)&&f===2||field===18&&f===3||field===19&&f===3||field===13&&f===4)&&w===0)policy=reader.varint();
+    else if(field===13&&f===3&&w===0)facing=reader.varint();
+    else if(field===13&&f===5&&w===2||field===19&&f===4&&w===2)catalogue=reader.lengthDelimited();
+    else if(field===13&&f===6&&w===0||field===19&&f===5&&w===0)catalogueRevision=reader.varint();
+    else if(field===18&&f===2&&w===5)radius=reader.fixed32();
+    else if(field===21&&f===1&&w===0)expectedRevision=reader.varint();
+    else if(field===21&&f===2&&w===0)editKind=reader.varint();
+    else if(field===21&&f===3&&w===0)domain=reader.varint();
+    else if(field===21&&[10,11,12].includes(f)){editField=f; if(w===2){const insert=new Reader(reader.lengthDelimited());let action=0n;while(!insert.done){const q=insert.varint(),x=Number(q>>3n),y=Number(q&7n);if(x===2&&y===0)action=insert.varint();else insert.skip(y)}if(action<1n||action>13n)invalid("tactical queue insertion action is unknown")}else if(w===0)reader.varint();else reader.skip(w)}
+    else if(field===22&&f===1&&w===0)modeKind=reader.varint();
+    else if(field===22&&f===2&&w===0)modeValue=reader.varint();
+    else reader.skip(w);
+  }
+  if(position)validatePosition(position);
+  if(field===13&&(definition===0n||!position||![1n,2n,3n,4n].includes(facing)||![1n,2n,3n].includes(policy)||!catalogue?.length||catalogueRevision===0n))invalid("tactical Build is incomplete");
+  if([14,15,16,17].includes(field)&&(!reference||![1n,2n,3n].includes(policy)))invalid("tactical reference target is incomplete");
+  if(field===18&&(!position||!Number.isFinite(radius)||radius<=0||![1n,2n,3n].includes(policy)))invalid("tactical area target is invalid");
+  if(field===19&&(definition===0n||count===0n||![1n,2n,3n].includes(policy)||!catalogue?.length||catalogueRevision===0n))invalid("factory production is incomplete");
+  if(field===20&&!position)invalid("factory rally position is missing");
+  if(field===21&&(expectedRevision===0n||![1n,2n,3n].includes(editKind)||![1n,2n,3n].includes(domain)||editField!==Number(editKind)+9))invalid("tactical queue edit is invalid");
+  if(field===22&&(![12n,13n].includes(modeKind)||![1n,2n].includes(modeValue)))invalid("tactical mode is unavailable or invalid");
+};
+
 const validateLiveIntent = bytes => {
-  const reader = new Reader(bytes), actors = []; let action = null, actionBytes = null;
+  const reader = new Reader(bytes), actors = [], bindings = []; let action = null, actionBytes = null;
   while (!reader.done) { const key = reader.varint(), field = Number(key >> 3n), wire = Number(key & 7n);
     if (field === 1 && wire === 2) actors.push(liveReference(reader.lengthDelimited()));
-    else if ([10, 11, 12].includes(field) && wire === 2) { if (action !== null) invalid("live intent has multiple actions"); action = field; actionBytes = reader.lengthDelimited(); }
+    else if(field===2&&wire===2)bindings.push(validateBinding(reader.lengthDelimited()));
+    else if (field >= 10 && field <= 22 && wire === 2) { if (action !== null) invalid("live intent has multiple actions"); action = field; actionBytes = reader.lengthDelimited(); }
     else reader.skip(wire);
     if (actors.length > 64) invalid("live intent exceeds its actor limit");
   }
   if (actors.length === 0 || action === null) invalid("live intent requires actors and one action");
   if (new Set(actors.map(actor => actor.id.toString())).size !== actors.length) invalid("live intent contains duplicate actor identities");
+  if(action>=13){if(bindings.length!==actors.length||bindings.some((binding,index)=>binding.id!==actors[index].id||binding.lifetime!==actors[index].lifetime))invalid("tactical intent actor bindings do not match actors");validateTacticalAction(action,actionBytes)}
   if (action === 11) {
     const move = new Reader(actionBytes); let position = null, policy = 0n;
     while (!move.done) { const key = move.varint(), field = Number(key >> 3n), wire = Number(key & 7n);

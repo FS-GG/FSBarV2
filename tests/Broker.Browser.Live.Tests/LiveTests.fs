@@ -1,10 +1,51 @@
 module Broker.Browser.Live.Tests.LiveTests
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open Expecto
 open Google.Protobuf
 open Highbar.V1
+open Broker.Browser.Gateway
 open Broker.Protocol
+
+[<Tests>]
+let gatewayDiagnosticTests = testList "gateway diagnostic classification" [
+    testCase "receive output and renewal winners have independent fixed reasons" <| fun _ ->
+        let receiveTask=Task.CompletedTask
+        let outputTask=Task.FromException(InvalidOperationException "private credential uuid frame")
+        let renewalTask=Task.FromCanceled(CancellationToken(true))
+        let renewalFault=Task.FromException(InvalidOperationException "renewal failed")
+        Expect.equal (Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask receiveTask) Gateway.ReceiveTaskCompleted "receive completion is distinct"
+        Expect.equal (Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask outputTask) Gateway.OutputTaskFailed "output failure is distinct"
+        Expect.equal (Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask renewalTask) Gateway.RenewalTaskCancelled "renewal cancellation is distinct"
+        let renewalFailure=Gateway.completedTaskDiagnostic receiveTask outputTask renewalFault renewalFault
+        Expect.equal renewalFailure Gateway.RenewalTaskFailed "renewal failure is distinct"
+        Expect.notEqual renewalFailure Gateway.ReceiveTaskFailed "renewal failure cannot alias receive failure"
+        Expect.notEqual renewalFailure Gateway.OutputTaskFailed "renewal failure cannot alias output failure"
+        let simultaneousReceive=Task.FromException(InvalidOperationException "receive")
+        let simultaneousOutput=Task.FromException(InvalidOperationException "output")
+        let winner=Task.WhenAny([|simultaneousReceive;simultaneousOutput|]).Result
+        Expect.isTrue (Object.ReferenceEquals(winner,simultaneousReceive)) "WhenAny preserves observed order for simultaneous completed tasks"
+        Expect.equal (Gateway.completedTaskDiagnostic simultaneousReceive simultaneousOutput renewalTask winner) Gateway.ReceiveTaskFailed "the exact winner controls classification"
+        Expect.throws (fun () -> Gateway.completedTaskDiagnostic receiveTask outputTask renewalTask (Task.Delay 1) |> ignore) "unobserved tasks cannot be classified"
+    testCase "forwarded feedback precedence and inversion are closed" <| fun _ ->
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.BrokerAdmission LiveControl.Accepted) (Some Gateway.BrokerAdmissionForwarded) "accepted broker feedback is classified"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.BrokerAdmission LiveControl.Rejected) (Some Gateway.BrokerAdmissionRejectedForwarded) "rejected broker feedback is classified"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.Unknown LiveControl.UnknownStatus) (Some Gateway.UnknownForwarded) "unknown stage is classified"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.Unknown LiveControl.Expired) (Some Gateway.ExpiredForwarded) "expired takes precedence over unknown stage"
+        Expect.equal (Gateway.feedbackDiagnostic LiveControl.NativeAdmission LiveControl.Accepted) None "unselected feedback does not invert into a diagnostic"
+    testCase "throwing diagnostic callbacks cannot escape" <| fun _ ->
+        Gateway.emitDiagnostic (fun _ -> raise(InvalidOperationException "private detail")) Gateway.SubmitAccepted
+    testCase "submit refusal classes are closed and never echo detail" <| fun _ ->
+        Expect.equal (Gateway.submitRefusalReason "live command channel is full") Gateway.CommandChannelFull "known submit refusal has a stable class"
+        let secret="credential=private uuid=33221100-5544-7766-8899-aabbccddeeff actor=9 x=10"
+        let fallback=Gateway.submitRefusalReason secret
+        Expect.equal fallback Gateway.UnknownRefusal "unknown detail uses the closed fallback"
+        let struct(_,name)=Gateway.diagnosticNames(Gateway.SubmitRefused fallback)
+        Expect.equal name "unknown-refusal" "fallback projection is fixed"
+        Expect.isFalse (name.Contains "private") "fallback does not echo sensitive detail"
+]
 open Broker.Core
 open Broker.Browser.Contracts
 open Broker.Browser.Live
@@ -112,8 +153,288 @@ let setupState state now =
 
 let setup capacity now = setupState (LiveControl.create capacity) now
 
+let setupTactical now =
+    let state=LiveControl.create 8
+    let reporter=LiveStateReporter.empty()
+    reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
+    let caps=LiveNativeCapabilities.empty()
+    caps.MaxActorCount<-64u;caps.MaxBatchCommands<-1u;caps.MaxNativeUnitId<-31999u;caps.SnapshotCadenceCeilingFrames<-30u;caps.MaxObservationAgeMs<-2000u;caps.MaxReportedUnits<-64u;caps.MapWidthCells<-1024u;caps.MapHeightCells<-1024u;caps.MaxWorldXInclusive<-8191f;caps.MaxWorldZInclusive<-8191f;caps.SupportsStop<-true;caps.SupportsMove<-true;caps.SupportsAttackVisibleUnit<-true
+    let tacticalCaps=NativeTacticalCapabilities.empty()
+    tacticalCaps.Profile<-"barc-live-tactical-v1";tacticalCaps.Revision<-1u;tacticalCaps.MaxCatalogueEntries<-16u;tacticalCaps.MaxCataloguePageEntries<-8u;tacticalCaps.MaxBuildOptionsPerActor<-8u;tacticalCaps.MaxQueueEntriesPerActor<-8u;tacticalCaps.MaxFeatureReferences<-8u;tacticalCaps.MaxFactoryProductionCount<-4u;tacticalCaps.MaxAreaRadiusWorldUnits<-256u;tacticalCaps.MaxCommandDescriptorsPerActor<-8u
+    caps.Tactical<-ValueSome tacticalCaps
+    let report body sequence =
+        let value=LiveStateReport.empty()
+        value.Reporter<-ValueSome reporter;value.ReportSequence<-sequence;value.Body<-ValueSome body
+        LiveControl.reportState value now state
+    Expect.equal (report (LiveStateReport.Types.Body.Capabilities caps) 1UL) LiveStateReportDisposition.LiveStateReportRecorded "tactical capabilities"
+    let basis=NativeObservationBasis.empty()
+    basis.Token<-bytes16 "basis-t";basis.StateSequence<-9007199254741101UL;basis.Frame<-800u;basis.MatchIncarnation<-reporter.MatchIncarnation;basis.ProcessIncarnation<-reporter.ProcessIncarnation;basis.StateChannelIncarnation<-reporter.StateChannelIncarnation;basis.SnapshotSendMonotonicNs<-9007199254741103UL;basis.EffectiveCadenceFrames<-30u
+    let snapshot=LiveSnapshotMetadata.empty()
+    snapshot.Basis<-ValueSome basis
+    let actor=NativeLiveUnitMetadata.empty()
+    actor.Reference<-ValueSome(nativeRef 0u 9007199254741105UL);actor.Eligibility<-NativeLiveUnitEligibility.NativeLiveUnitOwnedActor;snapshot.Units.Add actor
+    Expect.equal (report (LiveStateReport.Types.Body.Snapshot snapshot) 2UL) LiveStateReportDisposition.LiveStateReportRecorded "base snapshot"
+    let page=TacticalCataloguePage.empty()
+    page.TacticalProfile<-"barc-live-tactical-v1";page.TacticalRevision<-1u;page.CatalogueId<-bytes16 "catalogue";page.CatalogueRevision<-9007199254741107UL;page.PageCount<-1u;page.Complete<-true
+    let content=NativeContentIdentity.empty()
+    content.EngineVersion<-"recoil";content.GameName<-"BAR";content.GameVersion<-"test";content.GameContentSha256<-ByteString.CopyFrom(Array.create 32 7uy);page.Content<-ValueSome content
+    let definition=NativeUnitDefinition.empty()
+    definition.DefinitionId<-42u;definition.InternalName<-"armmex";definition.DisplayName<-"Metal Extractor";definition.FootprintXCells<-4u;definition.FootprintZCells<-4u;page.Definitions.Add definition
+    Expect.equal (report (LiveStateReport.Types.Body.TacticalCatalogue page) 3UL) LiveStateReportDisposition.LiveStateReportRecorded "complete catalogue"
+    let tactical=TacticalSnapshotMetadata.empty()
+    tactical.Basis<-ValueSome basis;tactical.CatalogueId<-page.CatalogueId;tactical.CatalogueRevision<-page.CatalogueRevision
+    let metadata=NativeActorTacticalMetadata.empty()
+    metadata.Actor<-ValueSome(nativeRef 0u 9007199254741105UL);metadata.DescriptorRevision<-9007199254741109UL
+    let descriptor=NativeTacticalCommandDescriptor.empty()
+    descriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce;descriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add descriptor
+    let buildDescriptor=NativeTacticalCommandDescriptor.empty()
+    buildDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorBuild;buildDescriptor.AllowedDefinitionIds.Add 42u;metadata.Descriptors.Add buildDescriptor
+    let queue=NativeObservedQueue.empty()
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;metadata.Queue.Add queue
+    let actorQueue=NativeObservedQueue.empty()
+    actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
+    Expect.equal (report (LiveStateReport.Types.Body.TacticalSnapshot tactical) 4UL) LiveStateReportDisposition.LiveStateReportRecorded "paired tactical snapshot"
+    let control=LiveControlSubscribe.empty()
+    control.PluginId<-"highbar";control.SchemaVersion<-"1.1.0";control.Protocol<-LiveControlProtocol.TacticalV1;control.ControlChannelIncarnation<-"control-t"
+    let controlLease=match LiveControl.claimControl control state with LiveControl.Claimed lease->lease|other->failtestf "control %A" other
+    let initial=LiveBinding.empty()
+    initial.PluginId<-"highbar";initial.CommandChannelIncarnation<-"command-t"
+    let commands=LiveCommandSubscribe.empty()
+    commands.Protocol<-LiveControlProtocol.TacticalV1;commands.SchemaVersion<-"1.1.0";commands.Binding<-ValueSome initial
+    let commandLease=match LiveControl.claimCommands commands state with LiveControl.Claimed lease->lease|other->failtestf "commands %A" other
+    state,controlLease,commandLease,basis,metadata,page
+
+
+let reportFeaturePopulation negotiatedCount observedCount now =
+    let state = LiveControl.create 4
+    let reporter = LiveStateReporter.empty()
+    reporter.PluginId <- "highbar-capacity"
+    reporter.SchemaVersion <- "1.1.0"
+    reporter.Protocol <- LiveControlProtocol.TacticalV1
+    reporter.ProcessIncarnation <- "process-capacity"
+    reporter.MatchIncarnation <- bytes16 "match-capacity"
+    reporter.StateChannelIncarnation <- "state-capacity"
+    let report body sequence =
+        let value = LiveStateReport.empty()
+        value.Reporter <- ValueSome reporter
+        value.ReportSequence <- sequence
+        value.Body <- ValueSome body
+        LiveControl.reportState value now state
+    let caps = LiveNativeCapabilities.empty()
+    caps.MaxActorCount <- 64u
+    caps.MaxBatchCommands <- 1u
+    caps.MaxNativeUnitId <- 31999u
+    caps.SnapshotCadenceCeilingFrames <- 30u
+    caps.MaxObservationAgeMs <- 2000u
+    caps.MaxReportedUnits <- 64u
+    caps.MapWidthCells <- 1024u
+    caps.MapHeightCells <- 1024u
+    caps.MaxWorldXInclusive <- 8191f
+    caps.MaxWorldZInclusive <- 8191f
+    caps.SupportsStop <- true
+    caps.SupportsMove <- true
+    caps.SupportsAttackVisibleUnit <- true
+    let tacticalCaps = NativeTacticalCapabilities.empty()
+    tacticalCaps.Profile <- "barc-live-tactical-v1"
+    tacticalCaps.Revision <- 1u
+    tacticalCaps.MaxCatalogueEntries <- 4096u
+    tacticalCaps.MaxCataloguePageEntries <- 128u
+    tacticalCaps.MaxBuildOptionsPerActor <- 256u
+    tacticalCaps.MaxQueueEntriesPerActor <- 64u
+    tacticalCaps.MaxFeatureReferences <- uint32 negotiatedCount
+    tacticalCaps.MaxFactoryProductionCount <- 1u
+    tacticalCaps.MaxAreaRadiusWorldUnits <- 2048u
+    tacticalCaps.MaxCommandDescriptorsPerActor <- 32u
+    caps.Tactical <- ValueSome tacticalCaps
+    Expect.equal (report (LiveStateReport.Types.Body.Capabilities caps) 1UL) LiveStateReportDisposition.LiveStateReportRecorded "negotiated tactical capabilities"
+    let basis = NativeObservationBasis.empty()
+    basis.Token <- bytes16 "basis-capacity"
+    basis.StateSequence <- 9007199254742001UL
+    basis.Frame <- 900u
+    basis.MatchIncarnation <- reporter.MatchIncarnation
+    basis.ProcessIncarnation <- reporter.ProcessIncarnation
+    basis.StateChannelIncarnation <- reporter.StateChannelIncarnation
+    basis.SnapshotSendMonotonicNs <- 9007199254742003UL
+    basis.EffectiveCadenceFrames <- 6u
+    let snapshot = LiveSnapshotMetadata.empty()
+    snapshot.Basis <- ValueSome basis
+    let actor = NativeLiveUnitMetadata.empty()
+    actor.Reference <- ValueSome(nativeRef 0u 9007199254742005UL)
+    actor.Eligibility <- NativeLiveUnitEligibility.NativeLiveUnitOwnedActor
+    snapshot.Units.Add actor
+    Expect.equal (report (LiveStateReport.Types.Body.Snapshot snapshot) 2UL) LiveStateReportDisposition.LiveStateReportRecorded "paired base snapshot"
+    let page = TacticalCataloguePage.empty()
+    page.TacticalProfile <- "barc-live-tactical-v1"
+    page.TacticalRevision <- 1u
+    page.CatalogueId <- bytes16 "capacity-catalog"
+    page.CatalogueRevision <- 9007199254742007UL
+    page.PageCount <- 1u
+    page.Complete <- true
+    let content = NativeContentIdentity.empty()
+    content.EngineVersion <- "recoil"
+    content.GameName <- "BAR"
+    content.GameVersion <- "test"
+    content.GameContentSha256 <- ByteString.CopyFrom(Array.create 32 0x51uy)
+    page.Content <- ValueSome content
+    let definition = NativeUnitDefinition.empty()
+    definition.DefinitionId <- 91u
+    definition.InternalName <- "feature-def"
+    definition.DisplayName <- "Feature"
+    definition.FootprintXCells <- 1u
+    definition.FootprintZCells <- 1u
+    page.Definitions.Add definition
+    Expect.equal (report (LiveStateReport.Types.Body.TacticalCatalogue page) 3UL) LiveStateReportDisposition.LiveStateReportRecorded "complete catalogue"
+    let tactical = TacticalSnapshotMetadata.empty()
+    tactical.Basis <- ValueSome basis
+    tactical.CatalogueId <- page.CatalogueId
+    tactical.CatalogueRevision <- page.CatalogueRevision
+    for index in 0..observedCount-1 do
+        let reference = NativeFeatureReference.empty()
+        reference.Id <- uint32 index
+        reference.Lifetime <- 9007199254743000UL + uint64 index
+        let feature = NativeFeatureMetadata.empty()
+        feature.Reference <- ValueSome reference
+        feature.DefinitionId <- 91u
+        feature.WorldX <- float32 (index % 512)
+        feature.WorldZ <- float32 ((index * 3) % 512)
+        feature.Elevation <- ValueSome(float32 index / 10f)
+        feature.ReclaimLeft <- ValueSome 0.75f
+        tactical.Features.Add feature
+    let finalReport = LiveStateReport.empty()
+    finalReport.Reporter <- ValueSome reporter
+    finalReport.ReportSequence <- 4UL
+    finalReport.TacticalSnapshot <- tactical
+    LiveControl.reportState finalReport now state,state,basis,page,finalReport.ToByteArray().Length,finalReport
+
 [<Tests>]
 let tests=testList "live broker boundary" [
+    testCase "negotiated feature capacity preserves complete references and refuses overflow atomically" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,14,0,0,TimeSpan.Zero)
+        for count in [256;342;512] do
+            let disposition,state,basis,_,nativeBytes,_=reportFeaturePopulation 512 count now
+            Expect.equal disposition LiveStateReportDisposition.LiveStateReportRecorded (sprintf "%d features accepted at negotiated 512" count)
+            Expect.isLessThan nativeBytes (4*1024*1024) "full native LiveStateReport remains below 4 MiB"
+            printfn "feature-capacity count=%d native-bytes=%d" count nativeBytes
+            let stored=LiveControl.latestTacticalSnapshot state |> Option.get
+            Expect.equal stored.Features.Count count "all native features retained"
+            let selected=stored.Features[count-1].Reference.Value
+            Expect.equal selected.Id (uint32(count-1)) "feature beyond the former index bound keeps its id"
+            Expect.equal selected.Lifetime (9007199254743000UL+uint64(count-1)) "feature lifetime is exact"
+            let preview = Observation(SessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Sequence=basis.StateSequence,CapturedAtUnixMs=now.ToUnixTimeMilliseconds(),PerspectiveId="team-0")
+            for index in 0..count-1 do
+                preview.Features.Add(ObservedFeature(Id=uint64 index,DefinitionId=91u,Position=Position3(X=float32(index%512),Elevation=float32 index/10f,Z=float32((index*3)%512))))
+            let envelope=Expect.wantOk (LiveBoundary.observation preview state) "paired native metadata projects through the browser boundary"
+            Expect.equal envelope.Observation.Tactical.Features.Count count "browser tactical projection is complete"
+            let projected=envelope.Observation.Tactical.Features[count-1].Reference
+            Expect.equal projected.Id (uint64(count-1)) "projected feature id survives"
+            Expect.equal projected.Lifetime selected.Lifetime "projected feature lifetime survives"
+            let browserBytes=envelope.ToByteArray().Length
+            Expect.isLessThan browserBytes (64*1024) "full browser envelope remains below 64 KiB"
+            printfn "feature-capacity count=%d browser-bytes=%d" count browserBytes
+        let refused256,state256,_,_,_,_=reportFeaturePopulation 256 342 now
+        Expect.equal refused256 LiveStateReportDisposition.LiveStateReportRefused "negotiated 256 refuses 342"
+        Expect.isNone (LiveControl.latestTacticalSnapshot state256) "overflow retains zero partial tactical child"
+        let refused513,state513,_,_,_,_=reportFeaturePopulation 512 513 now
+        Expect.equal refused513 LiveStateReportDisposition.LiveStateReportRefused "negotiated 512 refuses 513"
+        Expect.isNone (LiveControl.latestTacticalSnapshot state513) "513 refusal retains zero partial tactical child"
+        let _,guardState,_,_,_,acceptedReport=reportFeaturePopulation 512 342 now
+        let duplicate=acceptedReport.Clone()
+        duplicate.ReportSequence<-5UL
+        let duplicateFeature=duplicate.TacticalSnapshot.Features[300].Clone()
+        duplicateFeature.Reference.Value.Lifetime<-duplicateFeature.Reference.Value.Lifetime+1UL
+        duplicate.TacticalSnapshot.Features.Add duplicateFeature
+        Expect.equal (LiveControl.reportState duplicate now guardState) LiveStateReportDisposition.LiveStateReportRefused "duplicate numeric feature id is refused even with a different lifetime"
+        let malformed=acceptedReport.Clone()
+        malformed.ReportSequence<-5UL
+        malformed.TacticalSnapshot.Features[300].Reference.Value.Lifetime<-0UL
+        Expect.equal (LiveControl.reportState malformed now guardState) LiveStateReportDisposition.LiveStateReportRefused "zero feature lifetime is refused"
+        let stale=acceptedReport.Clone()
+        stale.ReportSequence<-3UL
+        stale.TacticalSnapshot.Features[300].Reference.Value.Lifetime<-9007199254999999UL
+        Expect.equal (LiveControl.reportState stale now guardState) LiveStateReportDisposition.LiveStateReportStale "stale reused reference cannot replace current metadata"
+        let _,replacementState,_,_,_,replacementBase=reportFeaturePopulation 512 342 now
+        let replacement=replacementBase.Clone()
+        replacement.ReportSequence<-5UL
+        replacement.TacticalSnapshot.Features[300].Reference.Value.Lifetime<-9007199254999999UL
+        Expect.equal (LiveControl.reportState replacement now replacementState) LiveStateReportDisposition.LiveStateReportRecorded "fresh reused id requires a new lifetime"
+        Expect.equal (LiveControl.latestTacticalSnapshot replacementState |> Option.get).Features[300].Reference.Value.Lifetime 9007199254999999UL "only the fresh replacement lifetime becomes current"
+
+
+    testCase "tactical catalogue and queue revisions reserve every expanded child before native emission" <| fun _ ->
+        let now=DateTimeOffset(2026,9,29,13,0,0,TimeSpan.Zero)
+        let state,controlLease,commandLease,basis,metadata,_=setupTactical now
+        let session=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x61uy
+        Expect.isOk (LiveControl.requestBrowserArm session provisional.controllerId provisional.controllerIncarnation provisional.authorityEpoch moduleHash 3UL 2000u now state) "arm"
+        let mutable directive=Unchecked.defaultof<LiveControlDirective>
+        Expect.isTrue(controlLease.reader.TryRead(&directive)) "arm directive"
+        let ack=LiveControlAckReport.empty()
+        ack.Binding<-directive.Binding;ack.ControlSequence<-directive.ControlSequence;ack.Kind<-directive.Kind;ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        LiveControl.reportControlAck ack now state|>ignore
+        let bootstrap=Expect.wantOk(LiveBoundary.provisionBootstrapForProfile "barc-live-tactical-v1" session "team-0" state) "complete tactical bootstrap"
+        Expect.equal bootstrap.Bootstrap.TacticalCatalogue.Definitions.Count 1 "complete catalogue is assembled before exposure"
+        let controller=ControllerIdentity(SessionId=ByteString.CopyFrom(session.ToByteArray()),ControllerId=ByteString.CopyFrom(provisional.controllerId.ToByteArray()),ControllerIncarnation=provisional.controllerIncarnation,AuthorityEpoch=provisional.authorityEpoch)
+        let browserBasis=ObservationBasis(Token=basis.Token,StateSequence=basis.StateSequence,NativeFrame=basis.Frame,MatchId=basis.MatchIncarnation,ProcessIncarnation=basis.ProcessIncarnation,StateChannelIncarnation=basis.StateChannelIncarnation)
+        let request=SubmitLiveIntent(ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Controller=controller,Module=LiveModuleIdentity(Sha256=ByteString.CopyFrom(moduleHash),Generation=3UL),Basis=browserBasis)
+        let intent=LiveIntent(FactoryProduce=FactoryProduceTarget(DefinitionId=42u,Count=2u,QueuePolicy=TacticalQueuePolicy.Append,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision))
+        intent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        let actorBinding=ActorTacticalBinding(Actor=UnitReference(Id=0UL,Lifetime=9007199254741105UL),DescriptorRevision=metadata.DescriptorRevision)
+        actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.FactoryProduction,Revision=12UL))
+        intent.ActorTacticalBindings.Add actorBinding
+        request.Intent<-intent
+        let refused=Expect.wantOk(LiveBoundary.submit session request now state) "stale queue revision is a correlated terminal refusal"
+        Expect.equal refused.Length 2 "every expanded child receives a refusal"
+        Expect.isTrue (refused |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "refusal is explicit broker admission feedback"
+        let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "refused parent emits no child"
+        actorBinding.QueueRevisions[0].Revision<-9007199254741111UL
+        let staleCatalogue=request.Clone()
+        staleCatalogue.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        staleCatalogue.Intent.FactoryProduce.CatalogueRevision<-bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision-1UL
+        let staleCatalogueResults=Expect.wantOk(LiveBoundary.submit session staleCatalogue now state) "stale catalogue is a correlated terminal refusal"
+        Expect.equal staleCatalogueResults.Length 2 "stale catalogue refuses every expanded child"
+        Expect.isTrue (staleCatalogueResults |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "stale catalogue refusal is explicit"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "stale catalogue emits no native child"
+        let mismatchedActor=request.Clone()
+        mismatchedActor.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        mismatchedActor.Intent.ActorTacticalBindings[0].Actor.Lifetime<-mismatchedActor.Intent.Actors[0].Lifetime+1UL
+        Expect.isError (LiveBoundary.submit session mismatchedActor now state) "actor binding must match the declared actor in order"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "mismatched actor binding emits no native child"
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        let admitted=Expect.wantOk(LiveBoundary.submit session request now state) "valid factory count expands through browser boundary"
+        Expect.equal admitted.Length 2 "all children reserved"
+        Expect.isTrue(commandLease.reader.TryRead(&delivery)) "one atomic delivery"
+        Expect.equal delivery.batches.Length 2 "count expands to exact children"
+        for child in delivery.batches do
+            Expect.equal child.Batch.Value.Commands.Count 1 "one translated native command"
+            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Options 32u "append uses SHIFT32"
+            Expect.equal child.TacticalCommand.Value.FactoryProduce.Count 1u "each child count is one"
+            Expect.equal child.TacticalCommand.Value.ExpectedQueueRevision 9007199254741111UL "lossless >2^53 queue revision"
+        actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.ActorOrder,Revision=9007199254741113UL))
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        let missingPosition=BuildTarget(DefinitionId=42u,Facing=BuildFacing.North,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
+        let missingPositionIntent=LiveIntent(Build=missingPosition)
+        missingPositionIntent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        missingPositionIntent.ActorTacticalBindings.Add(actorBinding.Clone())
+        request.Intent<-missingPositionIntent
+        let malformed=Expect.wantOk(LiveBoundary.submit session request now state) "missing nested position is safely refused"
+        Expect.equal malformed.Length 1 "malformed build receives one correlated refusal"
+        Expect.equal malformed.Head.Status LiveResultStatus.Rejected "malformed build is rejected"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "malformed build emits no native child"
+        for facing,expectedEngineFacing in [BuildFacing.North,2;BuildFacing.East,1;BuildFacing.South,0;BuildFacing.West,3] do
+            request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+            let build=BuildTarget(DefinitionId=42u,Position=Position3(X=1792f,Z=1856f),Facing=facing,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
+            let buildIntent=LiveIntent(Build=build)
+            buildIntent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+            buildIntent.ActorTacticalBindings.Add(actorBinding.Clone())
+            request.Intent<-buildIntent
+            let accepted=Expect.wantOk(LiveBoundary.submit session request now state) "valid build facing is admitted"
+            Expect.equal accepted.Length 1 "one build child reserved"
+            Expect.isTrue(commandLease.reader.TryRead(&delivery)) "build delivery emitted"
+            let child=delivery.batches.Head
+            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Facing expectedEngineFacing "legacy command uses the engine-facing ordinal"
+            Expect.equal child.TacticalCommand.Value.Build.Facing (enum<NativeBuildFacing>(int facing)) "tactical command retains the protocol-facing enum"
     testTask "native metadata arms independently and atomically emits one fenced child per actor" {
         let now=DateTimeOffset(2026,9,29,12,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis=setup 8 now

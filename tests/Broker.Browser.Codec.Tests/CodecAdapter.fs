@@ -52,3 +52,7 @@ let private messageType (name: string) =
 let decode name bytes = canonicalObject (messageType name) bytes
 
 let reencode name canonical = encodeObject (messageType name) canonical
+
+let decodeAs typeName bytes = canonicalObject (property v1 typeName) bytes
+
+let reencodeAs typeName canonical = encodeObject (property v1 typeName) canonical

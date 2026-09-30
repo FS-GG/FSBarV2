@@ -25,6 +25,45 @@ module LiveControl =
           actors: NativeUnitReference list
           action: Action }
 
+    type TacticalQueueBinding =
+        { domain: NativeQueueDomain
+          revision: uint64 }
+
+    type TacticalActor =
+        { reference: NativeUnitReference
+          descriptorRevision: uint64
+          queueRevisions: TacticalQueueBinding list }
+
+    type TacticalCatalogueBinding =
+        { id: byte[]
+          revision: uint64 }
+
+    type TacticalAction =
+        | Build of NativeBuildIntent
+        | Guard of NativeFriendlyTargetIntent
+        | Repair of NativeFriendlyTargetIntent
+        | ReclaimUnit of NativeFriendlyTargetIntent
+        | ReclaimFeature of NativeReclaimFeatureIntent
+        | ReclaimArea of NativeReclaimAreaIntent
+        | FactoryProduce of NativeFactoryProduceIntent
+        | SetRally of NativeSetRallyIntent
+        | QueueEdit of NativeQueueEditIntent
+        | TacticalMode of NativeTacticalModeIntent
+
+    type TacticalSubmission =
+        { parentId: Guid
+          inputId: Guid
+          sessionId: Guid
+          controllerId: Guid
+          controllerIncarnation: string
+          authorityEpoch: uint64
+          moduleSha256: byte[]
+          moduleGeneration: uint64
+          basis: NativeObservationBasis
+          actors: TacticalActor list
+          catalogue: TacticalCatalogueBinding option
+          action: TacticalAction }
+
     type FeedbackStage = BrokerAdmission | NativeAdmission | NativeDispatch | Unknown
     type FeedbackStatus = Accepted | Rejected | Applied | Skipped | Expired | UnknownStatus
 
@@ -89,6 +128,7 @@ module LiveControl =
     val requestRevoke : binding:LiveBinding -> reason:string -> now:DateTimeOffset -> state:State -> Result<unit,string>
     val reportControlAck : report:LiveControlAckReport -> now:DateTimeOffset -> state:State -> LiveControlAckDisposition
     val admit : submission:Submission -> now:DateTimeOffset -> state:State -> Result<Feedback list,string>
+    val admitTactical : submission:TacticalSubmission -> now:DateTimeOffset -> state:State -> Result<Feedback list,string>
     val reportNativeAdmission : pluginId:string -> channelIncarnation:string -> result:CommandBatchResult -> state:State -> NativeAdmissionDisposition
     val noteDispatch : dispatch:CommandDispatchEvent -> state:State -> bool
     /// Expire terminal native outcomes after the command's dispatch fences plus a bounded
@@ -103,5 +143,7 @@ module LiveControl =
     val metadataReports : state:State -> IObservable<uint64>
     val latestCapabilities : state:State -> LiveNativeCapabilities option
     val latestSnapshotMetadata : state:State -> LiveSnapshotMetadata option
+    val latestTacticalCatalogue : state:State -> TacticalCataloguePage list option
+    val latestTacticalSnapshot : state:State -> TacticalSnapshotMetadata option
     val currentBinding : state:State -> LiveBinding option
     val reset : detail:string -> state:State -> unit

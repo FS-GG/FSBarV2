@@ -1,6 +1,6 @@
 # BARC-01.4 — Live manual and custom-module control
 
-**Selected local implementation window, 2026-09-29.** Owner: `FS-GG/FSBarV2`, with the native producer in `FS-GG/HighBarV3`. Intended durable path: `docs/roadmaps/barc-01-live-control.md`. The accepted planner draft is `/tmp/barc-01-live-control-plan-20260929.md`; the implementation branch is `routine/barc-live-control-integration-20260929`. This local plan is not merged source or operating authority. Preserve the existing BARC-01 feature, original-item and cost lineage. Route: routine throughout.
+**Delivered bounded implementation window, 2026-09-29.** Owner: `FS-GG/FSBarV2`, with the native producer in `FS-GG/HighBarV3`. The implementation branch was `routine/barc-live-control-integration-20260929`; owning source merged through [FSBarV2 PR #5](https://github.com/FS-GG/FSBarV2/pull/5) and [HighBarV3 PR #2](https://github.com/FS-GG/HighBarV3/pull/2). Preserve the existing BARC-01 feature, original-item and cost lineage. Route: routine throughout. This source delivery does not publish or activate BAR for installed receivers.
 
 Programme: [Unified §9.8](https://github.com/FS-GG/.github/blob/main/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md#98-feature-parts-and-subroadmap-index). Requirements: [original BAR design](https://github.com/FS-GG/.github/blob/main/docs/2026-09-08-134900-fable-bar-wasm-client-design-roadmap.md), especially §§6–9 and the `.4` outcome in §12. Preserve the [foundation](barc-01-foundation.md), [correlated results](barc-01-correlated-native-results.md) and [browser preview](barc-01-browser-preview.md) ledgers; this document owns only `.4a–.4f`.
 
@@ -54,16 +54,16 @@ Freeze numeric limits and temporal relationships in that commit using existing 6
 - [x] **BARC-01.4e — Clean and retained Fable-game receivers consume the live composition — route: routine.**
   Preparation depends on `.4a`'s mount/profile/archive freeze; live acceptance depends on `.4b–.4d`. Extend the compact `examples/barc-fable-game` adopter and packaging/qualification scripts. Consume immutable client/codec/Worker/guest bytes without rewriting implementation files. From empty selected caches, create the same public Templates 0.15.0/SDD 2.0.3 receiver unless a concrete extension-point failure requires an owning change. Build and serve at `/barc/` using the real generated server and actual allowed origin. Acceptance: independently exercise Stop, Move, queued Move and selected Attack through pointer and keyboard against the real live broker/native path; import the independent guest and observe its native effect. Compare consumed/served hashes with the local product. Retained adoption preserves owner source/module/configuration and refuses collisions. Arena credentials/messages/ticks cannot acquire BAR authority or alter native BAR state. A fixture journey or successful scaffold/build does not close this milestone.
 
-- [ ] **BARC-01.4f — Qualify and deliver the joined native control outcome — route: routine.**
+- [x] **BARC-01.4f — Qualify and deliver the joined native control outcome — route: routine.**
   Depends on exact joined `.4b–.4e` source/artifacts. The parent owns the native game and performs coherent focused qualification once on the final candidate. Record four distinct stages for each accepted action. Move must show displacement; queued Move must show the first destination/order remains ahead of the appended destination and subsequent execution; Stop must interrupt an in-progress order with observed cessation/queue change; selected Attack must damage the identified visible target or observe its destruction, with controlled starting conditions excluding autonomous attacks. Run both input paths in both local and generated products, plus imported guest behavior. Revoke while work is natively queued, reject stale actor and Attack target lifetimes, and exhaust browser/broker/native queues with zero rejected-work effects. Deterministic tests establish hard races; the live scenario establishes actual producer/receiver effects. Missing native target/setup is an unresolved acceptance gap, not a passing skip.
 
   Preserve private raw traces and publish sanitized identity chains, source/schema/plugin/engine/game/map/start-script/guest/archive hashes, actual versions and bounded scenario counts. Measure browser, broker/native admission and dispatch-to-observation timings separately; do not claim late-game capacity or game completion from APPLIED. Run affected existing preview, codec/Worker, Core/Protocol and native suites; retain independently verified baseline failures with attribution. Read back native PR/default merges in both selected forks and compare qualified trees/artifacts. Hosted checks/protection are absent at the current fork boundary; do not label local checks hosted. Close `.4` only after every requested live outcome passes, then land the mandatory immediate asynchronous Unified §0 projection before selecting `.5` on this dependency chain. Report publication pending separately.
 
-  The six-journey local native qualification is ready and recorded in the
-  [sanitized acceptance report](evidence/barc-01.4-live-control.md). Native source
-  delivery is verified in HighBar PR #2; paired FSBar source delivery and
-  default-branch readback remain pending, so `.4f` and the overall `.4` outcome
-  remain open. Publication remains deferred to `.7`.
+  The [sanitized acceptance report](evidence/barc-01.4-live-control.md) records
+  the accepted six-journey native cohort. HighBar PR #2 and FSBar PR #5 are
+  merged and independently read back from their selected default branches with
+  the qualified native tree and application bytes. BARC-01.4a–.4f are complete.
+  Publication remains deferred to `.7`.
 
 ## Parallel ownership and real joins
 
@@ -95,9 +95,14 @@ Clean acceptance uses empty public package caches, recorded baseline scaffold ha
 
 Observation sources are existing native coordinator/audit events, broker admission/result logs, browser/Worker measurements and receiver receipts. Telemetry host wiring is not configured and native collaboration usage is unavailable here; tokens, whole-item overhead and efficiency remain unknown. Preserve Unified §7.4's 10% ceiling/near-5% recovery definitions, cumulative 15-item or >25% intervention triggers, and exclusion of useful testing from bureaucracy. Do not infer counters from dispatches or claim compliance from missing data.
 
-## Proposed Unified §9.8 index update
+## Unified §9.8 closure update
 
-Retain the existing BAR row, original design/foundation/preview links and delivered `.1–.3` evidence. Update its current window to: “`.3` product/generated preview is delivered at `c537040f`; `.4` live manual/custom-module control is selected after protected §0 closure `7eb9a2ad`. Native authority/generation fencing, browser submission, all four command journeys and the real generated receiver remain pending.” Add `[FSBarV2 live control — BARC-01.4](https://github.com/FS-GG/FSBarV2/blob/<actual-implementation-branch>/docs/roadmaps/barc-01-live-control.md)` only after that branch/path exists; until then record this real local draft path. Replace it with the durable `main` URL after owning source delivery. Land this link with existing substantive work or the asynchronous projection, never a planning-only PR. Do not mark `.4`, publication or upstream adoption complete when accepting this plan.
+Retain the existing BAR row and original design, foundation and preview links.
+Record `.4` as source/native delivered through FSBarV2 PR #5 and HighBarV3 PR
+#2, link this plan and its acceptance report at their durable `main` paths, and
+make `.5` the next ready horizon only after the mandatory asynchronous Unified
+projection lands. Publication, installed defaults and upstream adoption remain
+pending `.7` outcomes.
 
 ## Contract checkpoint constraints from actual producer inspection
 

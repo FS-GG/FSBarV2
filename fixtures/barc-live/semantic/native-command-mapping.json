@@ -1,5 +1,5 @@
 {
-  "contract": "barc-live-v1/native-command-mapping",
+  "contract": "barc-live-tactical-v1/native-command-mapping",
   "rules": [
     {
       "action": "STOP",
@@ -25,6 +25,71 @@
       "options": 0,
       "conflictPolicy": "COMMAND_CONFLICT_REPLACE_CURRENT",
       "attackAreaReachable": false
+    },
+    {
+      "action": "BUILD",
+      "command": "Unit.Build",
+      "typed": true
+    },
+    {
+      "action": "GUARD",
+      "command": "Unit.Guard",
+      "typed": true
+    },
+    {
+      "action": "REPAIR",
+      "command": "Unit.Repair",
+      "typed": true
+    },
+    {
+      "action": "RECLAIM_UNIT",
+      "command": "Unit.ReclaimUnit",
+      "typed": true
+    },
+    {
+      "action": "RECLAIM_FEATURE",
+      "command": "Unit.ReclaimFeature",
+      "typed": true,
+      "rawCustomCommandForbidden": true
+    },
+    {
+      "action": "RECLAIM_AREA",
+      "command": "Unit.ReclaimInArea",
+      "typed": true
+    },
+    {
+      "action": "FACTORY_PRODUCE",
+      "command": "Unit.Build",
+      "perChildCount": 1,
+      "modifierMultipliersForbidden": true
+    },
+    {
+      "action": "SET_RALLY",
+      "command": "factory-produced-unit Move",
+      "distinctFromBuild": true
+    },
+    {
+      "action": "QUEUE_REMOVE_TAG",
+      "command": "CMD_REMOVE",
+      "exactNativeTag": true
+    },
+    {
+      "action": "BAR_CONSTRUCTION_PRIORITY",
+      "descriptorCommandId": 34571,
+      "values": [
+        0,
+        1
+      ],
+      "runtimeDescriptorRequired": true
+    },
+    {
+      "action": "BAR_CLOAK_DESIRE",
+      "descriptorCommandId": 37382,
+      "values": [
+        0,
+        1
+      ],
+      "runtimeDescriptorRequired": true
     }
   ],
   "invalid": [
@@ -37,6 +102,10 @@
     "module-generation-mismatch",
     "non-visual-attack-target",
     "live-wrapper-with-zero-or-multiple-native-commands",
-    "unreserved-worst-case-child-results"
+    "unreserved-worst-case-child-results",
+    "unknown-tactical-action",
+    "unknown-queue-domain",
+    "incomplete-catalogue",
+    "descriptor-or-queue-revision-mismatch"
   ]
 }

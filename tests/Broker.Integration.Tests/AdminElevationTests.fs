@@ -10,6 +10,7 @@ open Grpc.Net.Client
 open Broker.Core
 open Broker.Protocol
 open FSBarV2.Broker.Contracts
+open Highbar.V1
 
 let private freePort () =
     let listener = new TcpListener(IPAddress.Loopback, 0)
@@ -85,6 +86,8 @@ let adminElevationTests =
 
                 use channel = channelFor port
                 let client = new ScriptingClient.ScriptingClientClient(channel)
+                let! coordinator = ReadyCoordinator.connect channel handle.Hub "admin-elevation" |> Async.AwaitTask
+                use _ = coordinator
                 let! _ =
                     client.HelloAsync(mkHello "alice-bot" (System.Version(1, 0))).ResponseAsync
                     |> Async.AwaitTask
@@ -119,6 +122,20 @@ let adminElevationTests =
                 let ack2 = submit2.ResponseStream.Current
                 Expect.isTrue ack2.Accepted "Pause must be accepted after grant (Hosting + isAdmin)"
                 Expect.equal ack2.Reject ValueNone "phase 2: no reject body when accepted"
+
+                let commandStream =
+                    coordinator.CommandStream
+                    |> Option.defaultWith (fun () -> failtest "coordinator command stream missing")
+                use outboundTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5.0))
+                let! hasOutbound = commandStream.MoveNext(outboundTimeout.Token) |> Async.AwaitTask
+                Expect.isTrue hasOutbound "accepted Pause must reach the real coordinator stream"
+                match commandStream.Current.Commands |> Seq.tryExactlyOne with
+                | Some command ->
+                    match command.Command with
+                    | ValueSome (AICommand.Types.Command.PauseTeam pause) ->
+                        Expect.isTrue pause.Enable "accepted admin Pause is encoded as enable=true"
+                    | _ -> failtest "accepted admin Pause produced the wrong coordinator command"
+                | None -> failtest "accepted admin Pause must produce exactly one outbound command"
 
                 // Phase 3: operator revokes admin; subsequent Pause rejected.
                 BrokerState.revokeAdmin

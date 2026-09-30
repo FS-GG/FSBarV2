@@ -601,6 +601,8 @@ module HighBarCoordinatorService =
                     match request.Body with
                     | ValueSome (LiveStateReport.Types.Body.Snapshot snapshot) when snapshot.Basis.IsSome ->
                         LiveControl.noteMetadataReported snapshot.Basis.Value.StateSequence state
+                    | ValueSome (LiveStateReport.Types.Body.TacticalSnapshot snapshot) when snapshot.Basis.IsSome ->
+                        LiveControl.noteMetadataReported snapshot.Basis.Value.StateSequence state
                     | _ -> ()
                 return response
             }

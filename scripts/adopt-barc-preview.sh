@@ -51,9 +51,24 @@ required=(
   src/Broker.Browser.Client/dist/assets/barc-preview.js
   src/Broker.Browser.Client/dist/assets/barc-preview.css
   src/Broker.Browser.Wasm/guest-worker.js
-  guests/manual-preview.wasm
-  guests/custom-preview.wasm
 )
+if [[ -f "$stage/src/BARC-LIVE-PINS.json" ]]; then
+  jq -e '
+    (.schema == "fsbar.barc-live-receiver-pins/v1" or .schema == "fsbar.barc-live-receiver-pins/v2") and
+    ([.files[] | select(.role == "manualGuest")] | length == 1) and
+    ([.files[] | select(.role == "customGuest")] | length == 1)
+  ' "$stage/src/BARC-LIVE-PINS.json" >/dev/null || {
+    echo "archive contains invalid live receiver pins" >&2
+    exit 2
+  }
+  mapfile -t live_guests < <(
+    jq -r '.files[] | select(.role == "manualGuest" or .role == "customGuest") | .archivePath' \
+      "$stage/src/BARC-LIVE-PINS.json"
+  )
+  required+=("${live_guests[@]}")
+else
+  required+=(guests/manual-preview.wasm guests/custom-preview.wasm)
+fi
 for relative in "${required[@]}"; do
   [[ -f "$stage/$relative" ]] || {
     echo "archive is missing required receiver asset $relative" >&2

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Library</OutputType><IsPackable>true</IsPackable><AllowMissingPrunePackageData>true</AllowMissingPrunePackageData></PropertyGroup>
-  <ItemGroup><Compile Include="Gateway.fsi" /><Compile Include="Gateway.fs" /></ItemGroup>
+  <ItemGroup><Compile Include="AssemblyInfo.fs" /><Compile Include="Gateway.fsi" /><Compile Include="Gateway.fs" /></ItemGroup>
   <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Broker.Core\Broker.Core.fsproj" />

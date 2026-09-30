@@ -51,6 +51,72 @@ module Gateway =
           credentialSessionId: Guid; credentialExpiresAt: DateTimeOffset; perspectiveId: string
           authTimeout: TimeSpan; closeTimeout: TimeSpan; maxFrameBytes: int }
 
+    type SubmitRefusalReason =
+        | Incomplete | IdentityRefused | IdentityMismatch | ActorsInvalid | ActorsNotDistinct
+        | CapacityExhausted | CommandChannelFull | StateNotReady | ActorBindingInvalid
+        | ActionInvalid | MovePolicyMissing | UnitReferenceInvalid | FeatureReferenceInvalid
+        | ControllerNotConfirmed | AuthorityExpired | BasisExpired | ActorNotOwned
+        | AttackTargetInvalid | MoveTargetOutOfBounds | UnknownRefusal
+
+    type LiveDiagnostic =
+        | SubmitAccepted
+        | SubmitRefused of reason:SubmitRefusalReason
+        | BrokerAdmissionForwarded
+        | BrokerAdmissionRejectedForwarded
+        | UnknownForwarded
+        | ExpiredForwarded
+        | ReceiveTaskFailed | ReceiveTaskCompleted | ReceiveTaskCancelled
+        | OutputTaskFailed | OutputTaskCompleted | OutputTaskCancelled
+        | RenewalTaskFailed | RenewalTaskCompleted | RenewalTaskCancelled
+
+    let diagnosticNames diagnostic =
+      match diagnostic with
+        | SubmitAccepted -> struct("submit","accepted")
+        | SubmitRefused reason ->
+            let name =
+                match reason with
+                | Incomplete -> "incomplete" | IdentityRefused -> "identity-refused" | IdentityMismatch -> "identity-mismatch"
+                | ActorsInvalid -> "actors-invalid" | ActorsNotDistinct -> "actors-not-distinct" | CapacityExhausted -> "capacity-exhausted"
+                | CommandChannelFull -> "command-channel-full" | StateNotReady -> "state-not-ready" | ActorBindingInvalid -> "actor-binding-invalid"
+                | ActionInvalid -> "action-invalid" | MovePolicyMissing -> "move-policy-missing" | UnitReferenceInvalid -> "unit-reference-invalid"
+                | FeatureReferenceInvalid -> "feature-reference-invalid" | ControllerNotConfirmed -> "controller-not-confirmed"
+                | AuthorityExpired -> "authority-expired" | BasisExpired -> "basis-expired" | ActorNotOwned -> "actor-not-owned"
+                | AttackTargetInvalid -> "attack-target-invalid" | MoveTargetOutOfBounds -> "move-target-out-of-bounds" | UnknownRefusal -> "unknown-refusal"
+            struct("submit",name)
+        | BrokerAdmissionForwarded -> struct("feedback","broker-admission-forwarded")
+        | BrokerAdmissionRejectedForwarded -> struct("feedback","broker-rejection-forwarded")
+        | UnknownForwarded -> struct("feedback","unknown-forwarded")
+        | ExpiredForwarded -> struct("feedback","expired-forwarded")
+        | ReceiveTaskFailed -> struct("connection-close","receive-task-failed")
+        | ReceiveTaskCompleted -> struct("connection-close","receive-task-completed")
+        | ReceiveTaskCancelled -> struct("connection-close","receive-task-cancelled")
+        | OutputTaskFailed -> struct("connection-close","output-task-failed")
+        | OutputTaskCompleted -> struct("connection-close","output-task-completed")
+        | OutputTaskCancelled -> struct("connection-close","output-task-cancelled")
+        | RenewalTaskFailed -> struct("connection-close","renewal-task-failed")
+        | RenewalTaskCompleted -> struct("connection-close","renewal-task-completed")
+        | RenewalTaskCancelled -> struct("connection-close","renewal-task-cancelled")
+
+    let internal completedTaskDiagnostic (receiveTask: Task) (outputTask: Task) (renewalTask: Task) (completed: Task) =
+        if Object.ReferenceEquals(completed,receiveTask) then
+            if completed.IsFaulted then ReceiveTaskFailed elif completed.IsCanceled then ReceiveTaskCancelled else ReceiveTaskCompleted
+        elif Object.ReferenceEquals(completed,outputTask) then
+            if completed.IsFaulted then OutputTaskFailed elif completed.IsCanceled then OutputTaskCancelled else OutputTaskCompleted
+        elif Object.ReferenceEquals(completed,renewalTask) then
+            if completed.IsFaulted then RenewalTaskFailed elif completed.IsCanceled then RenewalTaskCancelled else RenewalTaskCompleted
+        else invalidArg "completed" "completed task is not an observed live task"
+
+    let internal emitDiagnostic (diagnostics: LiveDiagnostic -> unit) (diagnostic: LiveDiagnostic) =
+        try diagnostics diagnostic
+        with _ -> ()
+
+    let internal feedbackDiagnostic stage status =
+        if status=LiveControl.Expired then Some ExpiredForwarded
+        elif stage=LiveControl.Unknown then Some UnknownForwarded
+        elif stage=LiveControl.BrokerAdmission && status=LiveControl.Accepted then Some BrokerAdmissionForwarded
+        elif stage=LiveControl.BrokerAdmission && status=LiveControl.Rejected then Some BrokerAdmissionRejectedForwarded
+        else None
+
     type private PreparedLiveObservation =
         | PreparedCurrent of sequence: uint64 * envelope: LiveServerEnvelope
         | PreparedStale of lastSequence: uint64 * receivedSequence: uint64 * detail: string
@@ -312,12 +378,36 @@ module Gateway =
         match BrokerState.session hub, bytesGuid auth.ExpectedSessionId with
         | Some session, Some expected
             when origin=config.allowedOrigin && auth.Origin=origin && auth.Game=Game
-              && auth.ProtocolVersion=ProtocolVersion && auth.Profile="barc-live-v1"
+              && auth.ProtocolVersion=ProtocolVersion && (auth.Profile="barc-live-v1" || auth.Profile="barc-live-tactical-v1")
               && auth.Credential=config.credential && DateTimeOffset.UtcNow<=config.credentialExpiresAt
-              && expected=config.credentialSessionId && expected=Session.id session -> Ok expected
+              && expected=config.credentialSessionId && expected=Session.id session -> Ok(expected,auth.Profile)
         | _ -> Error "live browser credential, origin, protocol, or session refused"
 
-    let private runLiveSocket hub (config: LiveConfig) (context: HttpContext) = task {
+    let internal submitRefusalReason detail =
+      match detail with
+        | "live submission is incomplete" -> Incomplete
+        | "live parent, input, or controller identity refused" -> IdentityRefused
+        | "live tactical submission identity mismatch" | "live submission identity mismatch" -> IdentityMismatch
+        | "live tactical actors or expanded child count are invalid" | "live actors are invalid" -> ActorsInvalid
+        | "live tactical actors must be distinct" | "live actors must be distinct" -> ActorsNotDistinct
+        | "live parent or result capacity exhausted" -> CapacityExhausted
+        | "live command channel is full" -> CommandChannelFull
+        | "tactical live state is incomplete or controller is not native-confirmed" | "live capability, snapshot, or binding unavailable" -> StateNotReady
+        | "every tactical actor requires one binding" -> ActorBindingInvalid
+        | "exactly one tactical action is required" | "exactly one live action is required" -> ActionInvalid
+        | "move policy is required" -> MovePolicyMissing
+        | "unit reference is invalid" -> UnitReferenceInvalid
+        | "feature reference is invalid" -> FeatureReferenceInvalid
+        | "live controller is not native-confirmed" -> ControllerNotConfirmed
+        | "live authority lease expired" -> AuthorityExpired
+        | "live observation basis expired" -> BasisExpired
+        | "actor is not owned at the acknowledged basis" -> ActorNotOwned
+        | "attack target is not a distinct visible lifetime" -> AttackTargetInvalid
+        | "move target is outside live map bounds" -> MoveTargetOutOfBounds
+        | _ -> UnknownRefusal
+
+    let private runLiveSocket hub (config: LiveConfig) diagnostics (context: HttpContext) = task {
+        let diagnostic = emitDiagnostic diagnostics
         let origin=context.Request.Headers.Origin.ToString()
         if origin<>config.allowedOrigin then context.Response.StatusCode<-StatusCodes.Status403Forbidden
         elif not context.WebSockets.IsWebSocketRequest then context.Response.StatusCode<-StatusCodes.Status400BadRequest
@@ -337,9 +427,9 @@ module Gateway =
                     | Ok message ->
                         match authenticateLive config origin message.Authenticate hub with
                         | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
-                        | Ok sessionId ->
+                        | Ok(sessionId,profile) ->
                             let state=BrokerState.liveControl hub
-                            match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
+                            match LiveBoundary.provisionBootstrapForProfile profile sessionId config.perspectiveId state with
                             | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                             | Ok bootstrap ->
                                 use connectionCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
@@ -361,8 +451,9 @@ module Gateway =
                                     | Snapshot.Current current when current.sessionId=sessionId ->
                                         let preview=(observation current).Observation
                                         match LiveBoundary.observation preview state with
-                                        | Ok envelope -> PreparedCurrent(current.sequence,envelope)
+                                        | Ok envelope when profile<>"barc-live-tactical-v1" || not(isNull envelope.Observation.Tactical) -> PreparedCurrent(current.sequence,envelope)
                                         | Error _ -> PreparedUnavailable
+                                        | _ -> PreparedUnavailable
                                     | Snapshot.Stale(staleSessionId,lastSequence,receivedSequence,detail) when staleSessionId=sessionId ->
                                         PreparedStale(lastSequence,receivedSequence,detail)
                                     | _ -> PreparedSessionChanged
@@ -421,7 +512,10 @@ module Gateway =
                                         member _.OnCompleted() = () }
                                 let resultObserver =
                                     { new IObserver<LiveControl.Feedback> with
-                                        member _.OnNext value = lock outputGate (fun () -> enqueueLocked "live result delivery capacity exhausted" (LiveBoundary.feedbackEnvelope value) |> ignore)
+                                        member _.OnNext value =
+                                            let forwarded=lock outputGate (fun () -> enqueueLocked "live result delivery capacity exhausted" (LiveBoundary.feedbackEnvelope value))
+                                            if forwarded then
+                                                feedbackDiagnostic value.stage value.status |> Option.iter diagnostic
                                         member _.OnError error = outputs.Writer.TryComplete error |> ignore
                                         member _.OnCompleted() = outputs.Writer.TryComplete() |> ignore }
                                 let controllerObserver =
@@ -430,7 +524,7 @@ module Gateway =
                                             let terminal=value.stage = LiveControl.Revoked || value.stage = LiveControl.ControllerExpired || value.stage = LiveControl.ControllerRefused
                                             let replacement =
                                                 if terminal then
-                                                    match LiveBoundary.provisionBootstrap sessionId config.perspectiveId state with
+                                                    match LiveBoundary.provisionBootstrapForProfile profile sessionId config.perspectiveId state with
                                                     | Error detail -> Error detail
                                                     | Ok bootstrap ->
                                                         let prepared=BrokerState.browserLatest hub |> Option.map prepareObservation
@@ -464,6 +558,7 @@ module Gateway =
                                 use resultSubscription=(LiveControl.feedback state).Subscribe resultObserver
                                 use controllerSubscription=(LiveControl.controllerUpdates state).Subscribe controllerObserver
                                 let mutable ownedBinding: LiveBinding option = None
+                                let mutable submitBoundaryRefused = false
                                 latest |> Option.iter prepareAndEnqueueObservation
                                 let receiveTask=task {
                                     while socket.State=WebSocketState.Open do
@@ -485,8 +580,11 @@ module Gateway =
                                                 | Error detail -> raise(InvalidOperationException detail)
                                             | LiveClientEnvelope.BodyOneofCase.Submit ->
                                                 match LiveBoundary.submit sessionId request.Submit DateTimeOffset.UtcNow state with
-                                                | Ok _ -> ()
-                                                | Error detail -> raise(InvalidOperationException detail)
+                                                | Ok _ -> diagnostic SubmitAccepted
+                                                | Error detail ->
+                                                    submitBoundaryRefused <- true
+                                                    diagnostic (SubmitRefused(submitRefusalReason detail))
+                                                    raise(InvalidOperationException detail)
                                             | _ -> raise(InvalidOperationException "unsupported live client envelope") }
                                 let outputTask = task {
                                     while true do
@@ -504,7 +602,9 @@ module Gateway =
                                             | None -> ()
                                         | _ -> raise SessionChanged }
                                 let observed=[|receiveTask:>Task;outputTask:>Task;renewTask:>Task|]
-                                let! _=Task.WhenAny observed
+                                let! completed=Task.WhenAny observed
+                                if not (submitBoundaryRefused && Object.ReferenceEquals(completed,receiveTask)) then
+                                    diagnostic (completedTaskDiagnostic receiveTask outputTask renewTask completed)
                                 connectionCts.Cancel()
                                 try do! Task.WhenAll observed with _ -> ()
                                 ownedBinding
@@ -517,7 +617,7 @@ module Gateway =
             | :? InvalidProtocolBufferException -> do! close socket WebSocketCloseStatus.InvalidPayloadData "malformed live frame" config.closeTimeout
     }
 
-    let startLiveAsync hub (config: LiveConfig) cancellationToken = task {
+    let startLiveAsyncWithDiagnostics hub (config: LiveConfig) diagnostics cancellationToken = task {
         let mutable listenUri = Unchecked.defaultof<Uri>
         let mutable originUri = Unchecked.defaultof<Uri>
         let validListen = Uri.TryCreate(config.url, UriKind.Absolute, &listenUri)
@@ -545,7 +645,10 @@ module Gateway =
         builder.WebHost.UseUrls(config.url)|>ignore
         let app=builder.Build()
         app.UseWebSockets()|>ignore
-        app.Map(config.path,Func<HttpContext,Task>(fun context->runLiveSocket hub config context:>Task))|>ignore
+        app.Map(config.path,Func<HttpContext,Task>(fun context->runLiveSocket hub config diagnostics context:>Task))|>ignore
         do! app.StartAsync(cancellationToken)
         return app:>IHost
     }
+
+    let startLiveAsync hub config cancellationToken =
+        startLiveAsyncWithDiagnostics hub config ignore cancellationToken

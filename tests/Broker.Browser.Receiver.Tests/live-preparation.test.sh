@@ -39,7 +39,8 @@ jq -n --arg commit "$commit" \
   --arg guestSupervisor "$(sha src/Broker.Browser.Wasm/guest-supervisor.js)" \
   --arg wasmIndex "$(sha src/Broker.Browser.Wasm/index.js)" \
   --arg manual "$(sha guest-build/manual-live.wasm)" --arg custom "$(sha guest-build/custom-live.wasm)" '
-  {schema:"fsbar.barc-live-receiver-pins/v1",profile:"barc-live-v1",source:{commit:$commit},files:[
+  {schema:"fsbar.barc-live-receiver-pins/v2",profile:"barc-live-tactical-v1",
+   protocolVersion:2,tacticalRevision:1,guestAbiVersion:1,source:{commit:$commit},files:[
     {role:"clientJs",sourcePath:"src/Broker.Browser.Client/dist/assets/barc-preview.js",archivePath:"src/Broker.Browser.Client/dist/assets/barc-preview.js",sha256:$clientJs},
     {role:"clientCss",sourcePath:"src/Broker.Browser.Client/dist/assets/barc-preview.css",archivePath:"src/Broker.Browser.Client/dist/assets/barc-preview.css",sha256:$clientCss},
     {role:"codec",sourcePath:"src/Broker.Browser.Contracts/generated/codec.js",archivePath:"src/Broker.Browser.Contracts/generated/codec.js",sha256:$codec},
@@ -57,9 +58,12 @@ jq -n --arg commit "$commit" \
 cmp "$work/first.tar.gz" "$work/second.tar.gz"
 "$repo_root/scripts/qualify-barc-receiver-live-prep.sh" --product-root "$source" \
   --archive "$work/first.tar.gz" --pins "$pins" --evidence "$work/evidence" >/dev/null
-jq -e '.disposition == "prepared" and .profile == "barc-live-v1" and
+jq -e '.schema == "fsbar.barc-live-receiver-preparation/v2" and .disposition == "prepared" and
+  .profile == "barc-live-tactical-v1" and
+  .negotiation == {protocolVersion:2,tacticalRevision:1,guestAbiVersion:1,explicitOptIn:true} and
+  .availability.factoryRally == {complete:false,disposition:"unavailable-until-native-catalogue-complete"} and
   .archive.manifestVerified == true and .receiver.previewRoutePreserved == true and
-  (.claims | all(. == false)) and (.pending | length == 4)' "$work/evidence/qualification.json" >/dev/null
+  (.claims | all(. == false)) and (.pending | length == 5)' "$work/evidence/qualification.json" >/dev/null
 [[ "$(stat -c '%a' "$work/evidence/qualification.json")" == 600 ]]
 cmp "$source/src/Broker.Browser.Wasm/barc-wire.js" \
   "$work/evidence/src/Broker.Browser.Wasm/barc-wire.js"
@@ -71,6 +75,14 @@ jq '(.files[] | select(.role == "dependency") | .archivePath) = "src/Broker.Brow
 if "$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$duplicate_pins" \
   --output "$work/duplicate.tar.gz" >/dev/null 2>&1; then
   echo "live packager accepted duplicate archive destinations" >&2
+  exit 1
+fi
+
+wrong_negotiation_pins="$work/wrong-negotiation-pins.json"
+jq '.tacticalRevision = 2' "$pins" > "$wrong_negotiation_pins"
+if "$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$wrong_negotiation_pins" \
+  --output "$work/wrong-negotiation.tar.gz" >/dev/null 2>&1; then
+  echo "live packager accepted a non-frozen tactical revision" >&2
   exit 1
 fi
 if "$repo_root/scripts/qualify-barc-receiver-live-prep.sh" --product-root "$source" \
@@ -131,6 +143,7 @@ fi
 
 grep -F 'searchParams.get("barc-profile")' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 grep -F 'profile === "barc-live-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
+grep -F 'profile === "barc-live-tactical-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 if [[ -n "${BARC_LIVE_PREP_TEST_RECEIPT:-}" ]]; then
   [[ ! -e "$BARC_LIVE_PREP_TEST_RECEIPT" ]] || { echo "focused receipt path already exists" >&2; exit 1; }
   mkdir -p "$(dirname "$BARC_LIVE_PREP_TEST_RECEIPT")"
@@ -140,7 +153,7 @@ if [[ -n "${BARC_LIVE_PREP_TEST_RECEIPT:-}" ]]; then
     positive:{dependencyPackaged:true,manifestVerified:true,qualificationPrepared:true},
     refusals:{duplicateArchiveDestination:true,firstDotdotComponent:true,
       sourceSymlinkEscape:true,unsafeTarTypeBeforeExtraction:true,outsideSentinelPreserved:true,
-      changedProductBytes:true},
+      changedProductBytes:true,nonFrozenTacticalRevision:true},
     claims:{liveAcceptance:false,nativeRuntime:false,publication:false}
   }' > "$BARC_LIVE_PREP_TEST_RECEIPT"
   chmod 0600 "$BARC_LIVE_PREP_TEST_RECEIPT"

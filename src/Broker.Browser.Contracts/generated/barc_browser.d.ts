@@ -2207,7 +2207,37 @@ export namespace barc {
                 LIVE_ACTION_KIND_MOVE = 2,
 
                 /** LIVE_ACTION_KIND_ATTACK value */
-                LIVE_ACTION_KIND_ATTACK = 3
+                LIVE_ACTION_KIND_ATTACK = 3,
+
+                /** LIVE_ACTION_KIND_BUILD value */
+                LIVE_ACTION_KIND_BUILD = 4,
+
+                /** LIVE_ACTION_KIND_GUARD value */
+                LIVE_ACTION_KIND_GUARD = 5,
+
+                /** LIVE_ACTION_KIND_REPAIR value */
+                LIVE_ACTION_KIND_REPAIR = 6,
+
+                /** LIVE_ACTION_KIND_RECLAIM_UNIT value */
+                LIVE_ACTION_KIND_RECLAIM_UNIT = 7,
+
+                /** LIVE_ACTION_KIND_RECLAIM_FEATURE value */
+                LIVE_ACTION_KIND_RECLAIM_FEATURE = 8,
+
+                /** LIVE_ACTION_KIND_RECLAIM_AREA value */
+                LIVE_ACTION_KIND_RECLAIM_AREA = 9,
+
+                /** LIVE_ACTION_KIND_FACTORY_PRODUCE value */
+                LIVE_ACTION_KIND_FACTORY_PRODUCE = 10,
+
+                /** LIVE_ACTION_KIND_SET_RALLY value */
+                LIVE_ACTION_KIND_SET_RALLY = 11,
+
+                /** LIVE_ACTION_KIND_QUEUE_EDIT value */
+                LIVE_ACTION_KIND_QUEUE_EDIT = 12,
+
+                /** LIVE_ACTION_KIND_TACTICAL_MODE value */
+                LIVE_ACTION_KIND_TACTICAL_MODE = 13
             }
 
             /** MovePolicy enum. */
@@ -2997,6 +3027,9 @@ export namespace barc {
                 /** LiveCapabilities mapBounds. */
                 mapBounds?: (barc.browser.v1.MapBounds.$Properties|null);
 
+                /** LiveCapabilities tactical. */
+                tactical?: (barc.browser.v1.TacticalCapabilities.$Properties|null);
+
                 /**
                  * Encodes the specified LiveCapabilities message. Does not implicitly {@link barc.browser.v1.LiveCapabilities.verify|verify} messages.
                  * @param message LiveCapabilities message or plain object to encode
@@ -3077,6 +3110,9 @@ export namespace barc {
 
                     /** LiveCapabilities mapBounds */
                     mapBounds?: (barc.browser.v1.MapBounds.$Properties|null);
+
+                    /** LiveCapabilities tactical */
+                    tactical?: (barc.browser.v1.TacticalCapabilities.$Properties|null);
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];
@@ -3243,6 +3279,9 @@ export namespace barc {
                 /** LiveBootstrap capabilities. */
                 capabilities?: (barc.browser.v1.LiveCapabilities.$Properties|null);
 
+                /** LiveBootstrap tacticalCatalogue. */
+                tacticalCatalogue?: (barc.browser.v1.TacticalCatalogue.$Properties|null);
+
                 /**
                  * Encodes the specified LiveBootstrap message. Does not implicitly {@link barc.browser.v1.LiveBootstrap.verify|verify} messages.
                  * @param message LiveBootstrap message or plain object to encode
@@ -3329,6 +3368,9 @@ export namespace barc {
 
                     /** LiveBootstrap capabilities */
                     capabilities?: (barc.browser.v1.LiveCapabilities.$Properties|null);
+
+                    /** LiveBootstrap tacticalCatalogue */
+                    tacticalCatalogue?: (barc.browser.v1.TacticalCatalogue.$Properties|null);
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];
@@ -3474,6 +3516,9 @@ export namespace barc {
                 /** LiveObservation units. */
                 units: barc.browser.v1.LiveObservedUnit.$Properties[];
 
+                /** LiveObservation tactical. */
+                tactical?: (barc.browser.v1.TacticalObservation.$Properties|null);
+
                 /**
                  * Encodes the specified LiveObservation message. Does not implicitly {@link barc.browser.v1.LiveObservation.verify|verify} messages.
                  * @param message LiveObservation message or plain object to encode
@@ -3551,6 +3596,9 @@ export namespace barc {
 
                     /** LiveObservation units */
                     units?: (barc.browser.v1.LiveObservedUnit.$Properties[]|null);
+
+                    /** LiveObservation tactical */
+                    tactical?: (barc.browser.v1.TacticalObservation.$Properties|null);
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];
@@ -3888,6 +3936,9 @@ export namespace barc {
                 /** LiveIntent actors. */
                 actors: barc.browser.v1.UnitReference.$Properties[];
 
+                /** LiveIntent actorTacticalBindings. */
+                actorTacticalBindings: barc.browser.v1.ActorTacticalBinding.$Properties[];
+
                 /** LiveIntent stop. */
                 stop?: (barc.browser.v1.StopAction.$Properties|null);
 
@@ -3897,8 +3948,38 @@ export namespace barc {
                 /** LiveIntent attack. */
                 attack?: (barc.browser.v1.AttackTarget.$Properties|null);
 
+                /** LiveIntent build. */
+                build?: (barc.browser.v1.BuildTarget.$Properties|null);
+
+                /** LiveIntent guard. */
+                guard?: (barc.browser.v1.FriendlyTarget.$Properties|null);
+
+                /** LiveIntent repair. */
+                repair?: (barc.browser.v1.FriendlyTarget.$Properties|null);
+
+                /** LiveIntent reclaimUnit. */
+                reclaimUnit?: (barc.browser.v1.FriendlyTarget.$Properties|null);
+
+                /** LiveIntent reclaimFeature. */
+                reclaimFeature?: (barc.browser.v1.FeatureTarget.$Properties|null);
+
+                /** LiveIntent reclaimArea. */
+                reclaimArea?: (barc.browser.v1.AreaTarget.$Properties|null);
+
+                /** LiveIntent factoryProduce. */
+                factoryProduce?: (barc.browser.v1.FactoryProduceTarget.$Properties|null);
+
+                /** LiveIntent setRally. */
+                setRally?: (barc.browser.v1.RallyTarget.$Properties|null);
+
+                /** LiveIntent queueEdit. */
+                queueEdit?: (barc.browser.v1.QueueEditTarget.$Properties|null);
+
+                /** LiveIntent tacticalMode. */
+                tacticalMode?: (barc.browser.v1.TacticalModeTarget.$Properties|null);
+
                 /** LiveIntent action. */
-                action?: ("stop"|"move"|"attack");
+                action?: ("stop"|"move"|"attack"|"build"|"guard"|"repair"|"reclaimUnit"|"reclaimFeature"|"reclaimArea"|"factoryProduce"|"setRally"|"queueEdit"|"tacticalMode");
 
                 /**
                  * Encodes the specified LiveIntent message. Does not implicitly {@link barc.browser.v1.LiveIntent.verify|verify} messages.
@@ -3972,6 +4053,9 @@ export namespace barc {
                     /** LiveIntent actors */
                     actors?: (barc.browser.v1.UnitReference.$Properties[]|null);
 
+                    /** LiveIntent actorTacticalBindings */
+                    actorTacticalBindings?: (barc.browser.v1.ActorTacticalBinding.$Properties[]|null);
+
                     /** LiveIntent stop */
                     stop?: (barc.browser.v1.StopAction.$Properties|null);
 
@@ -3981,8 +4065,38 @@ export namespace barc {
                     /** LiveIntent attack */
                     attack?: (barc.browser.v1.AttackTarget.$Properties|null);
 
+                    /** LiveIntent build */
+                    build?: (barc.browser.v1.BuildTarget.$Properties|null);
+
+                    /** LiveIntent guard */
+                    guard?: (barc.browser.v1.FriendlyTarget.$Properties|null);
+
+                    /** LiveIntent repair */
+                    repair?: (barc.browser.v1.FriendlyTarget.$Properties|null);
+
+                    /** LiveIntent reclaimUnit */
+                    reclaimUnit?: (barc.browser.v1.FriendlyTarget.$Properties|null);
+
+                    /** LiveIntent reclaimFeature */
+                    reclaimFeature?: (barc.browser.v1.FeatureTarget.$Properties|null);
+
+                    /** LiveIntent reclaimArea */
+                    reclaimArea?: (barc.browser.v1.AreaTarget.$Properties|null);
+
+                    /** LiveIntent factoryProduce */
+                    factoryProduce?: (barc.browser.v1.FactoryProduceTarget.$Properties|null);
+
+                    /** LiveIntent setRally */
+                    setRally?: (barc.browser.v1.RallyTarget.$Properties|null);
+
+                    /** LiveIntent queueEdit */
+                    queueEdit?: (barc.browser.v1.QueueEditTarget.$Properties|null);
+
+                    /** LiveIntent tacticalMode */
+                    tacticalMode?: (barc.browser.v1.TacticalModeTarget.$Properties|null);
+
                     /** LiveIntent action */
-                    action?: ("stop"|"move"|"attack");
+                    action?: ("stop"|"move"|"attack"|"build"|"guard"|"repair"|"reclaimUnit"|"reclaimFeature"|"reclaimArea"|"factoryProduce"|"setRally"|"queueEdit"|"tacticalMode");
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];
@@ -3991,13 +4105,3226 @@ export namespace barc {
                 /** Narrowed shape of a LiveIntent. */
                 type $Shape = {
                   actors?: barc.browser.v1.UnitReference.$Shape[]|null;
+                  actorTacticalBindings?: barc.browser.v1.ActorTacticalBinding.$Shape[]|null;
                   stop?: barc.browser.v1.StopAction.$Shape|null;
                   move?: barc.browser.v1.MoveTarget.$Shape|null;
                   attack?: barc.browser.v1.AttackTarget.$Shape|null;
+                  build?: barc.browser.v1.BuildTarget.$Shape|null;
+                  guard?: barc.browser.v1.FriendlyTarget.$Shape|null;
+                  repair?: barc.browser.v1.FriendlyTarget.$Shape|null;
+                  reclaimUnit?: barc.browser.v1.FriendlyTarget.$Shape|null;
+                  reclaimFeature?: barc.browser.v1.FeatureTarget.$Shape|null;
+                  reclaimArea?: barc.browser.v1.AreaTarget.$Shape|null;
+                  factoryProduce?: barc.browser.v1.FactoryProduceTarget.$Shape|null;
+                  setRally?: barc.browser.v1.RallyTarget.$Shape|null;
+                  queueEdit?: barc.browser.v1.QueueEditTarget.$Shape|null;
+                  tacticalMode?: barc.browser.v1.TacticalModeTarget.$Shape|null;
                   $unknowns?: Uint8Array[];
                 } & (
-                  ({ action?: undefined; stop?: null; move?: null; attack?: null }|{ action?: "stop"; stop: barc.browser.v1.StopAction.$Shape; move?: null; attack?: null }|{ action?: "move"; stop?: null; move: barc.browser.v1.MoveTarget.$Shape; attack?: null }|{ action?: "attack"; stop?: null; move?: null; attack: barc.browser.v1.AttackTarget.$Shape })
+                  ({ action?: undefined; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "stop"; stop: barc.browser.v1.StopAction.$Shape; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "move"; stop?: null; move: barc.browser.v1.MoveTarget.$Shape; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "attack"; stop?: null; move?: null; attack: barc.browser.v1.AttackTarget.$Shape; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "build"; stop?: null; move?: null; attack?: null; build: barc.browser.v1.BuildTarget.$Shape; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "guard"; stop?: null; move?: null; attack?: null; build?: null; guard: barc.browser.v1.FriendlyTarget.$Shape; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "repair"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair: barc.browser.v1.FriendlyTarget.$Shape; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "reclaimUnit"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit: barc.browser.v1.FriendlyTarget.$Shape; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "reclaimFeature"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature: barc.browser.v1.FeatureTarget.$Shape; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "reclaimArea"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea: barc.browser.v1.AreaTarget.$Shape; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "factoryProduce"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce: barc.browser.v1.FactoryProduceTarget.$Shape; setRally?: null; queueEdit?: null; tacticalMode?: null }|{ action?: "setRally"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally: barc.browser.v1.RallyTarget.$Shape; queueEdit?: null; tacticalMode?: null }|{ action?: "queueEdit"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit: barc.browser.v1.QueueEditTarget.$Shape; tacticalMode?: null }|{ action?: "tacticalMode"; stop?: null; move?: null; attack?: null; build?: null; guard?: null; repair?: null; reclaimUnit?: null; reclaimFeature?: null; reclaimArea?: null; factoryProduce?: null; setRally?: null; queueEdit?: null; tacticalMode: barc.browser.v1.TacticalModeTarget.$Shape })
                 );
+            }
+
+            /** TacticalQueuePolicy enum. */
+            enum TacticalQueuePolicy {
+
+                /** TACTICAL_QUEUE_POLICY_UNSPECIFIED value */
+                TACTICAL_QUEUE_POLICY_UNSPECIFIED = 0,
+
+                /** TACTICAL_QUEUE_POLICY_REPLACE value */
+                TACTICAL_QUEUE_POLICY_REPLACE = 1,
+
+                /** TACTICAL_QUEUE_POLICY_APPEND value */
+                TACTICAL_QUEUE_POLICY_APPEND = 2,
+
+                /** TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY value */
+                TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY = 3
+            }
+
+            /** BuildFacing enum. */
+            enum BuildFacing {
+
+                /** BUILD_FACING_UNSPECIFIED value */
+                BUILD_FACING_UNSPECIFIED = 0,
+
+                /** BUILD_FACING_NORTH value */
+                BUILD_FACING_NORTH = 1,
+
+                /** BUILD_FACING_EAST value */
+                BUILD_FACING_EAST = 2,
+
+                /** BUILD_FACING_SOUTH value */
+                BUILD_FACING_SOUTH = 3,
+
+                /** BUILD_FACING_WEST value */
+                BUILD_FACING_WEST = 4
+            }
+
+            /** QueueEditKind enum. */
+            enum QueueEditKind {
+
+                /** QUEUE_EDIT_KIND_UNSPECIFIED value */
+                QUEUE_EDIT_KIND_UNSPECIFIED = 0,
+
+                /** QUEUE_EDIT_KIND_INSERT value */
+                QUEUE_EDIT_KIND_INSERT = 1,
+
+                /** QUEUE_EDIT_KIND_REMOVE_TAG value */
+                QUEUE_EDIT_KIND_REMOVE_TAG = 2,
+
+                /** QUEUE_EDIT_KIND_SET_REPEAT value */
+                QUEUE_EDIT_KIND_SET_REPEAT = 3
+            }
+
+            /** QueueDomain enum. */
+            enum QueueDomain {
+
+                /** QUEUE_DOMAIN_UNSPECIFIED value */
+                QUEUE_DOMAIN_UNSPECIFIED = 0,
+
+                /** QUEUE_DOMAIN_ACTOR_ORDER value */
+                QUEUE_DOMAIN_ACTOR_ORDER = 1,
+
+                /** QUEUE_DOMAIN_FACTORY_PRODUCTION value */
+                QUEUE_DOMAIN_FACTORY_PRODUCTION = 2,
+
+                /** QUEUE_DOMAIN_FACTORY_RALLY value */
+                QUEUE_DOMAIN_FACTORY_RALLY = 3
+            }
+
+            /** TacticalDescriptorKind enum. */
+            enum TacticalDescriptorKind {
+
+                /** TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED value */
+                TACTICAL_DESCRIPTOR_KIND_UNSPECIFIED = 0,
+
+                /** TACTICAL_DESCRIPTOR_BUILD value */
+                TACTICAL_DESCRIPTOR_BUILD = 1,
+
+                /** TACTICAL_DESCRIPTOR_GUARD value */
+                TACTICAL_DESCRIPTOR_GUARD = 2,
+
+                /** TACTICAL_DESCRIPTOR_REPAIR value */
+                TACTICAL_DESCRIPTOR_REPAIR = 3,
+
+                /** TACTICAL_DESCRIPTOR_RECLAIM_UNIT value */
+                TACTICAL_DESCRIPTOR_RECLAIM_UNIT = 4,
+
+                /** TACTICAL_DESCRIPTOR_RECLAIM_FEATURE value */
+                TACTICAL_DESCRIPTOR_RECLAIM_FEATURE = 5,
+
+                /** TACTICAL_DESCRIPTOR_RECLAIM_AREA value */
+                TACTICAL_DESCRIPTOR_RECLAIM_AREA = 6,
+
+                /** TACTICAL_DESCRIPTOR_FACTORY_PRODUCE value */
+                TACTICAL_DESCRIPTOR_FACTORY_PRODUCE = 7,
+
+                /** TACTICAL_DESCRIPTOR_SET_RALLY value */
+                TACTICAL_DESCRIPTOR_SET_RALLY = 8,
+
+                /** TACTICAL_DESCRIPTOR_QUEUE_INSERT value */
+                TACTICAL_DESCRIPTOR_QUEUE_INSERT = 9,
+
+                /** TACTICAL_DESCRIPTOR_QUEUE_REMOVE value */
+                TACTICAL_DESCRIPTOR_QUEUE_REMOVE = 10,
+
+                /** TACTICAL_DESCRIPTOR_QUEUE_REPEAT value */
+                TACTICAL_DESCRIPTOR_QUEUE_REPEAT = 11,
+
+                /** TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY value */
+                TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY = 12,
+
+                /** TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE value */
+                TACTICAL_DESCRIPTOR_BAR_CLOAK_DESIRE = 13
+            }
+
+            /** TacticalModeValue enum. */
+            enum TacticalModeValue {
+
+                /** TACTICAL_MODE_VALUE_UNSPECIFIED value */
+                TACTICAL_MODE_VALUE_UNSPECIFIED = 0,
+
+                /** TACTICAL_MODE_VALUE_DISABLED value */
+                TACTICAL_MODE_VALUE_DISABLED = 1,
+
+                /** TACTICAL_MODE_VALUE_ENABLED value */
+                TACTICAL_MODE_VALUE_ENABLED = 2
+            }
+
+            /**
+             * Properties of a TacticalCapabilities.
+             * @deprecated Use barc.browser.v1.TacticalCapabilities.$Properties instead.
+             */
+            interface ITacticalCapabilities extends barc.browser.v1.TacticalCapabilities.$Properties {
+            }
+
+            /** Represents a TacticalCapabilities. */
+            class TacticalCapabilities {
+
+                /**
+                 * Constructs a new TacticalCapabilities.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalCapabilities.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalCapabilities profile. */
+                profile: string;
+
+                /** TacticalCapabilities revision. */
+                revision: number;
+
+                /** TacticalCapabilities maxCatalogueEntries. */
+                maxCatalogueEntries: number;
+
+                /** TacticalCapabilities maxCataloguePageEntries. */
+                maxCataloguePageEntries: number;
+
+                /** TacticalCapabilities maxBuildOptionsPerActor. */
+                maxBuildOptionsPerActor: number;
+
+                /** TacticalCapabilities maxQueueEntriesPerActor. */
+                maxQueueEntriesPerActor: number;
+
+                /** TacticalCapabilities maxFeatureReferences. */
+                maxFeatureReferences: number;
+
+                /** TacticalCapabilities maxFactoryProductionCount. */
+                maxFactoryProductionCount: number;
+
+                /** TacticalCapabilities maxAreaRadiusWorldUnits. */
+                maxAreaRadiusWorldUnits: number;
+
+                /** TacticalCapabilities maxCommandDescriptorsPerActor. */
+                maxCommandDescriptorsPerActor: number;
+
+                /**
+                 * Encodes the specified TacticalCapabilities message. Does not implicitly {@link barc.browser.v1.TacticalCapabilities.verify|verify} messages.
+                 * @param message TacticalCapabilities message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalCapabilities.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalCapabilities message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalCapabilities.verify|verify} messages.
+                 * @param message TacticalCapabilities message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalCapabilities.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalCapabilities message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalCapabilities & barc.browser.v1.TacticalCapabilities.$Shape} TacticalCapabilities
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalCapabilities & barc.browser.v1.TacticalCapabilities.$Shape;
+
+                /**
+                 * Decodes a TacticalCapabilities message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalCapabilities & barc.browser.v1.TacticalCapabilities.$Shape} TacticalCapabilities
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalCapabilities & barc.browser.v1.TacticalCapabilities.$Shape;
+
+                /**
+                 * Creates a TacticalCapabilities message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalCapabilities
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalCapabilities;
+
+                /**
+                 * Creates a plain object from a TacticalCapabilities message. Also converts values to other types if specified.
+                 * @param message TacticalCapabilities
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalCapabilities, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalCapabilities to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalCapabilities
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalCapabilities {
+
+                /** Properties of a TacticalCapabilities. */
+                interface $Properties {
+
+                    /** TacticalCapabilities profile */
+                    profile?: (string|null);
+
+                    /** TacticalCapabilities revision */
+                    revision?: (number|null);
+
+                    /** TacticalCapabilities maxCatalogueEntries */
+                    maxCatalogueEntries?: (number|null);
+
+                    /** TacticalCapabilities maxCataloguePageEntries */
+                    maxCataloguePageEntries?: (number|null);
+
+                    /** TacticalCapabilities maxBuildOptionsPerActor */
+                    maxBuildOptionsPerActor?: (number|null);
+
+                    /** TacticalCapabilities maxQueueEntriesPerActor */
+                    maxQueueEntriesPerActor?: (number|null);
+
+                    /** TacticalCapabilities maxFeatureReferences */
+                    maxFeatureReferences?: (number|null);
+
+                    /** TacticalCapabilities maxFactoryProductionCount */
+                    maxFactoryProductionCount?: (number|null);
+
+                    /** TacticalCapabilities maxAreaRadiusWorldUnits */
+                    maxAreaRadiusWorldUnits?: (number|null);
+
+                    /** TacticalCapabilities maxCommandDescriptorsPerActor */
+                    maxCommandDescriptorsPerActor?: (number|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalCapabilities. */
+                type $Shape = barc.browser.v1.TacticalCapabilities.$Properties;
+            }
+
+            /**
+             * Properties of a ContentIdentity.
+             * @deprecated Use barc.browser.v1.ContentIdentity.$Properties instead.
+             */
+            interface IContentIdentity extends barc.browser.v1.ContentIdentity.$Properties {
+            }
+
+            /** Represents a ContentIdentity. */
+            class ContentIdentity {
+
+                /**
+                 * Constructs a new ContentIdentity.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.ContentIdentity.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** ContentIdentity engineVersion. */
+                engineVersion: string;
+
+                /** ContentIdentity gameName. */
+                gameName: string;
+
+                /** ContentIdentity gameVersion. */
+                gameVersion: string;
+
+                /** ContentIdentity gameContentSha256. */
+                gameContentSha256: Uint8Array;
+
+                /**
+                 * Encodes the specified ContentIdentity message. Does not implicitly {@link barc.browser.v1.ContentIdentity.verify|verify} messages.
+                 * @param message ContentIdentity message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.ContentIdentity.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified ContentIdentity message, length delimited. Does not implicitly {@link barc.browser.v1.ContentIdentity.verify|verify} messages.
+                 * @param message ContentIdentity message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.ContentIdentity.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a ContentIdentity message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ContentIdentity & barc.browser.v1.ContentIdentity.$Shape} ContentIdentity
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.ContentIdentity & barc.browser.v1.ContentIdentity.$Shape;
+
+                /**
+                 * Decodes a ContentIdentity message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ContentIdentity & barc.browser.v1.ContentIdentity.$Shape} ContentIdentity
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.ContentIdentity & barc.browser.v1.ContentIdentity.$Shape;
+
+                /**
+                 * Creates a ContentIdentity message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns ContentIdentity
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.ContentIdentity;
+
+                /**
+                 * Creates a plain object from a ContentIdentity message. Also converts values to other types if specified.
+                 * @param message ContentIdentity
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.ContentIdentity, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this ContentIdentity to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for ContentIdentity
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace ContentIdentity {
+
+                /** Properties of a ContentIdentity. */
+                interface $Properties {
+
+                    /** ContentIdentity engineVersion */
+                    engineVersion?: (string|null);
+
+                    /** ContentIdentity gameName */
+                    gameName?: (string|null);
+
+                    /** ContentIdentity gameVersion */
+                    gameVersion?: (string|null);
+
+                    /** ContentIdentity gameContentSha256 */
+                    gameContentSha256?: (Uint8Array|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a ContentIdentity. */
+                type $Shape = barc.browser.v1.ContentIdentity.$Properties;
+            }
+
+            /**
+             * Properties of a ResourceCost.
+             * @deprecated Use barc.browser.v1.ResourceCost.$Properties instead.
+             */
+            interface IResourceCost extends barc.browser.v1.ResourceCost.$Properties {
+            }
+
+            /** Represents a ResourceCost. */
+            class ResourceCost {
+
+                /**
+                 * Constructs a new ResourceCost.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.ResourceCost.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** ResourceCost metal. */
+                metal?: (number|null);
+
+                /** ResourceCost energy. */
+                energy?: (number|null);
+
+                /** ResourceCost buildTime. */
+                buildTime?: (number|null);
+
+                /**
+                 * Encodes the specified ResourceCost message. Does not implicitly {@link barc.browser.v1.ResourceCost.verify|verify} messages.
+                 * @param message ResourceCost message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.ResourceCost.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified ResourceCost message, length delimited. Does not implicitly {@link barc.browser.v1.ResourceCost.verify|verify} messages.
+                 * @param message ResourceCost message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.ResourceCost.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a ResourceCost message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ResourceCost & barc.browser.v1.ResourceCost.$Shape} ResourceCost
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.ResourceCost & barc.browser.v1.ResourceCost.$Shape;
+
+                /**
+                 * Decodes a ResourceCost message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ResourceCost & barc.browser.v1.ResourceCost.$Shape} ResourceCost
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.ResourceCost & barc.browser.v1.ResourceCost.$Shape;
+
+                /**
+                 * Creates a ResourceCost message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns ResourceCost
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.ResourceCost;
+
+                /**
+                 * Creates a plain object from a ResourceCost message. Also converts values to other types if specified.
+                 * @param message ResourceCost
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.ResourceCost, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this ResourceCost to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for ResourceCost
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace ResourceCost {
+
+                /** Properties of a ResourceCost. */
+                interface $Properties {
+
+                    /** ResourceCost metal */
+                    metal?: (number|null);
+
+                    /** ResourceCost energy */
+                    energy?: (number|null);
+
+                    /** ResourceCost buildTime */
+                    buildTime?: (number|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a ResourceCost. */
+                type $Shape = barc.browser.v1.ResourceCost.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalUnitDefinition.
+             * @deprecated Use barc.browser.v1.TacticalUnitDefinition.$Properties instead.
+             */
+            interface ITacticalUnitDefinition extends barc.browser.v1.TacticalUnitDefinition.$Properties {
+            }
+
+            /** Represents a TacticalUnitDefinition. */
+            class TacticalUnitDefinition {
+
+                /**
+                 * Constructs a new TacticalUnitDefinition.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalUnitDefinition.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalUnitDefinition definitionId. */
+                definitionId: number;
+
+                /** TacticalUnitDefinition internalName. */
+                internalName: string;
+
+                /** TacticalUnitDefinition displayName. */
+                displayName: string;
+
+                /** TacticalUnitDefinition footprintXCells. */
+                footprintXCells: number;
+
+                /** TacticalUnitDefinition footprintZCells. */
+                footprintZCells: number;
+
+                /** TacticalUnitDefinition cost. */
+                cost?: (barc.browser.v1.ResourceCost.$Properties|null);
+
+                /** TacticalUnitDefinition buildOptionDefinitionIds. */
+                buildOptionDefinitionIds: number[];
+
+                /**
+                 * Encodes the specified TacticalUnitDefinition message. Does not implicitly {@link barc.browser.v1.TacticalUnitDefinition.verify|verify} messages.
+                 * @param message TacticalUnitDefinition message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalUnitDefinition.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalUnitDefinition message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalUnitDefinition.verify|verify} messages.
+                 * @param message TacticalUnitDefinition message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalUnitDefinition.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalUnitDefinition message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalUnitDefinition & barc.browser.v1.TacticalUnitDefinition.$Shape} TacticalUnitDefinition
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalUnitDefinition & barc.browser.v1.TacticalUnitDefinition.$Shape;
+
+                /**
+                 * Decodes a TacticalUnitDefinition message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalUnitDefinition & barc.browser.v1.TacticalUnitDefinition.$Shape} TacticalUnitDefinition
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalUnitDefinition & barc.browser.v1.TacticalUnitDefinition.$Shape;
+
+                /**
+                 * Creates a TacticalUnitDefinition message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalUnitDefinition
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalUnitDefinition;
+
+                /**
+                 * Creates a plain object from a TacticalUnitDefinition message. Also converts values to other types if specified.
+                 * @param message TacticalUnitDefinition
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalUnitDefinition, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalUnitDefinition to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalUnitDefinition
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalUnitDefinition {
+
+                /** Properties of a TacticalUnitDefinition. */
+                interface $Properties {
+
+                    /** TacticalUnitDefinition definitionId */
+                    definitionId?: (number|null);
+
+                    /** TacticalUnitDefinition internalName */
+                    internalName?: (string|null);
+
+                    /** TacticalUnitDefinition displayName */
+                    displayName?: (string|null);
+
+                    /** TacticalUnitDefinition footprintXCells */
+                    footprintXCells?: (number|null);
+
+                    /** TacticalUnitDefinition footprintZCells */
+                    footprintZCells?: (number|null);
+
+                    /** TacticalUnitDefinition cost */
+                    cost?: (barc.browser.v1.ResourceCost.$Properties|null);
+
+                    /** TacticalUnitDefinition buildOptionDefinitionIds */
+                    buildOptionDefinitionIds?: (number[]|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalUnitDefinition. */
+                type $Shape = barc.browser.v1.TacticalUnitDefinition.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalCatalogue.
+             * @deprecated Use barc.browser.v1.TacticalCatalogue.$Properties instead.
+             */
+            interface ITacticalCatalogue extends barc.browser.v1.TacticalCatalogue.$Properties {
+            }
+
+            /** Represents a TacticalCatalogue. */
+            class TacticalCatalogue {
+
+                /**
+                 * Constructs a new TacticalCatalogue.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalCatalogue.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalCatalogue profile. */
+                profile: string;
+
+                /** TacticalCatalogue revision. */
+                revision: number;
+
+                /** TacticalCatalogue content. */
+                content?: (barc.browser.v1.ContentIdentity.$Properties|null);
+
+                /** TacticalCatalogue catalogueId. */
+                catalogueId: Uint8Array;
+
+                /** TacticalCatalogue catalogueRevision. */
+                catalogueRevision: Long;
+
+                /** TacticalCatalogue complete. */
+                complete: boolean;
+
+                /** TacticalCatalogue definitions. */
+                definitions: barc.browser.v1.TacticalUnitDefinition.$Properties[];
+
+                /**
+                 * Encodes the specified TacticalCatalogue message. Does not implicitly {@link barc.browser.v1.TacticalCatalogue.verify|verify} messages.
+                 * @param message TacticalCatalogue message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalCatalogue.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalCatalogue message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalCatalogue.verify|verify} messages.
+                 * @param message TacticalCatalogue message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalCatalogue.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalCatalogue message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalCatalogue & barc.browser.v1.TacticalCatalogue.$Shape} TacticalCatalogue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalCatalogue & barc.browser.v1.TacticalCatalogue.$Shape;
+
+                /**
+                 * Decodes a TacticalCatalogue message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalCatalogue & barc.browser.v1.TacticalCatalogue.$Shape} TacticalCatalogue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalCatalogue & barc.browser.v1.TacticalCatalogue.$Shape;
+
+                /**
+                 * Creates a TacticalCatalogue message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalCatalogue
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalCatalogue;
+
+                /**
+                 * Creates a plain object from a TacticalCatalogue message. Also converts values to other types if specified.
+                 * @param message TacticalCatalogue
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalCatalogue, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalCatalogue to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalCatalogue
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalCatalogue {
+
+                /** Properties of a TacticalCatalogue. */
+                interface $Properties {
+
+                    /** TacticalCatalogue profile */
+                    profile?: (string|null);
+
+                    /** TacticalCatalogue revision */
+                    revision?: (number|null);
+
+                    /** TacticalCatalogue content */
+                    content?: (barc.browser.v1.ContentIdentity.$Properties|null);
+
+                    /** TacticalCatalogue catalogueId */
+                    catalogueId?: (Uint8Array|null);
+
+                    /** TacticalCatalogue catalogueRevision */
+                    catalogueRevision?: (Long|null);
+
+                    /** TacticalCatalogue complete */
+                    complete?: (boolean|null);
+
+                    /** TacticalCatalogue definitions */
+                    definitions?: (barc.browser.v1.TacticalUnitDefinition.$Properties[]|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalCatalogue. */
+                type $Shape = barc.browser.v1.TacticalCatalogue.$Properties;
+            }
+
+            /**
+             * Properties of a FeatureReference.
+             * @deprecated Use barc.browser.v1.FeatureReference.$Properties instead.
+             */
+            interface IFeatureReference extends barc.browser.v1.FeatureReference.$Properties {
+            }
+
+            /** Represents a FeatureReference. */
+            class FeatureReference {
+
+                /**
+                 * Constructs a new FeatureReference.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.FeatureReference.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** FeatureReference id. */
+                id: Long;
+
+                /** FeatureReference lifetime. */
+                lifetime: Long;
+
+                /**
+                 * Encodes the specified FeatureReference message. Does not implicitly {@link barc.browser.v1.FeatureReference.verify|verify} messages.
+                 * @param message FeatureReference message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.FeatureReference.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified FeatureReference message, length delimited. Does not implicitly {@link barc.browser.v1.FeatureReference.verify|verify} messages.
+                 * @param message FeatureReference message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.FeatureReference.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a FeatureReference message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FeatureReference & barc.browser.v1.FeatureReference.$Shape} FeatureReference
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.FeatureReference & barc.browser.v1.FeatureReference.$Shape;
+
+                /**
+                 * Decodes a FeatureReference message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FeatureReference & barc.browser.v1.FeatureReference.$Shape} FeatureReference
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.FeatureReference & barc.browser.v1.FeatureReference.$Shape;
+
+                /**
+                 * Creates a FeatureReference message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns FeatureReference
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.FeatureReference;
+
+                /**
+                 * Creates a plain object from a FeatureReference message. Also converts values to other types if specified.
+                 * @param message FeatureReference
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.FeatureReference, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this FeatureReference to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for FeatureReference
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace FeatureReference {
+
+                /** Properties of a FeatureReference. */
+                interface $Properties {
+
+                    /** FeatureReference id */
+                    id?: (Long|null);
+
+                    /** FeatureReference lifetime */
+                    lifetime?: (Long|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a FeatureReference. */
+                type $Shape = barc.browser.v1.FeatureReference.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalFeature.
+             * @deprecated Use barc.browser.v1.TacticalFeature.$Properties instead.
+             */
+            interface ITacticalFeature extends barc.browser.v1.TacticalFeature.$Properties {
+            }
+
+            /** Represents a TacticalFeature. */
+            class TacticalFeature {
+
+                /**
+                 * Constructs a new TacticalFeature.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalFeature.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalFeature reference. */
+                reference?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                /** TacticalFeature definitionId. */
+                definitionId: number;
+
+                /** TacticalFeature position. */
+                position?: (barc.browser.v1.Position3.$Properties|null);
+
+                /** TacticalFeature reclaimLeft. */
+                reclaimLeft?: (number|null);
+
+                /**
+                 * Encodes the specified TacticalFeature message. Does not implicitly {@link barc.browser.v1.TacticalFeature.verify|verify} messages.
+                 * @param message TacticalFeature message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalFeature.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalFeature message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalFeature.verify|verify} messages.
+                 * @param message TacticalFeature message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalFeature.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalFeature message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalFeature & barc.browser.v1.TacticalFeature.$Shape} TacticalFeature
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalFeature & barc.browser.v1.TacticalFeature.$Shape;
+
+                /**
+                 * Decodes a TacticalFeature message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalFeature & barc.browser.v1.TacticalFeature.$Shape} TacticalFeature
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalFeature & barc.browser.v1.TacticalFeature.$Shape;
+
+                /**
+                 * Creates a TacticalFeature message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalFeature
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalFeature;
+
+                /**
+                 * Creates a plain object from a TacticalFeature message. Also converts values to other types if specified.
+                 * @param message TacticalFeature
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalFeature, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalFeature to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalFeature
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalFeature {
+
+                /** Properties of a TacticalFeature. */
+                interface $Properties {
+
+                    /** TacticalFeature reference */
+                    reference?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                    /** TacticalFeature definitionId */
+                    definitionId?: (number|null);
+
+                    /** TacticalFeature position */
+                    position?: (barc.browser.v1.Position3.$Properties|null);
+
+                    /** TacticalFeature reclaimLeft */
+                    reclaimLeft?: (number|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalFeature. */
+                type $Shape = barc.browser.v1.TacticalFeature.$Properties;
+            }
+
+            /**
+             * Properties of an EconomyValue.
+             * @deprecated Use barc.browser.v1.EconomyValue.$Properties instead.
+             */
+            interface IEconomyValue extends barc.browser.v1.EconomyValue.$Properties {
+            }
+
+            /** Represents an EconomyValue. */
+            class EconomyValue {
+
+                /**
+                 * Constructs a new EconomyValue.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.EconomyValue.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** EconomyValue resourceName. */
+                resourceName: string;
+
+                /** EconomyValue unit. */
+                unit: string;
+
+                /** EconomyValue current. */
+                current?: (number|null);
+
+                /** EconomyValue storage. */
+                storage?: (number|null);
+
+                /** EconomyValue incomePerSecond. */
+                incomePerSecond?: (number|null);
+
+                /** EconomyValue usagePerSecond. */
+                usagePerSecond?: (number|null);
+
+                /**
+                 * Encodes the specified EconomyValue message. Does not implicitly {@link barc.browser.v1.EconomyValue.verify|verify} messages.
+                 * @param message EconomyValue message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.EconomyValue.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified EconomyValue message, length delimited. Does not implicitly {@link barc.browser.v1.EconomyValue.verify|verify} messages.
+                 * @param message EconomyValue message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.EconomyValue.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes an EconomyValue message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.EconomyValue & barc.browser.v1.EconomyValue.$Shape} EconomyValue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.EconomyValue & barc.browser.v1.EconomyValue.$Shape;
+
+                /**
+                 * Decodes an EconomyValue message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.EconomyValue & barc.browser.v1.EconomyValue.$Shape} EconomyValue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.EconomyValue & barc.browser.v1.EconomyValue.$Shape;
+
+                /**
+                 * Creates an EconomyValue message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns EconomyValue
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.EconomyValue;
+
+                /**
+                 * Creates a plain object from an EconomyValue message. Also converts values to other types if specified.
+                 * @param message EconomyValue
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.EconomyValue, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this EconomyValue to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for EconomyValue
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace EconomyValue {
+
+                /** Properties of an EconomyValue. */
+                interface $Properties {
+
+                    /** EconomyValue resourceName */
+                    resourceName?: (string|null);
+
+                    /** EconomyValue unit */
+                    unit?: (string|null);
+
+                    /** EconomyValue current */
+                    current?: (number|null);
+
+                    /** EconomyValue storage */
+                    storage?: (number|null);
+
+                    /** EconomyValue incomePerSecond */
+                    incomePerSecond?: (number|null);
+
+                    /** EconomyValue usagePerSecond */
+                    usagePerSecond?: (number|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of an EconomyValue. */
+                type $Shape = barc.browser.v1.EconomyValue.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalEconomy.
+             * @deprecated Use barc.browser.v1.TacticalEconomy.$Properties instead.
+             */
+            interface ITacticalEconomy extends barc.browser.v1.TacticalEconomy.$Properties {
+            }
+
+            /** Represents a TacticalEconomy. */
+            class TacticalEconomy {
+
+                /**
+                 * Constructs a new TacticalEconomy.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalEconomy.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalEconomy perspectiveId. */
+                perspectiveId: string;
+
+                /** TacticalEconomy sampleFrame. */
+                sampleFrame: number;
+
+                /** TacticalEconomy metal. */
+                metal?: (barc.browser.v1.EconomyValue.$Properties|null);
+
+                /** TacticalEconomy energy. */
+                energy?: (barc.browser.v1.EconomyValue.$Properties|null);
+
+                /**
+                 * Encodes the specified TacticalEconomy message. Does not implicitly {@link barc.browser.v1.TacticalEconomy.verify|verify} messages.
+                 * @param message TacticalEconomy message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalEconomy.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalEconomy message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalEconomy.verify|verify} messages.
+                 * @param message TacticalEconomy message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalEconomy.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalEconomy message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalEconomy & barc.browser.v1.TacticalEconomy.$Shape} TacticalEconomy
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalEconomy & barc.browser.v1.TacticalEconomy.$Shape;
+
+                /**
+                 * Decodes a TacticalEconomy message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalEconomy & barc.browser.v1.TacticalEconomy.$Shape} TacticalEconomy
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalEconomy & barc.browser.v1.TacticalEconomy.$Shape;
+
+                /**
+                 * Creates a TacticalEconomy message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalEconomy
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalEconomy;
+
+                /**
+                 * Creates a plain object from a TacticalEconomy message. Also converts values to other types if specified.
+                 * @param message TacticalEconomy
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalEconomy, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalEconomy to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalEconomy
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalEconomy {
+
+                /** Properties of a TacticalEconomy. */
+                interface $Properties {
+
+                    /** TacticalEconomy perspectiveId */
+                    perspectiveId?: (string|null);
+
+                    /** TacticalEconomy sampleFrame */
+                    sampleFrame?: (number|null);
+
+                    /** TacticalEconomy metal */
+                    metal?: (barc.browser.v1.EconomyValue.$Properties|null);
+
+                    /** TacticalEconomy energy */
+                    energy?: (barc.browser.v1.EconomyValue.$Properties|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalEconomy. */
+                type $Shape = barc.browser.v1.TacticalEconomy.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalCommandDescriptor.
+             * @deprecated Use barc.browser.v1.TacticalCommandDescriptor.$Properties instead.
+             */
+            interface ITacticalCommandDescriptor extends barc.browser.v1.TacticalCommandDescriptor.$Properties {
+            }
+
+            /** Represents a TacticalCommandDescriptor. */
+            class TacticalCommandDescriptor {
+
+                /**
+                 * Constructs a new TacticalCommandDescriptor.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalCommandDescriptor.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalCommandDescriptor kind. */
+                kind: barc.browser.v1.TacticalDescriptorKind;
+
+                /** TacticalCommandDescriptor disabled. */
+                disabled: boolean;
+
+                /** TacticalCommandDescriptor allowedDefinitionIds. */
+                allowedDefinitionIds: number[];
+
+                /** TacticalCommandDescriptor allowedModeValues. */
+                allowedModeValues: barc.browser.v1.TacticalModeValue[];
+
+                /** TacticalCommandDescriptor observedModeValue. */
+                observedModeValue?: (barc.browser.v1.TacticalModeValue|null);
+
+                /**
+                 * Encodes the specified TacticalCommandDescriptor message. Does not implicitly {@link barc.browser.v1.TacticalCommandDescriptor.verify|verify} messages.
+                 * @param message TacticalCommandDescriptor message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalCommandDescriptor.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalCommandDescriptor message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalCommandDescriptor.verify|verify} messages.
+                 * @param message TacticalCommandDescriptor message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalCommandDescriptor.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalCommandDescriptor message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalCommandDescriptor & barc.browser.v1.TacticalCommandDescriptor.$Shape} TacticalCommandDescriptor
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalCommandDescriptor & barc.browser.v1.TacticalCommandDescriptor.$Shape;
+
+                /**
+                 * Decodes a TacticalCommandDescriptor message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalCommandDescriptor & barc.browser.v1.TacticalCommandDescriptor.$Shape} TacticalCommandDescriptor
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalCommandDescriptor & barc.browser.v1.TacticalCommandDescriptor.$Shape;
+
+                /**
+                 * Creates a TacticalCommandDescriptor message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalCommandDescriptor
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalCommandDescriptor;
+
+                /**
+                 * Creates a plain object from a TacticalCommandDescriptor message. Also converts values to other types if specified.
+                 * @param message TacticalCommandDescriptor
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalCommandDescriptor, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalCommandDescriptor to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalCommandDescriptor
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalCommandDescriptor {
+
+                /** Properties of a TacticalCommandDescriptor. */
+                interface $Properties {
+
+                    /** TacticalCommandDescriptor kind */
+                    kind?: (barc.browser.v1.TacticalDescriptorKind|null);
+
+                    /** TacticalCommandDescriptor disabled */
+                    disabled?: (boolean|null);
+
+                    /** TacticalCommandDescriptor allowedDefinitionIds */
+                    allowedDefinitionIds?: (number[]|null);
+
+                    /** TacticalCommandDescriptor allowedModeValues */
+                    allowedModeValues?: (barc.browser.v1.TacticalModeValue[]|null);
+
+                    /** TacticalCommandDescriptor observedModeValue */
+                    observedModeValue?: (barc.browser.v1.TacticalModeValue|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalCommandDescriptor. */
+                type $Shape = barc.browser.v1.TacticalCommandDescriptor.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalQueueEntry.
+             * @deprecated Use barc.browser.v1.TacticalQueueEntry.$Properties instead.
+             */
+            interface ITacticalQueueEntry extends barc.browser.v1.TacticalQueueEntry.$Properties {
+            }
+
+            /** Represents a TacticalQueueEntry. */
+            class TacticalQueueEntry {
+
+                /**
+                 * Constructs a new TacticalQueueEntry.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalQueueEntry.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalQueueEntry nativeTag. */
+                nativeTag: number;
+
+                /** TacticalQueueEntry action. */
+                action: barc.browser.v1.LiveActionKind;
+
+                /** TacticalQueueEntry definitionId. */
+                definitionId?: (number|null);
+
+                /** TacticalQueueEntry unitTarget. */
+                unitTarget?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                /** TacticalQueueEntry featureTarget. */
+                featureTarget?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                /** TacticalQueueEntry position. */
+                position?: (barc.browser.v1.Position3.$Properties|null);
+
+                /**
+                 * Encodes the specified TacticalQueueEntry message. Does not implicitly {@link barc.browser.v1.TacticalQueueEntry.verify|verify} messages.
+                 * @param message TacticalQueueEntry message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalQueueEntry.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalQueueEntry message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalQueueEntry.verify|verify} messages.
+                 * @param message TacticalQueueEntry message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalQueueEntry.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalQueueEntry message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalQueueEntry & barc.browser.v1.TacticalQueueEntry.$Shape} TacticalQueueEntry
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalQueueEntry & barc.browser.v1.TacticalQueueEntry.$Shape;
+
+                /**
+                 * Decodes a TacticalQueueEntry message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalQueueEntry & barc.browser.v1.TacticalQueueEntry.$Shape} TacticalQueueEntry
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalQueueEntry & barc.browser.v1.TacticalQueueEntry.$Shape;
+
+                /**
+                 * Creates a TacticalQueueEntry message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalQueueEntry
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalQueueEntry;
+
+                /**
+                 * Creates a plain object from a TacticalQueueEntry message. Also converts values to other types if specified.
+                 * @param message TacticalQueueEntry
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalQueueEntry, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalQueueEntry to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalQueueEntry
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalQueueEntry {
+
+                /** Properties of a TacticalQueueEntry. */
+                interface $Properties {
+
+                    /** TacticalQueueEntry nativeTag */
+                    nativeTag?: (number|null);
+
+                    /** TacticalQueueEntry action */
+                    action?: (barc.browser.v1.LiveActionKind|null);
+
+                    /** TacticalQueueEntry definitionId */
+                    definitionId?: (number|null);
+
+                    /** TacticalQueueEntry unitTarget */
+                    unitTarget?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                    /** TacticalQueueEntry featureTarget */
+                    featureTarget?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                    /** TacticalQueueEntry position */
+                    position?: (barc.browser.v1.Position3.$Properties|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalQueueEntry. */
+                type $Shape = barc.browser.v1.TacticalQueueEntry.$Properties;
+            }
+
+            /**
+             * Properties of an ActorTacticalState.
+             * @deprecated Use barc.browser.v1.ActorTacticalState.$Properties instead.
+             */
+            interface IActorTacticalState extends barc.browser.v1.ActorTacticalState.$Properties {
+            }
+
+            /** Represents an ActorTacticalState. */
+            class ActorTacticalState {
+
+                /**
+                 * Constructs a new ActorTacticalState.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.ActorTacticalState.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** ActorTacticalState actor. */
+                actor?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                /** ActorTacticalState descriptorRevision. */
+                descriptorRevision: Long;
+
+                /** ActorTacticalState descriptors. */
+                descriptors: barc.browser.v1.TacticalCommandDescriptor.$Properties[];
+
+                /** ActorTacticalState queue. */
+                queue: barc.browser.v1.TacticalQueue.$Properties[];
+
+                /**
+                 * Encodes the specified ActorTacticalState message. Does not implicitly {@link barc.browser.v1.ActorTacticalState.verify|verify} messages.
+                 * @param message ActorTacticalState message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.ActorTacticalState.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified ActorTacticalState message, length delimited. Does not implicitly {@link barc.browser.v1.ActorTacticalState.verify|verify} messages.
+                 * @param message ActorTacticalState message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.ActorTacticalState.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes an ActorTacticalState message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ActorTacticalState & barc.browser.v1.ActorTacticalState.$Shape} ActorTacticalState
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.ActorTacticalState & barc.browser.v1.ActorTacticalState.$Shape;
+
+                /**
+                 * Decodes an ActorTacticalState message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ActorTacticalState & barc.browser.v1.ActorTacticalState.$Shape} ActorTacticalState
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.ActorTacticalState & barc.browser.v1.ActorTacticalState.$Shape;
+
+                /**
+                 * Creates an ActorTacticalState message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns ActorTacticalState
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.ActorTacticalState;
+
+                /**
+                 * Creates a plain object from an ActorTacticalState message. Also converts values to other types if specified.
+                 * @param message ActorTacticalState
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.ActorTacticalState, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this ActorTacticalState to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for ActorTacticalState
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace ActorTacticalState {
+
+                /** Properties of an ActorTacticalState. */
+                interface $Properties {
+
+                    /** ActorTacticalState actor */
+                    actor?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                    /** ActorTacticalState descriptorRevision */
+                    descriptorRevision?: (Long|null);
+
+                    /** ActorTacticalState descriptors */
+                    descriptors?: (barc.browser.v1.TacticalCommandDescriptor.$Properties[]|null);
+
+                    /** ActorTacticalState queue */
+                    queue?: (barc.browser.v1.TacticalQueue.$Properties[]|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of an ActorTacticalState. */
+                type $Shape = barc.browser.v1.ActorTacticalState.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalQueue.
+             * @deprecated Use barc.browser.v1.TacticalQueue.$Properties instead.
+             */
+            interface ITacticalQueue extends barc.browser.v1.TacticalQueue.$Properties {
+            }
+
+            /** Represents a TacticalQueue. */
+            class TacticalQueue {
+
+                /**
+                 * Constructs a new TacticalQueue.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalQueue.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalQueue domain. */
+                domain: barc.browser.v1.QueueDomain;
+
+                /** TacticalQueue revision. */
+                revision: Long;
+
+                /** TacticalQueue entries. */
+                entries: barc.browser.v1.TacticalQueueEntry.$Properties[];
+
+                /** TacticalQueue complete. */
+                complete: boolean;
+
+                /** TacticalQueue repeat. */
+                repeat?: (boolean|null);
+
+                /**
+                 * Encodes the specified TacticalQueue message. Does not implicitly {@link barc.browser.v1.TacticalQueue.verify|verify} messages.
+                 * @param message TacticalQueue message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalQueue.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalQueue message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalQueue.verify|verify} messages.
+                 * @param message TacticalQueue message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalQueue.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalQueue message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalQueue & barc.browser.v1.TacticalQueue.$Shape} TacticalQueue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalQueue & barc.browser.v1.TacticalQueue.$Shape;
+
+                /**
+                 * Decodes a TacticalQueue message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalQueue & barc.browser.v1.TacticalQueue.$Shape} TacticalQueue
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalQueue & barc.browser.v1.TacticalQueue.$Shape;
+
+                /**
+                 * Creates a TacticalQueue message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalQueue
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalQueue;
+
+                /**
+                 * Creates a plain object from a TacticalQueue message. Also converts values to other types if specified.
+                 * @param message TacticalQueue
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalQueue, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalQueue to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalQueue
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalQueue {
+
+                /** Properties of a TacticalQueue. */
+                interface $Properties {
+
+                    /** TacticalQueue domain */
+                    domain?: (barc.browser.v1.QueueDomain|null);
+
+                    /** TacticalQueue revision */
+                    revision?: (Long|null);
+
+                    /** TacticalQueue entries */
+                    entries?: (barc.browser.v1.TacticalQueueEntry.$Properties[]|null);
+
+                    /** TacticalQueue complete */
+                    complete?: (boolean|null);
+
+                    /** TacticalQueue repeat */
+                    repeat?: (boolean|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalQueue. */
+                type $Shape = barc.browser.v1.TacticalQueue.$Properties;
+            }
+
+            /**
+             * Properties of an ActorTacticalBinding.
+             * @deprecated Use barc.browser.v1.ActorTacticalBinding.$Properties instead.
+             */
+            interface IActorTacticalBinding extends barc.browser.v1.ActorTacticalBinding.$Properties {
+            }
+
+            /** Represents an ActorTacticalBinding. */
+            class ActorTacticalBinding {
+
+                /**
+                 * Constructs a new ActorTacticalBinding.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.ActorTacticalBinding.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** ActorTacticalBinding actor. */
+                actor?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                /** ActorTacticalBinding descriptorRevision. */
+                descriptorRevision: Long;
+
+                /** ActorTacticalBinding queueRevisions. */
+                queueRevisions: barc.browser.v1.QueueRevisionBinding.$Properties[];
+
+                /**
+                 * Encodes the specified ActorTacticalBinding message. Does not implicitly {@link barc.browser.v1.ActorTacticalBinding.verify|verify} messages.
+                 * @param message ActorTacticalBinding message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.ActorTacticalBinding.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified ActorTacticalBinding message, length delimited. Does not implicitly {@link barc.browser.v1.ActorTacticalBinding.verify|verify} messages.
+                 * @param message ActorTacticalBinding message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.ActorTacticalBinding.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes an ActorTacticalBinding message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.ActorTacticalBinding & barc.browser.v1.ActorTacticalBinding.$Shape} ActorTacticalBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.ActorTacticalBinding & barc.browser.v1.ActorTacticalBinding.$Shape;
+
+                /**
+                 * Decodes an ActorTacticalBinding message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.ActorTacticalBinding & barc.browser.v1.ActorTacticalBinding.$Shape} ActorTacticalBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.ActorTacticalBinding & barc.browser.v1.ActorTacticalBinding.$Shape;
+
+                /**
+                 * Creates an ActorTacticalBinding message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns ActorTacticalBinding
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.ActorTacticalBinding;
+
+                /**
+                 * Creates a plain object from an ActorTacticalBinding message. Also converts values to other types if specified.
+                 * @param message ActorTacticalBinding
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.ActorTacticalBinding, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this ActorTacticalBinding to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for ActorTacticalBinding
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace ActorTacticalBinding {
+
+                /** Properties of an ActorTacticalBinding. */
+                interface $Properties {
+
+                    /** ActorTacticalBinding actor */
+                    actor?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                    /** ActorTacticalBinding descriptorRevision */
+                    descriptorRevision?: (Long|null);
+
+                    /** ActorTacticalBinding queueRevisions */
+                    queueRevisions?: (barc.browser.v1.QueueRevisionBinding.$Properties[]|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of an ActorTacticalBinding. */
+                type $Shape = barc.browser.v1.ActorTacticalBinding.$Properties;
+            }
+
+            /**
+             * Properties of a QueueRevisionBinding.
+             * @deprecated Use barc.browser.v1.QueueRevisionBinding.$Properties instead.
+             */
+            interface IQueueRevisionBinding extends barc.browser.v1.QueueRevisionBinding.$Properties {
+            }
+
+            /** Represents a QueueRevisionBinding. */
+            class QueueRevisionBinding {
+
+                /**
+                 * Constructs a new QueueRevisionBinding.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.QueueRevisionBinding.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** QueueRevisionBinding domain. */
+                domain: barc.browser.v1.QueueDomain;
+
+                /** QueueRevisionBinding revision. */
+                revision: Long;
+
+                /**
+                 * Encodes the specified QueueRevisionBinding message. Does not implicitly {@link barc.browser.v1.QueueRevisionBinding.verify|verify} messages.
+                 * @param message QueueRevisionBinding message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.QueueRevisionBinding.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified QueueRevisionBinding message, length delimited. Does not implicitly {@link barc.browser.v1.QueueRevisionBinding.verify|verify} messages.
+                 * @param message QueueRevisionBinding message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.QueueRevisionBinding.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a QueueRevisionBinding message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.QueueRevisionBinding & barc.browser.v1.QueueRevisionBinding.$Shape} QueueRevisionBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.QueueRevisionBinding & barc.browser.v1.QueueRevisionBinding.$Shape;
+
+                /**
+                 * Decodes a QueueRevisionBinding message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.QueueRevisionBinding & barc.browser.v1.QueueRevisionBinding.$Shape} QueueRevisionBinding
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.QueueRevisionBinding & barc.browser.v1.QueueRevisionBinding.$Shape;
+
+                /**
+                 * Creates a QueueRevisionBinding message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns QueueRevisionBinding
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.QueueRevisionBinding;
+
+                /**
+                 * Creates a plain object from a QueueRevisionBinding message. Also converts values to other types if specified.
+                 * @param message QueueRevisionBinding
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.QueueRevisionBinding, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this QueueRevisionBinding to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for QueueRevisionBinding
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace QueueRevisionBinding {
+
+                /** Properties of a QueueRevisionBinding. */
+                interface $Properties {
+
+                    /** QueueRevisionBinding domain */
+                    domain?: (barc.browser.v1.QueueDomain|null);
+
+                    /** QueueRevisionBinding revision */
+                    revision?: (Long|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a QueueRevisionBinding. */
+                type $Shape = barc.browser.v1.QueueRevisionBinding.$Properties;
+            }
+
+            /**
+             * Properties of a TacticalObservation.
+             * @deprecated Use barc.browser.v1.TacticalObservation.$Properties instead.
+             */
+            interface ITacticalObservation extends barc.browser.v1.TacticalObservation.$Properties {
+            }
+
+            /** Represents a TacticalObservation. */
+            class TacticalObservation {
+
+                /**
+                 * Constructs a new TacticalObservation.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalObservation.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalObservation catalogueId. */
+                catalogueId: Uint8Array;
+
+                /** TacticalObservation catalogueRevision. */
+                catalogueRevision: Long;
+
+                /** TacticalObservation economy. */
+                economy?: (barc.browser.v1.TacticalEconomy.$Properties|null);
+
+                /** TacticalObservation actors. */
+                actors: barc.browser.v1.ActorTacticalState.$Properties[];
+
+                /** TacticalObservation features. */
+                features: barc.browser.v1.TacticalFeature.$Properties[];
+
+                /**
+                 * Encodes the specified TacticalObservation message. Does not implicitly {@link barc.browser.v1.TacticalObservation.verify|verify} messages.
+                 * @param message TacticalObservation message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalObservation.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalObservation message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalObservation.verify|verify} messages.
+                 * @param message TacticalObservation message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalObservation.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalObservation message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalObservation & barc.browser.v1.TacticalObservation.$Shape} TacticalObservation
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalObservation & barc.browser.v1.TacticalObservation.$Shape;
+
+                /**
+                 * Decodes a TacticalObservation message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalObservation & barc.browser.v1.TacticalObservation.$Shape} TacticalObservation
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalObservation & barc.browser.v1.TacticalObservation.$Shape;
+
+                /**
+                 * Creates a TacticalObservation message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalObservation
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalObservation;
+
+                /**
+                 * Creates a plain object from a TacticalObservation message. Also converts values to other types if specified.
+                 * @param message TacticalObservation
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalObservation, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalObservation to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalObservation
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalObservation {
+
+                /** Properties of a TacticalObservation. */
+                interface $Properties {
+
+                    /** TacticalObservation catalogueId */
+                    catalogueId?: (Uint8Array|null);
+
+                    /** TacticalObservation catalogueRevision */
+                    catalogueRevision?: (Long|null);
+
+                    /** TacticalObservation economy */
+                    economy?: (barc.browser.v1.TacticalEconomy.$Properties|null);
+
+                    /** TacticalObservation actors */
+                    actors?: (barc.browser.v1.ActorTacticalState.$Properties[]|null);
+
+                    /** TacticalObservation features */
+                    features?: (barc.browser.v1.TacticalFeature.$Properties[]|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalObservation. */
+                type $Shape = barc.browser.v1.TacticalObservation.$Properties;
+            }
+
+            /**
+             * Properties of a BuildTarget.
+             * @deprecated Use barc.browser.v1.BuildTarget.$Properties instead.
+             */
+            interface IBuildTarget extends barc.browser.v1.BuildTarget.$Properties {
+            }
+
+            /** Represents a BuildTarget. */
+            class BuildTarget {
+
+                /**
+                 * Constructs a new BuildTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.BuildTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** BuildTarget definitionId. */
+                definitionId: number;
+
+                /** BuildTarget position. */
+                position?: (barc.browser.v1.Position3.$Properties|null);
+
+                /** BuildTarget facing. */
+                facing: barc.browser.v1.BuildFacing;
+
+                /** BuildTarget queuePolicy. */
+                queuePolicy: barc.browser.v1.TacticalQueuePolicy;
+
+                /** BuildTarget catalogueId. */
+                catalogueId: Uint8Array;
+
+                /** BuildTarget catalogueRevision. */
+                catalogueRevision: Long;
+
+                /**
+                 * Encodes the specified BuildTarget message. Does not implicitly {@link barc.browser.v1.BuildTarget.verify|verify} messages.
+                 * @param message BuildTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.BuildTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified BuildTarget message, length delimited. Does not implicitly {@link barc.browser.v1.BuildTarget.verify|verify} messages.
+                 * @param message BuildTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.BuildTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a BuildTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.BuildTarget & barc.browser.v1.BuildTarget.$Shape} BuildTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.BuildTarget & barc.browser.v1.BuildTarget.$Shape;
+
+                /**
+                 * Decodes a BuildTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.BuildTarget & barc.browser.v1.BuildTarget.$Shape} BuildTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.BuildTarget & barc.browser.v1.BuildTarget.$Shape;
+
+                /**
+                 * Creates a BuildTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns BuildTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.BuildTarget;
+
+                /**
+                 * Creates a plain object from a BuildTarget message. Also converts values to other types if specified.
+                 * @param message BuildTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.BuildTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this BuildTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for BuildTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace BuildTarget {
+
+                /** Properties of a BuildTarget. */
+                interface $Properties {
+
+                    /** BuildTarget definitionId */
+                    definitionId?: (number|null);
+
+                    /** BuildTarget position */
+                    position?: (barc.browser.v1.Position3.$Properties|null);
+
+                    /** BuildTarget facing */
+                    facing?: (barc.browser.v1.BuildFacing|null);
+
+                    /** BuildTarget queuePolicy */
+                    queuePolicy?: (barc.browser.v1.TacticalQueuePolicy|null);
+
+                    /** BuildTarget catalogueId */
+                    catalogueId?: (Uint8Array|null);
+
+                    /** BuildTarget catalogueRevision */
+                    catalogueRevision?: (Long|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a BuildTarget. */
+                type $Shape = barc.browser.v1.BuildTarget.$Properties;
+            }
+
+            /**
+             * Properties of a FriendlyTarget.
+             * @deprecated Use barc.browser.v1.FriendlyTarget.$Properties instead.
+             */
+            interface IFriendlyTarget extends barc.browser.v1.FriendlyTarget.$Properties {
+            }
+
+            /** Represents a FriendlyTarget. */
+            class FriendlyTarget {
+
+                /**
+                 * Constructs a new FriendlyTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.FriendlyTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** FriendlyTarget target. */
+                target?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                /** FriendlyTarget queuePolicy. */
+                queuePolicy: barc.browser.v1.TacticalQueuePolicy;
+
+                /**
+                 * Encodes the specified FriendlyTarget message. Does not implicitly {@link barc.browser.v1.FriendlyTarget.verify|verify} messages.
+                 * @param message FriendlyTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.FriendlyTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified FriendlyTarget message, length delimited. Does not implicitly {@link barc.browser.v1.FriendlyTarget.verify|verify} messages.
+                 * @param message FriendlyTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.FriendlyTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a FriendlyTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FriendlyTarget & barc.browser.v1.FriendlyTarget.$Shape} FriendlyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.FriendlyTarget & barc.browser.v1.FriendlyTarget.$Shape;
+
+                /**
+                 * Decodes a FriendlyTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FriendlyTarget & barc.browser.v1.FriendlyTarget.$Shape} FriendlyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.FriendlyTarget & barc.browser.v1.FriendlyTarget.$Shape;
+
+                /**
+                 * Creates a FriendlyTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns FriendlyTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.FriendlyTarget;
+
+                /**
+                 * Creates a plain object from a FriendlyTarget message. Also converts values to other types if specified.
+                 * @param message FriendlyTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.FriendlyTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this FriendlyTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for FriendlyTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace FriendlyTarget {
+
+                /** Properties of a FriendlyTarget. */
+                interface $Properties {
+
+                    /** FriendlyTarget target */
+                    target?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                    /** FriendlyTarget queuePolicy */
+                    queuePolicy?: (barc.browser.v1.TacticalQueuePolicy|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a FriendlyTarget. */
+                type $Shape = barc.browser.v1.FriendlyTarget.$Properties;
+            }
+
+            /**
+             * Properties of a FeatureTarget.
+             * @deprecated Use barc.browser.v1.FeatureTarget.$Properties instead.
+             */
+            interface IFeatureTarget extends barc.browser.v1.FeatureTarget.$Properties {
+            }
+
+            /** Represents a FeatureTarget. */
+            class FeatureTarget {
+
+                /**
+                 * Constructs a new FeatureTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.FeatureTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** FeatureTarget target. */
+                target?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                /** FeatureTarget queuePolicy. */
+                queuePolicy: barc.browser.v1.TacticalQueuePolicy;
+
+                /**
+                 * Encodes the specified FeatureTarget message. Does not implicitly {@link barc.browser.v1.FeatureTarget.verify|verify} messages.
+                 * @param message FeatureTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.FeatureTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified FeatureTarget message, length delimited. Does not implicitly {@link barc.browser.v1.FeatureTarget.verify|verify} messages.
+                 * @param message FeatureTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.FeatureTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a FeatureTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FeatureTarget & barc.browser.v1.FeatureTarget.$Shape} FeatureTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.FeatureTarget & barc.browser.v1.FeatureTarget.$Shape;
+
+                /**
+                 * Decodes a FeatureTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FeatureTarget & barc.browser.v1.FeatureTarget.$Shape} FeatureTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.FeatureTarget & barc.browser.v1.FeatureTarget.$Shape;
+
+                /**
+                 * Creates a FeatureTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns FeatureTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.FeatureTarget;
+
+                /**
+                 * Creates a plain object from a FeatureTarget message. Also converts values to other types if specified.
+                 * @param message FeatureTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.FeatureTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this FeatureTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for FeatureTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace FeatureTarget {
+
+                /** Properties of a FeatureTarget. */
+                interface $Properties {
+
+                    /** FeatureTarget target */
+                    target?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                    /** FeatureTarget queuePolicy */
+                    queuePolicy?: (barc.browser.v1.TacticalQueuePolicy|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a FeatureTarget. */
+                type $Shape = barc.browser.v1.FeatureTarget.$Properties;
+            }
+
+            /**
+             * Properties of an AreaTarget.
+             * @deprecated Use barc.browser.v1.AreaTarget.$Properties instead.
+             */
+            interface IAreaTarget extends barc.browser.v1.AreaTarget.$Properties {
+            }
+
+            /** Represents an AreaTarget. */
+            class AreaTarget {
+
+                /**
+                 * Constructs a new AreaTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.AreaTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** AreaTarget center. */
+                center?: (barc.browser.v1.Position3.$Properties|null);
+
+                /** AreaTarget radiusWorldUnits. */
+                radiusWorldUnits: number;
+
+                /** AreaTarget queuePolicy. */
+                queuePolicy: barc.browser.v1.TacticalQueuePolicy;
+
+                /**
+                 * Encodes the specified AreaTarget message. Does not implicitly {@link barc.browser.v1.AreaTarget.verify|verify} messages.
+                 * @param message AreaTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.AreaTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified AreaTarget message, length delimited. Does not implicitly {@link barc.browser.v1.AreaTarget.verify|verify} messages.
+                 * @param message AreaTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.AreaTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes an AreaTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.AreaTarget & barc.browser.v1.AreaTarget.$Shape} AreaTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.AreaTarget & barc.browser.v1.AreaTarget.$Shape;
+
+                /**
+                 * Decodes an AreaTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.AreaTarget & barc.browser.v1.AreaTarget.$Shape} AreaTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.AreaTarget & barc.browser.v1.AreaTarget.$Shape;
+
+                /**
+                 * Creates an AreaTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns AreaTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.AreaTarget;
+
+                /**
+                 * Creates a plain object from an AreaTarget message. Also converts values to other types if specified.
+                 * @param message AreaTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.AreaTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this AreaTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for AreaTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace AreaTarget {
+
+                /** Properties of an AreaTarget. */
+                interface $Properties {
+
+                    /** AreaTarget center */
+                    center?: (barc.browser.v1.Position3.$Properties|null);
+
+                    /** AreaTarget radiusWorldUnits */
+                    radiusWorldUnits?: (number|null);
+
+                    /** AreaTarget queuePolicy */
+                    queuePolicy?: (barc.browser.v1.TacticalQueuePolicy|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of an AreaTarget. */
+                type $Shape = barc.browser.v1.AreaTarget.$Properties;
+            }
+
+            /**
+             * Properties of a FactoryProduceTarget.
+             * @deprecated Use barc.browser.v1.FactoryProduceTarget.$Properties instead.
+             */
+            interface IFactoryProduceTarget extends barc.browser.v1.FactoryProduceTarget.$Properties {
+            }
+
+            /** Represents a FactoryProduceTarget. */
+            class FactoryProduceTarget {
+
+                /**
+                 * Constructs a new FactoryProduceTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.FactoryProduceTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** FactoryProduceTarget definitionId. */
+                definitionId: number;
+
+                /** FactoryProduceTarget count. */
+                count: number;
+
+                /** FactoryProduceTarget queuePolicy. */
+                queuePolicy: barc.browser.v1.TacticalQueuePolicy;
+
+                /** FactoryProduceTarget catalogueId. */
+                catalogueId: Uint8Array;
+
+                /** FactoryProduceTarget catalogueRevision. */
+                catalogueRevision: Long;
+
+                /**
+                 * Encodes the specified FactoryProduceTarget message. Does not implicitly {@link barc.browser.v1.FactoryProduceTarget.verify|verify} messages.
+                 * @param message FactoryProduceTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.FactoryProduceTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified FactoryProduceTarget message, length delimited. Does not implicitly {@link barc.browser.v1.FactoryProduceTarget.verify|verify} messages.
+                 * @param message FactoryProduceTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.FactoryProduceTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a FactoryProduceTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.FactoryProduceTarget & barc.browser.v1.FactoryProduceTarget.$Shape} FactoryProduceTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.FactoryProduceTarget & barc.browser.v1.FactoryProduceTarget.$Shape;
+
+                /**
+                 * Decodes a FactoryProduceTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.FactoryProduceTarget & barc.browser.v1.FactoryProduceTarget.$Shape} FactoryProduceTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.FactoryProduceTarget & barc.browser.v1.FactoryProduceTarget.$Shape;
+
+                /**
+                 * Creates a FactoryProduceTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns FactoryProduceTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.FactoryProduceTarget;
+
+                /**
+                 * Creates a plain object from a FactoryProduceTarget message. Also converts values to other types if specified.
+                 * @param message FactoryProduceTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.FactoryProduceTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this FactoryProduceTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for FactoryProduceTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace FactoryProduceTarget {
+
+                /** Properties of a FactoryProduceTarget. */
+                interface $Properties {
+
+                    /** FactoryProduceTarget definitionId */
+                    definitionId?: (number|null);
+
+                    /** FactoryProduceTarget count */
+                    count?: (number|null);
+
+                    /** FactoryProduceTarget queuePolicy */
+                    queuePolicy?: (barc.browser.v1.TacticalQueuePolicy|null);
+
+                    /** FactoryProduceTarget catalogueId */
+                    catalogueId?: (Uint8Array|null);
+
+                    /** FactoryProduceTarget catalogueRevision */
+                    catalogueRevision?: (Long|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a FactoryProduceTarget. */
+                type $Shape = barc.browser.v1.FactoryProduceTarget.$Properties;
+            }
+
+            /**
+             * Properties of a RallyTarget.
+             * @deprecated Use barc.browser.v1.RallyTarget.$Properties instead.
+             */
+            interface IRallyTarget extends barc.browser.v1.RallyTarget.$Properties {
+            }
+
+            /** Represents a RallyTarget. */
+            class RallyTarget {
+
+                /**
+                 * Constructs a new RallyTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.RallyTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** RallyTarget position. */
+                position?: (barc.browser.v1.Position3.$Properties|null);
+
+                /**
+                 * Encodes the specified RallyTarget message. Does not implicitly {@link barc.browser.v1.RallyTarget.verify|verify} messages.
+                 * @param message RallyTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.RallyTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified RallyTarget message, length delimited. Does not implicitly {@link barc.browser.v1.RallyTarget.verify|verify} messages.
+                 * @param message RallyTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.RallyTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a RallyTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.RallyTarget & barc.browser.v1.RallyTarget.$Shape} RallyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.RallyTarget & barc.browser.v1.RallyTarget.$Shape;
+
+                /**
+                 * Decodes a RallyTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.RallyTarget & barc.browser.v1.RallyTarget.$Shape} RallyTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.RallyTarget & barc.browser.v1.RallyTarget.$Shape;
+
+                /**
+                 * Creates a RallyTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns RallyTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.RallyTarget;
+
+                /**
+                 * Creates a plain object from a RallyTarget message. Also converts values to other types if specified.
+                 * @param message RallyTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.RallyTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this RallyTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for RallyTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace RallyTarget {
+
+                /** Properties of a RallyTarget. */
+                interface $Properties {
+
+                    /** RallyTarget position */
+                    position?: (barc.browser.v1.Position3.$Properties|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a RallyTarget. */
+                type $Shape = barc.browser.v1.RallyTarget.$Properties;
+            }
+
+            /**
+             * Properties of a QueueInsertTarget.
+             * @deprecated Use barc.browser.v1.QueueInsertTarget.$Properties instead.
+             */
+            interface IQueueInsertTarget extends barc.browser.v1.QueueInsertTarget.$Properties {
+            }
+
+            /** Represents a QueueInsertTarget. */
+            class QueueInsertTarget {
+
+                /**
+                 * Constructs a new QueueInsertTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.QueueInsertTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** QueueInsertTarget beforeNativeTag. */
+                beforeNativeTag: number;
+
+                /** QueueInsertTarget action. */
+                action: barc.browser.v1.LiveActionKind;
+
+                /** QueueInsertTarget definitionId. */
+                definitionId?: (number|null);
+
+                /** QueueInsertTarget position. */
+                position?: (barc.browser.v1.Position3.$Properties|null);
+
+                /** QueueInsertTarget unitTarget. */
+                unitTarget?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                /** QueueInsertTarget featureTarget. */
+                featureTarget?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                /**
+                 * Encodes the specified QueueInsertTarget message. Does not implicitly {@link barc.browser.v1.QueueInsertTarget.verify|verify} messages.
+                 * @param message QueueInsertTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.QueueInsertTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified QueueInsertTarget message, length delimited. Does not implicitly {@link barc.browser.v1.QueueInsertTarget.verify|verify} messages.
+                 * @param message QueueInsertTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.QueueInsertTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a QueueInsertTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.QueueInsertTarget & barc.browser.v1.QueueInsertTarget.$Shape} QueueInsertTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.QueueInsertTarget & barc.browser.v1.QueueInsertTarget.$Shape;
+
+                /**
+                 * Decodes a QueueInsertTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.QueueInsertTarget & barc.browser.v1.QueueInsertTarget.$Shape} QueueInsertTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.QueueInsertTarget & barc.browser.v1.QueueInsertTarget.$Shape;
+
+                /**
+                 * Creates a QueueInsertTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns QueueInsertTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.QueueInsertTarget;
+
+                /**
+                 * Creates a plain object from a QueueInsertTarget message. Also converts values to other types if specified.
+                 * @param message QueueInsertTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.QueueInsertTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this QueueInsertTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for QueueInsertTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace QueueInsertTarget {
+
+                /** Properties of a QueueInsertTarget. */
+                interface $Properties {
+
+                    /** QueueInsertTarget beforeNativeTag */
+                    beforeNativeTag?: (number|null);
+
+                    /** QueueInsertTarget action */
+                    action?: (barc.browser.v1.LiveActionKind|null);
+
+                    /** QueueInsertTarget definitionId */
+                    definitionId?: (number|null);
+
+                    /** QueueInsertTarget position */
+                    position?: (barc.browser.v1.Position3.$Properties|null);
+
+                    /** QueueInsertTarget unitTarget */
+                    unitTarget?: (barc.browser.v1.UnitReference.$Properties|null);
+
+                    /** QueueInsertTarget featureTarget */
+                    featureTarget?: (barc.browser.v1.FeatureReference.$Properties|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a QueueInsertTarget. */
+                type $Shape = barc.browser.v1.QueueInsertTarget.$Properties;
+            }
+
+            /**
+             * Properties of a QueueEditTarget.
+             * @deprecated Use barc.browser.v1.QueueEditTarget.$Properties instead.
+             */
+            interface IQueueEditTarget extends barc.browser.v1.QueueEditTarget.$Properties {
+            }
+
+            /** Represents a QueueEditTarget. */
+            class QueueEditTarget {
+
+                /**
+                 * Constructs a new QueueEditTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.QueueEditTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** QueueEditTarget expectedQueueRevision. */
+                expectedQueueRevision: Long;
+
+                /** QueueEditTarget kind. */
+                kind: barc.browser.v1.QueueEditKind;
+
+                /** QueueEditTarget domain. */
+                domain: barc.browser.v1.QueueDomain;
+
+                /** QueueEditTarget insert. */
+                insert?: (barc.browser.v1.QueueInsertTarget.$Properties|null);
+
+                /** QueueEditTarget removeNativeTag. */
+                removeNativeTag?: (number|null);
+
+                /** QueueEditTarget repeat. */
+                repeat?: (boolean|null);
+
+                /** QueueEditTarget edit. */
+                edit?: ("insert"|"removeNativeTag"|"repeat");
+
+                /**
+                 * Encodes the specified QueueEditTarget message. Does not implicitly {@link barc.browser.v1.QueueEditTarget.verify|verify} messages.
+                 * @param message QueueEditTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.QueueEditTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified QueueEditTarget message, length delimited. Does not implicitly {@link barc.browser.v1.QueueEditTarget.verify|verify} messages.
+                 * @param message QueueEditTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.QueueEditTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a QueueEditTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.QueueEditTarget & barc.browser.v1.QueueEditTarget.$Shape} QueueEditTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.QueueEditTarget & barc.browser.v1.QueueEditTarget.$Shape;
+
+                /**
+                 * Decodes a QueueEditTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.QueueEditTarget & barc.browser.v1.QueueEditTarget.$Shape} QueueEditTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.QueueEditTarget & barc.browser.v1.QueueEditTarget.$Shape;
+
+                /**
+                 * Creates a QueueEditTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns QueueEditTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.QueueEditTarget;
+
+                /**
+                 * Creates a plain object from a QueueEditTarget message. Also converts values to other types if specified.
+                 * @param message QueueEditTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.QueueEditTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this QueueEditTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for QueueEditTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace QueueEditTarget {
+
+                /** Properties of a QueueEditTarget. */
+                interface $Properties {
+
+                    /** QueueEditTarget expectedQueueRevision */
+                    expectedQueueRevision?: (Long|null);
+
+                    /** QueueEditTarget kind */
+                    kind?: (barc.browser.v1.QueueEditKind|null);
+
+                    /** QueueEditTarget domain */
+                    domain?: (barc.browser.v1.QueueDomain|null);
+
+                    /** QueueEditTarget insert */
+                    insert?: (barc.browser.v1.QueueInsertTarget.$Properties|null);
+
+                    /** QueueEditTarget removeNativeTag */
+                    removeNativeTag?: (number|null);
+
+                    /** QueueEditTarget repeat */
+                    repeat?: (boolean|null);
+
+                    /** QueueEditTarget edit */
+                    edit?: ("insert"|"removeNativeTag"|"repeat");
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Narrowed shape of a QueueEditTarget. */
+                type $Shape = {
+                  expectedQueueRevision?: Long|null;
+                  kind?: barc.browser.v1.QueueEditKind|null;
+                  domain?: barc.browser.v1.QueueDomain|null;
+                  insert?: barc.browser.v1.QueueInsertTarget.$Shape|null;
+                  removeNativeTag?: number|null;
+                  repeat?: boolean|null;
+                  $unknowns?: Uint8Array[];
+                } & (
+                  ({ edit?: undefined; insert?: null; removeNativeTag?: null; repeat?: null }|{ edit?: "insert"; insert: barc.browser.v1.QueueInsertTarget.$Shape; removeNativeTag?: null; repeat?: null }|{ edit?: "removeNativeTag"; insert?: null; removeNativeTag: number; repeat?: null }|{ edit?: "repeat"; insert?: null; removeNativeTag?: null; repeat: boolean })
+                );
+            }
+
+            /**
+             * Properties of a TacticalModeTarget.
+             * @deprecated Use barc.browser.v1.TacticalModeTarget.$Properties instead.
+             */
+            interface ITacticalModeTarget extends barc.browser.v1.TacticalModeTarget.$Properties {
+            }
+
+            /** Represents a TacticalModeTarget. */
+            class TacticalModeTarget {
+
+                /**
+                 * Constructs a new TacticalModeTarget.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: barc.browser.v1.TacticalModeTarget.$Properties);
+
+                /** Unknown fields preserved while decoding when enabled */
+                $unknowns?: Uint8Array[];
+
+                /** TacticalModeTarget kind. */
+                kind: barc.browser.v1.TacticalDescriptorKind;
+
+                /** TacticalModeTarget value. */
+                value: barc.browser.v1.TacticalModeValue;
+
+                /**
+                 * Encodes the specified TacticalModeTarget message. Does not implicitly {@link barc.browser.v1.TacticalModeTarget.verify|verify} messages.
+                 * @param message TacticalModeTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encode(message: barc.browser.v1.TacticalModeTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified TacticalModeTarget message, length delimited. Does not implicitly {@link barc.browser.v1.TacticalModeTarget.verify|verify} messages.
+                 * @param message TacticalModeTarget message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                static encodeDelimited(message: barc.browser.v1.TacticalModeTarget.$Properties, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a TacticalModeTarget message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns {barc.browser.v1.TacticalModeTarget & barc.browser.v1.TacticalModeTarget.$Shape} TacticalModeTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): barc.browser.v1.TacticalModeTarget & barc.browser.v1.TacticalModeTarget.$Shape;
+
+                /**
+                 * Decodes a TacticalModeTarget message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns {barc.browser.v1.TacticalModeTarget & barc.browser.v1.TacticalModeTarget.$Shape} TacticalModeTarget
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): barc.browser.v1.TacticalModeTarget & barc.browser.v1.TacticalModeTarget.$Shape;
+
+                /**
+                 * Creates a TacticalModeTarget message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns TacticalModeTarget
+                 */
+                static fromObject(object: { [k: string]: any }): barc.browser.v1.TacticalModeTarget;
+
+                /**
+                 * Creates a plain object from a TacticalModeTarget message. Also converts values to other types if specified.
+                 * @param message TacticalModeTarget
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                static toObject(message: barc.browser.v1.TacticalModeTarget, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this TacticalModeTarget to JSON.
+                 * @returns JSON object
+                 */
+                toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the type url for TacticalModeTarget
+                 * @param [prefix] Custom type url prefix, defaults to `"type.googleapis.com"`
+                 * @returns The type url
+                 */
+                static getTypeUrl(prefix?: string): string;
+            }
+
+            namespace TacticalModeTarget {
+
+                /** Properties of a TacticalModeTarget. */
+                interface $Properties {
+
+                    /** TacticalModeTarget kind */
+                    kind?: (barc.browser.v1.TacticalDescriptorKind|null);
+
+                    /** TacticalModeTarget value */
+                    value?: (barc.browser.v1.TacticalModeValue|null);
+
+                    /** Unknown fields preserved while decoding when enabled */
+                    $unknowns?: Uint8Array[];
+                }
+
+                /** Shape of a TacticalModeTarget. */
+                type $Shape = barc.browser.v1.TacticalModeTarget.$Properties;
             }
 
             /**

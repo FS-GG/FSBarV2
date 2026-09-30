@@ -37,6 +37,11 @@ const moduleIdentity = {
 };
 const inputId = uuid("bbbbbbbb-cccc-4ddd-8eee-ffffffffffff");
 const selectInputId = uuid("cccccccc-dddd-4eee-8fff-000000000001");
+const catalogueId = Buffer.from("52".repeat(16), "hex");
+const catalogueRevision = "9007199254741011";
+const descriptorRevision = "9007199254741013";
+const queueRevision = "9007199254741015";
+const featureLifetime = "9007199254741017";
 
 const cases = [
   ["live-bootstrap", v1.LiveServerEnvelope, {
@@ -68,6 +73,80 @@ const cases = [
   ["live-result-feedback", v1.LiveGuestRequest, {
     inputId, sessionId: controller.sessionId, moduleGeneration: moduleIdentity.generation, basis,
     result: { resultSequence: "9007199254741005", parentId: uuid("12345678-1234-4234-8234-123456789abc"), inputId, module: moduleIdentity, basis, controller, batchSequence: "9007199254741007", correlationId: "9007199254741009", childIndex: 0, childCount: 2, actor: { id: "0", lifetime: "9007199254740999" }, stage: "LIVE_RESULT_STAGE_NATIVE_DISPATCH", status: "LIVE_RESULT_STATUS_APPLIED", disposition: "LIVE_RESULT_DISPOSITION_RECORDED", nativeFrame: 431, commandChannelIncarnation: "command-live-1" }
+  }],
+  ["tactical-bootstrap", v1.LiveServerEnvelope, {
+    bootstrap: {
+      preview: { game: "Beyond All Reason", protocolVersion: "barc.browser.v1", profile: "barc-live-tactical-v1", sessionId: controller.sessionId, perspectiveId: "team-0", mode: "PREVIEW_MODE_READ_ONLY" },
+      liveProfile: "barc-live-tactical-v1", controller, module: moduleIdentity,
+      limits: { maxActorCount: 64, maxInputBytes: 65536, maxOutputBytes: 65536, maxFrameBytes: 65536, maxPendingInputs: 8, maxModuleBytes: 8388608, guestPhaseTimeoutMs: 250, maxObservationAgeMs: 2000, liveSnapshotCadenceFrames: 30, maxNativeUnitId: 31999, maxPendingParents: 8, maxRetainedResults: 64 },
+      capabilities: {
+        stop: true, move: true, attackVisibleUnit: true,
+        mapBounds: { minX: 0, maxX: 8191, minZ: 0, maxZ: 8191, terrainElevationAvailable: true },
+        tactical: { profile: "barc-live-tactical-v1", revision: 1, maxCatalogueEntries: 4096, maxCataloguePageEntries: 128, maxBuildOptionsPerActor: 128, maxQueueEntriesPerActor: 128, maxFeatureReferences: 256, maxFactoryProductionCount: 20, maxAreaRadiusWorldUnits: 1024, maxCommandDescriptorsPerActor: 32 }
+      },
+      tacticalCatalogue: {
+        profile: "barc-live-tactical-v1", revision: 1,
+        content: { engineVersion: "2025.06.19", gameName: "Beyond All Reason", gameVersion: "test-29926-0571aa8", gameContentSha256: Buffer.from("63".repeat(32), "hex") },
+        catalogueId, catalogueRevision, complete: true,
+        definitions: [{ definitionId: 710, internalName: "armmex", displayName: "Metal Extractor", footprintXCells: 2, footprintZCells: 3, cost: { metal: 75, energy: 900, buildTime: 1200 }, buildOptionDefinitionIds: [710] }]
+      }
+    }
+  }],
+  ["tactical-observation", v1.LiveServerEnvelope, {
+    observation: {
+      preview: { sessionId: controller.sessionId, sequence: basis.stateSequence, capturedAtUnixMs: "0", perspectiveId: "team-0", validity: { status: "VALIDITY_STATUS_CURRENT", lastSequence: basis.stateSequence }, units: [], features: [] },
+      basis,
+      units: [{ reference: { id: "0", lifetime: "9007199254740999" }, observation: "OBSERVATION_KIND_OWN" }],
+      tactical: {
+        catalogueId, catalogueRevision,
+        economy: { perspectiveId: "team-0", sampleFrame: 427, metal: { resourceName: "metal", unit: "resource", current: 500, storage: 1000, incomePerSecond: 8.5, usagePerSecond: 4 }, energy: { resourceName: "energy", unit: "resource", current: 2500, storage: 5000 } },
+        actors: [{
+          actor: { id: "0", lifetime: "9007199254740999" }, descriptorRevision,
+          descriptors: [
+            { kind: "TACTICAL_DESCRIPTOR_BUILD", allowedDefinitionIds: [710] },
+            { kind: "TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY", allowedModeValues: ["TACTICAL_MODE_VALUE_DISABLED", "TACTICAL_MODE_VALUE_ENABLED"], observedModeValue: "TACTICAL_MODE_VALUE_ENABLED" }
+          ],
+          queue: [{ domain: "QUEUE_DOMAIN_FACTORY_PRODUCTION", revision: queueRevision, entries: [{ nativeTag: 2147483647, action: "LIVE_ACTION_KIND_FACTORY_PRODUCE", definitionId: 710 }], complete: true, repeat: false }]
+        }],
+        features: [{ reference: { id: "0", lifetime: featureLifetime }, definitionId: 91, position: { x: 1400, elevation: 12.5, z: 1600 }, reclaimLeft: 0.75 }]
+      }
+    }
+  }],
+  ["tactical-guest-build-response", v1.LiveGuestResponse, {
+    inputId, sessionId: controller.sessionId, moduleGeneration: moduleIdentity.generation, basis,
+    acknowledgment: "GUEST_ACK_STATUS_CONSUMED",
+    intent: {
+      actors: [{ id: "0", lifetime: "9007199254740999" }],
+      actorTacticalBindings: [{ actor: { id: "0", lifetime: "9007199254740999" }, descriptorRevision, queueRevisions: [{ domain: "QUEUE_DOMAIN_ACTOR_ORDER", revision: queueRevision }] }],
+      build: { definitionId: 710, position: { x: 1024.25, elevation: 17.5, z: 2048.5 }, facing: "BUILD_FACING_WEST", queuePolicy: "TACTICAL_QUEUE_POLICY_APPEND", catalogueId, catalogueRevision }
+    }
+  }],
+  ["tactical-guest-feature-reclaim-response", v1.LiveGuestResponse, {
+    inputId, sessionId: controller.sessionId, moduleGeneration: moduleIdentity.generation, basis,
+    acknowledgment: "GUEST_ACK_STATUS_CONSUMED",
+    intent: {
+      actors: [{ id: "0", lifetime: "9007199254740999" }],
+      actorTacticalBindings: [{ actor: { id: "0", lifetime: "9007199254740999" }, descriptorRevision, queueRevisions: [{ domain: "QUEUE_DOMAIN_ACTOR_ORDER", revision: queueRevision }] }],
+      reclaimFeature: { target: { id: "0", lifetime: featureLifetime }, queuePolicy: "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY" }
+    }
+  }],
+  ["tactical-guest-queue-remove-response", v1.LiveGuestResponse, {
+    inputId, sessionId: controller.sessionId, moduleGeneration: moduleIdentity.generation, basis,
+    acknowledgment: "GUEST_ACK_STATUS_CONSUMED",
+    intent: {
+      actors: [{ id: "0", lifetime: "9007199254740999" }],
+      actorTacticalBindings: [{ actor: { id: "0", lifetime: "9007199254740999" }, descriptorRevision, queueRevisions: [{ domain: "QUEUE_DOMAIN_FACTORY_PRODUCTION", revision: queueRevision }] }],
+      queueEdit: { expectedQueueRevision: queueRevision, kind: "QUEUE_EDIT_KIND_REMOVE_TAG", domain: "QUEUE_DOMAIN_FACTORY_PRODUCTION", removeNativeTag: 2147483647 }
+    }
+  }],
+  ["tactical-guest-unknown-action-response", v1.LiveGuestResponse, {
+    inputId, sessionId: controller.sessionId, moduleGeneration: moduleIdentity.generation, basis,
+    acknowledgment: "GUEST_ACK_STATUS_CONSUMED",
+    intent: {
+      actors: [{ id: "0", lifetime: "9007199254740999" }],
+      actorTacticalBindings: [{ actor: { id: "0", lifetime: "9007199254740999" }, descriptorRevision, queueRevisions: [{ domain: "QUEUE_DOMAIN_ACTOR_ORDER", revision: queueRevision }] }],
+      queueEdit: { expectedQueueRevision: queueRevision, kind: "QUEUE_EDIT_KIND_INSERT", domain: "QUEUE_DOMAIN_ACTOR_ORDER", insert: { beforeNativeTag: 41, action: 99, position: { x: 1, z: 2 } } }
+    }
   }]
 ];
 
@@ -100,6 +179,24 @@ for (const [name, type, value] of cases) {
     assert.deepEqual(Buffer.from(decoded.result.inputId), inputId);
     assert.deepEqual(Buffer.from(decoded.result.basis.token), basis.token);
   }
+  if (name === "tactical-observation") {
+    assert.equal(decoded.observation.tactical.features[0].reference.id.toString(), "0");
+    assert.equal(decoded.observation.tactical.features[0].reference.lifetime.toString(), featureLifetime);
+    assert.equal(decoded.observation.tactical.actors[0].queue[0].revision.toString(), queueRevision);
+    assert.equal(decoded.observation.tactical.economy.energy._incomePerSecond, undefined);
+  }
+  if (name === "tactical-guest-build-response") {
+    assert.equal(decoded.intent.build.definitionId, 710);
+    assert.equal(decoded.intent.build.facing, v1.BuildFacing.BUILD_FACING_WEST);
+    assert.equal(decoded.intent.actorTacticalBindings[0].descriptorRevision.toString(), descriptorRevision);
+  }
+  if (name === "tactical-guest-feature-reclaim-response") {
+    assert.equal(decoded.intent.reclaimFeature.target.id.toString(), "0");
+    assert.equal(decoded.intent.reclaimFeature.target.lifetime.toString(), featureLifetime);
+  }
+  if (name === "tactical-guest-unknown-action-response") {
+    assert.equal(decoded.intent.queueEdit.insert.action, 99);
+  }
   const canonical = canonicalObject(type, bytes);
   const semanticBytes = Buffer.from(`${JSON.stringify(canonical, null, 2)}\n`);
   writeFileSync(resolve(wire, `${name}.bin`), bytes);
@@ -108,14 +205,25 @@ for (const [name, type, value] of cases) {
 }
 
 const mapping = {
-  contract: "barc-live-v1/native-command-mapping",
+  contract: "barc-live-tactical-v1/native-command-mapping",
   rules: [
     { action: "STOP", command: "StopCommand", options: 0, conflictPolicy: "COMMAND_CONFLICT_REPLACE_CURRENT" },
     { action: "MOVE_REPLACE", command: "MoveUnitCommand", options: 0, conflictPolicy: "COMMAND_CONFLICT_REPLACE_CURRENT" },
     { action: "MOVE_APPEND", command: "MoveUnitCommand", options: 32, conflictPolicy: "COMMAND_CONFLICT_QUEUE_AFTER_CURRENT" },
-    { action: "ATTACK_VISIBLE_UNIT", command: "AttackCommand", options: 0, conflictPolicy: "COMMAND_CONFLICT_REPLACE_CURRENT", attackAreaReachable: false }
+    { action: "ATTACK_VISIBLE_UNIT", command: "AttackCommand", options: 0, conflictPolicy: "COMMAND_CONFLICT_REPLACE_CURRENT", attackAreaReachable: false },
+    { action: "BUILD", command: "Unit.Build", typed: true },
+    { action: "GUARD", command: "Unit.Guard", typed: true },
+    { action: "REPAIR", command: "Unit.Repair", typed: true },
+    { action: "RECLAIM_UNIT", command: "Unit.ReclaimUnit", typed: true },
+    { action: "RECLAIM_FEATURE", command: "Unit.ReclaimFeature", typed: true, rawCustomCommandForbidden: true },
+    { action: "RECLAIM_AREA", command: "Unit.ReclaimInArea", typed: true },
+    { action: "FACTORY_PRODUCE", command: "Unit.Build", perChildCount: 1, modifierMultipliersForbidden: true },
+    { action: "SET_RALLY", command: "factory-produced-unit Move", distinctFromBuild: true },
+    { action: "QUEUE_REMOVE_TAG", command: "CMD_REMOVE", exactNativeTag: true },
+    { action: "BAR_CONSTRUCTION_PRIORITY", descriptorCommandId: 34571, values: [0, 1], runtimeDescriptorRequired: true },
+    { action: "BAR_CLOAK_DESIRE", descriptorCommandId: 37382, values: [0, 1], runtimeDescriptorRequired: true }
   ],
-  invalid: ["missing-unit-reference", "zero-lifetime", "duplicate-actor", "actor-is-attack-target", "basis-mismatch", "input-id-mismatch", "module-generation-mismatch", "non-visual-attack-target", "live-wrapper-with-zero-or-multiple-native-commands", "unreserved-worst-case-child-results"]
+  invalid: ["missing-unit-reference", "zero-lifetime", "duplicate-actor", "actor-is-attack-target", "basis-mismatch", "input-id-mismatch", "module-generation-mismatch", "non-visual-attack-target", "live-wrapper-with-zero-or-multiple-native-commands", "unreserved-worst-case-child-results", "unknown-tactical-action", "unknown-queue-domain", "incomplete-catalogue", "descriptor-or-queue-revision-mismatch"]
 };
 const mappingBytes = Buffer.from(`${JSON.stringify(mapping, null, 2)}\n`);
 writeFileSync(resolve(semantic, "native-command-mapping.json"), mappingBytes);
@@ -126,7 +234,10 @@ const negotiation = {
     { peer: "preview-v1-client", requestedProfile: "barc-preview-v1", endpoint: "preview", outcome: "ACCEPT" },
     { peer: "preview-v1-client", requestedProfile: "barc-live-v1", endpoint: "live", outcome: "REFUSE_BEFORE_LIVE_ENVELOPE" },
     { peer: "live-v1-client", requestedProfile: "barc-live-v1", endpoint: "live", nativeProtocol: "LIVE_CONTROL_PROTOCOL_V1", outcome: "ACCEPT" },
-    { peer: "live-v1-client", requestedProfile: "barc-live-v1", endpoint: "live", nativeProtocol: "LIVE_CONTROL_PROTOCOL_UNSPECIFIED", outcome: "REFUSE_BEFORE_ARM" }
+    { peer: "live-v1-client", requestedProfile: "barc-live-v1", endpoint: "live", nativeProtocol: "LIVE_CONTROL_PROTOCOL_UNSPECIFIED", outcome: "REFUSE_BEFORE_ARM" },
+    { peer: "live-v1-client", requestedProfile: "barc-live-tactical-v1", endpoint: "live", nativeProtocol: "LIVE_CONTROL_PROTOCOL_V1", outcome: "REFUSE_TACTICAL_BEFORE_ARM" },
+    { peer: "tactical-v1-client", requestedProfile: "barc-live-tactical-v1", endpoint: "live", nativeProtocol: "LIVE_CONTROL_PROTOCOL_TACTICAL_V1", tacticalRevision: 1, catalogueComplete: true, outcome: "ACCEPT" },
+    { peer: "tactical-v1-client", requestedProfile: "barc-live-tactical-v1", endpoint: "live", nativeProtocol: "LIVE_CONTROL_PROTOCOL_TACTICAL_V1", tacticalRevision: 1, catalogueComplete: false, outcome: "REFUSE_TACTICAL_ACTIONS" }
   ]
 };
 const negotiationBytes = Buffer.from(`${JSON.stringify(negotiation, null, 2)}\n`);
@@ -135,7 +246,7 @@ writeFileSync(resolve(semantic, "negotiation.json"), negotiationBytes);
 const schema = readFileSync(resolve(root, "../../src/Broker.Browser.Contracts/barc_live.proto"));
 const nativeProto = resolve(root, "../../src/Broker.Contracts/highbar/live_control.proto");
 const protoc = resolve(root, "../../eng/protoc");
-const nativeEntries = ["live-capabilities", "live-snapshot-metadata"].map(name => {
+const nativeEntries = ["live-capabilities", "live-snapshot-metadata", "tactical-catalogue", "tactical-snapshot"].map(name => {
   const text = readFileSync(resolve(native, `${name}.textproto`));
   const bytes = execFileSync(protoc, [
     `--proto_path=${resolve(root, "../../src/Broker.Contracts")}`,
@@ -151,12 +262,25 @@ const nativeEntries = ["live-capabilities", "live-snapshot-metadata"].map(name =
   };
 });
 const manifest = {
-  schema: "barc.browser.v1/barc-live-v1",
+  schema: "barc.browser.v1/barc-live-tactical-v1",
   schemaSha256: createHash("sha256").update(schema).digest("hex"),
   mappingSha256: createHash("sha256").update(mappingBytes).digest("hex"),
   negotiationSha256: createHash("sha256").update(negotiationBytes).digest("hex"),
+  legacyWirePins: {
+    liveBootstrap: "a6b26c69ef7257123dc18435ad8600ea3c06d0ce077c5d9d5a5e66ec417e9c55",
+    liveGuestManualSelectRequest: "83a4315dc11e6250749f46121710388a13feaab10b5bdfe21a1c04cffa0b2bd8",
+    liveGuestManualMoveRequest: "7aae04dc94eaf89b79a129fe4c741105e5cb18b83c0eacf08610eee6c75fda84",
+    liveGuestId0MoveResponse: "56633725cd25c6c7846f3615f33e4608135a23756de27e34ac5d80d7c3bba121",
+    liveGuestAttackResponse: "047284d0f5f865300b7fc89f28a7d5b29731229ae19f68f768f19d5fd4a50930",
+    liveResultFeedback: "cebf475de2e710f5c0809c973045bdaa5f556f0a3fce667dc4f601ef041b0dbe"
+  },
   entries: [...entries, ...nativeEntries]
 };
+for (const [legacyName, expected] of Object.entries(manifest.legacyWirePins)) {
+  const entryName = legacyName.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+  const entry = manifest.entries.find(value => value.name === entryName);
+  assert.equal(entry?.wireSha256, expected, `${entryName} legacy wire bytes changed`);
+}
 const manifestBytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
 writeFileSync(resolve(root, "manifest.json"), manifestBytes);
 console.log(createHash("sha256").update(manifestBytes).digest("hex"));
