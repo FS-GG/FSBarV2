@@ -16,6 +16,7 @@ module LiveControl =
     type TacticalActor =
         { reference: NativeUnitReference; descriptorRevision: uint64
           queueRevisions: TacticalQueueBinding list }
+    type TacticalCatalogueBinding = { id: byte[]; revision: uint64 }
     type TacticalAction =
         | Build of NativeBuildIntent | Guard of NativeFriendlyTargetIntent | Repair of NativeFriendlyTargetIntent
         | ReclaimUnit of NativeFriendlyTargetIntent | ReclaimFeature of NativeReclaimFeatureIntent
@@ -24,7 +25,8 @@ module LiveControl =
     type TacticalSubmission =
         { parentId: Guid; inputId: Guid; sessionId: Guid; controllerId: Guid
           controllerIncarnation: string; authorityEpoch: uint64; moduleSha256: byte[]
-          moduleGeneration: uint64; basis: NativeObservationBasis; actors: TacticalActor list; action: TacticalAction }
+          moduleGeneration: uint64; basis: NativeObservationBasis; actors: TacticalActor list
+          catalogue: TacticalCatalogueBinding option; action: TacticalAction }
     type FeedbackStage = BrokerAdmission | NativeAdmission | NativeDispatch | Unknown
     type FeedbackStatus = Accepted | Rejected | Applied | Skipped | Expired | UnknownStatus
     type Feedback =
@@ -881,12 +883,17 @@ module LiveControl =
                     for value in published do publish state value
                     Ok published
                 let actionValid =
+                    let currentCatalogue =
+                        submission.catalogue
+                        |> Option.exists(fun binding ->
+                            binding.revision=tactical.CatalogueRevision
+                            && binding.id.AsSpan().SequenceEqual(tactical.CatalogueId.Span))
                     match submission.action with
-                    | Build v -> v.DefinitionId>0u && definitionIds.Contains v.DefinitionId && v.Position |> ValueOption.exists(validPosition caps) && v.Facing<>NativeBuildFacing.Unspecified && queueOptions v.QueuePolicy |> Option.isSome
+                    | Build v -> currentCatalogue && v.DefinitionId>0u && definitionIds.Contains v.DefinitionId && v.Position |> ValueOption.exists(validPosition caps) && v.Facing<>NativeBuildFacing.Unspecified && queueOptions v.QueuePolicy |> Option.isSome
                     | Guard v | Repair v | ReclaimUnit v -> v.Target |> ValueOption.exists(fun t->owned |> List.exists(sameRef t)) && queueOptions v.QueuePolicy |> Option.isSome
                     | ReclaimFeature v -> v.Target |> ValueOption.exists(fun target->tactical.Features |> Seq.exists(fun f->f.Reference |> ValueOption.exists(fun current->current.Id=target.Id && current.Lifetime=target.Lifetime))) && queueOptions v.QueuePolicy |> Option.isSome
                     | ReclaimArea v -> v.Center |> ValueOption.exists(validPosition caps) && Single.IsFinite v.RadiusWorldUnits && v.RadiusWorldUnits>0f && v.RadiusWorldUnits<=float32 caps.Tactical.Value.MaxAreaRadiusWorldUnits && queueOptions v.QueuePolicy |> Option.isSome
-                    | FactoryProduce v -> v.DefinitionId>0u && definitionIds.Contains v.DefinitionId && v.Count>0u && v.Count<=caps.Tactical.Value.MaxFactoryProductionCount && queueOptions v.QueuePolicy |> Option.isSome
+                    | FactoryProduce v -> currentCatalogue && v.DefinitionId>0u && definitionIds.Contains v.DefinitionId && v.Count>0u && v.Count<=caps.Tactical.Value.MaxFactoryProductionCount && queueOptions v.QueuePolicy |> Option.isSome
                     | SetRally v -> v.Position |> ValueOption.exists(validPosition caps)
                     | QueueEdit v ->
                         v.Domain<>NativeQueueDomain.Unspecified && v.ExpectedQueueRevision>0UL && v.Kind<>NativeQueueEditKind.Unspecified

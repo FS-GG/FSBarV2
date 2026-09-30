@@ -113,12 +113,15 @@
   F Broker.Protocol.LiveControl.TacticalActor.descriptorRevision : UInt64
   F Broker.Protocol.LiveControl.TacticalActor.queueRevisions : FSharpList<TacticalQueueBinding>
   F Broker.Protocol.LiveControl.TacticalActor.reference : NativeUnitReference
+  F Broker.Protocol.LiveControl.TacticalCatalogueBinding.id : Byte[]
+  F Broker.Protocol.LiveControl.TacticalCatalogueBinding.revision : UInt64
   F Broker.Protocol.LiveControl.TacticalQueueBinding.domain : NativeQueueDomain
   F Broker.Protocol.LiveControl.TacticalQueueBinding.revision : UInt64
   F Broker.Protocol.LiveControl.TacticalSubmission.action : TacticalAction
   F Broker.Protocol.LiveControl.TacticalSubmission.actors : FSharpList<TacticalActor>
   F Broker.Protocol.LiveControl.TacticalSubmission.authorityEpoch : UInt64
   F Broker.Protocol.LiveControl.TacticalSubmission.basis : NativeObservationBasis
+  F Broker.Protocol.LiveControl.TacticalSubmission.catalogue : FSharpOption<TacticalCatalogueBinding>
   F Broker.Protocol.LiveControl.TacticalSubmission.controllerId : Guid
   F Broker.Protocol.LiveControl.TacticalSubmission.controllerIncarnation : String
   F Broker.Protocol.LiveControl.TacticalSubmission.inputId : Guid
@@ -173,5 +176,6 @@ T Broker.Protocol.LiveControl.State : record
 T Broker.Protocol.LiveControl.Submission : record
 T Broker.Protocol.LiveControl.TacticalAction : union
 T Broker.Protocol.LiveControl.TacticalActor : record
+T Broker.Protocol.LiveControl.TacticalCatalogueBinding : record
 T Broker.Protocol.LiveControl.TacticalQueueBinding : record
 T Broker.Protocol.LiveControl.TacticalSubmission : record

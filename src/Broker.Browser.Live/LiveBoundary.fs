@@ -23,7 +23,7 @@ module LiveBoundary =
             | Some binding when binding.AuthorityEpoch=request.Controller.AuthorityEpoch -> LiveControl.requestRevoke binding request.Reason now state
             | _ -> Error "live controller is not active")
     let private nativeRef (value: UnitReference) =
-        if value.Id>31999UL || value.Lifetime=0UL then Error "unit reference is invalid"
+        if obj.ReferenceEquals(value,null) || value.Id>31999UL || value.Lifetime=0UL then Error "unit reference is invalid"
         else let result=NativeUnitReference.empty() in result.Id<-uint32 value.Id;result.Lifetime<-value.Lifetime;Ok result
     let private action (intent: LiveIntent) =
         match intent.ActionCase with
@@ -36,12 +36,13 @@ module LiveBoundary =
         | LiveIntent.ActionOneofCase.Attack when not(isNull intent.Attack) && not(isNull intent.Attack.Target) -> nativeRef intent.Attack.Target |> Result.map LiveControl.Attack
         | _ -> Error "exactly one live action is required"
     let private nativePosition (value: Position3) =
-        let result=NativePosition3.empty()
-        result.X<-value.X; result.Z<-value.Z
-        if value.HasElevation then result.Elevation<-ValueSome value.Elevation
-        ValueSome result
+        if obj.ReferenceEquals(value,null) then ValueNone else
+            let result=NativePosition3.empty()
+            result.X<-value.X; result.Z<-value.Z
+            if value.HasElevation then result.Elevation<-ValueSome value.Elevation
+            ValueSome result
     let private nativeFeature (value: FeatureReference) =
-        if value.Lifetime=0UL || value.Id>uint64 UInt32.MaxValue then ValueNone else
+        if obj.ReferenceEquals(value,null) || value.Lifetime=0UL || value.Id>uint64 UInt32.MaxValue then ValueNone else
         let result=NativeFeatureReference.empty()
         result.Id<-uint32 value.Id; result.Lifetime<-value.Lifetime
         ValueSome result
@@ -54,7 +55,8 @@ module LiveBoundary =
             Ok(LiveControl.Build value)
         | LiveIntent.ActionOneofCase.Guard | LiveIntent.ActionOneofCase.Repair | LiveIntent.ActionOneofCase.ReclaimUnit ->
             let source=if intent.ActionCase=LiveIntent.ActionOneofCase.Guard then intent.Guard elif intent.ActionCase=LiveIntent.ActionOneofCase.Repair then intent.Repair else intent.ReclaimUnit
-            nativeRef source.Target |> Result.map(fun target->let value=NativeFriendlyTargetIntent.empty() in value.Target<-ValueSome target;value.QueuePolicy<-policy source.QueuePolicy;if intent.ActionCase=LiveIntent.ActionOneofCase.Guard then LiveControl.Guard value elif intent.ActionCase=LiveIntent.ActionOneofCase.Repair then LiveControl.Repair value else LiveControl.ReclaimUnit value)
+            if isNull source then Error "friendly target is required" else
+                nativeRef source.Target |> Result.map(fun target->let value=NativeFriendlyTargetIntent.empty() in value.Target<-ValueSome target;value.QueuePolicy<-policy source.QueuePolicy;if intent.ActionCase=LiveIntent.ActionOneofCase.Guard then LiveControl.Guard value elif intent.ActionCase=LiveIntent.ActionOneofCase.Repair then LiveControl.Repair value else LiveControl.ReclaimUnit value)
         | LiveIntent.ActionOneofCase.ReclaimFeature when not(isNull intent.ReclaimFeature) ->
             match nativeFeature intent.ReclaimFeature.Target with
             | ValueSome target -> let value=NativeReclaimFeatureIntent.empty() in value.Target<-ValueSome target;value.QueuePolicy<-policy intent.ReclaimFeature.QueuePolicy;Ok(LiveControl.ReclaimFeature value)
@@ -92,13 +94,25 @@ module LiveBoundary =
             value.Kind<-enum<NativeTacticalDescriptorKind>(int intent.TacticalMode.Kind);value.Value<-enum<NativeTacticalModeValue>(int intent.TacticalMode.Value)
             Ok(LiveControl.TacticalMode value)
         | _ -> Error "exactly one tactical action is required"
+    let private tacticalCatalogueBinding (intent: LiveIntent) =
+        match intent.ActionCase with
+        | LiveIntent.ActionOneofCase.Build when not(isNull intent.Build) ->
+            Some ({ id=intent.Build.CatalogueId.ToByteArray(); revision=intent.Build.CatalogueRevision }: LiveControl.TacticalCatalogueBinding)
+        | LiveIntent.ActionOneofCase.FactoryProduce when not(isNull intent.FactoryProduce) ->
+            Some ({ id=intent.FactoryProduce.CatalogueId.ToByteArray(); revision=intent.FactoryProduce.CatalogueRevision }: LiveControl.TacticalCatalogueBinding)
+        | _ -> None
     let private tacticalActors (intent:LiveIntent) =
         if intent.ActorTacticalBindings.Count<>intent.Actors.Count then Error "every tactical actor requires one binding"
         else
-            intent.ActorTacticalBindings |> Seq.fold(fun acc binding->acc |> Result.bind(fun values->
-                nativeRef binding.Actor |> Result.map(fun reference->
-                    let queues = binding.QueueRevisions |> Seq.map(fun q->({domain=enum<NativeQueueDomain>(int q.Domain);revision=q.Revision}:LiveControl.TacticalQueueBinding)) |> Seq.toList
-                    ({reference=reference;descriptorRevision=binding.DescriptorRevision;queueRevisions=queues}:LiveControl.TacticalActor)::values))) (Ok []) |> Result.map List.rev
+            Seq.zip intent.Actors intent.ActorTacticalBindings
+            |> Seq.fold(fun acc (actor,binding)->acc |> Result.bind(fun values->
+                if obj.ReferenceEquals(binding,null) || obj.ReferenceEquals(binding.Actor,null) || obj.ReferenceEquals(actor,null)
+                   || actor.Id<>binding.Actor.Id || actor.Lifetime<>binding.Actor.Lifetime then
+                    Error "tactical actor binding does not match the declared actor order"
+                else
+                    nativeRef actor |> Result.map(fun reference->
+                        let queues = binding.QueueRevisions |> Seq.map(fun q->({domain=enum<NativeQueueDomain>(int q.Domain);revision=q.Revision}:LiveControl.TacticalQueueBinding)) |> Seq.toList
+                        ({reference=reference;descriptorRevision=binding.DescriptorRevision;queueRevisions=queues}:LiveControl.TacticalActor)::values))) (Ok []) |> Result.map List.rev
     let feedbackEnvelope (feedback: LiveControl.Feedback) : Broker.Browser.Contracts.LiveServerEnvelope =
         let actor=UnitReference(Id=uint64 feedback.actor.Id,Lifetime=feedback.actor.Lifetime)
         let result=Broker.Browser.Contracts.LiveResult(ResultSequence=feedback.resultSequence,ParentId=ByteString.CopyFrom(feedback.parentId.ToByteArray()),InputId=ByteString.CopyFrom(feedback.inputId.ToByteArray()),BatchSequence=feedback.batchSequence,CorrelationId=feedback.correlationId,ChildIndex=uint32 feedback.childIndex,ChildCount=uint32 feedback.childCount,Actor=actor,Reason=feedback.detail,CommandChannelIncarnation=feedback.commandChannelIncarnation)
@@ -151,7 +165,7 @@ module LiveBoundary =
                         LiveControl.admitTactical
                             {parentId=parentId;inputId=inputId;sessionId=sessionId;controllerId=controllerId;controllerIncarnation=request.Controller.ControllerIncarnation;authorityEpoch=request.Controller.AuthorityEpoch;moduleSha256=request.Module.Sha256.ToByteArray();moduleGeneration=request.Module.Generation
                              basis=(let value=NativeObservationBasis.empty() in value.Token<-request.Basis.Token;value.StateSequence<-request.Basis.StateSequence;value.Frame<-request.Basis.NativeFrame;value.MatchIncarnation<-request.Basis.MatchId;value.ProcessIncarnation<-request.Basis.ProcessIncarnation;value.StateChannelIncarnation<-request.Basis.StateChannelIncarnation;value)
-                             actors=actors;action=action} now state)) |> Result.map(List.map(fun feedback->(feedbackEnvelope feedback).Result))
+                             actors=actors;catalogue=tacticalCatalogueBinding request.Intent;action=action} now state)) |> Result.map(List.map(fun feedback->(feedbackEnvelope feedback).Result))
             | _ -> Error "live parent, input, or controller identity refused"
     let provisionBootstrapForProfile profile (sessionId: Guid) (perspectiveId: string) state =
         match LiveControl.latestCapabilities state with

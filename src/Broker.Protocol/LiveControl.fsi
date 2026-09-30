@@ -34,6 +34,10 @@ module LiveControl =
           descriptorRevision: uint64
           queueRevisions: TacticalQueueBinding list }
 
+    type TacticalCatalogueBinding =
+        { id: byte[]
+          revision: uint64 }
+
     type TacticalAction =
         | Build of NativeBuildIntent
         | Guard of NativeFriendlyTargetIntent
@@ -57,6 +61,7 @@ module LiveControl =
           moduleGeneration: uint64
           basis: NativeObservationBasis
           actors: TacticalActor list
+          catalogue: TacticalCatalogueBinding option
           action: TacticalAction }
 
     type FeedbackStage = BrokerAdmission | NativeAdmission | NativeDispatch | Unknown

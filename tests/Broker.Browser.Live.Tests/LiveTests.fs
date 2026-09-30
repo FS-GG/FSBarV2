@@ -388,8 +388,20 @@ let tests=testList "live broker boundary" [
         Expect.isTrue (refused |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "refusal is explicit broker admission feedback"
         let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
         Expect.isFalse(commandLease.reader.TryRead(&delivery)) "refused parent emits no child"
-        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         actorBinding.QueueRevisions[0].Revision<-9007199254741111UL
+        let staleCatalogue=request.Clone()
+        staleCatalogue.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        staleCatalogue.Intent.FactoryProduce.CatalogueRevision<-bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision-1UL
+        let staleCatalogueResults=Expect.wantOk(LiveBoundary.submit session staleCatalogue now state) "stale catalogue is a correlated terminal refusal"
+        Expect.equal staleCatalogueResults.Length 2 "stale catalogue refuses every expanded child"
+        Expect.isTrue (staleCatalogueResults |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "stale catalogue refusal is explicit"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "stale catalogue emits no native child"
+        let mismatchedActor=request.Clone()
+        mismatchedActor.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        mismatchedActor.Intent.ActorTacticalBindings[0].Actor.Lifetime<-mismatchedActor.Intent.Actors[0].Lifetime+1UL
+        Expect.isError (LiveBoundary.submit session mismatchedActor now state) "actor binding must match the declared actor in order"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "mismatched actor binding emits no native child"
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         let admitted=Expect.wantOk(LiveBoundary.submit session request now state) "valid factory count expands through browser boundary"
         Expect.equal admitted.Length 2 "all children reserved"
         Expect.isTrue(commandLease.reader.TryRead(&delivery)) "one atomic delivery"
@@ -400,6 +412,16 @@ let tests=testList "live broker boundary" [
             Expect.equal child.TacticalCommand.Value.FactoryProduce.Count 1u "each child count is one"
             Expect.equal child.TacticalCommand.Value.ExpectedQueueRevision 9007199254741111UL "lossless >2^53 queue revision"
         actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.ActorOrder,Revision=9007199254741113UL))
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        let missingPosition=BuildTarget(DefinitionId=42u,Facing=BuildFacing.North,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
+        let missingPositionIntent=LiveIntent(Build=missingPosition)
+        missingPositionIntent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        missingPositionIntent.ActorTacticalBindings.Add(actorBinding.Clone())
+        request.Intent<-missingPositionIntent
+        let malformed=Expect.wantOk(LiveBoundary.submit session request now state) "missing nested position is safely refused"
+        Expect.equal malformed.Length 1 "malformed build receives one correlated refusal"
+        Expect.equal malformed.Head.Status LiveResultStatus.Rejected "malformed build is rejected"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "malformed build emits no native child"
         for facing,expectedEngineFacing in [BuildFacing.North,2;BuildFacing.East,1;BuildFacing.South,0;BuildFacing.West,3] do
             request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
             let build=BuildTarget(DefinitionId=42u,Position=Position3(X=1792f,Z=1856f),Facing=facing,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
