@@ -8,6 +8,24 @@ open Highbar.V1
 
 module LiveBoundary =
     let private guid (bytes: ByteString) = if bytes.Length=16 then Some(Guid(bytes.ToByteArray())) else None
+    let private browserQueueAction = function
+        | LiveSemanticAction.Unspecified -> Ok LiveActionKind.Unspecified
+        | LiveSemanticAction.Stop -> Ok LiveActionKind.Stop
+        | LiveSemanticAction.MoveReplace
+        | LiveSemanticAction.MoveAppend -> Ok LiveActionKind.Move
+        | LiveSemanticAction.AttackVisibleUnit -> Ok LiveActionKind.Attack
+        | LiveSemanticAction.Build -> Ok LiveActionKind.Build
+        | LiveSemanticAction.Guard -> Ok LiveActionKind.Guard
+        | LiveSemanticAction.Repair -> Ok LiveActionKind.Repair
+        | LiveSemanticAction.ReclaimUnit -> Ok LiveActionKind.ReclaimUnit
+        | LiveSemanticAction.ReclaimFeature -> Ok LiveActionKind.ReclaimFeature
+        | LiveSemanticAction.ReclaimArea -> Ok LiveActionKind.ReclaimArea
+        | LiveSemanticAction.FactoryProduce -> Ok LiveActionKind.FactoryProduce
+        | LiveSemanticAction.SetRally -> Ok LiveActionKind.SetRally
+        | LiveSemanticAction.QueueEdit -> Ok LiveActionKind.QueueEdit
+        | LiveSemanticAction.BarConstructionPriority
+        | LiveSemanticAction.BarCloakDesire -> Ok LiveActionKind.TacticalMode
+        | value -> Error(sprintf "native queue action %d is unsupported" (int value))
     let private requireController sessionId (controller: ControllerIdentity) =
         match guid controller.SessionId, guid controller.ControllerId with
         | Some session, Some id when session=sessionId && id<>Guid.Empty && controller.AuthorityEpoch>0UL && not(String.IsNullOrWhiteSpace controller.ControllerIncarnation) -> Ok id
@@ -207,6 +225,7 @@ module LiveBoundary =
             let basis=metadata.Basis.Value
             let browserBasis=ObservationBasis(Token=basis.Token,StateSequence=basis.StateSequence,NativeFrame=basis.Frame,MatchId=basis.MatchIncarnation,ProcessIncarnation=basis.ProcessIncarnation,StateChannelIncarnation=basis.StateChannelIncarnation)
             let live=LiveObservation(Preview=value,Basis=browserBasis)
+            let mutable projectionError = ValueNone
             for unit in metadata.Units do
                 match unit.Reference with
                 | ValueSome reference ->
@@ -250,18 +269,23 @@ module LiveBoundary =
                             let item=TacticalQueue(Domain=enum<QueueDomain>(int queue.Domain),Revision=queue.Revision,Complete=queue.Complete)
                             queue.Repeat |> ValueOption.iter(fun x->item.Repeat<-x)
                             for entry in queue.Entries do
-                                let projectedEntry=TacticalQueueEntry(NativeTag=entry.NativeTag,Action=enum<LiveActionKind>(int entry.Action))
-                                entry.DefinitionId |> ValueOption.iter(fun x->projectedEntry.DefinitionId<-x)
-                                entry.UnitTarget |> ValueOption.iter(fun x->projectedEntry.UnitTarget<-UnitReference(Id=uint64 x.Id,Lifetime=x.Lifetime))
-                                entry.FeatureTarget |> ValueOption.iter(fun x->projectedEntry.FeatureTarget<-FeatureReference(Id=uint64 x.Id,Lifetime=x.Lifetime))
-                                match entry.WorldX,entry.WorldZ with
-                                | ValueSome x,ValueSome z -> projectedEntry.Position<-Position3(X=x,Z=z)
-                                | _ -> ()
-                                item.Entries.Add projectedEntry
+                                match browserQueueAction entry.Action with
+                                | Error detail -> projectionError <- ValueSome detail
+                                | Ok action ->
+                                    let projectedEntry=TacticalQueueEntry(NativeTag=entry.NativeTag,Action=action)
+                                    entry.DefinitionId |> ValueOption.iter(fun x->projectedEntry.DefinitionId<-x)
+                                    entry.UnitTarget |> ValueOption.iter(fun x->projectedEntry.UnitTarget<-UnitReference(Id=uint64 x.Id,Lifetime=x.Lifetime))
+                                    entry.FeatureTarget |> ValueOption.iter(fun x->projectedEntry.FeatureTarget<-FeatureReference(Id=uint64 x.Id,Lifetime=x.Lifetime))
+                                    match entry.WorldX,entry.WorldZ with
+                                    | ValueSome x,ValueSome z -> projectedEntry.Position<-Position3(X=x,Z=z)
+                                    | _ -> ()
+                                    item.Entries.Add projectedEntry
                             result.Queue.Add item
                         projected.Actors.Add result
                     | ValueNone -> ()
                 live.Tactical<-projected
             | _ -> ()
-            Ok(LiveServerEnvelope(Observation=live))
+            match projectionError with
+            | ValueSome detail -> Error detail
+            | ValueNone -> Ok(LiveServerEnvelope(Observation=live))
         | _ -> Error "native live metadata does not match the production observation"
