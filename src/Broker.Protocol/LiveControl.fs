@@ -740,7 +740,7 @@ module LiveControl =
         | NativeQueuePolicy.Append -> Some(32u,CommandConflictPolicy.CommandConflictQueueAfterCurrent)
         | NativeQueuePolicy.RejectIfBusy -> Some(0u,CommandConflictPolicy.CommandConflictRejectIfBusy)
         | _ -> None
-    let private tacticalCount action = match action with FactoryProduce value -> int value.Count | _ -> 1
+    let private tacticalCount action = match action with FactoryProduce value -> uint64 value.Count | _ -> 1UL
     let private vector x y z =
         let value=Vector3.empty()
         value.X<-x; value.Y<-y; value.Z<-z
@@ -800,12 +800,12 @@ module LiveControl =
                 c.UnitId<-int actor.Id; c.Options<-options; c.Position<-ValueSome(vector p.X (p.Elevation |> ValueOption.defaultValue 0.0f) p.Z); c.Radius<-value.RadiusWorldUnits; ai.ReclaimInArea<-c
                 LiveSemanticAction.ReclaimArea,NativeTacticalCommand.Types.Action.ReclaimArea(value.Clone())
             | FactoryProduce value ->
-                let options,policy=queueOptions value.QueuePolicy |> Option.get
+                let _,policy=queueOptions value.QueuePolicy |> Option.get
                 conflict<-policy
                 let one=value.Clone()
                 one.Count<-1u
                 let c=BuildUnitCommand.empty()
-                c.UnitId<-int actor.Id; c.Options<-options; c.ToBuildUnitDefId<-int value.DefinitionId; ai.BuildUnit<-c
+                c.UnitId<-int actor.Id; c.Options<-0u; c.ToBuildUnitDefId<-int value.DefinitionId; ai.BuildUnit<-c
                 LiveSemanticAction.FactoryProduce,NativeTacticalCommand.Types.Action.FactoryProduce(one)
             | SetRally value ->
                 let p=value.Position.Value
@@ -854,16 +854,27 @@ module LiveControl =
         lock state.gate (fun () ->
             match state.controller,state.capabilities,state.snapshot,state.tacticalCatalogue,state.tacticalSnapshot,state.reporter with
             | Some controller,Some caps,Some snapshot,Some catalogue,Some tactical,Some reporter when reporter.Protocol=LiveControlProtocol.TacticalV1 && controller.stage=NativeConfirmed && now<controller.leaseExpiresAt ->
-                let countPerActor=tacticalCount submission.action
-                let childCount=submission.actors.Length*countPerActor
-                let basis=snapshot.Basis.Value
-                let descriptorKind,domain=tacticalShape submission.action
+                let countPerActorWide=tacticalCount submission.action
+                let childCountWide=uint64 submission.actors.Length*countPerActorWide
+                let countWithinAdvertisedBound =
+                    match submission.action with
+                    | FactoryProduce value -> value.Count>0u && value.Count<=caps.Tactical.Value.MaxFactoryProductionCount
+                    | _ -> true
                 let bindingMismatch=submission.sessionId<>Guid(controller.binding.BrokerSessionId.ToByteArray()) || submission.controllerId<>Guid(controller.binding.ControllerId.ToByteArray()) || submission.controllerIncarnation<>controller.binding.ControllerIncarnation || submission.authorityEpoch<>controller.binding.AuthorityEpoch || submission.moduleGeneration<>controller.binding.ModuleGeneration || not(submission.moduleSha256.AsSpan().SequenceEqual(controller.binding.ModuleSha256.Span))
-                let owned= snapshot.Units |> Seq.choose(fun u->if u.Eligibility=NativeLiveUnitEligibility.NativeLiveUnitOwnedActor then u.Reference |> ValueOption.toOption else None) |> Seq.toList
-                let actorMetadata reference=tactical.Actors |> Seq.tryFind(fun a->a.Actor |> ValueOption.exists(sameRef reference))
-                let definitionIds=catalogue |> Seq.collect(fun p->p.Definitions) |> Seq.map(fun d->d.DefinitionId) |> Set.ofSeq
-                let queueFor actor = actor.Queue |> Seq.tryFind(fun q->q.Domain=domain && q.Complete)
-                let validInsert (insert:NativeQueueInsertIntent) =
+                if bindingMismatch then
+                    Error "live tactical submission identity mismatch"
+                elif submission.actors.Length<1 || not countWithinAdvertisedBound || childCountWide>64UL || submission.actors |> List.exists(fun a->a.reference.Lifetime=0UL || a.reference.Id>caps.MaxNativeUnitId) then
+                    Error "live tactical actors or expanded child count are invalid"
+                else
+                  let countPerActor=int countPerActorWide
+                  let childCount=int childCountWide
+                  let basis=snapshot.Basis.Value
+                  let descriptorKind,domain=tacticalShape submission.action
+                  let owned= snapshot.Units |> Seq.choose(fun u->if u.Eligibility=NativeLiveUnitEligibility.NativeLiveUnitOwnedActor then u.Reference |> ValueOption.toOption else None) |> Seq.toList
+                  let actorMetadata reference=tactical.Actors |> Seq.tryFind(fun a->a.Actor |> ValueOption.exists(sameRef reference))
+                  let definitionIds=catalogue |> Seq.collect(fun p->p.Definitions) |> Seq.map(fun d->d.DefinitionId) |> Set.ofSeq
+                  let queueFor actor = actor.Queue |> Seq.tryFind(fun q->q.Domain=domain && q.Complete)
+                  let validInsert (insert:NativeQueueInsertIntent) =
                     let position = insert.Position |> ValueOption.exists(validPosition caps)
                     let target = insert.UnitTarget |> ValueOption.exists(fun t->owned |> List.exists(sameRef t))
                     match insert.Action with
@@ -872,7 +883,7 @@ module LiveControl =
                     | LiveSemanticAction.FactoryProduce -> domain=NativeQueueDomain.FactoryProduction && insert.DefinitionId |> ValueOption.exists definitionIds.Contains
                     | LiveSemanticAction.Guard | LiveSemanticAction.Repair | LiveSemanticAction.ReclaimUnit -> domain=NativeQueueDomain.ActorOrder && target
                     | _ -> false
-                let reject detail =
+                  let reject detail =
                     published <-
                         [0..childCount-1]
                         |> List.map(fun index->
@@ -882,7 +893,7 @@ module LiveControl =
                     rememberCompletedParent submission.parentId state
                     for value in published do publish state value
                     Ok published
-                let actionValid =
+                  let actionValid =
                     let currentCatalogue =
                         submission.catalogue
                         |> Option.exists(fun binding ->
@@ -903,16 +914,14 @@ module LiveControl =
                             | NativeQueueEditKind.SetRepeat,ValueSome(NativeQueueEditIntent.Types.Edit.Repeat _) -> v.Domain<>NativeQueueDomain.FactoryRally
                             | _ -> false)
                     | TacticalMode v -> (v.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBarConstructionPriority || v.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBarCloakDesire) && v.Value<>NativeTacticalModeValue.Unspecified
-                if bindingMismatch then Error "live tactical submission identity mismatch"
-                elif submission.actors.Length<1 || childCount>64 || submission.actors |> List.exists(fun a->a.reference.Lifetime=0UL || a.reference.Id>caps.MaxNativeUnitId) then Error "live tactical actors or expanded child count are invalid"
-                elif submission.actors |> List.map(fun a->a.reference.Id) |> Set.ofList |> Set.count<>submission.actors.Length then Error "live tactical actors must be distinct"
-                elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId then Error "live parent or result capacity exhausted"
-                elif not(sameBasis submission.basis basis) then reject "broker refused stale tactical observation basis; refresh the current observation"
-                elif not(tactical.Basis |> ValueOption.exists(sameBasis basis)) then reject "broker refused incomplete tactical metadata for the current observation basis"
-                elif now-state.snapshotReceivedAt>TimeSpan.FromMilliseconds(float caps.MaxObservationAgeMs) then reject "broker refused expired tactical observation basis"
-                elif not actionValid || descriptorKind=NativeTacticalDescriptorKind.Unspecified then reject "broker refused invalid or unavailable tactical action"
-                elif state.parents.Count>=state.parentCapacity || state.identities.Count+childCount>state.parentCapacity*64 then Error "live parent or result capacity exhausted"
-                else
+                  if submission.actors |> List.map(fun a->a.reference.Id) |> Set.ofList |> Set.count<>submission.actors.Length then Error "live tactical actors must be distinct"
+                  elif state.parents.Contains submission.parentId || state.completedParents.Contains submission.parentId then Error "live parent or result capacity exhausted"
+                  elif not(sameBasis submission.basis basis) then reject "broker refused stale tactical observation basis; refresh the current observation"
+                  elif not(tactical.Basis |> ValueOption.exists(sameBasis basis)) then reject "broker refused incomplete tactical metadata for the current observation basis"
+                  elif now-state.snapshotReceivedAt>TimeSpan.FromMilliseconds(float caps.MaxObservationAgeMs) then reject "broker refused expired tactical observation basis"
+                  elif not actionValid || descriptorKind=NativeTacticalDescriptorKind.Unspecified then reject "broker refused invalid or unavailable tactical action"
+                  elif state.parents.Count>=state.parentCapacity || state.identities.Count+childCount>state.parentCapacity*64 then Error "live parent or result capacity exhausted"
+                  else
                     let descriptorAllows (descriptor:NativeTacticalCommandDescriptor) =
                         if descriptor.Kind<>descriptorKind || descriptor.Disabled then false else
                         match submission.action with
@@ -928,11 +937,19 @@ module LiveControl =
                             | ValueSome(NativeQueueEditIntent.Types.Edit.Insert insert) -> queue.Entries |> Seq.exists(fun entry->entry.NativeTag=insert.BeforeNativeTag)
                             | _ -> false
                         | _ -> true
+                    let factoryPolicyAllows (queue:NativeObservedQueue) =
+                        match submission.action with
+                        | FactoryProduce value ->
+                            match value.QueuePolicy with
+                            | NativeQueuePolicy.Append -> true
+                            | NativeQueuePolicy.Replace | NativeQueuePolicy.RejectIfBusy -> queue.Entries.Count=0
+                            | _ -> false
+                        | _ -> true
                     let checkedActors=submission.actors |> List.map(fun requested->
                         match actorMetadata requested.reference with
                         | Some metadata when requested.descriptorRevision=metadata.DescriptorRevision
                             && metadata.Descriptors |> Seq.exists descriptorAllows
-                            && requested.queueRevisions |> List.exists(fun q->q.domain=domain && queueFor metadata |> Option.exists(fun current->current.Revision=q.revision && queueEditAllows current)) -> Some(requested,metadata)
+                                && requested.queueRevisions |> List.exists(fun q->q.domain=domain && queueFor metadata |> Option.exists(fun current->current.Revision=q.revision && queueEditAllows current && factoryPolicyAllows current)) -> Some(requested,metadata)
                         | _ -> None)
                     if checkedActors |> List.exists Option.isNone then reject "broker refused stale or unavailable actor capability or queue revision"
                     else
