@@ -197,7 +197,7 @@ test("tactical pointer and keyboard controls cross the real Worker with exact bi
   await expect(page.locator(".economy")).toContainText("income 8.5");
   await page.locator('[data-unit-id="0"]').click();
 
-  await page.getByLabel("Action").selectOption("build");
+  await page.locator('[name="tactical-action"]').selectOption("build");
   await page.getByLabel("Facing").selectOption("BUILD_FACING_WEST");
   await page.getByLabel("Queue policy").selectOption("TACTICAL_QUEUE_POLICY_APPEND");
   await page.getByRole("button",{name:"Send tactical command"}).click();
@@ -219,7 +219,7 @@ test("tactical pointer and keyboard controls cross the real Worker with exact bi
   await expect.poll(()=>submissions.length).toBe(4);
   expect(submissions[3].intent.tacticalMode).toEqual({kind:"TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY",value:"TACTICAL_MODE_VALUE_ENABLED"});
 
-  await page.getByLabel("Action").selectOption("setRally");
+  await page.locator('[name="tactical-action"]').selectOption("setRally");
   await expect(page.locator(".diagnostic")).toContainText("unavailable");
   await expect(page.getByRole("button",{name:"Send tactical command"})).toHaveAttribute("aria-disabled","");
   expect(submissions).toHaveLength(4);
@@ -230,7 +230,7 @@ test("pointer and keyboard multi-selection preserve ordered actors through the r
   await page.locator('[data-unit-id="0"]').click();
   await page.locator('[data-unit-id="31999"]').click({modifiers:["Control"]});
   await expect(page.locator(".selection")).toContainText("0:9007199254740999, 31999:9007199254741001");
-  await page.getByLabel("Action").selectOption("build");
+  await page.locator('[name="tactical-action"]').selectOption("build");
   await page.getByRole("button",{name:"Send tactical command"}).click();
   await expect.poll(()=>submissions.length).toBe(1);
   expect(submissions[0].intent.actors).toEqual([{lifetime:ref0.lifetime},ref31999]);
@@ -277,6 +277,36 @@ test("keyboard target cycling preserves ordered actors and exact lifetime target
   expect(submissions[3].intent.reclaimFeature.target).toEqual({lifetime:feature0.reference.lifetime});
   expect(submissions.every(value=>JSON.stringify(value.intent.actors)===JSON.stringify([{lifetime:ref0.lifetime},ref31999]))).toBe(true);
   await expect(page.locator(".result")).not.toContainText("native effect complete");
+});
+
+test("pointer and keyboard each reach every negotiated tactical family through the Worker",async({page})=>{
+  await arm(page,"Manual guest","barc-live-tactical-v1");
+  await page.locator('[data-unit-id="0"]').click();
+  await page.locator('[data-unit-id="31999"]').click({modifiers:["Shift"]});
+  await page.locator('[data-feature-id="0"]').click();
+  await expect(page.getByLabel("Queue entry")).toHaveValue("41");
+  await expect(page.getByLabel("Queue entry").locator("option")).toHaveText("tag 41 · LIVE_ACTION_KIND_MOVE");
+
+  const pointerFamilies=["build","guard","repair","reclaimUnit","reclaimFeature","reclaimArea","factoryProduce","queueEdit","tacticalMode"];
+  for(const family of pointerFamilies){
+    await page.locator('[name="tactical-action"]').selectOption(family);
+    const before=submissions.length;
+    await page.getByRole("button",{name:"Send tactical command"}).click();
+    await expect.poll(()=>submissions.length).toBe(before+1);
+    expect(submissions.at(-1).intent.action).toBe(family);
+  }
+  expect(submissions.find(value=>value.intent.guard).intent.guard.target).toEqual({id:"31999",lifetime:ref31999.lifetime});
+  expect(submissions.find(value=>value.intent.reclaimFeature).intent.reclaimFeature.target).toEqual({lifetime:feature0.reference.lifetime});
+  expect(submissions.find(value=>value.intent.queueEdit).intent.queueEdit.insert.beforeNativeTag).toBe(41);
+
+  const map=page.getByLabel(/Live tactical map/);
+  const keyboardFamilies=[["b","build"],["g","guard"],["r","repair"],["u","reclaimUnit"],["x","reclaimFeature"],["c","reclaimArea"],["p","factoryProduce"],["q","queueEdit"],["m","tacticalMode"]];
+  for(const [key,family] of keyboardFamilies){
+    const before=submissions.length;
+    await map.focus();await page.keyboard.press(key);await page.keyboard.press("Enter");
+    await expect.poll(()=>submissions.length).toBe(before+1);
+    expect(submissions.at(-1).intent.action).toBe(family);
+  }
 });
 
 test("independently compiled guest changes a tactical action rather than fabricating an effect",async({page})=>{
