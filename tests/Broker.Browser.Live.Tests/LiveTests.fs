@@ -173,6 +173,8 @@ let setupTactical now =
     snapshot.Basis<-ValueSome basis
     let actor=NativeLiveUnitMetadata.empty()
     actor.Reference<-ValueSome(nativeRef 0u 9007199254741105UL);actor.Eligibility<-NativeLiveUnitEligibility.NativeLiveUnitOwnedActor;snapshot.Units.Add actor
+    let actor2=NativeLiveUnitMetadata.empty()
+    actor2.Reference<-ValueSome(nativeRef 78u 9007199254741106UL);actor2.Eligibility<-NativeLiveUnitEligibility.NativeLiveUnitOwnedActor;snapshot.Units.Add actor2
     Expect.equal (report (LiveStateReport.Types.Body.Snapshot snapshot) 2UL) LiveStateReportDisposition.LiveStateReportRecorded "base snapshot"
     let page=TacticalCataloguePage.empty()
     page.TacticalProfile<-"barc-live-tactical-v1";page.TacticalRevision<-1u;page.CatalogueId<-bytes16 "catalogue";page.CatalogueRevision<-9007199254741107UL;page.PageCount<-1u;page.Complete<-true
@@ -192,9 +194,19 @@ let setupTactical now =
     let reclaimAreaDescriptor=NativeTacticalCommandDescriptor.empty()
     reclaimAreaDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimArea;metadata.Descriptors.Add reclaimAreaDescriptor
     let queue=NativeObservedQueue.empty()
-    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;metadata.Queue.Add queue
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true
+    let queuedProduction=NativeObservedQueueEntry.empty()
+    queuedProduction.NativeTag<-41;queuedProduction.Action<-LiveSemanticAction.FactoryProduce;queuedProduction.DefinitionId<-ValueSome 42u;queue.Entries.Add queuedProduction
+    metadata.Queue.Add queue
     let actorQueue=NativeObservedQueue.empty()
     actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
+    let metadata2=metadata.Clone()
+    metadata2.Actor<-ValueSome(nativeRef 78u 9007199254741106UL);metadata2.DescriptorRevision<-9007199254741115UL
+    let production2=metadata2.Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
+    production2.Revision<-9007199254741117UL;production2.Entries.Clear()
+    let actorQueue2=metadata2.Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.ActorOrder)
+    actorQueue2.Revision<-9007199254741119UL
+    tactical.Actors.Add metadata2
     Expect.equal (report (LiveStateReport.Types.Body.TacticalSnapshot tactical) 4UL) LiveStateReportDisposition.LiveStateReportRecorded "paired tactical snapshot"
     let control=LiveControlSubscribe.empty()
     control.PluginId<-"highbar";control.SchemaVersion<-"1.1.0";control.Protocol<-LiveControlProtocol.TacticalV1;control.ControlChannelIncarnation<-"control-t"
@@ -460,6 +472,50 @@ let tests=testList "live broker boundary" [
         Expect.equal staleCatalogueResults.Length 2 "stale catalogue refuses every expanded child"
         Expect.isTrue (staleCatalogueResults |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "stale catalogue refusal is explicit"
         Expect.isFalse(commandLease.reader.TryRead(&delivery)) "stale catalogue emits no native child"
+        let nonemptyReplace=request.Clone()
+        nonemptyReplace.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        nonemptyReplace.Intent.FactoryProduce.QueuePolicy<-TacticalQueuePolicy.Replace
+        let nonemptyReplaceResults=Expect.wantOk(LiveBoundary.submit session nonemptyReplace now state) "nonempty factory Replace is a correlated terminal refusal"
+        Expect.equal nonemptyReplaceResults.Length 2 "nonempty Replace refuses every bounded child"
+        Expect.isTrue (nonemptyReplaceResults |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "nonempty Replace is refused at broker admission"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "nonempty Replace emits no native child"
+        let nonemptyRejectIfBusy=nonemptyReplace.Clone()
+        nonemptyRejectIfBusy.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        nonemptyRejectIfBusy.Intent.FactoryProduce.QueuePolicy<-TacticalQueuePolicy.RejectIfBusy
+        let busyResults=Expect.wantOk(LiveBoundary.submit session nonemptyRejectIfBusy now state) "nonempty factory RejectIfBusy is refused"
+        Expect.equal busyResults.Length 2 "RejectIfBusy refuses every bounded child"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "RejectIfBusy emits no native child"
+        let multiActorReplace=nonemptyReplace.Clone()
+        multiActorReplace.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        multiActorReplace.Intent.Actors.Add(UnitReference(Id=78UL,Lifetime=9007199254741106UL))
+        let actor2Binding=ActorTacticalBinding(Actor=UnitReference(Id=78UL,Lifetime=9007199254741106UL),DescriptorRevision=9007199254741115UL)
+        actor2Binding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.FactoryProduction,Revision=9007199254741117UL))
+        multiActorReplace.Intent.ActorTacticalBindings.Add actor2Binding
+        let multiActorResults=Expect.wantOk(LiveBoundary.submit session multiActorReplace now state) "one nonempty production queue fails the multi-actor parent closed"
+        Expect.equal multiActorResults.Length 4 "multi-actor refusal is bounded and complete"
+        Expect.isTrue (multiActorResults |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "no actor is partially admitted"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "multi-actor Replace emits no native child"
+        let aboveAdvertised=request.Clone()
+        aboveAdvertised.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        aboveAdvertised.Intent.FactoryProduce.Count<-5u
+        Expect.isError (LiveBoundary.submit session aboveAdvertised now state) "cap plus one is refused before child conversion or expansion"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "cap plus one emits no native child"
+        let zeroCount=request.Clone()
+        zeroCount.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        zeroCount.Intent.FactoryProduce.Count<-0u
+        Expect.isError (LiveBoundary.submit session zeroCount now state) "zero production count is malformed before expansion"
+        let maximumCount=request.Clone()
+        maximumCount.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        maximumCount.Intent.FactoryProduce.Count<-UInt32.MaxValue
+        Expect.isError (LiveBoundary.submit session maximumCount now state) "UInt32.MaxValue is refused before int conversion or expansion"
+        let wideMultiActor=request.Clone()
+        wideMultiActor.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        wideMultiActor.Intent.FactoryProduce.QueuePolicy<-TacticalQueuePolicy.Append
+        wideMultiActor.Intent.FactoryProduce.Count<-4u
+        for actorId in 1UL..16UL do
+            wideMultiActor.Intent.Actors.Add(UnitReference(Id=actorId,Lifetime=9007199254741200UL+actorId))
+        Expect.isError (LiveBoundary.submit session wideMultiActor now state) "actors times count above 64 is refused before expansion"
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "wide malformed counts emit no native child"
         let mismatchedActor=request.Clone()
         mismatchedActor.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         mismatchedActor.Intent.ActorTacticalBindings[0].Actor.Lifetime<-mismatchedActor.Intent.Actors[0].Lifetime+1UL
@@ -472,9 +528,29 @@ let tests=testList "live broker boundary" [
         Expect.equal delivery.batches.Length 2 "count expands to exact children"
         for child in delivery.batches do
             Expect.equal child.Batch.Value.Commands.Count 1 "one translated native command"
-            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Options 32u "append uses SHIFT32"
+            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Options 0u "factory append uses one plain native production order"
+            Expect.equal child.Batch.Value.ConflictPolicy CommandConflictPolicy.CommandConflictQueueAfterCurrent "typed append keeps its broker conflict policy"
             Expect.equal child.TacticalCommand.Value.FactoryProduce.Count 1u "each child count is one"
             Expect.equal child.TacticalCommand.Value.ExpectedQueueRevision 9007199254741111UL "lossless >2^53 queue revision"
+        let emptyTactical=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
+        let emptyProduction=emptyTactical.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
+        emptyProduction.Entries.Clear();emptyProduction.Revision<-9007199254741121UL
+        let reporter=LiveStateReporter.empty()
+        reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
+        let emptyReport=LiveStateReport.empty()
+        emptyReport.Reporter<-ValueSome reporter;emptyReport.ReportSequence<-5UL;emptyReport.TacticalSnapshot<-emptyTactical
+        Expect.equal (LiveControl.reportState emptyReport now state) LiveStateReportDisposition.LiveStateReportRecorded "fresh empty production queue is recorded"
+        let emptyReplace=request.Clone()
+        emptyReplace.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        emptyReplace.Intent.FactoryProduce.QueuePolicy<-TacticalQueuePolicy.Replace
+        emptyReplace.Intent.ActorTacticalBindings[0].QueueRevisions[0].Revision<-9007199254741121UL
+        let emptyReplaceResults=Expect.wantOk(LiveBoundary.submit session emptyReplace now state) "empty factory Replace remains admitted"
+        Expect.equal emptyReplaceResults.Length 2 "empty Replace preserves count children"
+        Expect.isTrue(commandLease.reader.TryRead(&delivery)) "empty Replace emits one atomic broker delivery"
+        Expect.equal delivery.batches.Length 2 "empty Replace delivery contains every child"
+        for child in delivery.batches do
+            Expect.equal child.Batch.Value.Commands[0].BuildUnit.Options 0u "empty Replace uses one plain native production order"
+            Expect.equal child.Batch.Value.ConflictPolicy CommandConflictPolicy.CommandConflictReplaceCurrent "typed Replace keeps its broker conflict policy"
         actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.ActorOrder,Revision=9007199254741113UL))
         request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         let missingPosition=BuildTarget(DefinitionId=42u,Facing=BuildFacing.North,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
@@ -499,6 +575,15 @@ let tests=testList "live broker boundary" [
             let child=delivery.batches.Head
             Expect.equal child.Batch.Value.Commands[0].BuildUnit.Facing expectedEngineFacing "legacy command uses the engine-facing ordinal"
             Expect.equal child.TacticalCommand.Value.Build.Facing (enum<NativeBuildFacing>(int facing)) "tactical command retains the protocol-facing enum"
+        request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        let appendedBuild=BuildTarget(DefinitionId=42u,Position=Position3(X=1792f,Z=1856f),Facing=BuildFacing.South,QueuePolicy=TacticalQueuePolicy.Append,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
+        let appendedBuildIntent=LiveIntent(Build=appendedBuild)
+        appendedBuildIntent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        appendedBuildIntent.ActorTacticalBindings.Add(actorBinding.Clone())
+        request.Intent<-appendedBuildIntent
+        Expect.wantOk(LiveBoundary.submit session request now state) "ordinary Build Append remains admitted" |> ignore
+        Expect.isTrue(commandLease.reader.TryRead(&delivery)) "ordinary Build Append delivery emitted"
+        Expect.equal delivery.batches.Head.Batch.Value.Commands[0].BuildUnit.Options 32u "ordinary Build Append retains SHIFT32"
         request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
         let reclaimArea=AreaTarget(Center=Position3(X=1800f,Elevation=331.25f,Z=1736f),RadiusWorldUnits=96f,QueuePolicy=TacticalQueuePolicy.Replace)
         let reclaimAreaIntent=LiveIntent(ReclaimArea=reclaimArea)
