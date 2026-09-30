@@ -102,3 +102,35 @@ Observation uses existing browser/Worker, broker/native stages, engine observati
 Preserve the existing BAR row and foundation/preview/live/evidence links. Change its current horizon sentence to: “`.4` paired source/native qualification is complete at FSBar `f1a18c52` and HighBar `680b6248`. `.5` useful tactical play is selected: runtime definitions/economy, typed construction/repair/reclaim, production/rally/queue operations and selected BAR commands; source lanes are ready, native scenario acceptance pending. `.7` publication and installed adoption remain separate.” Until an implementation branch/path exists, refer to the actual local draft `/tmp/barc-01.5-useful-play-plan-20260929.md`. Once present, add `[Useful BAR tactical play — BARC-01.5](https://github.com/FS-GG/FSBarV2/blob/<actual-implementation-branch>/docs/roadmaps/barc-01-useful-play.md)` and later replace with the durable `main` URL. Do not publish the placeholder or open a planning-only PR.
 
 No user decision is needed to begin `.5a` and native discovery. Exact factory/rally queue exposure, feature lifetime evidence and selected custom-command values are bounded technical decisions for `.5a`, resolved with the installed APIs/content rather than guesses. If the installed API cannot enforce target/queue freshness, stop that dependent family and resolve the producer gap; other ready source lanes continue. Do not declare `.5` delivered while any required family, input method, generated receiver or imported-policy native outcome is missing. Replan only for a material unsupported runtime/contract assumption; ordinary source changes and test failures remain in this plan.
+
+## Factory production correction and remaining native dependency (2026-09-30)
+
+The selected Recoil production queue interprets SHIFT as a quantity multiplier
+and an option-zero build as append. The former shared Append32/Replace0 recipe
+therefore did not implement the declared factory policies. The broker now emits
+option-zero Count1 children, bounds Count against the advertised capability and
+actors×Count against 64 before conversion/expansion, and refuses nonempty
+Replace/RejectIfBusy before delivery. HighBar independently repeats the complete
+queue/revision/policy check before native control acquisition and callback.
+Ordinary Move/Build Append32 and production Repeat64 retain their meanings.
+
+HighBar source is delivered through #11 at
+`1f12673ebcbfeb637726088e048d2c9c04609078`, tree
+`17cee5bdfa5b41186609bb7c9701297474582efd`: standalone CTest 8/8, pinned
+Recoil embedded test 1/1 and plugin build passed. FSBar's source candidate passed
+focused live tests 16/16 and solution tests; its native oracle passed 14/14
+preparation tests. These are source checks, not game acceptance.
+
+Native evidence now distinguishes nonempty AppendN (N≥2) with exact preserved
+old order, correlated Count1 child outcomes and exactly N new orders/products
+from nonempty Replace safety refusal. Empty Count1 production or refusal cannot
+qualify positive nonempty replacement. The installed profile still advertises
+Count1; raising that bound requires the admitted native dependency and fresh
+qualification. Paired useful-play native acceptance remains open (0/6).
+
+The [atomic factory replacement amendment](barc-01-factory-atomic-replacement.md)
+is admitted within existing BARC-01.5. Its first contract window is active;
+simulation/transport implementation, coherent new engine/plugin custody and
+positive Replace acceptance remain pending. It preserves frozen browser v1
+types and the old rally patch/evidence. Source merge does not activate the new
+engine, qualify local/generated input journeys or publish/install the product.
