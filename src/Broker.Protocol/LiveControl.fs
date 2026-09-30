@@ -796,8 +796,8 @@ module LiveControl =
                 let options,policy=queueOptions value.QueuePolicy |> Option.get
                 conflict<-policy
                 let p=value.Center.Value
-                let c=ReclaimAreaCommand.empty()
-                c.UnitId<-int actor.Id; c.Options<-options; c.Position<-ValueSome(vector p.X (p.Elevation |> ValueOption.defaultValue 0.0f) p.Z); c.Radius<-value.RadiusWorldUnits; ai.ReclaimArea<-c
+                let c=ReclaimInAreaCommand.empty()
+                c.UnitId<-int actor.Id; c.Options<-options; c.Position<-ValueSome(vector p.X (p.Elevation |> ValueOption.defaultValue 0.0f) p.Z); c.Radius<-value.RadiusWorldUnits; ai.ReclaimInArea<-c
                 LiveSemanticAction.ReclaimArea,NativeTacticalCommand.Types.Action.ReclaimArea(value.Clone())
             | FactoryProduce value ->
                 let options,policy=queueOptions value.QueuePolicy |> Option.get
