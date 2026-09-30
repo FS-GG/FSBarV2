@@ -308,6 +308,68 @@ let reportFeaturePopulation negotiatedCount observedCount now =
 
 [<Tests>]
 let tests=testList "live broker boundary" [
+    testCase "native queue actions map by meaning and preserve exact unit target lifetimes" <| fun _ ->
+        let now=DateTimeOffset(2026,9,30,11,0,0,TimeSpan.Zero)
+        Expect.equal (int LiveSemanticAction.Guard) 6 "HighBar Guard wire value is pinned"
+        Expect.equal (int LiveSemanticAction.Repair) 7 "HighBar Repair wire value is pinned"
+        Expect.equal (int LiveActionKind.Guard) 5 "browser Guard wire value is pinned"
+        Expect.equal (int LiveActionKind.Repair) 6 "browser Repair wire value is pinned"
+        let mappings = [
+            LiveSemanticAction.Unspecified,LiveActionKind.Unspecified
+            LiveSemanticAction.Stop,LiveActionKind.Stop
+            LiveSemanticAction.MoveReplace,LiveActionKind.Move
+            LiveSemanticAction.MoveAppend,LiveActionKind.Move
+            LiveSemanticAction.AttackVisibleUnit,LiveActionKind.Attack
+            LiveSemanticAction.Build,LiveActionKind.Build
+            LiveSemanticAction.Guard,LiveActionKind.Guard
+            LiveSemanticAction.Repair,LiveActionKind.Repair
+            LiveSemanticAction.ReclaimUnit,LiveActionKind.ReclaimUnit
+            LiveSemanticAction.ReclaimFeature,LiveActionKind.ReclaimFeature
+            LiveSemanticAction.ReclaimArea,LiveActionKind.ReclaimArea
+            LiveSemanticAction.FactoryProduce,LiveActionKind.FactoryProduce
+            LiveSemanticAction.SetRally,LiveActionKind.SetRally
+            LiveSemanticAction.QueueEdit,LiveActionKind.QueueEdit
+            LiveSemanticAction.BarConstructionPriority,LiveActionKind.TacticalMode
+            LiveSemanticAction.BarCloakDesire,LiveActionKind.TacticalMode ]
+        let project batchIndex batch =
+            let state,_,_,basis,_,_=setupTactical now
+            let tactical=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
+            let queue=tactical.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.ActorOrder)
+            queue.Entries.Clear()
+            for index,(nativeAction,_) in batch |> List.indexed do
+                let entry=NativeObservedQueueEntry.empty()
+                entry.NativeTag<-batchIndex*100+index+1
+                entry.Action<-nativeAction
+                if nativeAction=LiveSemanticAction.Guard || nativeAction=LiveSemanticAction.Repair then
+                    entry.UnitTarget<-ValueSome(nativeRef 77u 9007199254741003UL)
+                queue.Entries.Add entry
+            let reporter=LiveStateReporter.empty()
+            reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
+            let report=LiveStateReport.empty()
+            report.Reporter<-ValueSome reporter;report.ReportSequence<-5UL;report.TacticalSnapshot<-tactical
+            Expect.equal (LiveControl.reportState report now state) LiveStateReportDisposition.LiveStateReportRecorded "queue snapshot recorded"
+            let preview=Observation(SessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Sequence=basis.StateSequence,CapturedAtUnixMs=now.ToUnixTimeMilliseconds(),PerspectiveId="team-0")
+            let envelope=Expect.wantOk (LiveBoundary.observation preview state) "queue projection succeeds"
+            let projected=envelope.Observation.Tactical.Actors[0].Queue |> Seq.find(fun value->value.Domain=QueueDomain.ActorOrder)
+            Expect.sequenceEqual (projected.Entries |> Seq.map(fun value->value.Action)) (batch |> Seq.map snd) "every action maps by meaning"
+            for entry in projected.Entries do
+                if entry.Action=LiveActionKind.Guard || entry.Action=LiveActionKind.Repair then
+                    Expect.equal entry.UnitTarget.Id 77UL "unit target id survives"
+                    Expect.equal entry.UnitTarget.Lifetime 9007199254741003UL "unit target lifetime survives"
+        mappings |> List.chunkBySize 8 |> List.iteri project
+        let state,_,_,basis,_,_=setupTactical now
+        let tactical=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
+        let queue=tactical.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.ActorOrder)
+        let unsupported=NativeObservedQueueEntry.empty()
+        unsupported.NativeTag<-1;unsupported.Action<-enum<LiveSemanticAction> 99;queue.Entries.Add unsupported
+        let reporter=LiveStateReporter.empty()
+        reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
+        let report=LiveStateReport.empty()
+        report.Reporter<-ValueSome reporter;report.ReportSequence<-5UL;report.TacticalSnapshot<-tactical
+        Expect.equal (LiveControl.reportState report now state) LiveStateReportDisposition.LiveStateReportRecorded "unknown native enum remains representable at ingress"
+        let preview=Observation(SessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Sequence=basis.StateSequence,CapturedAtUnixMs=now.ToUnixTimeMilliseconds(),PerspectiveId="team-0")
+        Expect.isError (LiveBoundary.observation preview state) "unknown native queue action fails the browser projection closed"
+
     testCase "negotiated feature capacity preserves complete references and refuses overflow atomically" <| fun _ ->
         let now=DateTimeOffset(2026,9,29,14,0,0,TimeSpan.Zero)
         for count in [256;342;512] do
