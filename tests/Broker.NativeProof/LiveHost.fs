@@ -9,6 +9,7 @@ open System.Runtime.InteropServices
 open System.Diagnostics
 open System.Collections.Generic
 open System.Text.RegularExpressions
+open Microsoft.Win32.SafeHandles
 open Google.Protobuf
 open Highbar.V1
 open Broker.Core
@@ -18,6 +19,34 @@ open Broker.Browser.Gateway
 module LiveHost =
     [<DllImport("libc", EntryPoint="geteuid")>]
     extern uint32 private getEffectiveUserId()
+
+    [<DllImport("libc", EntryPoint="open", SetLastError=true)>]
+    extern int private openFile(string path, int flags, uint32 mode)
+
+    // The helper authenticates the retained descriptor itself. FileMode.Append
+    // seeks before writes but does not set O_APPEND on Unix, so create the
+    // stock journal with the exact descriptor contract and then transfer its
+    // ownership to FileStream.
+    let openStockJournal path =
+        if not (OperatingSystem.IsLinux()) then invalidOp "stock journal custody requires Linux descriptor flags"
+        let oWriteOnly=0x1
+        let oCreate=0x40
+        let oExclusive=0x80
+        let oAppend=0x400
+        let oNoFollow=0x20000
+        let oCloseOnExec=0x80000
+        let descriptor=openFile(path,oWriteOnly ||| oCreate ||| oExclusive ||| oAppend ||| oNoFollow ||| oCloseOnExec,0o600u)
+        if descriptor<0 then
+            let error=Marshal.GetLastPInvokeError()
+            raise (IOException($"could not create private append-only host journal (errno {error})"))
+        let handle=new SafeFileHandle(nativeint descriptor,true)
+        try
+            new FileStream(handle,FileAccess.Write,4096,false)
+        with
+        | _ ->
+            handle.Dispose()
+            try File.Delete path with _ -> ()
+            reraise()
 
     let private requiredEnvironment name =
         Environment.GetEnvironmentVariable name
@@ -59,7 +88,8 @@ module LiveHost =
         let readyPath=if stock then requiredEnvironment "BARC_STOCK_SMOKE_READY" else Path.Combine(privateRoot,"ready.json")
         let tracePath=if stock then requiredEnvironment "BARC_STOCK_SMOKE_HOST_TRACE" else Path.Combine(privateRoot,"native-host.jsonl")
         if File.Exists tracePath then invalidOp "private host journal must be new"
-        use trace = new StreamWriter(new FileStream(tracePath,(if stock then FileMode.Append else FileMode.CreateNew),FileAccess.Write,FileShare.Read))
+        use traceStream = if stock then openStockJournal tracePath else new FileStream(tracePath,FileMode.CreateNew,FileAccess.Write,FileShare.Read)
+        use trace = new StreamWriter(traceStream)
         if not (OperatingSystem.IsWindows()) then File.SetUnixFileMode(tracePath, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         let traceGate = obj()
         let runId=if stock then requiredEnvironment "BARC_STOCK_SMOKE_RUN_ID" else ""
