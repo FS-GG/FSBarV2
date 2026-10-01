@@ -30,6 +30,8 @@ The existing v1 browser, guest, native protobuf messages and per-child Count1 co
 
 ### Decisive exact-source trace
 
+**Historical rationale clarification, 2026-10-01.** The generic call-in comment quoted below was superseded by tracing the actual stock `CallRules` dispatch, which selects the synced LuaRules handle. The selected stock product uses that bounded read route. This correction does not supply transaction/rollback guarantees to ordinary command arrays and closes no optional FR unit. See the [current useful-play audit](evidence/barc-01.5-development-audit-20261001.md).
+
 - FSBar `src/Broker.Protocol/LiveControl.fs:802–809,940–953`: one Count1 child per requested item, original queue revision on every child. HighBar `proto/highbar/live_control.proto:222–240,489–494`: parent/input/child_index/child_count already exist; live batches contain exactly one command. They suffice for bounded internal assembly; do not widen the batch.
 - Recoil `FactoryCAI.cpp:146–152,244–289`: SHIFT×5, CONTROL×20; ordinary production appends. `CommandAI.cpp:1116–1300`: production Insert/Remove are separate operations; `FactoryCAI.cpp:431–438` internal Stop cancels/pops one entry. The safety plan retains file hashes and the full trace.
 - `rts/Lua/LuaHandle.cpp:3864–3898` explicitly labels RecvSkirmishAIMessage always unsynced. `AICallback.cpp:1866–1875` passes engine-known team, but this is not a synced command transport.
