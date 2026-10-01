@@ -153,14 +153,14 @@ let setupState state now =
 
 let setup capacity now = setupState (LiveControl.create capacity) now
 
-let setupTactical now =
+let setupTacticalProfile profile revision evidenceScheme now =
     let state=LiveControl.create 8
     let reporter=LiveStateReporter.empty()
     reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
     let caps=LiveNativeCapabilities.empty()
     caps.MaxActorCount<-64u;caps.MaxBatchCommands<-1u;caps.MaxNativeUnitId<-31999u;caps.SnapshotCadenceCeilingFrames<-30u;caps.MaxObservationAgeMs<-2000u;caps.MaxReportedUnits<-64u;caps.MapWidthCells<-1024u;caps.MapHeightCells<-1024u;caps.MaxWorldXInclusive<-8191f;caps.MaxWorldZInclusive<-8191f;caps.SupportsStop<-true;caps.SupportsMove<-true;caps.SupportsAttackVisibleUnit<-true
     let tacticalCaps=NativeTacticalCapabilities.empty()
-    tacticalCaps.Profile<-"barc-live-tactical-v1";tacticalCaps.Revision<-1u;tacticalCaps.MaxCatalogueEntries<-16u;tacticalCaps.MaxCataloguePageEntries<-8u;tacticalCaps.MaxBuildOptionsPerActor<-8u;tacticalCaps.MaxQueueEntriesPerActor<-8u;tacticalCaps.MaxFeatureReferences<-8u;tacticalCaps.MaxFactoryProductionCount<-4u;tacticalCaps.MaxAreaRadiusWorldUnits<-256u;tacticalCaps.MaxCommandDescriptorsPerActor<-8u
+    tacticalCaps.Profile<-profile;tacticalCaps.Revision<-revision;tacticalCaps.MaxCatalogueEntries<-16u;tacticalCaps.MaxCataloguePageEntries<-8u;tacticalCaps.MaxBuildOptionsPerActor<-8u;tacticalCaps.MaxQueueEntriesPerActor<-8u;tacticalCaps.MaxFeatureReferences<-8u;tacticalCaps.MaxFactoryProductionCount<-4u;tacticalCaps.MaxAreaRadiusWorldUnits<-256u;tacticalCaps.MaxCommandDescriptorsPerActor<-8u
     caps.Tactical<-ValueSome tacticalCaps
     let report body sequence =
         let value=LiveStateReport.empty()
@@ -177,7 +177,7 @@ let setupTactical now =
     actor2.Reference<-ValueSome(nativeRef 78u 9007199254741106UL);actor2.Eligibility<-NativeLiveUnitEligibility.NativeLiveUnitOwnedActor;snapshot.Units.Add actor2
     Expect.equal (report (LiveStateReport.Types.Body.Snapshot snapshot) 2UL) LiveStateReportDisposition.LiveStateReportRecorded "base snapshot"
     let page=TacticalCataloguePage.empty()
-    page.TacticalProfile<-"barc-live-tactical-v1";page.TacticalRevision<-1u;page.CatalogueId<-bytes16 "catalogue";page.CatalogueRevision<-9007199254741107UL;page.PageCount<-1u;page.Complete<-true
+    page.TacticalProfile<-profile;page.TacticalRevision<-revision;page.CatalogueId<-bytes16 "catalogue";page.CatalogueRevision<-9007199254741107UL;page.PageCount<-1u;page.Complete<-true
     let content=NativeContentIdentity.empty()
     content.EngineVersion<-"recoil";content.GameName<-"BAR";content.GameVersion<-"test";content.GameContentSha256<-ByteString.CopyFrom(Array.create 32 7uy);page.Content<-ValueSome content
     let definition=NativeUnitDefinition.empty()
@@ -194,12 +194,12 @@ let setupTactical now =
     let reclaimAreaDescriptor=NativeTacticalCommandDescriptor.empty()
     reclaimAreaDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimArea;metadata.Descriptors.Add reclaimAreaDescriptor
     let queue=NativeObservedQueue.empty()
-    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;queue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> evidenceScheme
     let queuedProduction=NativeObservedQueueEntry.empty()
     queuedProduction.NativeTag<-41;queuedProduction.Action<-LiveSemanticAction.FactoryProduce;queuedProduction.DefinitionId<-ValueSome 42u;queue.Entries.Add queuedProduction
     metadata.Queue.Add queue
     let actorQueue=NativeObservedQueue.empty()
-    actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
+    actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;actorQueue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> evidenceScheme;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
     let metadata2=metadata.Clone()
     metadata2.Actor<-ValueSome(nativeRef 78u 9007199254741106UL);metadata2.DescriptorRevision<-9007199254741115UL
     let production2=metadata2.Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
@@ -217,6 +217,8 @@ let setupTactical now =
     commands.Protocol<-LiveControlProtocol.TacticalV1;commands.SchemaVersion<-"1.1.0";commands.Binding<-ValueSome initial
     let commandLease=match LiveControl.claimCommands commands state with LiveControl.Claimed lease->lease|other->failtestf "commands %A" other
     state,controlLease,commandLease,basis,metadata,page
+
+let setupTactical now = setupTacticalProfile "barc-live-tactical-v1" 1u 0 now
 
 
 let reportFeaturePopulation negotiatedCount observedCount now =
@@ -435,6 +437,52 @@ let tests=testList "live broker boundary" [
         Expect.equal (LiveControl.reportState replacement now replacementState) LiveStateReportDisposition.LiveStateReportRecorded "fresh reused id requires a new lifetime"
         Expect.equal (LiveControl.latestTacticalSnapshot replacementState |> Option.get).Features[300].Reference.Value.Lifetime 9007199254999999UL "only the fresh replacement lifetime becomes current"
 
+
+    testCase "stock queue evidence is profile-bound and empty FactoryProduce Replace stays refused" <| fun _ ->
+        let now=DateTimeOffset(2026,10,1,8,0,0,TimeSpan.Zero)
+        let state,controlLease,commandLease,basis,metadata,_=setupTacticalProfile "barc-live-tactical-stock-v1" 2u 2 now
+        let mismatched=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
+        for actor in mismatched.Actors do
+            for queue in actor.Queue do
+                queue.EvidenceScheme<-NativeQueueEvidenceScheme.FullNativeTupleV1
+        let reporter=LiveStateReporter.empty()
+        reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
+        let mismatchReport=LiveStateReport.empty()
+        mismatchReport.Reporter<-ValueSome reporter;mismatchReport.ReportSequence<-5UL;mismatchReport.TacticalSnapshot<-mismatched
+        Expect.equal (LiveControl.reportState mismatchReport now state) LiveStateReportDisposition.LiveStateReportRefused "full-tuple evidence cannot authorize the stock profile"
+
+        let empty=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
+        let production=empty.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
+        production.Entries.Clear();production.Revision<-9007199254741121UL
+        let emptyReport=LiveStateReport.empty()
+        emptyReport.Reporter<-ValueSome reporter;emptyReport.ReportSequence<-5UL;emptyReport.TacticalSnapshot<-empty
+        Expect.equal (LiveControl.reportState emptyReport now state) LiveStateReportDisposition.LiveStateReportRecorded "stock empty production queue remains observable"
+
+        let session=Guid.NewGuid()
+        let provisional=LiveControl.provisionController session state
+        let moduleHash=Array.create 32 0x62uy
+        Expect.isOk (LiveControl.requestBrowserArm session provisional.controllerId provisional.controllerIncarnation provisional.authorityEpoch moduleHash 4UL 2000u now state) "stock arm"
+        let mutable directive=Unchecked.defaultof<LiveControlDirective>
+        Expect.isTrue(controlLease.reader.TryRead(&directive)) "stock arm directive"
+        let ack=LiveControlAckReport.empty()
+        ack.Binding<-directive.Binding;ack.ControlSequence<-directive.ControlSequence;ack.Kind<-directive.Kind;ack.Disposition<-LiveControlAckDisposition.LiveControlAckRecorded
+        LiveControl.reportControlAck ack now state|>ignore
+        let bootstrap=Expect.wantOk(LiveBoundary.provisionBootstrapForProfile "barc-live-tactical-stock-v1" session "team-0" state) "stock tactical bootstrap"
+        let controller=ControllerIdentity(SessionId=ByteString.CopyFrom(session.ToByteArray()),ControllerId=ByteString.CopyFrom(provisional.controllerId.ToByteArray()),ControllerIncarnation=provisional.controllerIncarnation,AuthorityEpoch=provisional.authorityEpoch)
+        let browserBasis=ObservationBasis(Token=basis.Token,StateSequence=basis.StateSequence,NativeFrame=basis.Frame,MatchId=basis.MatchIncarnation,ProcessIncarnation=basis.ProcessIncarnation,StateChannelIncarnation=basis.StateChannelIncarnation)
+        let request=SubmitLiveIntent(ParentId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),InputId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Controller=controller,Module=LiveModuleIdentity(Sha256=ByteString.CopyFrom(moduleHash),Generation=4UL),Basis=browserBasis)
+        let target=FactoryProduceTarget(DefinitionId=42u,Count=1u,QueuePolicy=TacticalQueuePolicy.Replace,CatalogueId=bootstrap.Bootstrap.TacticalCatalogue.CatalogueId,CatalogueRevision=bootstrap.Bootstrap.TacticalCatalogue.CatalogueRevision)
+        let intent=LiveIntent(FactoryProduce=target)
+        intent.Actors.Add(UnitReference(Id=0UL,Lifetime=9007199254741105UL))
+        let actorBinding=ActorTacticalBinding(Actor=UnitReference(Id=0UL,Lifetime=9007199254741105UL),DescriptorRevision=metadata.DescriptorRevision)
+        actorBinding.QueueRevisions.Add(QueueRevisionBinding(Domain=QueueDomain.FactoryProduction,Revision=production.Revision))
+        intent.ActorTacticalBindings.Add actorBinding
+        request.Intent<-intent
+        let results=Expect.wantOk(LiveBoundary.submit session request now state) "stock Replace has a correlated refusal"
+        Expect.equal results.Length 1 "stock Replace returns one bounded terminal result"
+        Expect.isTrue (results |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "stock Replace is rejected even when the observed queue is empty"
+        let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
+        Expect.isFalse(commandLease.reader.TryRead(&delivery)) "stock Replace never reaches native delivery"
 
     testCase "tactical revisions reserve children and ReclaimArea emits the canonical native command" <| fun _ ->
         let now=DateTimeOffset(2026,9,29,13,0,0,TimeSpan.Zero)
