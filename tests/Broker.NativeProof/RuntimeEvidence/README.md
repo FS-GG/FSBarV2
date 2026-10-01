@@ -42,6 +42,8 @@ assembly, and Quint executable bytes. Action mapping is:
 | mutation/unavailable actions | refused or unknown sticky transitions |
 | `close` | `GrowingLogEvidence.close` |
 
-Run `tests/check-runtime-evidence.sh`. The model is bounded and sampled. It does not prove
+Run `tests/check-runtime-evidence.sh`. The gate also checks the policy apphost, DLL,
+dependency manifest, runtime configuration, and FSharp.Core closure and prints their
+SHA-256 values for the adopting runner. The model is bounded and sampled. It does not prove
 OS provenance, absence of an unobserved rewrite-and-restore, atomicity with browser work,
 future append behavior, owned-role cleanup, Count1, or native acceptance.
