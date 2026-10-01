@@ -13,6 +13,25 @@ module GrowingLogEvidence_test {
   run unavailableCannotGrant = init.then(acquire).then(unavailable).then(close)
     .expect(invariant and evidence.validatedRevision == 0 and evidence.consumedRevision == 0)
 
+  run unavailableAfterValidationRevokesCurrentAuthority = init.then(acquire).then(sampleInitial)
+    .then(validate("browser")).then(unavailable)
+    .expect(invariant and evidence.validatedRevision == 1 and not(evidence.authorityActive) and evidence.stickyInvalid)
+
+  run unavailableAfterConsumptionPreservesHistoryOnly = init.then(acquire).then(sampleInitial)
+    .then(validate("browser")).then(consume("browser")).then(unavailable)
+    .expect(invariant and evidence.consumedRevision == 1 and not(evidence.authorityActive) and evidence.stickyInvalid)
+
+  run staleBoundaryCannotConsume = init.then(acquire).then(sampleInitial)
+    .then(validate("browser")).then(staleBoundary)
+    .expect(invariant and evidence.stickyInvalid and evidence.consumedRevision == 0)
+
+  run pendingTailHasNoAuthority = init.then(acquire).then(pendingTail)
+    .then(close).expect(invariant and evidence.validatedRevision == 0 and evidence.consumedRevision == 0)
+
+  run closeRevokesCurrentAuthority = init.then(acquire).then(sampleInitial)
+    .then(validate("browser")).then(close)
+    .expect(invariant and evidence.validatedRevision == 1 and not(evidence.authorityActive))
+
   run truncateIsSticky = init.then(acquire).then(sampleInitial).then(prefixTruncate).then(close).expect(invariant and evidence.stickyInvalid)
   run replacementIsSticky = init.then(acquire).then(sampleInitial).then(replacement).then(close).expect(invariant and evidence.stickyInvalid)
   run wrongWriterIsSticky = init.then(acquire).then(sampleInitial).then(wrongWriter).then(close).expect(invariant and evidence.stickyInvalid)

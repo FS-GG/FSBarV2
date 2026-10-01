@@ -6,7 +6,7 @@ module GrowingLogEvidenceTests =
     let private sha c = System.String(c,64)
     let identity generation = { RunId="run";SourceSetSha256=sha 'a';ArtifactSha256=sha 'b';Pid=100;StartTicks=string generation;Uid=1000;Device="1";Inode="2";Path="/private/infolog.txt" }
     let accepted = function Accepted value -> value | other -> failwithf "expected acceptance: %A" other
-    let sample identity revision bytes digest intact roots state = GrowingLogEvidence.sample {Identity=identity;Revision=revision;Bytes=bytes;Sha256=digest;PreviousPrefixIntact=intact;WriterPresent=true;CompleteRecord=true;Available=true;RootsValid=roots} state
+    let sample identity revision bytes digest intact roots state = GrowingLogEvidence.sample {Identity=identity;Revision=revision;Bytes=bytes;Sha256=digest;PreviousPrefixIntact=intact;WriterPresent=true;CompleteRecord=true;Available=true;RootsValid=roots;PendingReason=None} state
     let run () =
         let id=identity 1
         let acquired=GrowingLogEvidence.acquire id GrowingLogEvidence.empty |> accepted
@@ -23,5 +23,5 @@ module GrowingLogEvidenceTests =
         match sample id 2 120L "not-a-hash" true true consumed with Refused state when state.Reason=Some "sample-hash-invalid" -> () | other -> failwithf "invalid hash accepted: %A" other
         let invalid=match sample id 2 120L (sha 'd') true false consumed with Refused state -> state | other -> failwithf "root drift accepted: %A" other
         match GrowingLogEvidence.acquire id invalid with Refused state when state.StickyInvalid -> () | other -> failwithf "sticky invalid reacquired: %A" other
-        let unavailable=GrowingLogEvidence.sample {Identity=id;Revision=1;Bytes=0;Sha256="";PreviousPrefixIntact=false;WriterPresent=false;CompleteRecord=false;Available=false;RootsValid=false} acquired
+        let unavailable=GrowingLogEvidence.sample {Identity=id;Revision=1;Bytes=0;Sha256="";PreviousPrefixIntact=false;WriterPresent=false;CompleteRecord=false;Available=false;RootsValid=false;PendingReason=None} acquired
         match unavailable with Unknown state when state.StickyInvalid -> () | other -> failwithf "unavailable observation granted: %A" other

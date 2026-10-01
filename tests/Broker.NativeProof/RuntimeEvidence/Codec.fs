@@ -2,8 +2,10 @@ namespace FSBar.NativeProof.RuntimeEvidence
 
 open System
 open System.IO
+open System.Security.Cryptography
 open System.Text.Json
 open System.Text.Json.Nodes
+open System.Text.RegularExpressions
 
 module Codec =
     let private exact (element: JsonElement) (names: string array) =
@@ -85,18 +87,38 @@ module Codec =
         let identityValue={ RunId=getString expected "runId";SourceSetSha256=getString expected "sourceSetSha256";ArtifactSha256=getString expected "artifactSha256";Pid=getInt observation "pid";StartTicks=getString observation "startTicks";Uid=getInt observation "uid";Device=getString observation "device";Inode=getString observation "inode";Path=getString observation "path" }
         let raw=Convert.FromBase64String(getString observation "logBase64")
         if raw.Length>4*1024*1024 || int64 raw.Length <> getInt64 observation "bytes" then invalidArg "logBase64" "decoded bound"
+        let actualSha = SHA256.HashData(raw) |> Convert.ToHexStringLower
+        if getString observation "sha256" <> actualSha then invalidArg "sha256" "decoded digest mismatch"
         let roots=DataRootPolicy.evaluate (getString expected "writeRoot") (getString expected "dataRoot") raw
-        let complete,rootsValid = match roots with RootAccepted _ -> true,true | RootPending _ -> false,false | RootRefused _ -> true,false
+        let complete,rootsValid,pendingReason = match roots with RootAccepted _ -> true,true,None | RootPending reason -> false,false,Some reason | RootRefused _ -> true,false,None
         let prior=decodeState(root.GetProperty("prior"))
+        if prior.ObservedRevision < 0 || prior.ValidatedRevision < 0 || prior.ConsumedRevision < 0 ||
+           prior.ValidatedRevision > prior.ObservedRevision || prior.ConsumedRevision > prior.ValidatedRevision ||
+           prior.Bytes < 0L || (prior.ObservedRevision = 0 && (prior.Bytes <> 0L || prior.Sha256 <> "")) ||
+           (prior.ObservedRevision > 0 && (prior.Bytes = 0L || not (Regex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant).IsMatch prior.Sha256))) then
+            invalidArg "prior" "incoherent prior state"
+        let phases=Set ["empty";"acquired";"sampled";"validated";"consumed";"invalid";"unknown";"closed"]
+        if not(phases.Contains prior.Phase) ||
+           (prior.Phase="empty" && prior.Identity.IsSome) || (prior.Phase<>"empty" && prior.Identity<>Some identityValue) ||
+           (prior.ValidatedRevision=0 && prior.ValidatedBoundary.IsSome) || (prior.ValidatedRevision>0 && prior.ValidatedBoundary.IsNone) ||
+           (prior.ConsumedRevision=0 && prior.ConsumedBoundary.IsSome) || (prior.ConsumedRevision>0 && prior.ConsumedBoundary.IsNone) ||
+           (prior.StickyInvalid && prior.Phase<>"invalid" && prior.Phase<>"unknown" && prior.Phase<>"closed") then
+            invalidArg "prior" "prior identity or phase mismatch"
+        if prior.Bytes > int64 raw.Length then invalidArg "prior" "prior prefix truncated"
+        if prior.Bytes > 0L then
+            let prefixSha=SHA256.HashData(raw.AsSpan(0,int prior.Bytes)) |> Convert.ToHexStringLower
+            if prefixSha<>prior.Sha256 then invalidArg "prior" "prior prefix digest mismatch"
         let acquired = if prior.Phase="empty" then GrowingLogEvidence.acquire identityValue prior else Accepted prior
         let afterAcquire=stateOf acquired
         let writerFd=getInt observation "writerFd"
         let writerFlags=getInt observation "writerFlags"
         let writerPosition=getInt64 observation "writerPosition"
         let writerPresent=writerFd>=0 && writerPosition>=0L && ((writerFlags &&& 3)=1 || (writerFlags &&& 3)=2)
-        let sample={ Identity=identityValue;Revision=getInt observation "revision";Bytes=getInt64 observation "bytes";Sha256=getString observation "sha256";PreviousPrefixIntact=getBoolean observation "previousPrefixIntact";WriterPresent=writerPresent;CompleteRecord=complete;Available=getBoolean observation "available";RootsValid=rootsValid }
+        let sample={ Identity=identityValue;Revision=getInt observation "revision";Bytes=getInt64 observation "bytes";Sha256=getString observation "sha256";PreviousPrefixIntact=getBoolean observation "previousPrefixIntact";WriterPresent=writerPresent;CompleteRecord=complete;Available=getBoolean observation "available";RootsValid=rootsValid;PendingReason=pendingReason }
         let sampled=if statusOf acquired="accepted" then GrowingLogEvidence.sample sample afterAcquire else acquired
         let requestedBoundary=boundary(getString root "boundary")
         let validated=match sampled with Accepted state -> GrowingLogEvidence.validate requestedBoundary state | other -> other
         let consumed=match validated with Accepted state -> GrowingLogEvidence.consume requestedBoundary state | other -> other
-        resultNode (statusOf consumed) (stateOf consumed)
+        let finalState=stateOf consumed
+        if statusOf consumed="accepted" && (finalState.Bytes <> int64 raw.Length || finalState.Sha256 <> actualSha) then invalidArg "result" "sample identity mismatch"
+        resultNode (statusOf consumed) finalState

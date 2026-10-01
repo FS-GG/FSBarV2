@@ -10,7 +10,7 @@ type ProducerIdentity = {
 type Observation = {
     Identity: ProducerIdentity; Revision: int; Bytes: int64; Sha256: string
     PreviousPrefixIntact: bool; WriterPresent: bool; CompleteRecord: bool
-    Available: bool; RootsValid: bool
+    Available: bool; RootsValid: bool; PendingReason: string option
 }
 
 type EvidenceState = {

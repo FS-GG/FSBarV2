@@ -13,6 +13,7 @@ module GrowingLogEvidence {
     rootsValid: bool,
     prefixIntact: bool,
     writerPresent: bool,
+    authorityActive: bool,
     stickyInvalid: bool,
   }
 
@@ -22,7 +23,7 @@ module GrowingLogEvidence {
     phase: "empty", generation: 0, observedRevision: 0, validatedRevision: 0,
     consumedRevision: 0, consumedBoundary: "none", intendedBoundary: "none", producerMatches: false,
     logMatches: false, sourceMatches: false, rootsValid: false,
-    prefixIntact: false, writerPresent: false, stickyInvalid: false,
+    prefixIntact: false, writerPresent: false, authorityActive: false, stickyInvalid: false,
   }
 
   action acquire = all {
@@ -45,7 +46,8 @@ module GrowingLogEvidence {
     evidence.sourceMatches, evidence.writerPresent, evidence.rootsValid,
     evidence.prefixIntact,
     evidence' = { ...evidence, phase: "validated",
-      validatedRevision: evidence.observedRevision, intendedBoundary: boundary }
+      validatedRevision: evidence.observedRevision, intendedBoundary: boundary,
+      authorityActive: true }
   }
 
   action consume(boundary: str): bool = all {
@@ -55,7 +57,8 @@ module GrowingLogEvidence {
     evidence.intendedBoundary == boundary,
     not(evidence.stickyInvalid),
     evidence' = { ...evidence, phase: "consumed",
-      consumedRevision: evidence.observedRevision, consumedBoundary: boundary }
+      consumedRevision: evidence.observedRevision, consumedBoundary: boundary,
+      authorityActive: false }
   }
 
   action benignAppend = all {
@@ -63,19 +66,31 @@ module GrowingLogEvidence {
     evidence.observedRevision < 3,
     evidence' = { ...evidence, phase: "sampled",
       observedRevision: evidence.observedRevision + 1,
-      rootsValid: true, prefixIntact: true }
+      rootsValid: true, prefixIntact: true, authorityActive: false }
+  }
+
+  action pendingTail = all {
+    evidence.phase == "acquired",
+    evidence' = { ...evidence, phase: "sampled", observedRevision: 1,
+      rootsValid: false, prefixIntact: true, authorityActive: false }
+  }
+
+  action staleBoundary = all {
+    evidence.phase == "validated",
+    evidence' = { ...evidence, phase: "invalid", stickyInvalid: true,
+      authorityActive: false }
   }
 
   action invalidate = all {
     evidence.phase != "closed", evidence.phase != "invalid",
     evidence' = { ...evidence, phase: "invalid", stickyInvalid: true,
-      prefixIntact: false, rootsValid: false }
+      prefixIntact: false, rootsValid: false, authorityActive: false }
   }
 
   action unavailable = all {
     evidence.phase != "closed", evidence.phase != "invalid",
     evidence' = { ...evidence, phase: "unknown", stickyInvalid: true,
-      writerPresent: false }
+      writerPresent: false, authorityActive: false }
   }
 
   // Environment-labelled invalid observations share the same sticky reducer edge.
@@ -89,13 +104,13 @@ module GrowingLogEvidence {
 
   action close = all {
     evidence.phase != "closed",
-    evidence' = { ...evidence, phase: "closed" }
+    evidence' = { ...evidence, phase: "closed", authorityActive: false }
   }
 
   action step = any {
     acquire, sampleInitial, validate("browser"), validate("normalization"), validate("release"),
     consume("browser"), consume("normalization"), consume("release"),
-    benignAppend, prefixRewrite, prefixTruncate, replacement, wrongWriter,
+    benignAppend, pendingTail, staleBoundary, prefixRewrite, prefixTruncate, replacement, wrongWriter,
     wrongGeneration, wrongSource, contradictorySuffix, unavailable, close,
   }
 
@@ -103,9 +118,9 @@ module GrowingLogEvidence {
     evidence.consumedRevision <= evidence.validatedRevision
   val currentConsumptionMatchesValidation = evidence.phase != "consumed" or
     evidence.consumedRevision == evidence.validatedRevision
-  val authorityRequiresIdentity = evidence.validatedRevision == 0 or all {
+  val authorityRequiresIdentity = not(evidence.authorityActive) or all {
     evidence.producerMatches, evidence.logMatches, evidence.sourceMatches,
-    evidence.writerPresent,
+    evidence.writerPresent, evidence.phase == "validated",
   }
   val invalidityIsSticky = not(evidence.stickyInvalid) or
     evidence.phase == "invalid" or evidence.phase == "unknown" or evidence.phase == "closed"

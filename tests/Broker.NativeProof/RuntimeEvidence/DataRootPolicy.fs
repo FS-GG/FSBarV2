@@ -11,15 +11,21 @@ type RootDecision =
     | RootRefused of reason: string
 
 module DataRootPolicy =
-    let private rootPattern = Regex(@"^(?:\[f=[0-9]+\]\s+\[t=[^\]\r\n]+\]\s+)?\[DataDirLocater::FilterUsableDataDirs\] using (?:read-write|read-only) data directory: (.+)$", RegexOptions.CultureInvariant)
-    let private writePattern = Regex(@"^(?:\[f=[0-9]+\]\s+\[t=[^\]\r\n]+\]\s+)?\[DataDirLocater::FindWriteableDataDir\] using writeable data-directory ""([^""]+)""$", RegexOptions.CultureInvariant)
-    let private isolationPattern = Regex(@"^(?:\[f=[0-9]+\]\s+\[t=[^\]\r\n]+\]\s+)?\[DataDirLocater::Check\] Isolation Mode!$", RegexOptions.CultureInvariant)
+    // Recoil 2639 FramePrefixer.cpp emits the timestamp first and the optional
+    // seven-digit frame immediately after it.  Keep this grammar anchored: an
+    // arbitrary bracketed prefix must never turn unrelated text into evidence.
+    let private prefix = @"(?:\[t=[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}\](?:\[f=[0-9]{7}\])? )?"
+    let private rootPattern = Regex("^" + prefix + @"\[DataDirLocater::FilterUsableDataDirs\] using (?:read-write|read-only) data directory: (.+)$", RegexOptions.CultureInvariant)
+    let private writePattern = Regex("^" + prefix + @"\[DataDirLocater::FindWriteableDataDir\] using writeable data-directory ""([^""]+)""$", RegexOptions.CultureInvariant)
+    let private isolationPattern = Regex("^" + prefix + @"\[DataDirLocater::Check\] Isolation Mode!$", RegexOptions.CultureInvariant)
 
     let private canonical (value: string) =
-        if String.IsNullOrWhiteSpace value || not (Path.IsPathFullyQualified value) then None
+        let lexical = if isNull value then [||] else value.Split([|'/'; '\\'|], StringSplitOptions.None)
+        if String.IsNullOrWhiteSpace value || not (Path.IsPathFullyQualified value) ||
+           lexical |> Array.exists (fun part -> part = "." || part = "..") then None
         else
             let normalized = Path.GetFullPath(value).TrimEnd(Path.DirectorySeparatorChar)
-            if normalized.Contains("..", StringComparison.Ordinal) || normalized.Length > 4096 then None else Some normalized
+            if normalized.Length > 4096 then None else Some normalized
 
     let evaluate expectedWriteRoot expectedDataRoot (sample: byte array) =
         if isNull sample || sample.Length = 0 || sample.Length > 4 * 1024 * 1024 then RootRefused "custody-or-bound"

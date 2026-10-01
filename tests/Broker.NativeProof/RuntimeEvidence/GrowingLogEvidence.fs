@@ -13,7 +13,7 @@ type ProducerIdentity = {
 type Observation = {
     Identity: ProducerIdentity; Revision: int; Bytes: int64; Sha256: string
     PreviousPrefixIntact: bool; WriterPresent: bool; CompleteRecord: bool
-    Available: bool; RootsValid: bool
+    Available: bool; RootsValid: bool; PendingReason: string option
 }
 
 type EvidenceState = {
@@ -46,7 +46,7 @@ module GrowingLogEvidence =
         elif observation.Revision <> state.ObservedRevision + 1 then reject "revision-drift" state
         elif observation.Bytes < state.Bytes then reject "prefix-truncated" state
         elif state.Bytes > 0L && not observation.PreviousPrefixIntact then reject "prefix-changed" state
-        elif not observation.CompleteRecord then Pending { state with Phase="sampled"; ObservedRevision=observation.Revision; Bytes=observation.Bytes; Sha256=observation.Sha256; Reason=Some "incomplete-record" }
+        elif not observation.CompleteRecord then Pending { state with Phase="sampled"; ObservedRevision=observation.Revision; Bytes=observation.Bytes; Sha256=observation.Sha256; Reason=Some(defaultArg observation.PendingReason "incomplete-record") }
         elif not observation.RootsValid then reject "root-drift" state
         elif not (hex.IsMatch observation.Sha256) then reject "sample-hash-invalid" state
         else Accepted { state with Phase="sampled"; ObservedRevision=observation.Revision; Bytes=observation.Bytes; Sha256=observation.Sha256; Reason=None }

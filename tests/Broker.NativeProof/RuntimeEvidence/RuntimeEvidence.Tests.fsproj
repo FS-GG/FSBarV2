@@ -2,5 +2,12 @@
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><IsPackable>false</IsPackable><GenerateProgramFile>false</GenerateProgramFile><RestorePackagesWithLockFile>true</RestorePackagesWithLockFile><RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode><NuGetLockFilePath>RuntimeEvidence.Tests.packages.lock.json</NuGetLockFilePath></PropertyGroup>
   <ItemGroup><ProjectReference Include="RuntimeEvidence.fsproj"/><PackageReference Include="FsQuint" Version="[0.1.0]"/></ItemGroup>
   <ItemGroup><Compile Include="DataRootPolicyTests.fs"/><Compile Include="CodecTests.fs"/><Compile Include="GrowingLogEvidenceTests.fs"/><Compile Include="CorrespondenceTests.fs"/><Compile Include="tests/Program.fs"/></ItemGroup>
-  <ItemGroup><None Include="GrowingLogEvidence.healthy.itf.json" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
+  <ItemGroup>
+    <None Include="GrowingLogEvidence.*.itf.json" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="GrowingLogEvidence.qnt" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="GrowingLogEvidence_test.qnt" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Codec.fs" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="DataRootPolicy.fs" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="GrowingLogEvidence.fs" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
 </Project>
