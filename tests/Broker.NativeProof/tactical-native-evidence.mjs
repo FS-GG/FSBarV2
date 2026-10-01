@@ -124,31 +124,52 @@ export function assertObservedEffects(rows,journey){
 export function plannedChildCount(intent){const actors=intent?.actors?.length??0,count=intent?.factoryProduce?.count??1;return actors*count}
 
 const stockFields=["domain","id","options.coded","tag","float32params"];
+const stockDomains=new Set(["QUEUE_DOMAIN_ACTOR_ORDER","QUEUE_DOMAIN_FACTORY_PRODUCTION","QUEUE_DOMAIN_FACTORY_RALLY"]),u64Max=18446744073709551615n,i32Min=-2147483648,i32Max=2147483647;
+const boundedU64=(value,positive=false)=>typeof value==="string"&&/^(?:0|[1-9]\d*)$/.test(value)&&BigInt(value)<=u64Max&&(!positive||value!=="0");
+const finiteFloat32Bits=value=>/^[0-9a-f]{8}$/.test(value)&&((Number.parseInt(value,16)>>>23)&0xff)!==0xff;
 export function assertStockQueueEvidence(rows,expected){
   insist(expected?.profile==="barc-live-tactical-stock-v1"&&expected.tacticalRevision===2&&expected.queueEvidenceScheme===2&&expected.queueBridge==="barc-stock-queue-reader-v1","exact stock tactical negotiation and bridge are required");
   insist(JSON.stringify(expected.supportedQueueFields)===JSON.stringify(stockFields),"stock queue supported-field contract changed");
-  const evidence=rows.filter(row=>row.kind==="stockQueueEvidence").map(row=>row.value);insist(evidence.length,"actual stock queue evidence trace is missing");
-  const actor=`${expected.actor.id}:${expected.actor.lifetime}`;
+  insist(expected.actor&&boundedU64(String(expected.actor.id))&&boundedU64(String(expected.actor.lifetime),true),"stock expected actor identity is invalid");
+  insist(expected.catalogue?.id&&boundedU64(String(expected.catalogue.revision),true)&&sha.test(expected.catalogue.contentSha256),"stock expected catalogue/content identity is incomplete");
+  insist(expected.source?.matchId&&expected.source.processIncarnation&&expected.source.stateChannelIncarnation,"stock expected source identity is incomplete");
+  const evidence=rows.filter(row=>row.kind==="stockQueueEvidence").map(row=>row.value);insist(evidence.length&&evidence.length<=3,"actual stock queue evidence trace is missing or exceeds its domain bound");
+  const actor=`${expected.actor.id}:${expected.actor.lifetime}`, evidenceKeys=new Set();let entryTotal=0,paramTotal=0;
   for(const value of evidence){
     const seen=new Set();
     insist(value.profile===expected.profile&&value.tacticalRevision===2&&value.queueEvidenceScheme===2&&value.queueBridge===expected.queueBridge,"stock queue trace profile or evidence scheme changed");
     insist(value.actor&&`${value.actor.id}:${value.actor.lifetime}`===actor,"stock queue trace actor lifetime changed");
-    insist(["QUEUE_DOMAIN_ACTOR_ORDER","QUEUE_DOMAIN_FACTORY_PRODUCTION","QUEUE_DOMAIN_FACTORY_RALLY"].includes(value.domain)&&/^[1-9]\d*$/.test(String(value.queueRevision)),"stock queue trace domain or revision is unavailable");
+    insist(stockDomains.has(value.domain)&&boundedU64(value.queueRevision,true)&&value.complete===true,"stock queue trace domain, revision or completeness is unavailable");
     insist(value.timeout==="unavailable"&&JSON.stringify(value.supportedQueueFields)===JSON.stringify(stockFields),"stock queue trace claimed timeout or a non-supported field");
-    insist(value.basis&&/^[1-9]\d*$/.test(String(value.basis.stateSequence))&&Number.isInteger(value.basis.nativeFrame),"stock queue trace lacks a current basis");
-    for(const entry of value.entries??[]){
-      insist(Number.isInteger(entry.id)&&Number.isInteger(entry.codedOptions)&&entry.codedOptions>=0&&entry.codedOptions<=65535&&Number.isInteger(entry.tag),"stock queue trace type/id/options/tag is invalid");
-      insist(Array.isArray(entry.float32params)&&entry.float32params.length<=16&&entry.float32params.every(bits=>/^[0-9a-f]{8}$/.test(bits)),"stock queue trace float32 parameter bits are not exact lowercase binary32");
+    insist(value.catalogueId===expected.catalogue.id&&value.catalogueRevision===String(expected.catalogue.revision)&&value.contentSha256===expected.catalogue.contentSha256,"stock queue trace catalogue/content identity changed");
+    insist(value.basis&&boundedU64(value.basis.stateSequence,true)&&Number.isInteger(value.basis.nativeFrame)&&value.basis.nativeFrame>=0&&value.basis.nativeFrame<=0xffffffff&&value.basis.matchId===expected.source.matchId&&value.basis.processIncarnation===expected.source.processIncarnation&&value.basis.stateChannelIncarnation===expected.source.stateChannelIncarnation,"stock queue trace lacks the exact current source basis");
+    insist(Array.isArray(value.entries)&&value.entries.length<=64,"stock queue trace entries are missing or exceed the 64-row bound");
+    const evidenceKey=`${actor}:${value.domain}:${value.queueRevision}`;insist(!evidenceKeys.has(evidenceKey),"stock queue trace duplicated an actor/domain/revision observation");evidenceKeys.add(evidenceKey);entryTotal+=value.entries.length;
+    for(const entry of value.entries){
+      insist(Number.isInteger(entry.id)&&entry.id>=i32Min&&entry.id<=i32Max&&Number.isInteger(entry.codedOptions)&&entry.codedOptions>=0&&entry.codedOptions<=65535&&Number.isInteger(entry.tag)&&entry.tag>=i32Min&&entry.tag<=i32Max,"stock queue trace type/id/options/tag is outside its wire bound");
+      insist(Array.isArray(entry.float32params)&&entry.float32params.length<=16&&entry.float32params.every(finiteFloat32Bits),"stock queue trace float32 parameter bits are not exact finite lowercase binary32");
       insist(!Object.hasOwn(entry,"timeout"),"stock queue trace fabricated timeout");
+      paramTotal+=entry.float32params.length;insist(paramTotal<=256,"stock queue trace exceeds the 256-parameter bound");
       const key=`${value.domain}:${entry.tag}`;insist(!seen.has(key),"stock queue trace duplicated a current domain/tag identity");seen.add(key);
     }
   }
+  const joinedEvidence=submit=>{
+    insist(submit?.intent?.actors?.length===1&&sameRef(submit.intent.actors[0],expected.actor),"stock submission actor/lifetime does not match the observed actor");
+    const factory=submit.intent.factoryProduce;insist(factory?.catalogueId===expected.catalogue.id&&String(factory.catalogueRevision)===String(expected.catalogue.revision),"stock submission catalogue identity does not match the observation");
+    const bindings=submit.intent.actorTacticalBindings;insist(Array.isArray(bindings)&&bindings.length===1&&sameRef(bindings[0].actor,expected.actor)&&bindings[0].queueRevisions?.length===1,"stock submission lacks one exact actor queue binding");
+    const queue=bindings[0].queueRevisions[0],match=evidence.find(value=>value.domain===queue.domain&&value.queueRevision===String(queue.revision)&&exactJson(value.basis,submit.basis));
+    insist(match&&match.domain==="QUEUE_DOMAIN_FACTORY_PRODUCTION","stock submission has no same-source production queue evidence history");return match;
+  };
+  const exactResults=(submit,count,stage,status)=>{
+    const parent=rows.filter(row=>row.kind==="result"&&row.value?.parentId===submit.parentId).map(row=>row.value);insist(parent.length===count,"stock submission lacks one exact terminal result per child");
+    for(let child=0;child<count;child++){const result=parent.filter(value=>value.childIndex===child);insist(result.length===1&&result[0].childCount===count&&result[0].stage===stage&&result[0].status===status&&sameRef(result[0].actor,expected.actor)&&exactJson(result[0].basis,submit.basis),`stock submission child ${child} lacks its exact correlated terminal outcome`)}
+  };
   const appends=rows.filter(row=>row.kind==="submit"&&row.value?.intent?.action==="factoryProduce"&&row.value.intent.factoryProduce?.queuePolicy==="TACTICAL_QUEUE_POLICY_APPEND").map(row=>row.value);insist(appends.length,"stock factory Append submission is missing");
   let appliedChildren=0;
-  for(const submit of appends){const count=plannedChildCount(submit.intent);insist(count>0,"stock factory Append child count is empty");for(let child=0;child<count;child++){const results=rows.filter(row=>row.kind==="result"&&row.value?.parentId===submit.parentId&&row.value.childIndex===child&&row.value.childCount===count).map(row=>row.value);insist(results.some(value=>value.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH"&&value.status==="LIVE_RESULT_STATUS_APPLIED"),`stock factory Append child ${child} lacks an actual applied result`);appliedChildren++}}
+  for(const submit of appends){joinedEvidence(submit);const count=plannedChildCount(submit.intent);insist(Number.isInteger(count)&&count>=1&&count<=20,"stock factory Append child count is outside its bound");exactResults(submit,count,"LIVE_RESULT_STAGE_NATIVE_DISPATCH","LIVE_RESULT_STATUS_APPLIED");appliedChildren+=count}
   const replaces=rows.filter(row=>row.kind==="submit"&&row.value?.intent?.action==="factoryProduce"&&row.value.intent.factoryProduce?.queuePolicy==="TACTICAL_QUEUE_POLICY_REPLACE").map(row=>row.value);insist(replaces.length,"stock factory Replace refusal submission is missing");
-  for(const submit of replaces){const count=plannedChildCount(submit.intent),results=rows.filter(row=>row.kind==="result"&&row.value?.parentId===submit.parentId).map(row=>row.value);insist(results.length===count&&results.every((value,index)=>value.childIndex===index&&value.childCount===count&&value.stage==="LIVE_RESULT_STAGE_BROKER_ADMISSION"&&value.status==="LIVE_RESULT_STATUS_REJECTED"),"stock factory Replace did not remain a per-child broker refusal");insist(!results.some(value=>value.stage==="LIVE_RESULT_STAGE_NATIVE_ADMISSION"||value.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH"),"stock factory Replace reached native handling")}
-  return{schema:"fsbar.barc-stock-tactical-oracle/v1",profile:expected.profile,tacticalRevision:2,queueEvidenceScheme:2,queueBridge:expected.queueBridge,supportedQueueFields:[...stockFields],timeout:"unavailable",actorLifetime:"observed",currentTag:"observed",supportedFieldFreshness:"basis-and-queue-revision-observed",appliedChildCount:appliedChildren,factoryReplace:"broker-refused",rollback:"unknown",peerService:"unknown"};
+  for(const submit of replaces){joinedEvidence(submit);const count=plannedChildCount(submit.intent);insist(Number.isInteger(count)&&count>=1&&count<=20,"stock factory Replace child count is outside its bound");exactResults(submit,count,"LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_REJECTED")}
+  return{schema:"fsbar.barc-stock-tactical-oracle/v1",profile:expected.profile,tacticalRevision:2,queueEvidenceScheme:2,queueBridge:expected.queueBridge,supportedQueueFields:[...stockFields],timeout:"unavailable",actorLifetime:"observed",currentTag:entryTotal>0?"observed":"unknown",supportedFieldFreshness:"source-basis-catalogue-queue-revision-joined",appliedChildCount:appliedChildren,factoryReplace:"broker-refused",rollback:"unknown",peerService:"unknown"};
 }
 
 export function sanitizedLifecycle(rows, connection={closed:false,error:false}){

@@ -194,12 +194,12 @@ let setupTacticalProfile profile revision evidenceScheme now =
     let reclaimAreaDescriptor=NativeTacticalCommandDescriptor.empty()
     reclaimAreaDescriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorReclaimArea;metadata.Descriptors.Add reclaimAreaDescriptor
     let queue=NativeObservedQueue.empty()
-    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;queue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> evidenceScheme
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Revision<-9007199254741111UL;queue.Complete<-true;queue.EvidenceScheme<-enum<Highbar.V1.NativeQueueEvidenceScheme> evidenceScheme
     let queuedProduction=NativeObservedQueueEntry.empty()
     queuedProduction.NativeTag<-41;queuedProduction.Action<-LiveSemanticAction.FactoryProduce;queuedProduction.DefinitionId<-ValueSome 42u;queue.Entries.Add queuedProduction
     metadata.Queue.Add queue
     let actorQueue=NativeObservedQueue.empty()
-    actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;actorQueue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> evidenceScheme;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
+    actorQueue.Domain<-NativeQueueDomain.ActorOrder;actorQueue.Revision<-9007199254741113UL;actorQueue.Complete<-true;actorQueue.EvidenceScheme<-enum<Highbar.V1.NativeQueueEvidenceScheme> evidenceScheme;metadata.Queue.Add actorQueue;tactical.Actors.Add metadata
     let metadata2=metadata.Clone()
     metadata2.Actor<-ValueSome(nativeRef 78u 9007199254741106UL);metadata2.DescriptorRevision<-9007199254741115UL
     let production2=metadata2.Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
@@ -438,13 +438,27 @@ let tests=testList "live broker boundary" [
         Expect.equal (LiveControl.latestTacticalSnapshot replacementState |> Option.get).Features[300].Reference.Value.Lifetime 9007199254999999UL "only the fresh replacement lifetime becomes current"
 
 
+    testCase "native queue evidence scheme survives production browser projection and wire encoding" <| fun _ ->
+        let now=DateTimeOffset(2026,10,1,7,55,0,TimeSpan.Zero)
+        let project profile revision scheme expected =
+            let state,_,_,basis,_,_=setupTacticalProfile profile revision scheme now
+            let preview=Observation(SessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Sequence=basis.StateSequence,CapturedAtUnixMs=now.ToUnixTimeMilliseconds(),PerspectiveId="team-0")
+            let envelope=Expect.wantOk (LiveBoundary.observation preview state) "native tactical observation projects"
+            let wire=Broker.Browser.Contracts.LiveServerEnvelope.Parser.ParseFrom(envelope.ToByteArray())
+            let queues=wire.Observation.Tactical.Actors |> Seq.collect(fun actor->actor.Queue) |> Seq.toList
+            Expect.isGreaterThan queues.Length 0 "projected queues remain present"
+            Expect.isTrue (queues |> List.forall(fun queue->queue.EvidenceScheme=expected)) "every projected queue retains its negotiated evidence scheme"
+        project "barc-live-tactical-v1" 1u 0 Broker.Browser.Contracts.NativeQueueEvidenceScheme.Unspecified
+        project "barc-live-tactical-v1" 1u 1 Broker.Browser.Contracts.NativeQueueEvidenceScheme.FullNativeTupleV1
+        project "barc-live-tactical-stock-v1" 2u 2 Broker.Browser.Contracts.NativeQueueEvidenceScheme.StockLuaSupportedFieldsV1
+
     testCase "stock queue evidence is profile-bound and empty FactoryProduce Replace stays refused" <| fun _ ->
         let now=DateTimeOffset(2026,10,1,8,0,0,TimeSpan.Zero)
         let state,controlLease,commandLease,basis,metadata,_=setupTacticalProfile "barc-live-tactical-stock-v1" 2u 2 now
         let mismatched=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
         for actor in mismatched.Actors do
             for queue in actor.Queue do
-                queue.EvidenceScheme<-NativeQueueEvidenceScheme.FullNativeTupleV1
+                queue.EvidenceScheme<-Highbar.V1.NativeQueueEvidenceScheme.FullNativeTupleV1
         let reporter=LiveStateReporter.empty()
         reporter.PluginId<-"highbar";reporter.SchemaVersion<-"1.1.0";reporter.Protocol<-LiveControlProtocol.TacticalV1;reporter.ProcessIncarnation<-"process-t";reporter.MatchIncarnation<-bytes16 "match-t";reporter.StateChannelIncarnation<-"state-t"
         let mismatchReport=LiveStateReport.empty()
@@ -454,7 +468,7 @@ let tests=testList "live broker boundary" [
         let unknown=mismatched.Clone()
         for actor in unknown.Actors do
             for queue in actor.Queue do
-                queue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> 99
+                queue.EvidenceScheme<-enum<Highbar.V1.NativeQueueEvidenceScheme> 99
         let unknownReport=LiveStateReport.empty()
         unknownReport.Reporter<-ValueSome reporter;unknownReport.ReportSequence<-5UL;unknownReport.TacticalSnapshot<-unknown
         Expect.equal (LiveControl.reportState unknownReport now state) LiveStateReportDisposition.LiveStateReportRefused "unknown queue evidence cannot authorize the stock profile"
@@ -465,6 +479,15 @@ let tests=testList "live broker boundary" [
         let unavailableReport=LiveStateReport.empty()
         unavailableReport.Reporter<-ValueSome reporter;unavailableReport.ReportSequence<-5UL;unavailableReport.TacticalSnapshot<-unavailable
         Expect.equal (LiveControl.reportState unavailableReport now state) LiveStateReportDisposition.LiveStateReportRecorded "stock bridge unavailability is explicit and does not fabricate a queue revision"
+        let unavailablePreview=Observation(SessionId=ByteString.CopyFrom(Guid.NewGuid().ToByteArray()),Sequence=basis.StateSequence,CapturedAtUnixMs=now.ToUnixTimeMilliseconds(),PerspectiveId="team-0")
+        let unavailableEnvelope=Expect.wantOk (LiveBoundary.observation unavailablePreview state) "explicit unavailable stock queue projects"
+        let unavailableWire=Broker.Browser.Contracts.LiveServerEnvelope.Parser.ParseFrom(unavailableEnvelope.ToByteArray())
+        let projectedUnavailable=unavailableWire.Observation.Tactical.Actors[0].Queue |> Seq.find(fun value->value.Domain=QueueDomain.FactoryProduction)
+        Expect.equal projectedUnavailable.EvidenceScheme Broker.Browser.Contracts.NativeQueueEvidenceScheme.StockLuaSupportedFieldsV1 "unavailable stock projection keeps scheme2"
+        Expect.equal projectedUnavailable.Revision 0UL "unavailable stock projection keeps revision zero"
+        Expect.isFalse projectedUnavailable.Complete "unavailable stock projection stays incomplete"
+        Expect.equal projectedUnavailable.Entries.Count 0 "unavailable stock projection stays empty"
+        Expect.isFalse projectedUnavailable.HasRepeat "unavailable stock projection does not fabricate Repeat"
 
         let empty=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
         let production=empty.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)

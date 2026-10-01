@@ -267,6 +267,7 @@ module LiveBoundary =
                             result.Descriptors.Add item
                         for queue in actor.Queue do
                             let item=TacticalQueue(Domain=enum<QueueDomain>(int queue.Domain),Revision=queue.Revision,Complete=queue.Complete)
+                            item.EvidenceScheme<-enum<Broker.Browser.Contracts.NativeQueueEvidenceScheme>(int queue.EvidenceScheme)
                             queue.Repeat |> ValueOption.iter(fun x->item.Repeat<-x)
                             for entry in queue.Entries do
                                 match browserQueueAction entry.Action with
