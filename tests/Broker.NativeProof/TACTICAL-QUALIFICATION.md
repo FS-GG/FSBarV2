@@ -103,3 +103,27 @@ This is source preparation. No stock native run, generated receiver journey,
 artifact custody, publication or installed adoption is claimed here. The full
 six-journey native qualification and optional custom replacement route remain
 open.
+
+The private supervisor precreates the host role home. The stock host creates a
+unique mode-0700 child beneath it, keeps the host journal open with append
+semantics, and publishes the closed ready, metadata and setup records from the
+actual native basis, catalogue, projected actors, definitions and positions.
+The ready writer identity is the running host PID, process start tick and UID;
+unresolved source or artifact pins refuse before readiness.
+
+The browser process is only a bounded capture producer. It opens a new
+mode-0600 append journal, records canonical production-codec submits, results,
+observations, controller state and the visible Replace refusal, writes one
+terminal completion record, and retains its descriptor until the supervisor
+releases it. It does not read the live engine or host journal and does not
+write qualification output.
+
+After authenticating all running writers, the supervisor freezes complete
+engine, host and browser prefixes. It invokes `stock-native-trace.mjs` with
+exactly `--stock-trace`, `--host-snapshot`, `--browser-observation` and
+`--output`. The normalizer exclusively creates the bounded output. It
+canonicalizes legal protobuf defaults on both sides, validates every selected
+submission lifecycle, and binds terminal host and browser rows through parent,
+input, actor, basis, module, controller, batch, correlation and command-channel
+identities. Native command index remains distinct from browser child index;
+unknown terminal status remains unknown.
