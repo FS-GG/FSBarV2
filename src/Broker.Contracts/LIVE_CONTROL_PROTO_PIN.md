@@ -10,7 +10,7 @@ coordinator bundle. It does not replace or amend `coordinator.proto`.
 - Consumer base: `FS-GG/FSBarV2@b43712897f25ab6ee1d7efd679f797f58039eb65`
 - Package: `highbar.v1`
 - Protocols: `LIVE_CONTROL_PROTOCOL_V1` and additive `LIVE_CONTROL_PROTOCOL_TACTICAL_V1`
-- File SHA-256: `90a9ee50f817dfd30988d0c6b861a9a20a597a0db68209da4e005b9348c5da1f`
+- File SHA-256: `5839843da0e9760bfe83714ba6aadbbb95c908d6c8eae70393fd4b72beee783a`
 
 The existing coordinator proto remains SHA-256
 `b8d3f56494564a8628a20ffdcc2ac7e42a0508f8f1162bcc87ee6c0f6b7c3c1d`.
