@@ -10,7 +10,17 @@ The stock queue observation contract reports the actual fields supported by the 
 
 The linked custom atomic-replacement experiment remains optional and open, with its all-or-none nonempty replacement, cancellation/refund, synchronized fence and independent peer proof requirements unchanged. Its native 0/6 and preserved custom artifacts are not stock acceptance. BARC-01.5 stock useful-play acceptance also remains open until new exact-profile local/generated pointer, keyboard and imported-module native journeys pass.
 
-## Source checkpoint
+## Current frontier — 2026-10-01
+
+Selected product profile: unmodified Recoil2025.06.19 plus the ABI-matched HighBar plugin and bounded synced Lua queue observer. Delivered default source heads are HighBar `f08555372168cd911f438de0be5ec2898fd1cfb5` and FSBar `6b9139e83334da903ea6861adb57d97578af2239`; neither source merge establishes installation or gameplay acceptance. The existing custom FR1–FR6 experiment remains optional, inactive and open.
+
+Three genuine stock attempts failed before browser start. The latest reached complete nonempty production and complete rally observations, then failed host selection readiness. First-attempt historical cleanup remains unknown; the second and third attempts separately settled cleanup. Count1 smoke is unaccepted and the original useful-play journeys remain **0/6**. See the [development audit](evidence/barc-01.5-development-audit-20261001.md).
+
+The existing `.5b/.5f` source window has two independent corrections: HighBar must preserve factory Count1 options0 instead of converting Append to stock SHIFT×5; This delivery changes FSBar to retain and publish one complete, coherent usable selection rather than checking and selecting independently; its multi-factory and projection-mutation regression passes. The helper/artifact owner can independently separate immutable settings seeds from writable attempt output and retain scanner, interface-metadata, managed-assembly and dependency closure. One integrator joins tested artifacts before any new genuine operation. No engine patch or rebuild is required.
+
+Count1 correlation/final-read proof remains distinct from actual quantity and later game completion. The subsequent `.5f` six-journey boundary retains construction/economy/combat/reclaim, guard/repair, factory/rally/queue, selected modes, local/generated pointer and keyboard, and independent imported tactical policies. Unknown outcomes stay unknown; optional atomic replacement and `.7` publication remain separate.
+
+## Historical source checkpoint
 
 BARC-01.5a is implemented locally from FSBar `f1a18c52246b88e958344cb3bcc87f3c2035a62e` and HighBar `680b62480bfb60a19b3591b7250e03787e1f93d1`. The checkpoint advances only the additive live sibling and browser tactical schema; the frozen five-file HighBar bundle remains byte-identical. It defines `LIVE_CONTROL_PROTOCOL_TACTICAL_V1` / `barc-live-tactical-v1` revision 1, while V1 peers retain the `.4` subset and must refuse tactical bodies before arm. Producer and consumer commit/readback references remain pending until the parent joins the tested local commits. `.5b–f` and the overall `.5` outcome remain open.
 
@@ -116,8 +126,11 @@ No user decision is needed to begin `.5a` and native discovery. Exact factory/ra
 The selected Recoil production queue interprets SHIFT as a quantity multiplier.
 The former shared Append32/Replace0 recipe therefore did not implement the
 declared factory policies. The broker expands a bounded requested count into
-Count1 children; native applies SHIFT32 for stock production Append and refuses
-stock production Replace/RejectIfBusy before delivery. HighBar independently
+Count1 children; the stock adapter must use options0 for each permitted production child. The
+2026-10-01 audit found that its delivered stock branch instead applies SHIFT32,
+which stock Recoil multiplies by five; correction and fresh native quantity
+evidence remain required. Stock production Replace is always refused;
+RejectIfBusy is permitted only when the complete current production queue is empty. HighBar independently
 repeats the complete queue/revision/policy check before native control
 acquisition and callback. Ordinary Move/Build Append32 and production Repeat64
 retain their meanings.
