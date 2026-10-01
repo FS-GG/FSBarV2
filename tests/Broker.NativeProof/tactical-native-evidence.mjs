@@ -126,7 +126,7 @@ export function plannedChildCount(intent){const actors=intent?.actors?.length??0
 const stockFields=["domain","id","options.coded","tag","float32params"];
 const stockDomains=new Set(["QUEUE_DOMAIN_ACTOR_ORDER","QUEUE_DOMAIN_FACTORY_PRODUCTION","QUEUE_DOMAIN_FACTORY_RALLY"]),u64Max=18446744073709551615n,i32Min=-2147483648,i32Max=2147483647;
 const boundedU64=(value,positive=false)=>typeof value==="string"&&/^(?:0|[1-9]\d*)$/.test(value)&&BigInt(value)<=u64Max&&(!positive||value!=="0");
-const finiteFloat32Bits=value=>/^[0-9a-f]{8}$/.test(value)&&((Number.parseInt(value,16)>>>23)&0xff)!==0xff;
+const finiteFloat32Bits=value=>typeof value==="string"&&/^[0-9a-f]{8}$/.test(value)&&((Number.parseInt(value,16)>>>23)&0xff)!==0xff;
 export function assertStockQueueEvidence(rows,expected){
   insist(expected?.profile==="barc-live-tactical-stock-v1"&&expected.tacticalRevision===2&&expected.queueEvidenceScheme===2&&expected.queueBridge==="barc-stock-queue-reader-v1","exact stock tactical negotiation and bridge are required");
   insist(JSON.stringify(expected.supportedQueueFields)===JSON.stringify(stockFields),"stock queue supported-field contract changed");
@@ -160,15 +160,21 @@ export function assertStockQueueEvidence(rows,expected){
     const queue=bindings[0].queueRevisions[0],match=evidence.find(value=>value.domain===queue.domain&&value.queueRevision===String(queue.revision)&&exactJson(value.basis,submit.basis));
     insist(match&&match.domain==="QUEUE_DOMAIN_FACTORY_PRODUCTION","stock submission has no same-source production queue evidence history");return match;
   };
-  const exactResults=(submit,count,stage,status)=>{
-    const parent=rows.filter(row=>row.kind==="result"&&row.value?.parentId===submit.parentId).map(row=>row.value);insist(parent.length===count,"stock submission lacks one exact terminal result per child");
-    for(let child=0;child<count;child++){const result=parent.filter(value=>value.childIndex===child);insist(result.length===1&&result[0].childCount===count&&result[0].stage===stage&&result[0].status===status&&sameRef(result[0].actor,expected.actor)&&exactJson(result[0].basis,submit.basis),`stock submission child ${child} lacks its exact correlated terminal outcome`)}
+  const exactResults=(submit,count,lifecycle)=>{
+    const parent=rows.filter(row=>row.kind==="result"&&row.value?.parentId===submit.parentId).map(row=>row.value);
+    insist(parent.length===count*lifecycle.length,"stock submission has a missing, duplicate, or contradictory lifecycle result");
+    for(const value of parent)insist(Number.isInteger(value.childIndex)&&value.childIndex>=0&&value.childIndex<count&&value.childCount===count&&sameRef(value.actor,expected.actor)&&exactJson(value.basis,submit.basis),"stock submission result is not exactly correlated to its parent, child, actor, and source basis");
+    for(let child=0;child<count;child++){
+      const result=parent.filter(value=>value.childIndex===child);
+      insist(result.length===lifecycle.length,`stock submission child ${child} lacks its exact correlated lifecycle`);
+      for(let index=0;index<lifecycle.length;index++){const [stage,status]=lifecycle[index];insist(result[index].stage===stage&&result[index].status===status,`stock submission child ${child} lacks its exact ordered ${stage} outcome`)}
+    }
   };
   const appends=rows.filter(row=>row.kind==="submit"&&row.value?.intent?.action==="factoryProduce"&&row.value.intent.factoryProduce?.queuePolicy==="TACTICAL_QUEUE_POLICY_APPEND").map(row=>row.value);insist(appends.length,"stock factory Append submission is missing");
   let appliedChildren=0;
-  for(const submit of appends){joinedEvidence(submit);const count=plannedChildCount(submit.intent);insist(Number.isInteger(count)&&count>=1&&count<=20,"stock factory Append child count is outside its bound");exactResults(submit,count,"LIVE_RESULT_STAGE_NATIVE_DISPATCH","LIVE_RESULT_STATUS_APPLIED");appliedChildren+=count}
+  for(const submit of appends){joinedEvidence(submit);const count=plannedChildCount(submit.intent);insist(Number.isInteger(count)&&count>=1&&count<=20,"stock factory Append child count is outside its bound");exactResults(submit,count,[["LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_DISPATCH","LIVE_RESULT_STATUS_APPLIED"]]);appliedChildren+=count}
   const replaces=rows.filter(row=>row.kind==="submit"&&row.value?.intent?.action==="factoryProduce"&&row.value.intent.factoryProduce?.queuePolicy==="TACTICAL_QUEUE_POLICY_REPLACE").map(row=>row.value);insist(replaces.length,"stock factory Replace refusal submission is missing");
-  for(const submit of replaces){joinedEvidence(submit);const count=plannedChildCount(submit.intent);insist(Number.isInteger(count)&&count>=1&&count<=20,"stock factory Replace child count is outside its bound");exactResults(submit,count,"LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_REJECTED")}
+  for(const submit of replaces){joinedEvidence(submit);const count=plannedChildCount(submit.intent);insist(Number.isInteger(count)&&count>=1&&count<=20,"stock factory Replace child count is outside its bound");exactResults(submit,count,[["LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_REJECTED"]])}
   return{schema:"fsbar.barc-stock-tactical-oracle/v1",profile:expected.profile,tacticalRevision:2,queueEvidenceScheme:2,queueBridge:expected.queueBridge,supportedQueueFields:[...stockFields],timeout:"unavailable",actorLifetime:"observed",currentTag:entryTotal>0?"observed":"unknown",supportedFieldFreshness:"source-basis-catalogue-queue-revision-joined",appliedChildCount:appliedChildren,factoryReplace:"broker-refused",rollback:"unknown",peerService:"unknown"};
 }
 

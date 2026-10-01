@@ -33,7 +33,7 @@ const stockEvidence=()=>{
   const replace={parentId:"stock-replace",basis:observedBasis,intent:{action:"factoryProduce",actors:[expected.actor],actorTacticalBindings:[structuredClone(binding)],factoryProduce:factory("TACTICAL_QUEUE_POLICY_REPLACE")}};
   const results=[];
   for(let childIndex=0;childIndex<2;childIndex++){
-    results.push({kind:"result",value:{parentId:append.parentId,childIndex,childCount:2,actor:expected.actor,basis:observedBasis,stage:"LIVE_RESULT_STAGE_NATIVE_DISPATCH",status:"LIVE_RESULT_STATUS_APPLIED"}});
+    for(const [stage,status] of [["LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_DISPATCH","LIVE_RESULT_STATUS_APPLIED"]])results.push({kind:"result",value:{parentId:append.parentId,childIndex,childCount:2,actor:expected.actor,basis:observedBasis,stage,status}});
     results.push({kind:"result",value:{parentId:replace.parentId,childIndex,childCount:2,actor:expected.actor,basis:observedBasis,stage:"LIVE_RESULT_STAGE_BROKER_ADMISSION",status:"LIVE_RESULT_STATUS_REJECTED"}});
   }
   return [
@@ -48,8 +48,16 @@ test("stock queue oracle refuses timeout fabrication, cross-scheme rows, lossy b
   const timeout=stockEvidence();timeout[0].value.timeout="0";assert.throws(()=>assertStockQueueEvidence(timeout,stockExpected()),/claimed timeout/);
   const scheme=stockEvidence();scheme[0].value.queueEvidenceScheme=1;assert.throws(()=>assertStockQueueEvidence(scheme,stockExpected()),/profile or evidence scheme/);
   const bits=stockEvidence();bits[0].value.entries[0].float32params[1]="8000000A";assert.throws(()=>assertStockQueueEvidence(bits,stockExpected()),/finite lowercase binary32/);
-  const missing=stockEvidence().filter(row=>!(row.kind==="result"&&row.value.parentId==="stock-append"&&row.value.childIndex===1));assert.throws(()=>assertStockQueueEvidence(missing,stockExpected()),/exact terminal result/);
-  const nativeReplace=stockEvidence();const refused=nativeReplace.find(row=>row.kind==="result"&&row.value.parentId==="stock-replace");refused.value.stage="LIVE_RESULT_STAGE_NATIVE_DISPATCH";refused.value.status="LIVE_RESULT_STATUS_APPLIED";assert.throws(()=>assertStockQueueEvidence(nativeReplace,stockExpected()),/terminal outcome/);
+  const numericBits=stockEvidence();numericBits[0].value.entries[0].float32params=[12345678];assert.throws(()=>assertStockQueueEvidence(numericBits,stockExpected()),/finite lowercase binary32/);
+  const missing=stockEvidence().filter(row=>!(row.kind==="result"&&row.value.parentId==="stock-append"&&row.value.childIndex===1));assert.throws(()=>assertStockQueueEvidence(missing,stockExpected()),/missing, duplicate, or contradictory lifecycle/);
+  const nativeReplace=stockEvidence();const refused=nativeReplace.find(row=>row.kind==="result"&&row.value.parentId==="stock-replace");refused.value.stage="LIVE_RESULT_STAGE_NATIVE_DISPATCH";refused.value.status="LIVE_RESULT_STATUS_APPLIED";assert.throws(()=>assertStockQueueEvidence(nativeReplace,stockExpected()),/BROKER_ADMISSION outcome/);
+});
+test("stock queue oracle accepts the complete three-stage lifecycle and rejects contradictory, wrong-child and unknown-stage rows",()=>{
+  assert.equal(assertStockQueueEvidence(stockEvidence(),stockExpected()).appliedChildCount,2);
+  const contradictory=stockEvidence(),accepted=contradictory.find(row=>row.kind==="result"&&row.value.parentId==="stock-append"&&row.value.childIndex===0&&row.value.stage==="LIVE_RESULT_STAGE_BROKER_ADMISSION");contradictory.splice(contradictory.indexOf(accepted),0,{kind:"result",value:{...accepted.value,status:"LIVE_RESULT_STATUS_REJECTED"}});assert.throws(()=>assertStockQueueEvidence(contradictory,stockExpected()),/missing, duplicate, or contradictory lifecycle/);
+  const duplicateTerminal=stockEvidence(),terminal=duplicateTerminal.find(row=>row.kind==="result"&&row.value.parentId==="stock-append"&&row.value.childIndex===0&&row.value.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH");duplicateTerminal.push({kind:"result",value:{...terminal.value,status:"LIVE_RESULT_STATUS_REJECTED"}});assert.throws(()=>assertStockQueueEvidence(duplicateTerminal,stockExpected()),/missing, duplicate, or contradictory lifecycle/);
+  const wrongChild=stockEvidence(),dispatch=wrongChild.find(row=>row.kind==="result"&&row.value.parentId==="stock-append"&&row.value.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH");dispatch.value.childIndex=2;assert.throws(()=>assertStockQueueEvidence(wrongChild,stockExpected()),/parent, child, actor, and source basis/);
+  const unknownStage=stockEvidence(),admission=unknownStage.find(row=>row.kind==="result"&&row.value.parentId==="stock-append"&&row.value.stage==="LIVE_RESULT_STAGE_NATIVE_ADMISSION");admission.value.stage="LIVE_RESULT_STAGE_UNKNOWN";assert.throws(()=>assertStockQueueEvidence(unknownStage,stockExpected()),/NATIVE_ADMISSION outcome/);
 });
 test("stock queue oracle rejects the independent invalid and unrelated evidence counterexamples",()=>{
   const nan=stockEvidence();nan[0].value.entries[0].float32params=["7fc00000"];assert.throws(()=>assertStockQueueEvidence(nan,stockExpected()),/finite lowercase binary32/);
