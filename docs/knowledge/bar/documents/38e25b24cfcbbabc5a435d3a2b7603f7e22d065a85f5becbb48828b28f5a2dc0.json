@@ -1,0 +1,68 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-8aee5ac83fd248671f1e504077cecd37999f5dbe",
+    "revision": "8aee5ac83fd248671f1e504077cecd37999f5dbe",
+    "tree": "0340869619d5f73c17e071a1003a0638bee52ea3",
+    "status": "historical candidate; not installed or current"
+  },
+  "components": [
+    {
+      "id":"factory-atomic-candidate-synchronized-service",
+      "title":"Synchronized factory replacement authority",
+      "paths":["rts/Net/NetCommands.cpp","rts/ExternalAI/FactoryReplacementTransport.cpp","rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp"],
+      "summary":"Authenticates the network player/AI context, decodes the bounded wire request and routes it to the synchronized service, which owns incarnation, fence, replay and result-ring state."
+    },
+    {
+      "id":"factory-atomic-candidate-commit-lifetime",
+      "title":"Queue cancellation, refund and callback lifetime",
+      "paths":["rts/Sim/Units/CommandAI/FactoryCAI.cpp","rts/Sim/Units/Unit.cpp","rts/Sim/Units/UnitHandler.cpp","rts/ExternalAI/SkirmishAIHandler.cpp"],
+      "summary":"Revalidates the actor lifetime and queue around strict policy callbacks, swaps the queue and commits cancellation/result state before destruction and command notifications, while AI authority activation/retirement and save-load preserve incarnation state."
+    }
+  ],
+  "flows": [
+    {
+      "id":"factory-atomic-candidate-synchronized-apply",
+      "title":"Network action to synchronized atomic replacement",
+      "steps":[
+        {"path":"rts/Net/NetCommands.cpp","symbol":"NETMSG_AI_FACTORY_REPLACEMENT","line":804,"description":"Validate packet/player, resolve the authenticated AI context, decode the submission and compare the requested incarnation on the synchronized network action path."},
+        {"path":"rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp","symbol":"FactoryReplacementSimulationService::ApplyReplacement","line":245,"description":"Re-decode the request, enforce authority incarnation, replay sequence, frame, fence, actor ownership/lifetime and qualified count before invoking the factory transaction."},
+        {"path":"rts/Sim/Units/CommandAI/FactoryCAI.cpp","symbol":"CFactoryCAI::ReplaceProductionQueue","line":251,"description":"Acquire the callback scope, capture queue/cancellation state, run strict policy callbacks and revalidate all captured state before commit."},
+        {"path":"rts/Sim/Units/CommandAI/FactoryCAI.cpp","symbol":"CFactoryCAI::ReplaceProductionQueue","line":425,"description":"Swap the production queue, commit build cancellation and durable result state, then clear waits and emit cancellation/icon/UnitCommand notifications."}
+      ]
+    },
+    {
+      "id":"factory-atomic-candidate-ai-lifecycle",
+      "title":"AI authority and save-load lifetime",
+      "steps":[
+        {"path":"rts/ExternalAI/SkirmishAIHandler.cpp","symbol":"CSkirmishAIHandler::AddSkirmishAI","line":212,"description":"Activate a fresh authority or require a restored nonzero incarnation before registering the AI slot."},
+        {"path":"rts/ExternalAI/SkirmishAIHandler.cpp","symbol":"CSkirmishAIHandler::RemoveSkirmishAI","line":247,"description":"Retire the exact player/AI/team authority slot before clearing handler state."},
+        {"path":"rts/ExternalAI/SkirmishAIHandler.cpp","symbol":"CSkirmishAIHandler::PostLoad","line":60,"description":"Rebuild AI registry state without retiring/reactivating preserved replacement authorities after deserialization."},
+        {"path":"rts/System/LoadSave/CregLoadSaveHandler.cpp","symbol":"CregLoadSaveHandler::SaveGame","line":111,"description":"Serialize factory replacement service state with the engine save-load stream."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id":"factory-atomic-candidate-dead-before-notify",
+      "kind":"callback-lifetime",
+      "statement":"Factory cancellation marks the unfinished buildee dead before UnitDestroyed notifications; the factory transaction commits queue, cancellation and result state before later notification callouts.",
+      "evidence":[{"path":"rts/Sim/Units/Unit.cpp","line":530,"symbol":"CUnit::CommitFactoryCancellationState"},{"path":"rts/Sim/Units/Unit.cpp","line":539,"symbol":"CUnit::NotifyFactoryCancellation"},{"path":"rts/Sim/Units/CommandAI/FactoryCAI.cpp","line":425,"symbol":"CFactoryCAI::ReplaceProductionQueue"}],
+      "confidence":"observed-source",
+      "tags":["factory-replacement","cancellation","callback-lifetime","refund"]
+    },
+    {
+      "id":"factory-atomic-candidate-native-result-inference",
+      "kind":"acceptance-boundary",
+      "statement":"The synchronized source records a result around the atomic transaction, but the indexed source does not by itself establish real-game refund amounts, observer timing, two-peer replay identity or completed Count1/2/4 products.",
+      "evidence":[{"path":"rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp","line":245,"symbol":"FactoryReplacementSimulationService::ApplyReplacement"},{"path":"rts/Sim/Units/CommandAI/FactoryCAI.cpp","line":398,"symbol":"CFactoryCAI::ReplaceProductionQueue"}],
+      "confidence":"inference",
+      "tags":["factory-replacement","native-unqualified","two-peer","refund"]
+    }
+  ],
+  "open_questions": [
+    "Do controlled native intervals prove no observer-visible partial queue/cancellation state and exact metal-only refund including overflow?",
+    "Do two authenticated peers read the same immutable sequence/request/digest result after replay and save-load?",
+    "The nested AI gitlinks are excluded from this engine corpus and require their own exact registrations when used."
+  ]
+}

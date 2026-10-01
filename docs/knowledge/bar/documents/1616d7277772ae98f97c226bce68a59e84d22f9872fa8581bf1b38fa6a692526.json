@@ -1,0 +1,44 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-44cd9eb676d2c358635d9dc9954107b44860263f",
+    "revision": "44cd9eb676d2c358635d9dc9954107b44860263f",
+    "tree": "64e20ef8b2c723527df4946c65258e356dadec86",
+    "status": "reported external custody route; no standalone product recipe or runtime qualification claim"
+  },
+  "components": [
+    {
+      "id": "peer-observer-external-custody-route-44cd",
+      "title": "Separate product and custody revisions",
+      "paths": ["CMakeLists.txt", "scripts/build-barc-recoil-factory-atomic.sh"],
+      "summary": "Distinguishes the 44cd product gate from the later 1a05 custody recipe used by the root build route."
+    }
+  ],
+  "flows": [],
+  "facts": [
+    {
+      "id": "peer-observer-root-route-reported-44cd",
+      "kind": "reported-status",
+      "statement": "The root build is reported to invoke the separate custody revision 1a051787c2e15ab88fb924cb931054f16d5f1bd1, reconstruct exact Recoil bbeb1eb, and compile the isolated HighBar product 44cd. This is the intended two revision product/custody protocol; it does not make the older recipe embedded in 44cd a bbeb reconstruction recipe.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 237, "symbol": "peer-observer identity"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 23, "symbol": "factory_commit"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 89, "symbol": "highbar_product_commit"}
+      ],
+      "confidence": "reported",
+      "tags": ["two-revision-protocol", "external-custody", "bbeb1eb", "44cd", "reported"]
+    },
+    {
+      "id": "peer-observer-root-route-not-qualification-44cd",
+      "kind": "acceptance-boundary",
+      "statement": "Using the successor custody route establishes source reconstruction intent only. It does not establish a completed build, CTest, two peer, callback, refund, game, or native runtime acceptance.",
+      "evidence": [
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/README.md", "line": 54, "symbol": "Native qualification"},
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/README.md", "line": 130, "symbol": "BARC_RECONSTRUCT_ONLY"}
+      ],
+      "confidence": "inference",
+      "tags": ["source-only", "runtime-unknown", "no-native-acceptance"]
+    }
+  ],
+  "open_questions": []
+}

@@ -1,0 +1,77 @@
+{
+  "source": {
+    "name": "FSBar",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/FSBar-9631bf49515c49f6896e6c42384a3c5b2a7093d4",
+    "revision": "9631bf49515c49f6896e6c42384a3c5b2a7093d4",
+    "tree": "93439d21a1094c366aae6442a8ac08c83a271afb",
+    "parent": "1cc8ea3bc503dce3075a6a37f7dfc8cd8822fb7f",
+    "status": "historical exact-source allowlist; source gates passed; native admission absent"
+  },
+  "components": [
+    {
+      "id": "fsbar-final-factory-identity-9631",
+      "title": "Exact coherent engine identity allowlist",
+      "paths": ["src/Broker.Protocol/LiveControl.fs", "tests/Broker.NativeProof/FactoryCandidateManifest.fs", "tests/Broker.NativeProof/FactoryCandidateManifestTests.fs", "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs"],
+      "summary": "Requires the full 1ec00cf canonical catalogue identity and exact Recoil source before admitting a source candidate ceiling of Count 1, 2, or 4."
+    }
+  ],
+  "flows": [
+    {
+      "id": "fsbar-factory-source-admission-flow-9631",
+      "title": "Manifest source identity to bounded catalogue admission",
+      "steps": [
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifest.fs", "symbol": "engine identity", "line": 80, "description": "Require the exact catalogue string and full Recoil 1ec00cf source SHA in the candidate manifest."},
+        {"path": "src/Broker.Protocol/LiveControl.fs", "symbol": "createFactoryCandidateAdmission", "line": 15, "description": "Admit only the candidate profile with ceiling 1, 2, or 4 and bounded packet/run identities."},
+        {"path": "src/Broker.Protocol/LiveControl.fs", "symbol": "factoryCandidateEngineVersion", "line": 966, "description": "Require every completed catalogue page to advertise the exact coherent engine version before factory policy admission."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "fsbar-exact-catalogue-source-9631",
+      "kind": "source-fact",
+      "statement": "FSBar freezes the full 1ec00cf canonical catalogue string and the private manifest parser separately requires full Recoil source SHA 1ec00cfadab407df1dc03d8756b827990f6847fc.",
+      "evidence": [
+        {"path": "src/Broker.Protocol/LiveControl.fs", "line": 13, "symbol": "factoryCandidateEngineVersion"},
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifest.fs", "line": 80, "symbol": "engineSourceSha"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["fsbar", "catalogue", "exact-source", "1ec00cf"]
+    },
+    {
+      "id": "fsbar-count-and-predecessor-refusal-9631",
+      "kind": "source-fact",
+      "statement": "Candidate admission permits only ceiling Count 1, 2, or 4. Test source asserts the final identity and separately names the historical 8a and interim 25f6 identities as refusal cases.",
+      "evidence": [
+        {"path": "src/Broker.Protocol/LiveControl.fs", "line": 17, "symbol": "maximumCount"},
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifestTests.fs", "line": 31, "symbol": "expectedEngineVersion"},
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifestTests.fs", "line": 33, "symbol": "historicalEngineVersion"},
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifestTests.fs", "line": 35, "symbol": "predecessorEngineVersion"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["count-1-2-4", "allowlist", "predecessor-refusal", "source-test"]
+    },
+    {
+      "id": "fsbar-source-gates-reported-9631",
+      "kind": "reported-status",
+      "statement": "The accepted FSBar report records a clean solution build and passing browser, manifest, IPC, observer, and public-surface source gates. These are source and contract checks; they do not qualify rebuilt artifacts or private runtime pins.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifestTests.fs", "line": 59, "symbol": "literal engine identity"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.test.mjs", "line": 25, "symbol": "exact Count1/2/4 packet contract"}
+      ],
+      "confidence": "reported",
+      "tags": ["source-gates", "contract-tests", "no-artifact-admission"]
+    },
+    {
+      "id": "fsbar-native-runtime-boundary-9631",
+      "kind": "acceptance-boundary",
+      "statement": "The exact-source allowlist does not establish private pin admission, genuine native Count 1, 2, or 4 behavior, paired peer equality, replay/save-load, callback atomicity, cleanup, useful play, installation, or publication.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 26, "symbol": "exact factory candidate profile and engine identity"}
+      ],
+      "confidence": "inference",
+      "tags": ["native-unknown", "runtime-unknown", "no-install", "no-publication"]
+    }
+  ],
+  "open_questions": ["Will native evidence satisfy the exact FSBar source and Count 1, 2, and 4 contracts?"]
+}

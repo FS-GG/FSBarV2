@@ -1,0 +1,492 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-7555c836e0457b04100b20149497d088dd9c2ca7",
+    "revision": "7555c836e0457b04100b20149497d088dd9c2ca7"
+  },
+  "components": [
+    {
+      "id": "callback-lifetime-lua-control",
+      "title": "Synced Lua mutation entry points",
+      "paths": [
+        "rts/Lua/LuaSyncedCtrl.cpp"
+      ],
+      "summary": "Defines DestroyUnit immediate cleanup, SetUnitCosts mutation, and command description removal entry points."
+    },
+    {
+      "id": "callback-lifetime-unit-deletion",
+      "title": "Unit death and storage lifetime",
+      "paths": [
+        "rts/Sim/Units/Unit.cpp",
+        "rts/Sim/Units/UnitHandler.cpp"
+      ],
+      "summary": "Orders death callbacks and subsystem cleanup, then queues or immediately performs physical deletion and ID recycling."
+    },
+    {
+      "id": "callback-lifetime-factory",
+      "title": "Factory cancellation and build option queues",
+      "paths": [
+        "rts/Sim/Units/UnitTypes/Factory.cpp",
+        "rts/Sim/Units/CommandAI/CommandAI.cpp",
+        "rts/Sim/Units/CommandAI/FactoryCAI.cpp"
+      ],
+      "summary": "Cancels an in-progress factory build, returns invested metal, kills the nanoframe, and removes withdrawn build options from command queues."
+    },
+    {
+      "id": "callback-lifetime-wind",
+      "title": "Wind generator bookkeeping",
+      "paths": [
+        "rts/Sim/Misc/Wind.cpp"
+      ],
+      "summary": "Stores generator unit IDs and dereferences them during periodic and initial wind updates."
+    }
+  ],
+  "flows": [
+    {
+      "id": "callback-lifetime-immediate-destroy",
+      "title": "Synced Lua immediate destruction to ID reuse",
+      "steps": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "symbol": "LuaSyncedCtrl::DestroyUnit",
+          "line": 1893,
+          "description": "Parses the unit and cleanupImmediately argument, bounds recursive DestroyUnit calls, and invokes ForcedKillUnit."
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "symbol": "CUnit::ForcedKillUnit",
+          "line": 473,
+          "description": "Marks the unit dead, releases transportees, invokes destruction callbacks, removes wind registration, and marks reclaimed or unfinished units ready for deletion."
+        },
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "symbol": "LuaSyncedCtrl::DestroyUnit",
+          "line": 1919,
+          "description": "After ForcedKillUnit returns, requests immediate garbage collection when cleanupImmediately was supplied."
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "symbol": "CUnitHandler::GarbageCollectUnit",
+          "line": 235,
+          "description": "Refuses during UnitHandler update scopes; otherwise queues and deletes the unit, then recycles the ID."
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "symbol": "CUnitHandler::DeleteUnit",
+          "line": 286,
+          "description": "Removes team and active-unit references, frees the ID, clears the units slot, frees the object, and destroys its entity."
+        }
+      ]
+    },
+    {
+      "id": "callback-lifetime-factory-cancel",
+      "title": "Factory cancellation refund and death bookkeeping",
+      "steps": [
+        {
+          "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "symbol": "CFactoryCAI::ExecuteStop",
+          "line": 431,
+          "description": "A factory stop command calls the factory StopBuild routine before consuming the command."
+        },
+        {
+          "path": "rts/Sim/Units/UnitTypes/Factory.cpp",
+          "symbol": "CFactory::StopBuild",
+          "line": 310,
+          "description": "Stops the build script; for an unfinished product, returns invested metal and kills it as reclaimed before dropping the build dependence and pointers."
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "symbol": "CUnit::ForcedKillUnit",
+          "line": 473,
+          "description": "Runs transport, destruction callback, wind, and death-script bookkeeping for the canceled product."
+        }
+      ]
+    },
+    {
+      "id": "callback-lifetime-build-option-removal",
+      "title": "Lua command description removal to queue pruning",
+      "steps": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "symbol": "LuaSyncedCtrl::RemoveUnitCmdDesc",
+          "line": 7993,
+          "description": "Requires FullCtrl, resolves a one-based optional command-description index, and calls RemoveCommandDescription."
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/CommandAI.cpp",
+          "symbol": "CCommandAI::RemoveCommandDescription",
+          "line": 441,
+          "description": "Bounds-checks the index and routes the removed command ID through HandleBuildOptionRemoval before erasing the description."
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/CommandAI.cpp",
+          "symbol": "CCommandAI::HandleBuildOptionRemoval",
+          "line": 516,
+          "description": "For a negative build command, removes every matching queued builder or factory command and erases the build option."
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "symbol": "CFactoryCAI::BuildeeChangeCheck",
+          "line": 155,
+          "description": "Stops a factory build when the active product no longer matches the build-queue front."
+        }
+      ]
+    },
+    {
+      "id": "callback-lifetime-cost-to-refund",
+      "title": "Mutable unit costs to cancellation and reclaim arithmetic",
+      "steps": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "symbol": "LuaSyncedCtrl::SetUnitCosts",
+          "line": 2040,
+          "description": "Accepts numeric Lua values and assigns build time, metal cost, or energy cost after only a lower-bound std::max expression."
+        },
+        {
+          "path": "rts/Sim/Units/UnitTypes/Factory.cpp",
+          "symbol": "CFactory::StopBuild",
+          "line": 310,
+          "description": "Computes a cancellation metal return from the mutable metal cost and build progress."
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "symbol": "CUnit::AddBuildPower",
+          "line": 1969,
+          "description": "Uses mutable cost values for build consumption and reclaim refund calculations, then kills a fully reclaimed unit."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "callback-lifetime-destroy-order",
+      "kind": "lifetime",
+      "statement": "DestroyUnit calls ForcedKillUnit before it requests immediate garbage collection; ForcedKillUnit releases transportees and emits UnitDestroyed callbacks before removing wind registration and setting deathScriptFinished.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 1917,
+          "symbol": "LuaSyncedCtrl::DestroyUnit"
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 473,
+          "symbol": "CUnit::ForcedKillUnit"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "destroy",
+        "callback",
+        "ordering",
+        "lifetime"
+      ]
+    },
+    {
+      "id": "callback-lifetime-recycle-contract",
+      "kind": "lifetime",
+      "statement": "The cleanupImmediately argument is documented as unconditional removal and immediate ID reuse, but GarbageCollectUnit returns false during UnitHandler update scopes and the Lua caller does not inspect that result.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 1890,
+          "symbol": "Spring.DestroyUnit cleanupImmediately"
+        },
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 1919,
+          "symbol": "LuaSyncedCtrl::DestroyUnit"
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 235,
+          "symbol": "CUnitHandler::GarbageCollectUnit"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "destroy",
+        "id-reuse",
+        "update-scope",
+        "return-value"
+      ]
+    },
+    {
+      "id": "callback-lifetime-physical-delete",
+      "kind": "lifetime",
+      "statement": "Successful immediate collection removes the unit from team and active indices, frees its ID, clears the units slot, frees the object, and destroys the entity before RecycleID returns.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 286,
+          "symbol": "CUnitHandler::DeleteUnit"
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 249,
+          "symbol": "CUnitHandler::GarbageCollectUnit"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "delete",
+        "id-reuse",
+        "storage"
+      ]
+    },
+    {
+      "id": "callback-lifetime-update-scopes",
+      "kind": "threading",
+      "statement": "UnitHandler marks inUpdateCall around pre-frame updates, the main unit update pipeline, and post-animation transport updates; GarbageCollectUnit refuses immediate deletion throughout those regions.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 430,
+          "symbol": "CUnitHandler::UpdatePreFrame"
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 442,
+          "symbol": "CUnitHandler::Update"
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 457,
+          "symbol": "CUnitHandler::UpdatePostAnimation"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "update",
+        "guard",
+        "lifetime"
+      ]
+    },
+    {
+      "id": "callback-lifetime-death-bookkeeping",
+      "kind": "bookkeeping",
+      "statement": "ForcedKillUnit marks the unit dead, resolves transported units, emits destruction callbacks, unregisters wind generators, and makes reclaimed or unfinished units eligible for deletion.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 473,
+          "symbol": "CUnit::ForcedKillUnit"
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 760,
+          "symbol": "CUnit::ReleaseTransportees"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "transport",
+        "wind",
+        "callback",
+        "death"
+      ]
+    },
+    {
+      "id": "callback-lifetime-wind-id-invariant",
+      "kind": "invariant",
+      "statement": "Wind bookkeeping stores unit IDs and later dereferences GetUnit(id) without a local null check, so removing a generator ID before physical deletion or ID reuse is a required ordering invariant.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Misc/Wind.cpp",
+          "line": 85,
+          "symbol": "EnvResourceHandler::DelGenerator"
+        },
+        {
+          "path": "rts/Sim/Misc/Wind.cpp",
+          "line": 128,
+          "symbol": "EnvResourceHandler::Update"
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 488,
+          "symbol": "CUnit::ForcedKillUnit"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "wind",
+        "id-reuse",
+        "ordering",
+        "null"
+      ]
+    },
+    {
+      "id": "callback-lifetime-factory-refund",
+      "kind": "resources",
+      "statement": "Factory StopBuild returns metal equal to current product metal cost times build progress, kills the unfinished product as reclaimed, removes the build death dependence, and clears product pointers.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/UnitTypes/Factory.cpp",
+          "line": 310,
+          "symbol": "CFactory::StopBuild"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "factory",
+        "refund",
+        "cancel",
+        "death"
+      ]
+    },
+    {
+      "id": "callback-lifetime-reclaim-refund",
+      "kind": "resources",
+      "statement": "Negative AddBuildPower computes energy and metal reclaim terms from mutable unit costs, issues a resource order, and kills the unit as reclaimed when progress or health reaches zero.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 2036,
+          "symbol": "CUnit::AddBuildPower"
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 2089,
+          "symbol": "CUnit::AddBuildPower"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "reclaim",
+        "refund",
+        "cost"
+      ]
+    },
+    {
+      "id": "callback-lifetime-set-costs-finiteness",
+      "kind": "input-validation",
+      "statement": "SetUnitCosts checks Lua number type and applies a lower-bound std::max, but contains no explicit finite-value predicate before assigning buildTime, metal cost, or energy cost.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 2040,
+          "symbol": "LuaSyncedCtrl::SetUnitCosts"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "lua",
+        "cost",
+        "finite",
+        "validation"
+      ]
+    },
+    {
+      "id": "callback-lifetime-nonfinite-risk",
+      "kind": "failure-hypothesis",
+      "statement": "A positive-infinite Lua number can plausibly survive the lower-bound expression and then enter factory cancellation or reclaim arithmetic. This is a source-based hypothesis that requires a controlled finite-value regression; this chapter does not establish a reproduced engine failure.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 2052,
+          "symbol": "LuaSyncedCtrl::SetUnitCosts"
+        },
+        {
+          "path": "rts/Sim/Units/UnitTypes/Factory.cpp",
+          "line": 318,
+          "symbol": "CFactory::StopBuild"
+        },
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 2043,
+          "symbol": "CUnit::AddBuildPower"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "nonfinite",
+        "cost",
+        "refund",
+        "test-required"
+      ]
+    },
+    {
+      "id": "callback-lifetime-command-pruning",
+      "kind": "command-queue",
+      "statement": "RemoveUnitCmdDesc routes a removed negative command ID through HandleBuildOptionRemoval, which removes every matching command from builder or factory queues and erases the corresponding build option.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 7993,
+          "symbol": "LuaSyncedCtrl::RemoveUnitCmdDesc"
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/CommandAI.cpp",
+          "line": 441,
+          "symbol": "CCommandAI::RemoveCommandDescription"
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/CommandAI.cpp",
+          "line": 516,
+          "symbol": "CCommandAI::HandleBuildOptionRemoval"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "lua",
+        "build-option",
+        "queue",
+        "factory"
+      ]
+    },
+    {
+      "id": "callback-lifetime-atomic-guard-tests",
+      "kind": "test-guidance",
+      "statement": "Any atomic factory replacement path should distinguish callback execution from physical deletion, prove that old IDs and pointers cannot be reused while callbacks still observe them, preserve wind/transport/death-dependence cleanup, reject nonfinite mutable costs, and verify build-option removal against the active factory product and queue. These are derived test obligations, not proof of a defect in Recoil 7555.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/Unit.cpp",
+          "line": 473,
+          "symbol": "CUnit::ForcedKillUnit"
+        },
+        {
+          "path": "rts/Sim/Units/UnitHandler.cpp",
+          "line": 235,
+          "symbol": "CUnitHandler::GarbageCollectUnit"
+        },
+        {
+          "path": "rts/Sim/Units/UnitTypes/Factory.cpp",
+          "line": 310,
+          "symbol": "CFactory::StopBuild"
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/CommandAI.cpp",
+          "line": 516,
+          "symbol": "CCommandAI::HandleBuildOptionRemoval"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "atomic-replacement",
+        "guard",
+        "regression",
+        "acceptance"
+      ]
+    },
+    {
+      "id": "callback-lifetime-fr2-context",
+      "kind": "reported-context",
+      "statement": "A separate unprotected FR2 lifetime candidate was reported at local source identifier d9690a37b72489ff6749229b589762b5c3a9f86f, branch routine/barc-fr2-lifetime-reentrancy-20260930. It is not registered as current or protected source, and native acceptance remains reported as 0/6.",
+      "evidence": [],
+      "confidence": "reported",
+      "tags": [
+        "fr2",
+        "candidate",
+        "unprotected",
+        "native-acceptance"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Which callback or nested Lua route, if any, attempts cleanupImmediately while a factory replacement transaction still holds raw unit or command pointers?",
+    "Should cleanupImmediately report a refused immediate collection when UnitHandler is inside an update scope instead of silently retaining deferred cleanup semantics?",
+    "Do Lua numeric conversion and every supported platform preserve positive infinity through SetUnitCosts, and which explicit finite-value policy should apply?",
+    "Can removing a build option race or reenter with factory StopBuild such that the active product, queue front, death dependence, or refund basis diverges?",
+    "Which controlled tests distinguish safe callback completion, wind and transport cleanup, ID reuse, refund conservation, and command queue consistency for a future atomic replacement implementation?"
+  ]
+}

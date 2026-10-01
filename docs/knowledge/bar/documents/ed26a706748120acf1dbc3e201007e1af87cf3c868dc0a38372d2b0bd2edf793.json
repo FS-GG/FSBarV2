@@ -1,0 +1,273 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "6df805a7f289e5cd2eb070a5f9e07a2d9d38d0dc38c8d1cc1731d398043195f3",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-protected-heads-runtime-closure-refusal-20261001.md",
+          "scope": "Attempt-scoped diagnosis; no raw process or mapping payload.",
+          "section": "Observed boundary",
+          "sourceProof": null,
+          "summary": "Authenticated readiness and selected handoff succeeded before an unknown executable runtime-closure refusal.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-protected-heads-runtime-closure-refusal",
+      "kind": "incident",
+      "scope": {
+        "applicability": "this genuine attempt only; exact mapping cause and loaded-artifact acceptance remain unknown",
+        "artifacts": [
+          "config-sha256:96d80678c03fd5cc01c803ffd6f7973404e0da6629756834c5cfef8330aed46b",
+          "inventory-sha256:1c765ce1b4854f9152cda2299c7d09130ed9b3c01c2a71133c0d8b988de731be"
+        ],
+        "component": "protected-head genuine Count1 prerequisite",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "A genuine operation using exact protected HighBar 54e170, FSBar 5bc309 and stock Recoil 2639 completed authenticated host readiness, metadata and setup and materialized the retained shared-selection handoff. It then refused inside verify_started_engine before browser start. Retained evidence satisfies the later isolation-root predicate, locating the refusal at executable runtime-closure verification. The helper retained only generic refused and no post-cleanup mapping view, so the particular failed mapping predicate is unknown and no closure entry may be inferred. No browser command, Count1 result or native acceptance occurred.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "protected-heads",
+        "runtime-closure",
+        "browser-not-started",
+        "refused",
+        "native-0-of-6"
+      ],
+      "title": "Protected-head genuine operation refused executable runtime-closure verification"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "6df805a7f289e5cd2eb070a5f9e07a2d9d38d0dc38c8d1cc1731d398043195f3",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-protected-heads-runtime-closure-refusal-20261001.md",
+          "scope": "Positive stage evidence only; no later acceptance.",
+          "section": "Observed boundary",
+          "sourceProof": null,
+          "summary": "Selected handoff was retained after authenticated readiness, metadata and setup.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-shared-selection-genuine-handoff-observed",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "positive boundary evidence through selected handoff; later runtime and product gates remain open",
+        "artifacts": [],
+        "component": "FSBar shared selection genuine handoff",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The protected FSBar shared-selection repair was exercised in a genuine operation through authenticated ready, metadata and setup stages and produced the selected handoff before the subsequent engine runtime-closure refusal. This is positive evidence for the readiness/selection boundary only. Browser launch, native command delivery, Count1, final receipt and useful-play qualification were not reached.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "shared-selection",
+        "readiness",
+        "genuine-boundary",
+        "native-open"
+      ],
+      "title": "Protected shared-selection repair reached the genuine handoff boundary"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "6df805a7f289e5cd2eb070a5f9e07a2d9d38d0dc38c8d1cc1731d398043195f3",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-protected-heads-runtime-closure-refusal-20261001.md",
+          "scope": "No raw process identities retained in knowledge.",
+          "section": "Cleanup truth",
+          "sourceProof": null,
+          "summary": "Current attempt settled for all acquired roles while the first historical cleanup remains unknown.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-protected-heads-attempt-cleanup",
+      "kind": "incident",
+      "scope": {
+        "applicability": "this protected-head attempt only; first historical cleanup remains unknown",
+        "artifacts": [],
+        "component": "attempt-scoped owned process cleanup",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "For this protected-head attempt, the fully acquired host, engine and receiver exited zero, had zero remaining owned members after bounded cleanup, and were absent from the current exact census; no browser was acquired. This attempt is SETTLED. The first historical genuine attempt remains UNKNOWN because a later successful cleanup or empty census cannot retroactively prove its historical settlement.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "cleanup",
+        "settled",
+        "attempt-scoped",
+        "historical-unknown"
+      ],
+      "title": "Protected-head attempt cleanup settled without rewriting the first unknown cleanup"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "6df805a7f289e5cd2eb070a5f9e07a2d9d38d0dc38c8d1cc1731d398043195f3",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-protected-heads-runtime-closure-refusal-20261001.md",
+          "scope": "Design learning and assigned work only.",
+          "section": "Learning and next gate",
+          "sourceProof": null,
+          "summary": "The generic refusal loses the exact mapping predicate after cleanup; bounded private diagnostics are assigned.",
+          "verify": true
+        }
+      ],
+      "id": "decision.stock-runtime-closure-private-diagnostics",
+      "kind": "decision",
+      "scope": {
+        "applicability": "assigned helper/packet work only; no delivered source, packet or native result",
+        "artifacts": [],
+        "component": "private runtime-closure diagnostics",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "planned",
+      "statement": "The next helper successor is assigned to retain a bounded owner-only diagnostic before cleanup when executable runtime-closure verification refuses: an enumerated failure code and only the candidate path/device/inode/content identity needed for independent closure review. Public operation results remain generic, and synthetic tests must cover an admitted mapping and every refusal class. This work is assigned, not delivered; a fresh packet and independent review are required before another genuine operation.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "diagnostics",
+        "runtime-closure",
+        "private",
+        "assigned-not-delivered"
+      ],
+      "title": "Retain bounded private runtime-closure refusal diagnostics before cleanup"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "6df805a7f289e5cd2eb070a5f9e07a2d9d38d0dc38c8d1cc1731d398043195f3",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-protected-heads-runtime-closure-refusal-20261001.md",
+          "scope": "No rerun or delivered-diagnostics claim.",
+          "section": "Learning and next gate",
+          "sourceProof": null,
+          "summary": "Exact diagnostic, packet review and genuine prerequisites remaining after refusal.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current frontier after the protected-head genuine refusal",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Exact protected HighBar and FSBar artifacts reached authenticated readiness and the selected handoff, but executable runtime-closure verification refused before browser start and its specific mapping predicate is unknown. Complete and review the assigned bounded private diagnostic helper, build a fresh immutable packet, and independently review its closure identities before considering another genuine prerequisite. Then require actual browser input, causal queue/product evidence, final receipt, loaded identities and separate cleanup truth. Count1 and all six useful-play journeys remain unaccepted at 0/6.",
+      "supersedes": [
+        "15ef27557c777f362dd784c5e4dcbd43b023d974666aeeac53eb98327c633ea7"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "runtime-closure",
+        "Count1",
+        "native-0-of-6"
+      ],
+      "title": "What remains after the protected-head runtime-closure refusal?"
+    }
+  ],
+  "origin": "Protected-head genuine operation diagnosis: selected readiness boundary, executable runtime-closure refusal, attempt-scoped cleanup, and assigned private diagnostic successor",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

@@ -1,0 +1,1144 @@
+{
+  "source": {
+    "name": "Beyond All Reason game plus BARC tactical fixture",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/game",
+    "revision": "byar:git:0571aa8ed85d53a80ca9396126212d98ebc3cf01",
+    "packageId": "7fd33d9ceb79c052065b8d3c2f6f2687",
+    "archiveSha256": "58ca71d252e89e844361293e3b6b0aa2fb29fd217094b83e2a8f51ed1541f250",
+    "provenance": {
+      "rapidVersionsSha256": "2cd5a5bbaf0da42bee2eaabc1c8a8061323a0c3a0d7ed2dbd586c80bedbd04c0",
+      "rapidVersionsRecordLine": 266,
+      "fixtureRevision": "dcf9209cdddd11bddc26c55a65b376206c21cf30",
+      "fixtureTree": "21bb3ce0822bc54ad12e2a6f52ff23c1a24bf93f",
+      "corpusManifest": "/home/developer/.local/share/fsgg/knowledge/bar/game-corpus-manifest.json",
+      "materialization": "validated UTF-8 text only; imported source was not executed"
+    }
+  },
+  "components": [
+    {
+      "id": "archive",
+      "title": "Rapid package and bounded corpus",
+      "paths": [
+        "rapid/",
+        "fixture/"
+      ],
+      "summary": "The corpus contains 3,690 MD5-verified textual files from the selected SDP plus four exact fixture files. The manifest records every source path, pool MD5, SHA-256, byte count, and line count."
+    },
+    {
+      "id": "bootstrap",
+      "title": "Lua environment bootstrap",
+      "paths": [
+        "rapid/init.lua",
+        "rapid/common/",
+        "rapid/modules/"
+      ],
+      "summary": "init.lua installs shared table, string, number, Spring, command, map, graphics, and optional i18n helpers according to the active Lua environment."
+    },
+    {
+      "id": "definitions",
+      "title": "Definition loading and post-processing",
+      "paths": [
+        "rapid/gamedata/defs.lua",
+        "rapid/gamedata/unitdefs.lua",
+        "rapid/gamedata/weapondefs.lua",
+        "rapid/gamedata/featuredefs.lua",
+        "rapid/gamedata/alldefs_post.lua"
+      ],
+      "summary": "The parser loads unit, feature, weapon, armor, and movement definitions. Unit, weapon, and feature files are evaluated in restricted definition environments, then post-processed and checked."
+    },
+    {
+      "id": "unit-catalog",
+      "title": "Unit definitions and runtime IDs",
+      "paths": [
+        "rapid/units/",
+        "rapid/gamedata/unitdefrenames.lua"
+      ],
+      "summary": "Unit names are stable source keys. Numeric UnitDef IDs are assigned by the engine after definition loading; fixture logic therefore resolves UnitDefNames at runtime."
+    },
+    {
+      "id": "weapon-catalog",
+      "title": "Weapon definitions",
+      "paths": [
+        "rapid/weapons/",
+        "rapid/gamedata/weapondefs.lua",
+        "rapid/gamedata/weapondefs_post.lua"
+      ],
+      "summary": "BAR has standalone weapon files and weapondefs nested in unit files. Post-processing explicitly joins both sources."
+    },
+    {
+      "id": "feature-catalog",
+      "title": "Feature and wreck definitions",
+      "paths": [
+        "rapid/features/",
+        "rapid/gamedata/featuredefs.lua",
+        "rapid/gamedata/featuredefs_post.lua",
+        "rapid/units/"
+      ],
+      "summary": "Map features load from features/. Unit wreck and heap definitions are embedded under unit featuredefs and exposed through FeatureDefNames at runtime."
+    },
+    {
+      "id": "synced-rules",
+      "title": "Synced game rules and gadget dispatch",
+      "paths": [
+        "rapid/luarules/main.lua",
+        "rapid/luarules/gadgets.lua",
+        "rapid/luarules/gadgets/"
+      ],
+      "summary": "LuaRules loads gadgets, orders enabled gadgets by layer/name, and dispatches engine call-ins. Synced gadgets can mutate authoritative simulation state."
+    },
+    {
+      "id": "unsynced-ui",
+      "title": "Unsynced UI and widget dispatch",
+      "paths": [
+        "rapid/luaui.lua",
+        "rapid/luaui/main.lua",
+        "rapid/luaui/barwidgets.lua",
+        "rapid/luaui/widgets/"
+      ],
+      "summary": "LuaUI loads packaged and optionally user widgets, dispatches UI call-ins, reads visibility-limited state, and submits commands. Its caches and displays are not authoritative simulation state."
+    },
+    {
+      "id": "economy",
+      "title": "Metal, energy, storage, and conversion",
+      "paths": [
+        "rapid/gamedata/resource_types.lua",
+        "rapid/gamedata/resources.lua",
+        "rapid/luarules/gadgets/game_team_resources.lua",
+        "rapid/luarules/gadgets/game_energy_conversion.lua"
+      ],
+      "summary": "Synced startup rules set team metal and energy storage/current levels from mod options and team context. Conversion and sharing gadgets add game-specific economy behavior."
+    },
+    {
+      "id": "reclaim",
+      "title": "Reclaim commands and feature depletion",
+      "paths": [
+        "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+        "rapid/luarules/gadgets/unit_prevent_cloaked_unit_reclaim.lua",
+        "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+        "rapid/luaui/widgets/gui_reclaiminfo.lua"
+      ],
+      "summary": "The engine owns reclaim execution. Synced gadgets adjust reclaim steps and wreck-to-heap continuity; UI widgets select targets, issue CMD.RECLAIM, and render visible resource estimates."
+    },
+    {
+      "id": "build-repair",
+      "title": "Build placement, construction, assist, and repair",
+      "paths": [
+        "rapid/luarules/gadgets.lua",
+        "rapid/units/armbots/armck.lua",
+        "rapid/units/armbuildings/landfactories/armlab.lua",
+        "rapid/units/armbuildings/landeconomy/armsolar.lua"
+      ],
+      "summary": "Builders expose build options, work time, distance, and reclaim/repair capabilities through UnitDefs. Negative UnitDef IDs encode build commands; engine call-ins mediate creation and build steps."
+    },
+    {
+      "id": "ai",
+      "title": "Lua AI registration and execution",
+      "paths": [
+        "rapid/luaai.lua",
+        "rapid/luarules/gadgets/ailoader.lua",
+        "rapid/luarules/gadgets/ai_simpleai.lua",
+        "rapid/luarules/gadgets/ai/"
+      ],
+      "summary": "luaai.lua advertises AI names. The synced loader binds teams to AI implementations and forwards lifecycle events. SimpleAI directly reads resources and units and issues build, reclaim, repair, move, and combat commands."
+    },
+    {
+      "id": "settings",
+      "title": "Startup and game settings",
+      "paths": [
+        "rapid/modoptions.lua",
+        "rapid/engineoptions.lua",
+        "rapid/gamedata/modrules.lua",
+        "rapid/tools/startscripts/"
+      ],
+      "summary": "Lobby/start scripts supply mod options. Definition inclusion and synced rules consume those options for factions, game modes, resource levels, unit limits, and UI policy."
+    },
+    {
+      "id": "fixture-topology",
+      "title": "Tactical fixture roles and resources",
+      "paths": [
+        "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua"
+      ],
+      "summary": "The opt-in synced fixture creates seven passive units, three reclaimable features, fixed resource capacity/current values, one rally point, and one reclaim area around a validated start anchor."
+    },
+    {
+      "id": "fixture-site",
+      "title": "Construction-site lifetime protocol",
+      "paths": [
+        "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+        "fixture/tests/test_post_setup_construction_site.lua"
+      ],
+      "summary": "The fixture normalizes and tests an armsolar site, requires three consecutive valid frames, binds a generation and 18,000-frame horizon, and retires validation only after an exact UnitCreated claim."
+    },
+    {
+      "id": "fixture-readback",
+      "title": "Bounded tactical readback",
+      "paths": [
+        "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua"
+      ],
+      "summary": "Every 15 frames, capped at 1,024 samples, the fixture reports unit identity/position/health/build/state/queue, feature resources/reclaim fraction, team resource vectors, and factory commands."
+    }
+  ],
+  "flows": [
+    {
+      "id": "definition-load",
+      "title": "Game definition load",
+      "steps": [
+        {
+          "path": "rapid/gamedata/defs.lua",
+          "symbol": "LoadDefs",
+          "line": 25,
+          "description": "Loads each definition category through VFS.Include and refuses missing tables."
+        },
+        {
+          "path": "rapid/gamedata/unitdefs.lua",
+          "symbol": "unit definition scan",
+          "line": 46,
+          "description": "Enumerates units/*.lua and filters optional factions from mod options."
+        },
+        {
+          "path": "rapid/gamedata/unitdefs.lua",
+          "symbol": "definition environment",
+          "line": 75,
+          "description": "Evaluates each file in a per-file environment and merges named tables."
+        },
+        {
+          "path": "rapid/gamedata/unitdefs.lua",
+          "symbol": "post-process and checks",
+          "line": 103,
+          "description": "Runs unitdefs_post, rejects missing models, and removes invalid build options."
+        },
+        {
+          "path": "rapid/gamedata/defs.lua",
+          "symbol": "return definition registry",
+          "line": 58,
+          "description": "Returns lower-case definition maps to the engine."
+        }
+      ]
+    },
+    {
+      "id": "gadget-dispatch",
+      "title": "Synced gadget load and call-in dispatch",
+      "steps": [
+        {
+          "path": "rapid/luarules/main.lua",
+          "symbol": "LuaRules entry",
+          "line": 9,
+          "description": "Loads the gadget handler from the game archive."
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "symbol": "gadgetHandler:Initialize",
+          "line": 311,
+          "description": "Discovers, loads, sorts, and inserts enabled gadgets."
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "symbol": "gadgetHandler:LoadGadget",
+          "line": 372,
+          "description": "Loads each gadget into an isolated gadget environment and validates GetInfo."
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "symbol": "gadgetHandler:GameFrame",
+          "line": 1135,
+          "description": "Dispatches deterministic frame callbacks to registered gadgets."
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "symbol": "gadgetHandler:AllowCommand",
+          "line": 1478,
+          "description": "Routes commands through registered synced policy call-ins before acceptance."
+        }
+      ]
+    },
+    {
+      "id": "ui-command",
+      "title": "UI observation and command submission",
+      "steps": [
+        {
+          "path": "rapid/luaui/main.lua",
+          "symbol": "CommandNotify",
+          "line": 63,
+          "description": "Forwards a local UI command notification to widgetHandler."
+        },
+        {
+          "path": "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+          "symbol": "widget:CommandNotify",
+          "line": 220,
+          "description": "Intercepts a reclaim-area request and classifies visible features."
+        },
+        {
+          "path": "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+          "symbol": "assignReclaimOrder",
+          "line": 182,
+          "description": "Submits concrete CMD.RECLAIM orders to selected units."
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "symbol": "gadgetHandler:AllowCommand",
+          "line": 1478,
+          "description": "Synced command policy can reject the submitted command; engine/synced state remains authoritative."
+        }
+      ]
+    },
+    {
+      "id": "starting-resources",
+      "title": "Starting resource initialization",
+      "steps": [
+        {
+          "path": "rapid/modoptions.lua",
+          "symbol": "start resource options",
+          "line": 2176,
+          "description": "Defines lobby-controlled metal, energy, and storage inputs."
+        },
+        {
+          "path": "rapid/luarules/gadgets/game_team_resources.lua",
+          "symbol": "setup",
+          "line": 37,
+          "description": "Reads mod options, coop counts, bonus multipliers, and commander storage."
+        },
+        {
+          "path": "rapid/luarules/gadgets/game_team_resources.lua",
+          "symbol": "Spring.SetTeamResource",
+          "line": 81,
+          "description": "Sets authoritative storage and optionally current resources."
+        },
+        {
+          "path": "rapid/luarules/gadgets/game_team_resources.lua",
+          "symbol": "gadget:GameStart",
+          "line": 97,
+          "description": "Recomputes storage after commander creation."
+        }
+      ]
+    },
+    {
+      "id": "reclaim-step",
+      "title": "Feature reclaim and wreck replacement",
+      "steps": [
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "symbol": "definition indexes",
+          "line": 29,
+          "description": "Indexes unit reclaim speed and feature resources/reclaim time."
+        },
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "symbol": "gadget:AllowFeatureBuildStep",
+          "line": 53,
+          "description": "Adjusts authoritative reclaim fraction for negative build steps."
+        },
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "symbol": "gadget:FeatureCreated",
+          "line": 75,
+          "description": "Tracks a replacement heap created in the current frame."
+        },
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "symbol": "gadget:FeatureDestroyed",
+          "line": 81,
+          "description": "Transfers the wreck reclaim fraction to a same-position replacement heap."
+        },
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "symbol": "gadget:GameFrame",
+          "line": 104,
+          "description": "Clears the one-frame replacement candidate set."
+        }
+      ]
+    },
+    {
+      "id": "ai-loop",
+      "title": "Lua AI lifecycle and tactical loop",
+      "steps": [
+        {
+          "path": "rapid/luaai.lua",
+          "symbol": "AI registry",
+          "line": 10,
+          "description": "Advertises SimpleAI, STAI, Shard, Scavengers, and Raptors variants."
+        },
+        {
+          "path": "rapid/luarules/gadgets/ailoader.lua",
+          "symbol": "gadget:SetupAI",
+          "line": 279,
+          "description": "Selects and constructs the implementation for a team LuaAI name."
+        },
+        {
+          "path": "rapid/luarules/gadgets/ailoader.lua",
+          "symbol": "gadget:GameStart",
+          "line": 330,
+          "description": "Starts registered AI instances."
+        },
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "symbol": "gadget:GameFrame",
+          "line": 482,
+          "description": "Samples team economy and units on a 15-frame cadence."
+        },
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "symbol": "SimpleConstructionProjectSelection",
+          "line": 319,
+          "description": "Chooses build, reclaim, repair, or movement commands from resource and map state."
+        }
+      ]
+    },
+    {
+      "id": "fixture-seed",
+      "title": "Tactical fixture setup",
+      "steps": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "seed",
+          "line": 380,
+          "description": "Checks opt-in options, live opposing teams, required definitions, and build options."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "createRole",
+          "line": 298,
+          "description": "Creates seven named units and immediately sets passive fire/move state followed by STOP."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "createFixtureFeature",
+          "line": 308,
+          "description": "Creates three named reclaimable Gaia features."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "seed resources",
+          "line": 450,
+          "description": "Sets and reads back finite metal/energy storage and current levels."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "site tracker setup",
+          "line": 461,
+          "description": "Starts construction-site selection only after the occupied world and resource readback are complete."
+        }
+      ]
+    },
+    {
+      "id": "fixture-site-lifetime",
+      "title": "Construction-site selection, readiness, and claim",
+      "steps": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "findBuildSite",
+          "line": 90,
+          "description": "Searches bounded offsets, normalizes with Pos2BuildPos, and requires TestBuildOrder success without a blocking feature."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "advanceConstructionSite",
+          "line": 141,
+          "description": "Tracks candidate generation and consecutive validity until readiness or expiry."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "ready trace",
+          "line": 181,
+          "description": "Publishes one site after three consecutive valid frames and binds generation, horizon, definition, facing, and normalized coordinates."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "gadget:UnitCreated",
+          "line": 254,
+          "description": "Claims only an armsolar created by the selected builder/team within one unit of the selected position."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "post-ready invalidation",
+          "line": 165,
+          "description": "Treats loss after readiness as terminal and cleans fixture objects instead of substituting a new site."
+        }
+      ]
+    },
+    {
+      "id": "fixture-repair-fence",
+      "title": "Repair precondition and build handoff",
+      "steps": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "advanceRepairPrecondition",
+          "line": 213,
+          "description": "Waits for a healthy target and idle selected builder."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "Spring.SetUnitHealth",
+          "line": 234,
+          "description": "Creates bounded 50 percent damage and holds it while no exact selected build is queued."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "exactSelectedBuild",
+          "line": 204,
+          "description": "Recognizes only the selected armsolar build command at the bound position."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "repair release",
+          "line": 225,
+          "description": "Releases the damage fence when that exact build command appears."
+        }
+      ]
+    },
+    {
+      "id": "fixture-observation",
+      "title": "Bounded authoritative readback",
+      "steps": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "unitSummary",
+          "line": 331,
+          "description": "Reads runtime definition ID, position, health, max health, build progress, states, and up to 16 commands."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "featureSummary",
+          "line": 345,
+          "description": "Reads runtime feature ID, position, resource values, and reclaim fraction."
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "symbol": "emitTrace",
+          "line": 357,
+          "description": "Reads both team resource vectors and up to 16 factory commands and emits a bounded trace every 15 frames."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "defs-entry",
+      "kind": "architecture",
+      "statement": "gamedata/defs.lua is the engine-facing entry point for unit, feature, weapon, armor, and movement definition maps.",
+      "evidence": [
+        {
+          "path": "rapid/gamedata/defs.lua",
+          "line": 25,
+          "symbol": "LoadDefs"
+        },
+        {
+          "path": "rapid/gamedata/defs.lua",
+          "line": 44,
+          "symbol": "definition load"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "definitions"
+      ]
+    },
+    {
+      "id": "unit-id-runtime",
+      "kind": "identity",
+      "statement": "Source names such as armck and armsolar are definition keys; numeric UnitDef IDs are runtime registry values, not stable source constants.",
+      "evidence": [
+        {
+          "path": "rapid/gamedata/unitdefs.lua",
+          "line": 46,
+          "symbol": "unit definition scan"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 397,
+          "symbol": "required definition names"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "units",
+        "ids"
+      ]
+    },
+    {
+      "id": "embedded-weapons",
+      "kind": "architecture",
+      "statement": "BAR unit files can contain weapondefs; weapon post-processing joins nested and standalone weapons.",
+      "evidence": [
+        {
+          "path": "rapid/gamedata/alldefs_post.lua",
+          "line": 5,
+          "symbol": "definition post-processing notes"
+        },
+        {
+          "path": "rapid/units/armcom.lua",
+          "line": 166,
+          "symbol": "weapondefs"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "weapons",
+        "definitions"
+      ]
+    },
+    {
+      "id": "armck-builds-solar",
+      "kind": "fixture-binding",
+      "statement": "armck is a builder and its first source build option is armsolar.",
+      "evidence": [
+        {
+          "path": "rapid/units/armbots/armck.lua",
+          "line": 3,
+          "symbol": "armck definition"
+        },
+        {
+          "path": "rapid/units/armbots/armck.lua",
+          "line": 38,
+          "symbol": "buildoptions"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "build"
+      ]
+    },
+    {
+      "id": "armlab-builds-flea",
+      "kind": "fixture-binding",
+      "statement": "armlab is a factory and its source build options include armflea.",
+      "evidence": [
+        {
+          "path": "rapid/units/armbuildings/landfactories/armlab.lua",
+          "line": 4,
+          "symbol": "armlab definition"
+        },
+        {
+          "path": "rapid/units/armbuildings/landfactories/armlab.lua",
+          "line": 32,
+          "symbol": "buildoptions"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "factory"
+      ]
+    },
+    {
+      "id": "wrecks-reclaimable",
+      "kind": "fixture-binding",
+      "statement": "armflash_dead and armck_dead originate from embedded dead feature definitions marked reclaimable.",
+      "evidence": [
+        {
+          "path": "rapid/units/armvehicles/armflash.lua",
+          "line": 48,
+          "symbol": "featuredefs.dead"
+        },
+        {
+          "path": "rapid/units/armvehicles/armflash.lua",
+          "line": 62,
+          "symbol": "reclaimable"
+        },
+        {
+          "path": "rapid/units/armbots/armck.lua",
+          "line": 76,
+          "symbol": "featuredefs.dead"
+        },
+        {
+          "path": "rapid/units/armbots/armck.lua",
+          "line": 90,
+          "symbol": "reclaimable"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "features",
+        "reclaim"
+      ]
+    },
+    {
+      "id": "gadget-authority",
+      "kind": "authority",
+      "statement": "Synced LuaRules gadgets participate in authoritative command, creation, build-step, resource, and lifecycle call-ins.",
+      "evidence": [
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "line": 1478,
+          "symbol": "gadgetHandler:AllowCommand"
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "line": 1520,
+          "symbol": "gadgetHandler:AllowUnitCreation"
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "line": 1568,
+          "symbol": "gadgetHandler:AllowUnitBuildStep"
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "line": 1610,
+          "symbol": "gadgetHandler:AllowFeatureBuildStep"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "synced",
+        "authority"
+      ]
+    },
+    {
+      "id": "ui-not-authority",
+      "kind": "authority",
+      "statement": "LuaUI widgets can read visible state and submit commands, but synced policy and the engine decide command acceptance and simulation results.",
+      "evidence": [
+        {
+          "path": "rapid/luaui/main.lua",
+          "line": 63,
+          "symbol": "CommandNotify"
+        },
+        {
+          "path": "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+          "line": 220,
+          "symbol": "widget:CommandNotify"
+        },
+        {
+          "path": "rapid/luarules/gadgets.lua",
+          "line": 1478,
+          "symbol": "gadgetHandler:AllowCommand"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "ui",
+        "authority"
+      ]
+    },
+    {
+      "id": "ui-policy-options",
+      "kind": "settings",
+      "statement": "allowuserwidgets and allowunitcontrolwidgets control whether user widgets load and may control units; replay/spectator handling can override those defaults.",
+      "evidence": [
+        {
+          "path": "rapid/luaui/barwidgets.lua",
+          "line": 42,
+          "symbol": "widget policy options"
+        },
+        {
+          "path": "rapid/luaui/barwidgets.lua",
+          "line": 368,
+          "symbol": "widget loading policy"
+        },
+        {
+          "path": "rapid/luaui/barwidgets.lua",
+          "line": 615,
+          "symbol": "unit control capability"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "ui",
+        "settings"
+      ]
+    },
+    {
+      "id": "resource-setup",
+      "kind": "economy",
+      "statement": "The synced team resource gadget derives starting resources and storage from mod options, coop size, team multiplier, and commander storage, then writes engine team resources.",
+      "evidence": [
+        {
+          "path": "rapid/luarules/gadgets/game_team_resources.lua",
+          "line": 37,
+          "symbol": "setup"
+        },
+        {
+          "path": "rapid/luarules/gadgets/game_team_resources.lua",
+          "line": 68,
+          "symbol": "resource calculation"
+        },
+        {
+          "path": "rapid/luarules/gadgets/game_team_resources.lua",
+          "line": 81,
+          "symbol": "Spring.SetTeamResource"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "resources",
+        "startup"
+      ]
+    },
+    {
+      "id": "reclaim-step",
+      "kind": "reclaim",
+      "statement": "The reclaim fix indexes UnitDef reclaim speed and FeatureDef resource/reclaim time, then adjusts negative feature build steps and preserves reclaim fraction across wreck-to-heap replacement.",
+      "evidence": [
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "line": 29,
+          "symbol": "definition indexes"
+        },
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "line": 53,
+          "symbol": "gadget:AllowFeatureBuildStep"
+        },
+        {
+          "path": "rapid/luarules/gadgets/unit_reclaim_fix.lua",
+          "line": 81,
+          "symbol": "gadget:FeatureDestroyed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "reclaim",
+        "features"
+      ]
+    },
+    {
+      "id": "ui-reclaim",
+      "kind": "ui",
+      "statement": "Smart Area Reclaim reads visible feature resources, filters targets, avoids duplicate queued orders, and submits concrete CMD.RECLAIM orders.",
+      "evidence": [
+        {
+          "path": "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+          "line": 182,
+          "symbol": "GiveOrderToUnit"
+        },
+        {
+          "path": "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+          "line": 190,
+          "symbol": "storeReclaimOrders"
+        },
+        {
+          "path": "rapid/luaui/widgets/unit_smart_area_reclaim.lua",
+          "line": 280,
+          "symbol": "feature classification"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "reclaim",
+        "ui"
+      ]
+    },
+    {
+      "id": "ai-registry",
+      "kind": "ai",
+      "statement": "The package advertises SimpleAI, SimpleDefenderAI, SimpleConstructorAI, ScavengersAI, STAI, Shard, and RaptorsAI.",
+      "evidence": [
+        {
+          "path": "rapid/luaai.lua",
+          "line": 10,
+          "symbol": "AI registry"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "ai"
+      ]
+    },
+    {
+      "id": "simple-ai-control",
+      "kind": "ai",
+      "statement": "SimpleAI runs in synced code, reads economy and unit state, and issues engine build, reclaim, repair, move, and combat commands.",
+      "evidence": [
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "line": 319,
+          "symbol": "SimpleConstructionProjectSelection"
+        },
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "line": 411,
+          "symbol": "CMD_RECLAIM"
+        },
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "line": 419,
+          "symbol": "CMD_REPAIR"
+        },
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "line": 482,
+          "symbol": "gadget:GameFrame"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "ai",
+        "commands"
+      ]
+    },
+    {
+      "id": "simple-ai-resource-boost",
+      "kind": "ai",
+      "statement": "SimpleAI raises current metal or energy to 25 percent of storage when it falls below 20 percent; this is AI-specific synced behavior.",
+      "evidence": [
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "line": 490,
+          "symbol": "resource sample"
+        },
+        {
+          "path": "rapid/luarules/gadgets/ai_simpleai.lua",
+          "line": 493,
+          "symbol": "resource boost"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "ai",
+        "resources"
+      ]
+    },
+    {
+      "id": "fixture-synced",
+      "kind": "fixture",
+      "statement": "The tactical fixture exits outside synced LuaRules and mutates state only after its explicit enable option and team checks pass.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 14,
+          "symbol": "synced guard"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 380,
+          "symbol": "seed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "synced"
+      ]
+    },
+    {
+      "id": "fixture-roles",
+      "kind": "fixture",
+      "statement": "The fixture creates armck builder, armfark second builder, armcom cloak actor, damaged armflash, armlab factory, armflea reclaim target, and enemy corak, then makes every unit passive before readiness.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 281,
+          "symbol": "setPassive"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 432,
+          "symbol": "role creation"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "roles"
+      ]
+    },
+    {
+      "id": "fixture-features",
+      "kind": "fixture",
+      "statement": "The fixture creates one armflash_dead direct reclaim target and two armck_dead area targets under Gaia ownership.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 445,
+          "symbol": "feature creation"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "features",
+        "reclaim"
+      ]
+    },
+    {
+      "id": "fixture-resources",
+      "kind": "fixture",
+      "statement": "The fixture sets metal and energy storage to 10,000 and current levels to 8,000, then requires finite successful readback before site selection.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 24,
+          "symbol": "resource constants"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 450,
+          "symbol": "resource setup"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "resources"
+      ]
+    },
+    {
+      "id": "fixture-site-readiness",
+      "kind": "fixture",
+      "statement": "A construction site becomes ready only after engine normalization, positive TestBuildOrder with no blocking feature ID, and three consecutive valid frames.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 85,
+          "symbol": "clearBuildOrder"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 90,
+          "symbol": "findBuildSite"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 181,
+          "symbol": "readiness"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "build",
+        "site-lifetime"
+      ]
+    },
+    {
+      "id": "fixture-site-horizon",
+      "kind": "fixture",
+      "statement": "The site has an 18,000-frame horizon; expiry or loss after readiness emits failure and destroys all fixture-created units and features.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 29,
+          "symbol": "SITE_LIFETIME_HORIZON_FRAMES"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 141,
+          "symbol": "advanceConstructionSite"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 289,
+          "symbol": "cleanup"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "site-lifetime",
+        "cleanup"
+      ]
+    },
+    {
+      "id": "fixture-claim",
+      "kind": "fixture",
+      "statement": "Only an armsolar created for the controlled team by the selected builder at the selected position claims and retires the site.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 254,
+          "symbol": "gadget:UnitCreated"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "build",
+        "claim"
+      ]
+    },
+    {
+      "id": "fixture-repair-fence",
+      "kind": "fixture",
+      "statement": "The fixture creates and holds 50 percent damage only after the builder is idle; it releases that precondition when the exact selected armsolar build enters the queue.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 204,
+          "symbol": "exactSelectedBuild"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 213,
+          "symbol": "advanceRepairPrecondition"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "repair",
+        "build"
+      ]
+    },
+    {
+      "id": "fixture-readback",
+      "kind": "fixture",
+      "statement": "The trace is capped at 1,024 records and samples every 15 frames, reporting unit/feature state, team economy, command queues, and factory production.",
+      "evidence": [
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 22,
+          "symbol": "trace bounds"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 331,
+          "symbol": "unitSummary"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 345,
+          "symbol": "featureSummary"
+        },
+        {
+          "path": "fixture/LuaRules/Gadgets/highbar_barc_tactical_passive_fixture.lua",
+          "line": 357,
+          "symbol": "emitTrace"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "readback"
+      ]
+    },
+    {
+      "id": "fixture-tests-controlled",
+      "kind": "evidence",
+      "statement": "The fixture test replaces Spring APIs with controlled Lua functions and covers positive, obstruction, rollover, post-ready loss, claim, repair precondition, and expiry logic. It is source-level controlled evidence, not native engine proof.",
+      "evidence": [
+        {
+          "path": "fixture/tests/test_post_setup_construction_site.lua",
+          "line": 19,
+          "symbol": "controlled globals"
+        },
+        {
+          "path": "fixture/tests/test_post_setup_construction_site.lua",
+          "line": 104,
+          "symbol": "fixture load"
+        },
+        {
+          "path": "fixture/tests/test_post_setup_construction_site.lua",
+          "line": 145,
+          "symbol": "mode assertions"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "fixture",
+        "tests"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Which exact Recoil engine build and map are paired with this BAR package in the native tactical run? Engine call-in behavior and map buildability are external to the game archive.",
+    "What native run evidence binds runtime numeric UnitDef/FeatureDef IDs to the source names used by the fixture? The source correctly resolves names at runtime, while the controlled test uses synthetic IDs.",
+    "Does the native run demonstrate actual repair completion, or only the fixture damage precondition and release when the selected build command appears?",
+    "Does the native run demonstrate reclaim progress and resource transfer for direct feature, area feature, and unit reclaim targets, including the reclaim-fix gadget path?",
+    "What external controller parses highbar_barc_tactical_trace and enforces trace count, line size, timeout, and expected sequence?",
+    "How is fixture cleanup guaranteed after a successful claimed/observed run? The fixture explicitly cleans abort, expiry, and post-ready loss paths; the containing disposable runtime may own normal teardown.",
+    "Which mod option/start-script values besides the three fixture options are fixed for qualification, especially faction inclusion, start resources, game mode, and widget policy?",
+    "Which UI observations are required for operator presentation, and which decisions must rely only on synced/native readback?"
+  ]
+}

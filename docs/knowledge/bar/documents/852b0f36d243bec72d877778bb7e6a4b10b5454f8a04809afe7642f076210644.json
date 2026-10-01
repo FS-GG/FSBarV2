@@ -1,0 +1,27 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "revision": "25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "tree": "3c4b18de8403168ce9ca513c491409b919384f49",
+    "status": "historical source census correction"
+  },
+  "components": [],
+  "flows": [],
+  "facts": [
+    {
+      "id": "rml-owned-header-resulting-census-25f6",
+      "kind": "source-conflict",
+      "statement": "The resulting 25f6 source contains 15 owned headers that directly include RmlUi, and all 15 include cstdint first. The 25f6 commit changes 14 of them; RmlUi_SystemInterface.h is the fifteenth and inherited its direct cstdint include from parent 7bba. This corrects the earlier shorthand that described the resulting census as 14.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_SystemInterface.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/Backends/RmlUi_VFSFileInterface.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Rml/SVG/ElementSVG.h", "line": 32, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/RmlSolLua.h", "line": 34, "symbol": "cstdint"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["rmlui", "cstdint", "15-resulting-headers", "14-changed-files", "correction"]
+    }
+  ],
+  "open_questions": []
+}

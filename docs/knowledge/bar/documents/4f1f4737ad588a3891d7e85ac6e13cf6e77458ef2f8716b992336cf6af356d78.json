@@ -1,0 +1,93 @@
+{
+  "source": {
+    "name": "FSBar",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/FSBar-b43712897f25ab6ee1d7efd679f797f58039eb65",
+    "revision": "b43712897f25ab6ee1d7efd679f797f58039eb65",
+    "tree": "961190a51123e37a6fd0d654a1a64e48dd1c3b60",
+    "protectedRef": "FS-GG/FSBarV2 main",
+    "fileHashes": {
+      "src/Broker.Protocol/LiveControl.fs": "cff0403afed8d821014a8e5ea80d1897840c802cbb66532b0a280e84f51ad907",
+      "tests/Broker.Browser.Live.Tests/LiveTests.fs": "665491dacc6e41a9cdade7abc870a4358febad98b2545227970479f16ea76e9b"
+    }
+  },
+  "components": [
+    {
+      "id": "factory-production-bounded-expansion-current",
+      "title": "Bounded FactoryProduce expansion",
+      "paths": ["src/Broker.Protocol/LiveControl.fs", "tests/Broker.Browser.Live.Tests/LiveTests.fs"],
+      "summary": "Validates the uint32 count and actors-times-count as uint64 before int conversion or child allocation, then expands admitted work into count-one children with an upper bound of 64."
+    },
+    {
+      "id": "factory-production-policy-admission-current",
+      "title": "Typed factory policy admission",
+      "paths": ["src/Broker.Protocol/LiveControl.fs", "tests/Broker.Browser.Live.Tests/LiveTests.fs"],
+      "summary": "Keeps typed Append, Replace and RejectIfBusy conflict policies while emitting factory native options zero; Replace and RejectIfBusy require an empty complete per-actor production queue."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-count-validation-before-expansion-current",
+      "title": "Wide count validation to bounded children",
+      "steps": [
+        {"path": "src/Broker.Protocol/LiveControl.fs", "symbol": "admitTactical", "line": 857, "description": "Compute per-actor and total child counts in uint64 and require the advertised maximum and total bound of 64 before converting to int."},
+        {"path": "src/Broker.Protocol/LiveControl.fs", "symbol": "factoryPolicyAllows", "line": 940, "description": "For every actor, require the exact queue revision and complete queue; Append remains allowed while Replace and RejectIfBusy require no entries."},
+        {"path": "src/Broker.Protocol/LiveControl.fs", "symbol": "translateTactical FactoryProduce", "line": 802, "description": "Translate each admitted child to count one and native BuildUnit options zero while retaining the typed conflict policy."}
+      ]
+    },
+    {
+      "id": "factory-refusal-regression-current",
+      "title": "Factory policy and count refusal regression",
+      "steps": [
+        {"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "symbol": "factory production policy cases", "line": 475, "description": "Assert nonempty Replace and RejectIfBusy produce correlated terminal refusals with no native delivery, including multi-actor fail-closed behavior."},
+        {"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "symbol": "factory production bounded count cases", "line": 498, "description": "Refuse cap-plus-one, zero, UInt32.MaxValue and actors-times-count above 64 before expansion."},
+        {"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "symbol": "factory production admitted policy cases", "line": 525, "description": "Assert Append and empty Replace retain typed conflict policies while emitting options-zero, count-one native children."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-count-wide-before-int-current",
+      "kind": "safety",
+      "statement": "FactoryProduce validates positive count, the advertised maximum and actors-times-count no greater than 64 in uint64 before int conversion and child expansion.",
+      "evidence": [{"path": "src/Broker.Protocol/LiveControl.fs", "line": 857, "symbol": "admitTactical"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "count", "overflow", "bounded-expansion"]
+    },
+    {
+      "id": "factory-policy-per-actor-fail-closed-current",
+      "kind": "admission",
+      "statement": "Each actor must match the current descriptor and queue revision; one actor whose production queue violates Replace or RejectIfBusy causes the parent to refuse before any delivery.",
+      "evidence": [{"path": "src/Broker.Protocol/LiveControl.fs", "line": 940, "symbol": "factoryPolicyAllows"}, {"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "line": 488, "symbol": "multiActorReplace"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "multi-actor", "atomic-refusal"]
+    },
+    {
+      "id": "factory-policy-native-options-independent-current",
+      "kind": "mapping",
+      "statement": "FactoryProduce translates all admitted policies to native BuildUnit options zero while preserving Append, Replace or RejectIfBusy in the broker conflict policy and tactical action.",
+      "evidence": [{"path": "src/Broker.Protocol/LiveControl.fs", "line": 802, "symbol": "translateTactical FactoryProduce"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "options-zero", "typed-policy"]
+    },
+    {
+      "id": "factory-count-extremes-regression-current",
+      "kind": "test-coverage",
+      "statement": "The broker regression refuses zero, cap-plus-one, UInt32.MaxValue and a wide multi-actor product before native delivery, and checks complete correlated refusal for nonempty policy conflicts.",
+      "evidence": [{"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "line": 475, "symbol": "factory policy refusal cases"}, {"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "line": 498, "symbol": "factory count refusal cases"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "regression", "zero-write", "bounds"]
+    },
+    {
+      "id": "factory-broker-tests-not-native-acceptance-current",
+      "kind": "acceptance-boundary",
+      "statement": "These source tests demonstrate broker validation and delivery shape; they do not establish that a genuine game accepted or physically applied the production order.",
+      "evidence": [{"path": "tests/Broker.Browser.Live.Tests/LiveTests.fs", "line": 525, "symbol": "factory admitted policy cases"}],
+      "confidence": "inference",
+      "tags": ["factory-production", "test-boundary", "native-unqualified"]
+    }
+  ],
+  "open_questions": [
+    "Will protected-pair native qualification confirm Append and empty Replace against a genuinely observed production queue?",
+    "What product behavior should replace the current fail-closed refusal if atomic nonempty Replace is later implemented?"
+  ]
+}

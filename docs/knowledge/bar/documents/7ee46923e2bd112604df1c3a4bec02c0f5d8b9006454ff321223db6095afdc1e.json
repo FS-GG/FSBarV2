@@ -1,0 +1,598 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Safe complete audit; explicitly excludes raw runtime payloads and does not replace immutable earlier evidence.",
+          "section": "complete document",
+          "sourceProof": null,
+          "summary": "Full created audit document retained byte-for-byte.",
+          "verify": true
+        }
+      ],
+      "id": "audit.bar-development-status-design-improvement-20261001",
+      "kind": "decision",
+      "scope": {
+        "applicability": "complete safe audit document and current design direction; not a runtime, delivery, installation, or acceptance result",
+        "artifacts": [],
+        "component": "comprehensive development audit",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "The complete independent audit retains architecture, all encountered failure classes, successful repairs, five new findings, prioritized existing-roadmap work, development-practice improvements, and explicit unknowns. It selects the original useful-play product on unmodified stock Recoil 2639 with the ABI-matched HighBar plugin and bounded production Lua observer. Source and artifact work is substantial, but Count1 and all six useful-play journeys remain unaccepted. Custom atomic replacement remains optional, inactive, and unqualified.",
+      "supersedes": [],
+      "tags": [
+        "audit",
+        "current-status",
+        "architecture",
+        "design-improvement",
+        "native-0-of-6"
+      ],
+      "title": "Comprehensive BAR development audit fixes the current useful-play frontier"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Audit summary without raw logs or process identities.",
+          "section": "Failures, repairs and what actually worked",
+          "sourceProof": null,
+          "summary": "Third attempt outcome and source diagnosis.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "2629cfb43c183c8196cf6018ceed7fd7c0999e43a02f39064a1ffbda06a39fa7",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-comprehensive-audit-source-successors-20261001.md",
+          "scope": "Safe successor note; no execution vector.",
+          "section": "Third genuine attempt",
+          "sourceProof": null,
+          "summary": "Third failure and scheme-2 observation boundary.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-count1-third-readiness-failure",
+      "kind": "incident",
+      "scope": {
+        "applicability": "third attempt only; cleanup is attempt-scoped and product/native acceptance remains open",
+        "artifacts": [],
+        "component": "third genuine Count1 failure",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The third genuine attempt ended before browser start. Scanner layout and C interface metadata repairs worked: the stock reader emitted complete nonempty scheme-2 production and rally samples. Host readiness still failed because an early generally valid tactical snapshot could precede a usable selected factory. Every acquired role was cleaned up and this attempt is SETTLED; the first historical cleanup remains UNKNOWN. The result proves observation transport progress only: it does not establish browser control, exact factory quantity, Count1, or gameplay.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "scheme-2",
+        "readiness",
+        "browser-not-started",
+        "cleanup-settled",
+        "native-0-of-6"
+      ],
+      "title": "Third Count1 attempt reached scheme-2 samples but failed before browser start"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:HighBarV3/src/circuit/grpc/CommandDispatch.cpp",
+          "scope": "Registered protected HighBar source only.",
+          "section": "line:57",
+          "sourceProof": {
+            "line": 57,
+            "path": "src/circuit/grpc/CommandDispatch.cpp",
+            "revision": "f08555372168cd911f438de0be5ec2898fd1cfb5",
+            "sha256": "837d18a3753fbe04691df6c22a07b30f7c4c5a8b1772ad7c37bf9e75abf22f5f",
+            "source": "HighBarV3"
+          },
+          "summary": "Generic Append maps to SHIFT option 32.",
+          "verify": false
+        },
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:beyond-all-reason/spring (Recoil engine)/rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "scope": "Exact registered official stock source only.",
+          "section": "line:146",
+          "sourceProof": {
+            "line": 146,
+            "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+            "revision": "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+            "sha256": "14725216928e245703cf38c7f7adab0c6700c597ddd7a9b59086d7f07e7c4d3b",
+            "source": "beyond-all-reason/spring (Recoil engine)"
+          },
+          "summary": "Stock factory quantity multiplier treats SHIFT as five.",
+          "verify": false
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Source conclusion only.",
+          "section": "F1 \u2014 P0: stock factory Count1 is translated to SHIFT\u00d75",
+          "sourceProof": null,
+          "summary": "Cross-source causal finding and bounded repair.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "2629cfb43c183c8196cf6018ceed7fd7c0999e43a02f39064a1ffbda06a39fa7",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-comprehensive-audit-source-successors-20261001.md",
+          "scope": "Candidate source only; not installed or executed.",
+          "section": "Factory quantity",
+          "sourceProof": null,
+          "summary": "HighBar 886503 source candidate and tests.",
+          "verify": true
+        }
+      ],
+      "id": "architecture.stock-synced-append-options",
+      "kind": "architecture",
+      "scope": {
+        "applicability": "source semantics and source candidate only; no observed produced quantity or runtime acceptance",
+        "artifacts": [],
+        "component": "stock factory command translation",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+          "886503ffce9e78a43a56654aa64a7ca028a6d03d"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The protected HighBar source maps generic Append to SHIFT option 32 and uses that mapping in the stock FactoryProduce Count1 branch. Exact stock Recoil 2639 multiplies factory count by five when SHIFT is set. Therefore the mapping is observed source but is not an accepted semantic recipe for factory quantity. HighBar candidate 886503 maps only stock FactoryProduce Count1 to options zero while preserving ordinary tactical Append 32 and Replace refusal; it is tested source only, not delivered or native-qualified. No run observed five produced units.",
+      "supersedes": [
+        "b04fd9c7efa2be86b90ce452e9880e1aa5d3e73c8660d0becea64ef72fad4b8b"
+      ],
+      "tags": [
+        "stock",
+        "factory",
+        "Count1",
+        "SHIFT",
+        "quantity",
+        "source-candidate"
+      ],
+      "title": "Generic Append option 32 is unsafe for stock factory Count1 quantity"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Attempt-scoped outcome; no broad runtime claim.",
+          "section": "Failures, repairs and what actually worked",
+          "sourceProof": null,
+          "summary": "Metadata and settings repairs versus third-attempt frontier.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "2629cfb43c183c8196cf6018ceed7fd7c0999e43a02f39064a1ffbda06a39fa7",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-comprehensive-audit-source-successors-20261001.md",
+          "scope": "Safe summarized evidence.",
+          "section": "Third genuine attempt",
+          "sourceProof": null,
+          "summary": "Metadata repair absence-of-prior-failure and remaining readiness failure.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-ai-interface-metadata-successor-source-ready",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "metadata repair observed effective in the third attempt; readiness and product acceptance remain open",
+        "artifacts": [],
+        "component": "AI metadata and immutable settings successor",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The third genuine attempt did not reproduce the missing C InterfaceInfo condition, so the accepted metadata placement repaired that earlier discovery failure. It also retained immutable admitted settings rather than the blocked runtime-mutated predecessor. The attempt still failed before browser start on readiness selection. This supersedes the metadata-packet-blocked frontier but does not accept Count1, installed identity, or any journey.",
+      "supersedes": [
+        "a3651e1f0004dbb93cf6257021b083a280787cc855e13b893f6811ac6db0721d"
+      ],
+      "tags": [
+        "stock",
+        "ai-interface",
+        "metadata",
+        "immutable-input",
+        "third-attempt",
+        "native-open"
+      ],
+      "title": "Metadata repair worked in the third attempt; later source joins remain open"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Audit source finding.",
+          "section": "F2 \u2014 P0: readiness predicate and selected projection can disagree",
+          "sourceProof": null,
+          "summary": "Original source hazard and required shared-selection design.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "2629cfb43c183c8196cf6018ceed7fd7c0999e43a02f39064a1ffbda06a39fa7",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-comprehensive-audit-source-successors-20261001.md",
+          "scope": "Source-only successor; no protected delivery or native execution.",
+          "section": "Shared selection",
+          "sourceProof": null,
+          "summary": "Blocked counterexample, successor and READY review identities.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-shared-factory-selection-source-ready",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "source review readiness only",
+        "artifacts": [],
+        "component": "FSBar stock readiness and materialization selection",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "9a61a4eb863f6749c6da975d57e7988fcf131afe",
+          "f64c5fc95c7b4fe9d2f3c81e2798444c63c92a69"
+        ],
+        "runs": []
+      },
+      "state": "candidate",
+      "statement": "FSBar candidate f64c5fc95c7b4fe9d2f3c81e2798444c63c92a69 replaces the divergent readiness predicate and later first-factory search with one retained immutable selection. Independent review 95957 accepts the bounded source repair. Protected delivery, rebuilt managed host, helper and packet rebind, genuine readiness, browser launch, Count1, and all six journeys remain open.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "readiness",
+        "shared-selection",
+        "immutable-selection",
+        "review-ready",
+        "native-open"
+      ],
+      "title": "Shared immutable factory selection successor is review ready"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Audit source conclusion.",
+          "section": "F1 \u2014 P0: stock factory Count1 is translated to SHIFT\u00d75",
+          "sourceProof": null,
+          "summary": "Defect and smallest repair boundary.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "2629cfb43c183c8196cf6018ceed7fd7c0999e43a02f39064a1ffbda06a39fa7",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-comprehensive-audit-source-successors-20261001.md",
+          "scope": "No installed artifact or native execution.",
+          "section": "Factory quantity",
+          "sourceProof": null,
+          "summary": "Candidate identity and three-test source result.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-factory-count1-options-source-candidate",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "source candidate and local build evidence only",
+        "artifacts": [],
+        "component": "HighBar stock factory Count1 option translation",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "886503ffce9e78a43a56654aa64a7ca028a6d03d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "candidate",
+      "statement": "HighBar candidate 886503ffce9e78a43a56654aa64a7ca028a6d03d maps only stock FactoryProduce Count1 to native options zero, preserves ordinary tactical Append SHIFT and existing refusal semantics, and passes three focused plugin tests. It proves the proposed source translation and build path. Protected delivery, exact protected artifact rebuild, helper/packet rebind, and genuine quantity observation remain open.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "factory",
+        "Count1",
+        "options-zero",
+        "source-tested",
+        "native-open"
+      ],
+      "title": "Stock FactoryProduce Count1 options repair is source tested"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Plan only; not completed work.",
+          "section": "Prioritized existing-roadmap work and real joins",
+          "sourceProof": null,
+          "summary": "Prioritized existing items and dependency graph.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Development guidance, not runtime evidence.",
+          "section": "Improvements to development practice",
+          "sourceProof": null,
+          "summary": "Reusable testing, custody, diagnostic and integration improvements.",
+          "verify": true
+        }
+      ],
+      "id": "decision.stock-post-audit-owner-priorities",
+      "kind": "decision",
+      "scope": {
+        "applicability": "planned existing owner actions; effects and native admission remain root-controlled",
+        "artifacts": [],
+        "component": "post-audit implementation sequencing",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "planned",
+      "statement": "Execute the existing HighBar .5b quantity repair and FSBar .5f shared-selection repair in parallel. The private helper .5f lane must separate immutable settings from per-attempt writable output, retain exact discovery and managed-DLL bindings, and add bounded private failure stages. Root then performs one coherent protected-source/artifact/helper/packet join and one Count1 prerequisite operation. Only after that result may the six existing pointer, keyboard, and independently imported tactical journeys proceed. Do not patch Recoil, activate custom FR, create a second completion ledger, or infer efficiency.",
+      "supersedes": [],
+      "tags": [
+        "priority",
+        "owner-actions",
+        "single-join",
+        "immutable-inputs",
+        "diagnostics",
+        "no-engine-fork"
+      ],
+      "title": "Post-audit work stays in existing owner lanes and joins once"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Audit of registered corpus selection; no runtime inference.",
+          "section": "Architecture and acceptance boundaries",
+          "sourceProof": null,
+          "summary": "Stock/custom lineage and current query-selection distinction.",
+          "verify": true
+        }
+      ],
+      "id": "question.stock-default-source-selection",
+      "kind": "question",
+      "scope": {
+        "applicability": "search coverage only; not runtime engine selection",
+        "artifacts": [],
+        "component": "BAR source-index default Recoil selection",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "Recoil"
+        ],
+        "revisions": [
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+          "7555c836e0457b04100b20149497d088dd9c2ca7"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "The exact stock 2639 revision is registered, its bounded manifest and six indexed files validate, and exact stock queries can select it explicitly. It is not safe to make it the broad default yet because the current 2639 corpus is intentionally limited to six files while the current 7555 corpus has 3,240 indexed files; switching would silently remove broad engine search coverage. Register and validate a sufficiently complete bounded 2639 manifest, preserve 7555 as historical optional custom lineage, then deliberately change the selection. Neither selection proves an installed or loaded runtime.",
+      "supersedes": [],
+      "tags": [
+        "source-index",
+        "default-selection",
+        "stock-2639",
+        "custom-7555",
+        "coverage-gap"
+      ],
+      "title": "When can exact stock Recoil 2639 become the default search selection?"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-development-status-design-improvement-audit-55862dfdd38acff15efa087bae52ff978523ce466f8dcab3ed5d585a2ce07aba.md",
+          "scope": "Current frontier, not runtime acceptance.",
+          "section": "Decision and current frontier",
+          "sourceProof": null,
+          "summary": "Audit verdict and next bounded joins.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "2629cfb43c183c8196cf6018ceed7fd7c0999e43a02f39064a1ffbda06a39fa7",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-comprehensive-audit-source-successors-20261001.md",
+          "scope": "Safe successor evidence.",
+          "section": "Current frontier",
+          "sourceProof": null,
+          "summary": "Latest source candidates and unchanged native gates.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current source and native frontier after comprehensive audit",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "886503ffce9e78a43a56654aa64a7ca028a6d03d",
+          "f64c5fc95c7b4fe9d2f3c81e2798444c63c92a69",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Three genuine Count1 attempts ended before browser start. The third shows complete scheme-2 production and rally observation and settled cleanup, but Count1 remains unaccepted. Before another genuine operation, protect and join HighBar 886503 factory options and FSBar f64c5 shared selection, rebuild exact plugin and managed host artifacts, rebind helper and packet from immutable settings, and independently verify the coherent packet. Then run one bounded Count1 smoke with actual browser input, correlated child lifecycle, causal queue/product evidence, loaded identities, and separate cleanup truth. All six useful-play journeys remain 0/6; custom FR, resilience/scale and publication remain open.",
+      "supersedes": [
+        "c88e7ffd030c38c67bc5eee5f427b9da43dcfb2c2490d0c92c5505a2dfce8116"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "Count1",
+        "browser-not-started",
+        "scheme-2",
+        "native-0-of-6"
+      ],
+      "title": "What remains after the comprehensive audit and two source successors?"
+    }
+  ],
+  "origin": "BAR comprehensive development status/design improvement audit and bounded source-successor maintenance; full safe audit retained; corpora unchanged",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

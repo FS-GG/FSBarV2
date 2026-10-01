@@ -1,0 +1,69 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-079396c7e3606795e68ef6003264c258d607d10b",
+    "revision": "079396c7e3606795e68ef6003264c258d607d10b",
+    "tree": "23f84900a5b2c4077c226895b0a3b5dc3f579b1a",
+    "status": "historical source with reported plugin-only V2 artifact rebuild; native acceptance absent"
+  },
+  "components": [
+    {
+      "id": "highbar-plugin-v2-artifact-outcome-0793",
+      "title": "Plugin V2 artifact identity and source route",
+      "paths": ["CMakeLists.txt", "src/circuit/module/GrpcGatewayModule.cpp", "src/circuit/grpc/CoordinatorClient.cpp", "tests/unit/factory_replacement_qualification_test.cc"],
+      "summary": "Connects the independently read back plugin artifact identity with the source path that compiles and transports the corrected engine pin."
+    }
+  ],
+  "flows": [
+    {
+      "id": "highbar-plugin-v2-pin-route-0793",
+      "title": "Corrected pin to rebuilt plugin heartbeat field",
+      "steps": [
+        {"path": "CMakeLists.txt", "symbol": "HIGHBAR_ENGINE_SHA256", "line": 401, "description": "Parse the full engine artifact digest from the configured pin."},
+        {"path": "CMakeLists.txt", "symbol": "SpringHeadlessPin.h", "line": 409, "description": "Generate kEngineReleaseId and kEngineSha256 for compilation into the adapter."},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "coordinator_engine_sha256_", "line": 557, "description": "Copy the compiled digest into coordinator client state."},
+        {"path": "src/circuit/grpc/CoordinatorClient.cpp", "symbol": "CoordinatorClient::SendHeartbeat", "line": 394, "description": "Send the stored compiled digest in the coordinator heartbeat."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "highbar-plugin-v2-rebuild-reported-0793",
+      "kind": "reported-status",
+      "statement": "The corrected independent root receipt at 2026-10-01T03:38:22.486019+00:00 reports a successful plugin-only V2 rebuild from product 079396c and custody 202284d with Recoil 1ec00cf. The rebuilt libSkirmishAI.so has SHA-256 1685c183d73c55c493af1ca41b4fb0e1d0b6be245aa69fa981d7aaea182d9374 and contains release barc-fr5-peer-observer-1ec00cf plus engine artifact digest 80adf61a42fd2ff156b0d96e61e52ed596c9aa624b7d9f2d77d86c134a8f1301.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 409, "symbol": "SpringHeadlessPin.h"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 36, "symbol": "kEngineReleaseId"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 37, "symbol": "kEngineSha256"}
+      ],
+      "confidence": "reported",
+      "tags": ["plugin-v2", "artifact-sha256", "compiled-pin", "independent-readback", "079396c"]
+    },
+    {
+      "id": "highbar-plugin-v2-build-preservation-reported-0793",
+      "kind": "reported-status",
+      "statement": "The same corrected receipt reports all 3,042 prior build6 manifest entries unchanged and all five actual adapter tests passing during the plugin-only rebuild. The focused qualification test artifact has SHA-256 62ead5582d2dcb0495135d1e26d844e6e426628a6916fd9afc40cb5598667452.",
+      "evidence": [
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 36, "symbol": "compiled engine pin assertions"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 49, "symbol": "qualification cases"}
+      ],
+      "confidence": "reported",
+      "tags": ["plugin-only-rebuild", "3042-preserved", "five-adapter-tests", "build-evidence"]
+    },
+    {
+      "id": "highbar-plugin-v2-native-boundary-0793",
+      "kind": "acceptance-boundary",
+      "statement": "This outcome verifies a rebuilt artifact identity and adapter tests only. It does not show coordinator receipt, engine load, game execution, Count 1, 2, or 4 behavior, paired-peer agreement, callback/refund behavior, cleanup, or useful play. Native acceptance remains 0 of 6, the installed/current Recoil pointer remains 7555c83, and the predecessor afb1f06 plugin remains unadmitted.",
+      "evidence": [
+        {"path": "src/circuit/grpc/CoordinatorClient.cpp", "line": 394, "symbol": "set_engine_sha256"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 49, "symbol": "source qualification cases"}
+      ],
+      "confidence": "reported",
+      "tags": ["native-0-of-6", "runtime-unknown", "no-install", "predecessor-unadmitted"]
+    }
+  ],
+  "open_questions": [
+    "Will the receiver observe the rebuilt plugin's 80ad engine artifact digest on the first heartbeat?",
+    "Will protected native Count 1, 2, and 4 plus paired-peer lifecycle coverage pass with this artifact?"
+  ]
+}

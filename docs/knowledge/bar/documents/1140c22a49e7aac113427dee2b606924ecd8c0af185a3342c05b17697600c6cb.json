@@ -1,0 +1,374 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:26-34",
+          "sourceProof": null,
+          "summary": "B1 identifies the real host/helper/normalizer interface mismatches and the independently reproduced no-output CLI behavior.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-bootstrap-cli-interface-mismatch",
+      "kind": "incident",
+      "scope": {
+        "applicability": "the reviewed frozen 818c/937c/helper candidate join only",
+        "artifacts": [],
+        "component": "stock smoke bootstrap and normalizer interface",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "At the reviewed frozen candidates, helper launch variables and ready schema do not match the real FSBar host CLI or published schema; append-descriptor and route-enable requirements are not supplied; and the invoked normalizer CLI does not exist. The exact alleged CLI returned success with nonexistent inputs while creating no output. Passing isolated tests therefore did not establish a joined executable route.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "negative-finding",
+        "bootstrap",
+        "CLI",
+        "interface"
+      ],
+      "title": "Stock smoke bootstrap and normalizer interfaces were not executable as joined"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:36-42",
+          "sourceProof": null,
+          "summary": "B2 establishes the two-writer race, live-read custody bypass, unused capture-writer check, and required single-writer phase order.",
+          "verify": true
+        }
+      ],
+      "id": "constraint.stock-evidence-single-writer-custody-order",
+      "kind": "constraint",
+      "scope": {
+        "applicability": "all successors to the reviewed stock trace handoff candidates",
+        "artifacts": [],
+        "component": "stock evidence custody and phase ordering",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The reviewed browser path reads live engine and host files and writes both capture and final output before helper authentication and prefix freeze, while the helper later attempts to write that same final output. Qualification must instead use one final-output writer after authenticated engine, host, and browser prefixes are complete and frozen; bounded attributable capture must precede normalization.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "custody",
+        "single-writer",
+        "phase-order",
+        "negative-finding"
+      ],
+      "title": "Authenticated stock evidence requires frozen inputs and one final writer"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:44-52",
+          "sourceProof": null,
+          "summary": "B3 records reproduced valid-lifecycle refusal, foreign-correlation acceptance, and codec-default refusal plus the complete correlation boundary.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-final-join-lifecycle-correlation-defaults",
+      "kind": "incident",
+      "scope": {
+        "applicability": "the reviewed FSBar normalizer candidate and its successors",
+        "artifacts": [],
+        "component": "stock final lifecycle join",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The reviewed normalizer rejects a legitimate multi-stage lifecycle as ambiguous, accepts a foreign browser batch/correlation/channel as APPLIED, and rejects legal protobuf default-zero forms. Joined evidence must select the terminal record by the actual host wire identity, retain intermediate lifecycle rows, canonicalize both sides through the production codec, preserve truthful rejection or unknown status, and keep native command index distinct from browser child index.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "lifecycle",
+        "correlation",
+        "codec-defaults",
+        "negative-finding"
+      ],
+      "title": "Synthetic one-row join tests hid lifecycle, correlation, and codec-default failures"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:54-60",
+          "sourceProof": null,
+          "summary": "B4 reports actual allocation and throwing-writer reproduction, descriptor custody risk, ignored failure, and the required nonthrowing visible latch.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-trace-exception-failure-latch",
+      "kind": "incident",
+      "scope": {
+        "applicability": "the reviewed HighBar trace candidate and its helper health join",
+        "artifacts": [],
+        "component": "HighBar stock trace failure custody",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "At the reviewed HighBar candidate, serialization or allocation can throw before the trace exception boundary, constructor allocation can leak an opened descriptor, and a failed Record can be followed by a successful retry because failure is not permanently latched. Call sites ignore false and no production consumer authenticates failed state, so a valid-looking truncated prefix could qualify while trace I/O also changes command flow. The repair requires RAII ownership, a permanent nonthrowing failure latch visible to custody, second-call refusal, and unchanged command application.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "trace",
+        "exception-safety",
+        "failure-latch",
+        "RAII",
+        "negative-finding"
+      ],
+      "title": "Trace exceptions escaped and did not permanently expose failure"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:62-68",
+          "sourceProof": null,
+          "summary": "B5 records the leader-exit descendant leak, bounded reproduction, and required group-custody cleanup semantics.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-cleanup-leader-exit-descendant",
+      "kind": "incident",
+      "scope": {
+        "applicability": "the reviewed helper supervisor candidate and later native attempts",
+        "artifacts": [],
+        "component": "owned process-group cleanup",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The reviewed helper sends KILL only when waiting for the leader times out. If the leader exits after TERM while an owned descendant ignores TERM, cleanup reports unknown and leaves the descendant alive. An ordinary-process probe reproduced this and then reaped its own process. Cleanup must retain group custody after leader exit, escalate surviving owned members within the KILL budget, and verify settlement while preserving unknown for genuinely unresolved custody.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "cleanup",
+        "process-group",
+        "descendant",
+        "negative-finding"
+      ],
+      "title": "Leader exit did not trigger escalation for a surviving owned descendant"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:3-79",
+          "sourceProof": null,
+          "summary": "The independent review freezes exact inputs, blocks the three-way source join on B1-B5, and defines the required joined phase order.",
+          "verify": true
+        }
+      ],
+      "id": "roadmap.stock-native-trace-handoff-gaps",
+      "kind": "roadmap-gate",
+      "scope": {
+        "applicability": "source gate for the frozen 818c/937c/helper candidate join; no claim about mutable repair worktrees",
+        "artifacts": [],
+        "component": "stock trace and handoff recovery",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "The planned HighBar trace, FSBar harness, and helper candidates now exist at frozen identities, but their three-way source join is blocked by five independently reproduced or source-traced defects: incompatible bootstrap and CLI interfaces; custody ordering and two final writers; incomplete lifecycle/correlation/default handling; nonexception-safe trace failure custody; and descendant cleanup after leader exit. Three owners must produce coherent successors and independent source review must accept the joined interfaces before any root-controlled native attempt. Native acceptance remains 0/6.",
+      "supersedes": [
+        "8d64bd3e266b2acbe79dba71467a21828b187547ed444edc9cf39c23204159a7"
+      ],
+      "tags": [
+        "stock",
+        "source-blocked",
+        "trace",
+        "handoff",
+        "custody",
+        "native-0-of-6"
+      ],
+      "title": "Stock trace three-way source join is blocked on five reviewed repairs"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "1dea1ee708b7ada8d8b966dc421481e2f7bbd108680ca9967c711d63d289925c",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-harness-helper-independent-source-review-20261001.md",
+          "scope": "Immutable independent source review of the exact frozen HighBar, FSBar, and helper candidates; source verdict only, with no native acceptance or runtime selection claim.",
+          "section": "lines:70-92",
+          "sourceProof": null,
+          "summary": "The review defines the repair order, preserves useful source positives, distinguishes initial tests from joined acceptance, and retains all runtime/native gates.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current post-delivery stock gate question; frozen review candidates only",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "818cdebbd564977cb1623b2a4b398853f23f3616",
+          "tree:a7579c3d9df195a9372e8bf8be6f55d1d4495e4c",
+          "937cdb0d3e488f71e9fa62bb29e98545dbdc47e3",
+          "tree:f53d234cb98b00cebc20dab097868dfd4f9c691c",
+          "helper-manifest:5f0bd9836b144cbdf074a332e0acb2297fd540d4f7e9a0ec2f2b77039b28c42a"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Immediate source gates are coherent repairs for the real bootstrap/CLI contract, authenticated single-writer phase ordering, production-codec full-lifecycle correlation, exception-safe visible trace failure custody, and leader-exit descendant cleanup, followed by independent joined source review. Existing runtime gates remain: exact overlay and official executable/plugin discovery, selected and loaded identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, authenticated final reread, cleanup truth, and all six native journeys. Initial isolated test passes are historical evidence only; source join is blocked and native acceptance remains 0/6.",
+      "supersedes": [
+        "e1d41f0bc872e65c1d4705b2033f8de5419e4cd22707d100a82390b3c17a298a"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "source-blocked",
+        "negative-findings",
+        "native-0-of-6"
+      ],
+      "title": "What remains before stock native acceptance after the blocked trace join review?"
+    }
+  ],
+  "origin": "immutable independent review of stock trace, harness, and helper negative findings at frozen source candidates",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

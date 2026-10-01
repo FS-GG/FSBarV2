@@ -1,0 +1,254 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "8af519af1d014663538752dc913663d5eb787f431fec9f8944d9c1b10e54ab25",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-final-source-review-8af519af1d014663538752dc913663d5eb787f431fec9f8944d9c1b10e54ab25.md",
+          "scope": "Exact source/interface review only; no installed, selected or loaded runtime and no native journey acceptance.",
+          "section": "lines:1-89",
+          "sourceProof": null,
+          "summary": "Independent final source review accepts the exact joined HighBar, FSBar and private-helper interfaces, records the focused checks, and keeps native acceptance at 0/6.",
+          "verify": true
+        },
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ef0e26a6e965bfed09abb9fa8b58b7643bb9d927d990cc2794432fe810daf25e",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-owning-readback-ef0e26a6e965bfed09abb9fa8b58b7643bb9d927d990cc2794432fe810daf25e.json",
+          "scope": "Selected public protected-source metadata only; no native artifact or runtime evidence.",
+          "section": "lines:1-26",
+          "sourceProof": null,
+          "summary": "Protected HighBar and FSBar merge identities, tree equality, HighBar hosted run result and accurate FSBar no-workflow status.",
+          "verify": true
+        }
+      ],
+      "id": "roadmap.stock-native-trace-handoff-gaps",
+      "kind": "roadmap-gate",
+      "scope": {
+        "applicability": "supersedes the exact blocked source-join finding; runtime selection and all native journeys remain open",
+        "artifacts": [
+          "helper-manifest:e42dd46fa55fbe43f3f09011e65e397aabc017911cb1b73eebc4e1ff8b5dc758"
+        ],
+        "component": "stock trace, harness and private handoff",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239"
+        ],
+        "runs": [
+          "GitHub Actions 36849458802"
+        ]
+      },
+      "state": "accepted",
+      "statement": "Protected HighBar f08555372168cd911f438de0be5ec2898fd1cfb5 (tree 8f287693d61ff7fcbdbd1e21482c70a09133e2fc) and FSBar 6b9139e83334da903ea6861adb57d97578af2239 (tree b951ac855c227bb938ba3bbf42e0418874ad4057) resolve the previously reviewed trace/harness source blockers. R1 actual O_APPEND descriptor custody, R2 healthy same-inode growing-prefix validation and R3 four-lifecycle/specific Append final-read validation passed; earlier sink-latch B4 and descendant-settlement B5 remain intact. This closes the negative source gate only. Native acceptance remains 0/6.",
+      "supersedes": [
+        "1a98713cb694fc5855935cfac9b572b901c38f4d2507fe7fa52f5e377ac6a1ce"
+      ],
+      "tags": [
+        "stock",
+        "trace",
+        "source-resolved",
+        "native-0-of-6"
+      ],
+      "title": "Stock trace source-join blockers are resolved"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "8af519af1d014663538752dc913663d5eb787f431fec9f8944d9c1b10e54ab25",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-final-source-review-8af519af1d014663538752dc913663d5eb787f431fec9f8944d9c1b10e54ab25.md",
+          "scope": "Exact source/interface review only; no installed, selected or loaded runtime and no native journey acceptance.",
+          "section": "lines:1-89",
+          "sourceProof": null,
+          "summary": "Independent final source review accepts the exact joined HighBar, FSBar and private-helper interfaces, records the focused checks, and keeps native acceptance at 0/6.",
+          "verify": true
+        },
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ef0e26a6e965bfed09abb9fa8b58b7643bb9d927d990cc2794432fe810daf25e",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-owning-readback-ef0e26a6e965bfed09abb9fa8b58b7643bb9d927d990cc2794432fe810daf25e.json",
+          "scope": "Selected public protected-source metadata only; no native artifact or runtime evidence.",
+          "section": "lines:1-26",
+          "sourceProof": null,
+          "summary": "Protected HighBar and FSBar merge identities, tree equality, HighBar hosted run result and accurate FSBar no-workflow status.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "post-source-closure native frontier; no installed or loaded variant may be inferred",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+          "7555c836e0457b04100b20149497d088dd9c2ca7"
+        ],
+        "runs": [
+          "GitHub Actions 36849458802"
+        ]
+      },
+      "state": "open",
+      "statement": "The joined trace/harness source gate is closed, but genuine BAR acceptance remains 0/6. Next are exact protected artifact rebuild and repin, immutable preflight and one genuine Count1 smoke. Every original six-journey gate remains open after that smoke. The official stock source lineage is Recoil 2639eedac7d1fd67d793ec93ebd27f014f336a14, distinct from the 7555c836e0457b04100b20149497d088dd9c2ca7 custom/default lineage; the executable, content and plugin actually selected and loaded remain unknown. Optional custom FR remains inactive.",
+      "supersedes": [
+        "7be143c64b8143cae3d7982c4f76cf01170e384a900d5f7da75b0430a26cff48"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "runtime-unknown",
+        "native-0-of-6"
+      ],
+      "title": "What remains before stock native acceptance after source closure?"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "8af519af1d014663538752dc913663d5eb787f431fec9f8944d9c1b10e54ab25",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-final-source-review-8af519af1d014663538752dc913663d5eb787f431fec9f8944d9c1b10e54ab25.md",
+          "scope": "Exact source/interface review only; no installed, selected or loaded runtime and no native journey acceptance.",
+          "section": "lines:1-89",
+          "sourceProof": null,
+          "summary": "Independent final source review accepts the exact joined HighBar, FSBar and private-helper interfaces, records the focused checks, and keeps native acceptance at 0/6.",
+          "verify": true
+        }
+      ],
+      "id": "architecture.stock-trace-source-interface-lessons",
+      "kind": "architecture",
+      "scope": {
+        "applicability": "reusable source/interface review constraints; genuine runtime outcome remains unknown",
+        "artifacts": [],
+        "component": "stock trace source-review lessons",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "The accepted source interface binds more than source revisions: the helper authenticates the live session and process identities, the host owns a writable O_APPEND descriptor, the engine trace retains an immutable bounded prefix on the same live inode while permitting a healthy complete-record suffix, and FSBar requires four closed matching lifecycles with the Count1 Append joined to its specific final read. Rechecking the prefix before and after the real normalizer closes the physical handoff. These source and fixture results do not identify the loaded engine or prove a genuine journey.",
+      "supersedes": [],
+      "tags": [
+        "architecture",
+        "process-identity",
+        "O_APPEND",
+        "growing-prefix",
+        "lifecycle"
+      ],
+      "title": "Stock trace source review requires process, descriptor, prefix and lifecycle joins"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "4ee50eeb799344e3b5915b3b2a0a94e371b63bf0dcf18d750d1b01975f74652b",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/v2-platform-acceptance-audit-4ee50eeb799344e3b5915b3b2a0a94e371b63bf0dcf18d750d1b01975f74652b.md",
+          "scope": "V2 selected clean-start platform boundary only; not BAR gameplay, fleet health, universal profiles or effect authority.",
+          "section": "lines:1-114",
+          "sourceProof": null,
+          "summary": "Accepted platform-boundary reevaluation separates selected-profile V2 platform acceptance from BAR product gameplay and other independent extensions.",
+          "verify": true
+        },
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "69b17d7b96e14608442a901c6bd6cc215ab23b3d025290965b6b0cde8024ea44",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-bar-stock-v2-acceptance-69b17d7b96e14608442a901c6bd6cc215ab23b3d025290965b6b0cde8024ea44.json",
+          "scope": "Selected public GitHub metadata only; no runtime, native payload, credential or installed-state evidence.",
+          "section": "lines:1-71",
+          "sourceProof": null,
+          "summary": "Public GitHub readback for V2 acceptance PR 4050, BAR/HOST projection PR 4051, protected trees and exact-head checks.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.v2-platform-selected-profile-full-accepted",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "selected nine-receiver clean-start platform profile only; BAR gameplay and native runtime remain independent",
+        "artifacts": [],
+        "component": "selected V2 platform acceptance",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          ".github",
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "504632797014ebaa395c2e82257b10e3b330814c",
+          "ac58cf658c8b5be1ece8efdf518b5c91e690a176"
+        ],
+        "runs": [
+          "GitHub Actions 36850750752"
+        ]
+      },
+      "state": "accepted",
+      "statement": "V2 platform FULL ACCEPTED applies to the selected clean-start ordinary-source and ordinary-settlement profile across the nine named adopted receivers, truthful observer loss and the bounded fixed-job HOST diagnostic. The five-gate report and protected settlement evidence establish that bounded platform result. Historical economics is insufficient for a current fleet-health or efficiency claim. BAR gameplay remains an independent product boundary: all six BAR native journeys remain open, and this platform verdict does not select or identify a loaded stock engine, waive artifact or effect authority, or establish a universal profile.",
+      "supersedes": [],
+      "tags": [
+        "V2",
+        "platform-accepted",
+        "selected-profile",
+        "BAR-independent",
+        "economics-insufficient"
+      ],
+      "title": "Selected-profile V2 platform is fully accepted independently of BAR gameplay"
+    }
+  ],
+  "origin": "bounded stock trace/harness protected-source delivery and V2 platform-boundary maintenance",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

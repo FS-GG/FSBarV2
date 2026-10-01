@@ -1,0 +1,303 @@
+{
+  "schema": "fsgg.knowledge.bar-project/1",
+  "curatedAt": "2026-10-01",
+  "origin": "bounded current-gates maintenance from two independent rereviews and one worker-reported repair candidate",
+  "items": [
+    {
+      "id": "qualification.stock-native-reader-source-candidate",
+      "kind": "qualification",
+      "title": "HighBar stock native fence and ABI successor accepted at source",
+      "statement": "Independent rereview accepts HighBar c7ba253688b1fb5cf328a7bb3c09761d31387d1f (tree 460c35e34c0bf3da947dde0c4f17b5d172b05e8b). It closes the predecessor deadlock, post-reread deadline and actor fence, exact stock Headless callback identity, and INT32_MIN projection defects. Forty-nine focused tests pass. Frozen plugin d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a is a reviewable source artifact; no engine runtime or native journey was run.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "HighBar stock native plugin",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [
+          "libSkirmishAI.so sha256:d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a"
+        ],
+        "runs": [],
+        "applicability": "source and reviewable plugin artifact accepted; coherent join and runtime qualification open"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-fence-abi-independent-rereview-20261001.md",
+          "digest": "86dd4f22063f8276f7ad9bfe75ca7fe37055ed8fa31a42f1765a1d3c69d559ab",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-40",
+          "summary": "Independent rereview accepts the exact HighBar successor, records 49 focused tests and plugin identity, and retains all runtime gates.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "qualification"
+      ],
+      "supersedes": [
+        "590f794cb91a57684677c6b953485237bf6d25fd01e8f92afe0dc89f023d3a81"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-fsbar-consumer-source-blocked",
+      "kind": "qualification",
+      "title": "FSBar projection and build fixed; oracle remains source blocked",
+      "statement": "Independent rereview of FSBar 2cae19c3289f264f60c7dfc1e5110546aa552902 (tree 17eab465e3e552d80bbdf1d5a740ef7155761473) confirms production scheme2 projection and fresh F# compilation are fixed and the five earlier malformed or unjoined evidence cases refuse. Source acceptance remains blocked because valid three-stage result lifecycles are counted as excess terminal outcomes and numeric float-bit JSON values are coerced and accepted.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "FSBar stock consumer and evidence oracle",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "2cae19c3289f264f60c7dfc1e5110546aa552902"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "source blocked on B3a/B3b; B1 projection and B2 fresh compilation accepted"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-projection-oracle-independent-rereview-20261001.md",
+          "digest": "92cbb5629313b32ecd74334dd50b196ed8a77524d0556f66bfbbbd093fe40fd1",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "Independent rereview closes B1/B2 and narrows source blockers to lifecycle-stage validation and typed float-bit strings.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "qualification"
+      ],
+      "supersedes": [
+        "960958e8f3cc11bef82ecf496895ef906d3fe9377bd20f81d97cfcd9d71488bd"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-fsbar-lifecycle-repair-candidate",
+      "kind": "qualification",
+      "title": "FSBar lifecycle and typed float repair awaits independent review",
+      "statement": "The source owner reports FSBar d31018018db5a9bf2e6351126f6363f9af41d7a7 (tree 6cb8893dd69a08738daa5e51bcca9d067bb79f1c) now requires the ordered broker-admission, native-admission, native-dispatch lifecycle, refuses malformed or contradictory stages, and requires float32 bit values to be strings. The reported 19/19 focused tests pass. This is a worker-reported source candidate awaiting independent review, not source acceptance or runtime evidence.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "FSBar stock result lifecycle oracle",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "reported repair candidate awaiting independent source rereview; no source or native acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "candidate",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-result-lifecycle-repair-report-20261001.md",
+          "digest": "1903d3026797f0890a95df9bffafddfacdade0dc42c5d0ac593f0e1f86f0fff9",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-44",
+          "summary": "Worker report freezes the two-file successor and reports 19 focused tests; independent review remains pending.",
+          "basis": "reported",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "qualification"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "roadmap.stock-frontier-not-joined",
+      "kind": "roadmap-gate",
+      "title": "Current stock frontier has accepted Lua and HighBar source but is not joined",
+      "statement": "Lua c147 and HighBar c7ba are independently source accepted. FSBar 2ca is independently source blocked on two oracle corrections; d310 is only a worker-reported repair candidate awaiting rereview. None of these facts establishes a coherent protected merge, installed content or plugin, selected runtime, or native result. Optional FR1-FR6 remain inactive, native acceptance remains reported 0/6, and actual runtime identity remains unknown.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "coherent stock source join",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "2cae19c3289f264f60c7dfc1e5110546aa552902",
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "current source frontier; not merged, installed, selected, loaded, or natively accepted"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-fence-abi-independent-rereview-20261001.md",
+          "digest": "86dd4f22063f8276f7ad9bfe75ca7fe37055ed8fa31a42f1765a1d3c69d559ab",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-40",
+          "summary": "HighBar c7ba source acceptance retains coherent join and runtime gates.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-projection-oracle-independent-rereview-20261001.md",
+          "digest": "92cbb5629313b32ecd74334dd50b196ed8a77524d0556f66bfbbbd093fe40fd1",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "FSBar 2ca remains independently source blocked on two corrections.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-result-lifecycle-repair-report-20261001.md",
+          "digest": "1903d3026797f0890a95df9bffafddfacdade0dc42c5d0ac593f0e1f86f0fff9",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-44",
+          "summary": "FSBar d310 repair and 19 tests are worker reported pending rereview.",
+          "basis": "reported",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "roadmap"
+      ],
+      "supersedes": [
+        "c60bd89f6bad3e61881f76e74d061621eeaf967dc0e27d5be1c8fc406e0076d3"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "title": "What still blocks stock native acceptance after HighBar source acceptance?",
+      "statement": "Lua c147 and HighBar c7ba source gates are independently accepted. FSBar remains blocked at independently reviewed 2ca until the reported d310 lifecycle and typed-float repair passes independent rereview. After coherent protected delivery, open gates still include final joined plugin and content readback, exact overlay discovery, official executable selection and loaded identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, final reread/equality, and all required native journeys. Native acceptance remains reported 0/6.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "remaining stock gates",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "2cae19c3289f264f60c7dfc1e5110546aa552902",
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "open gates after Lua and HighBar source acceptance; no merged delivery or runtime completion"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-fence-abi-independent-rereview-20261001.md",
+          "digest": "86dd4f22063f8276f7ad9bfe75ca7fe37055ed8fa31a42f1765a1d3c69d559ab",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-40",
+          "summary": "HighBar source acceptance and retained runtime boundaries.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-projection-oracle-independent-rereview-20261001.md",
+          "digest": "92cbb5629313b32ecd74334dd50b196ed8a77524d0556f66bfbbbd093fe40fd1",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "Independent FSBar source blockers after B1/B2 closure.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-result-lifecycle-repair-report-20261001.md",
+          "digest": "1903d3026797f0890a95df9bffafddfacdade0dc42c5d0ac593f0e1f86f0fff9",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-44",
+          "summary": "Worker-reported FSBar successor awaiting independent rereview.",
+          "basis": "reported",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "question"
+      ],
+      "supersedes": [
+        "d0d0be03037173fdae8cdb35b35ff949d436a475cf00a54b992d9009540d726d"
+      ],
+      "conflicts": []
+    }
+  ]
+}

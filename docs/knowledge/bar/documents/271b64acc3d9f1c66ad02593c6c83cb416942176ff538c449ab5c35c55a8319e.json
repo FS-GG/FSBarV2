@@ -1,0 +1,395 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-stock-delivery-ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185.json",
+          "scope": "Selected GitHub metadata only; no claim about installed artifacts, loaded runtime, native execution, or causality.",
+          "section": "lines:1-124",
+          "sourceProof": null,
+          "summary": "Independent API readback records both merged pull requests, current workflow state and permissions, visible workflow runs, and the exact ten-job qualification run outcomes.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "69ac3a506750f4cb5dcb5459872c1ae9288356ec5484f35a8f6148752e280c94",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-highbar-coherent-join-report-20261001.md",
+          "scope": "Named source/build report only; artifact digests establish provenance for reported products, not installation or loaded identity.",
+          "section": "lines:1-100",
+          "sourceProof": null,
+          "summary": "Coherent source report records exact plugin and overlay build digests and their source-only qualification boundary.",
+          "verify": true
+        }
+      ],
+      "id": "roadmap.stock-frontier-not-joined",
+      "kind": "roadmap-gate",
+      "scope": {
+        "applicability": "merged source heads and source-build provenance only; runtime and native acceptance remain open",
+        "artifacts": [
+          "libSkirmishAI.so sha256:d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a",
+          "barc-stock-observer-r3.sdz sha256:c7d6b583a954e7c2b0fdbb9c697355aaf1d2a1cd24049c3d30b9e01dfdd99d4c"
+        ],
+        "component": "coherent stock source delivery",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a",
+          "b787c37d20484eb66649fd9b1f98e28730492433",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": [
+          "GitHub Actions 36838356388"
+        ]
+      },
+      "state": "open",
+      "statement": "HighBar PR 12 is merged as 03de478075a588bcc93b8a9ca25cb05006a7355a and FSBar PR 11 is merged as b787c37d20484eb66649fd9b1f98e28730492433. The current registered source heads now contain the coherent stock producer and consumer. Run 36838356388 passed five hosted jobs and skipped five optional self-hosted jobs. The reported plugin d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a and overlay c7d6b583a954e7c2b0fdbb9c697355aaf1d2a1cd24049c3d30b9e01dfdd99d4c are source-build provenance only: installation, selection, loaded identity, native trace, and all six native journeys remain unproved, so native acceptance remains 0/6.",
+      "supersedes": [
+        "b927c0c48edcf3fac3bec1ff4d459f557661e6add713b743f07d13a546cc11be"
+      ],
+      "tags": [
+        "stock",
+        "source-delivered",
+        "runtime-open",
+        "native-0-of-6"
+      ],
+      "title": "Coherent stock producer and consumer source heads are delivered"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "40940c383a2e8abd8c2856392d386bd755ff38e5bfa12d605ed6260525cad00e",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-horizon-expansion-addendum-20261001.md",
+          "scope": "Planning evidence only; none of the proposed trace, harness, or private supervisor lanes is delivered by this report.",
+          "section": "lines:1-57",
+          "sourceProof": null,
+          "summary": "Horizon review identifies the legacy NativeProof host/handoff and missing production trace seams and assigns three bounded source lanes.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "df3ed5ebb42f5f259fbb387342d56a4e6d8a087a2a4f238a3e86d6d319918834",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-handoff-shape-freeze-20261001.md",
+          "scope": "Planning evidence only; frozen interfaces and tests do not establish implementation or native acceptance.",
+          "section": "lines:1-96",
+          "sourceProof": null,
+          "summary": "Trace/handoff freeze specifies the pending HighBar producer, FSBar normalizer/oracle, and private custody interfaces.",
+          "verify": true
+        },
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-stock-delivery-ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185.json",
+          "scope": "Selected GitHub metadata only; no claim about installed artifacts, loaded runtime, native execution, or causality.",
+          "section": "lines:1-124",
+          "sourceProof": null,
+          "summary": "Independent API readback records both merged pull requests, current workflow state and permissions, visible workflow runs, and the exact ten-job qualification run outcomes.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "post-delivery runtime, custody, trace, and six-journey gates",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a",
+          "b787c37d20484eb66649fd9b1f98e28730492433",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Source delivery no longer blocks the stock route. Remaining gates include the planned production trace and selected handoff implementation, private PID/file/FD custody, exact overlay discovery, official executable and plugin installation plus loaded identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, authenticated final reread and correlation, cleanup truth, and all required native journeys. The current NativeProof host and handoff are legacy shaped and cannot supply the missing stock trace. The HighBar trace, FSBar harness, and private supervisor lanes are planned but not delivered; native acceptance remains 0/6.",
+      "supersedes": [
+        "36944db0b2cfe137d02b375b30dd40da69575a747c2fed3e68a4034306235408"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "trace",
+        "native-0-of-6"
+      ],
+      "title": "What still blocks native acceptance after coherent source delivery?"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-source",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:HighBarV3/data/barc-stock-observer/LuaRules/Gadgets/barc_stock_queue_reader.lua",
+          "scope": "Exact lines 14-18 at the registered delivered HighBar revision.",
+          "section": "line:14",
+          "sourceProof": {
+            "line": 14,
+            "path": "data/barc-stock-observer/LuaRules/Gadgets/barc_stock_queue_reader.lua",
+            "revision": "03de478075a588bcc93b8a9ca25cb05006a7355a",
+            "sha256": "78f6be637bf9f062a4e9591c34038acb20bf3b726b63d29f18a3e1880a1c6cb8",
+            "source": "HighBarV3"
+          },
+          "summary": "The gadget documents the stock CallRules synced handle and refuses unsynced execution.",
+          "verify": false
+        },
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:HighBarV3/src/circuit/grpc/CommandQueue.cpp",
+          "scope": "Exact policy projection line at the registered delivered HighBar revision.",
+          "section": "line:178",
+          "sourceProof": {
+            "line": 178,
+            "path": "src/circuit/grpc/CommandQueue.cpp",
+            "revision": "03de478075a588bcc93b8a9ca25cb05006a7355a",
+            "sha256": "eb9e16b74b3988e5dbd664098186ff40409d8f973224c57b06cdbf50ac3f898f",
+            "source": "HighBarV3"
+          },
+          "summary": "The native command projection returns 32 for Append and 0 otherwise.",
+          "verify": false
+        }
+      ],
+      "id": "architecture.stock-synced-append-options",
+      "kind": "architecture",
+      "scope": {
+        "applicability": "exact delivered source semantics for the synced gadget and Append option projection",
+        "artifacts": [],
+        "component": "stock queue bridge and command projection",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "At the delivered HighBar head, the production queue gadget explicitly remains in the synced LuaRules handle. The native queue projection maps NATIVE_QUEUE_POLICY_APPEND to coded option 32 and other policy to 0. These exact source lines correct older descriptions of an unsynced route or Append option 0.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "synced",
+        "append",
+        "options-32"
+      ],
+      "title": "Delivered stock queue route is synced and Append uses option bit 32"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "40940c383a2e8abd8c2856392d386bd755ff38e5bfa12d605ed6260525cad00e",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-horizon-expansion-addendum-20261001.md",
+          "scope": "Planning evidence only; none of the proposed trace, harness, or private supervisor lanes is delivered by this report.",
+          "section": "lines:1-57",
+          "sourceProof": null,
+          "summary": "Horizon review identifies the legacy NativeProof host/handoff and missing production trace seams and assigns three bounded source lanes.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "df3ed5ebb42f5f259fbb387342d56a4e6d8a087a2a4f238a3e86d6d319918834",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-handoff-shape-freeze-20261001.md",
+          "scope": "Planning evidence only; frozen interfaces and tests do not establish implementation or native acceptance.",
+          "section": "lines:1-96",
+          "sourceProof": null,
+          "summary": "Trace/handoff freeze specifies the pending HighBar producer, FSBar normalizer/oracle, and private custody interfaces.",
+          "verify": true
+        }
+      ],
+      "id": "roadmap.stock-native-trace-handoff-gaps",
+      "kind": "roadmap-gate",
+      "scope": {
+        "applicability": "planned recovery for inherited legacy host/handoff and missing authenticated trace",
+        "artifacts": [],
+        "component": "stock trace and handoff recovery",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a",
+          "b787c37d20484eb66649fd9b1f98e28730492433"
+        ],
+        "runs": []
+      },
+      "state": "planned",
+      "statement": "The retained NativeProof host and handoff accept legacy profiles and do not produce the authenticated stock queue trace required by the delivered producer and oracle. The frozen recovery route has three source lanes: a HighBar trace producer, an FSBar normalizer/oracle and selected smoke handoff, and a private supervisor for process/file/FD custody. All three are currently planned and not delivered; the freeze itself provides no native evidence.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "planned",
+        "trace",
+        "handoff",
+        "custody"
+      ],
+      "title": "Stock trace and selected handoff implementation remains planned"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "reported",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-stock-delivery-ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185.json",
+          "scope": "Selected GitHub metadata only; no claim about installed artifacts, loaded runtime, native execution, or causality.",
+          "section": "lines:1-124",
+          "sourceProof": null,
+          "summary": "Independent API readback records both merged pull requests, current workflow state and permissions, visible workflow runs, and the exact ten-job qualification run outcomes.",
+          "verify": true
+        }
+      ],
+      "id": "experiment.highbar-fork-ci-trigger-sequence",
+      "kind": "experiment",
+      "scope": {
+        "applicability": "reported pre-run sequence plus independently observed current GitHub metadata; no causal inference",
+        "artifacts": [],
+        "component": "HighBar fork CI trigger experiment",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3"
+        ],
+        "revisions": [
+          "b2ed29534b08c2bc856922a951caaf93e2b1db65",
+          "03de478075a588bcc93b8a9ca25cb05006a7355a"
+        ],
+        "runs": [
+          "GitHub Actions 36838356388",
+          "GitHub Actions 36838811291"
+        ]
+      },
+      "state": "observed",
+      "statement": "The operator-observed sequence was: workflow active and repository Actions enabled on GET with zero runs; workflow enable, pull-request reopen, and a new trigger branch still left zero runs; an explicit repository Actions enabled=true update followed by another reopen was then followed by pull-request run 36838356388. Current independent API readback shows the workflow active, repository Actions enabled, and the successful pull-request and merge runs. This records temporal order only and does not attribute causality to the repository update.",
+      "supersedes": [],
+      "tags": [
+        "ci",
+        "fork",
+        "trigger",
+        "sequence",
+        "no-causality"
+      ],
+      "title": "HighBar workflow ran only after the later repository enable and reopen sequence"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "df3ed5ebb42f5f259fbb387342d56a4e6d8a087a2a4f238a3e86d6d319918834",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-handoff-shape-freeze-20261001.md",
+          "scope": "Planning evidence only; frozen interfaces and tests do not establish implementation or native acceptance.",
+          "section": "lines:1-96",
+          "sourceProof": null,
+          "summary": "Trace/handoff freeze specifies the pending HighBar producer, FSBar normalizer/oracle, and private custody interfaces.",
+          "verify": true
+        },
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-stock-delivery-ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185.json",
+          "scope": "Selected GitHub metadata only; no claim about installed artifacts, loaded runtime, native execution, or causality.",
+          "section": "lines:1-124",
+          "sourceProof": null,
+          "summary": "Independent API readback records both merged pull requests, current workflow state and permissions, visible workflow runs, and the exact ten-job qualification run outcomes.",
+          "verify": true
+        }
+      ],
+      "id": "roadmap.stock-post-delivery-section-zero",
+      "kind": "roadmap-gate",
+      "scope": {
+        "applicability": "normal source implementation successor before any root-controlled native attempt",
+        "artifacts": [],
+        "component": "post-delivery section 0",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a",
+          "b787c37d20484eb66649fd9b1f98e28730492433"
+        ],
+        "runs": []
+      },
+      "state": "planned",
+      "statement": "With HighBar and FSBar source heads delivered, the next bounded section 0 work is the planned HighBar trace, FSBar handoff/oracle, and private custody source closure. Completion of that source work would prepare a later root-controlled native smoke; it would not itself change native acceptance from 0/6.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "section-0",
+        "source-closure",
+        "native-open"
+      ],
+      "title": "Next stock work is a normal source closure, not native acceptance"
+    }
+  ],
+  "origin": "bounded delivered stock source registrations, independent GitHub metadata, exact current source lines, and retained native horizon reports",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

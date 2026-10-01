@@ -1,0 +1,56 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-e19eb49bdc2062ce2b901d016dbd2a82b779585e",
+    "revision": "e19eb49bdc2062ce2b901d016dbd2a82b779585e",
+    "tree": "ed4f26451b7c2225f06122067c79dc28d7cad198",
+    "status": "historical source pin only; no product artifact or runtime acceptance"
+  },
+  "components": [
+    {
+      "id": "factory-peer-observer-highbar-pin-e19eb",
+      "title": "Peer-observer qualification identity gate",
+      "paths": ["CMakeLists.txt"],
+      "summary": "Keeps the default qualification count at zero and requires the exact f5c83c6 peer-observer engine identity whenever a nonzero qualification count is selected."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-peer-observer-highbar-pin-flow-e19eb",
+      "title": "Default-off product configuration to exact observer source pin",
+      "steps": [
+        {"path": "CMakeLists.txt", "symbol": "HIGHBAR_FACTORY_REPLACEMENT_QUALIFICATION_COUNT", "line": 210, "description": "Declare empty identity pins and qualification count zero as the product defaults."},
+        {"path": "CMakeLists.txt", "symbol": "factory replacement identity pins", "line": 232, "description": "Reject any partial identity-pin configuration."},
+        {"path": "CMakeLists.txt", "symbol": "peer-observer identity", "line": 236, "description": "For nonzero qualification, require engine hash f5c83c6, the peer-observer additional version and the existing exact wire identity."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-peer-observer-highbar-exact-pin-e19eb",
+      "kind": "source-fact",
+      "statement": "A nonzero HighBar factory replacement qualification count requires the exact f5c83c6 engine hash, BARC-01.5-fr5-peer-observer-v1 Headless additional version and frozen wire identity; default pins remain empty and the default count remains zero.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 210, "symbol": "HIGHBAR_FACTORY_REPLACEMENT_ENGINE_HASH"},
+        {"path": "CMakeLists.txt", "line": 216, "symbol": "HIGHBAR_FACTORY_REPLACEMENT_QUALIFICATION_COUNT"},
+        {"path": "CMakeLists.txt", "line": 236, "symbol": "peer-observer identity"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "highbar", "peer-observer", "source-pin", "default-off"]
+    },
+    {
+      "id": "factory-peer-observer-highbar-pin-not-artifact-e19eb",
+      "kind": "acceptance-boundary",
+      "statement": "This source gate makes the observer dependency discoverable but does not identify a newly built engine or plugin artifact and does not establish native qualification.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 206, "symbol": "factory replacement identity pins"},
+        {"path": "CMakeLists.txt", "line": 236, "symbol": "peer-observer identity"}
+      ],
+      "confidence": "inference",
+      "tags": ["factory-replacement", "source-only", "no-artifact", "runtime-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Which fresh engine and HighBar artifact hashes will bind this source pin after the missing generated protobuf dependency is resolved?"
+  ]
+}

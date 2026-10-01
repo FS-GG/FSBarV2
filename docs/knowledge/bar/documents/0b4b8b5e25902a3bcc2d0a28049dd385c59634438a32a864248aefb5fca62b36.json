@@ -1,0 +1,84 @@
+{
+  "source": {
+    "name": "FSBar",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/FSBar-9631bf49515c49f6896e6c42384a3c5b2a7093d4",
+    "revision": "9631bf49515c49f6896e6c42384a3c5b2a7093d4",
+    "tree": "93439d21a1094c366aae6442a8ac08c83a271afb",
+    "status": "historical exact-source receiver map; source behavior observed; separate plugin V2 rebuild reported; receiver and native admission absent"
+  },
+  "components": [
+    {
+      "id": "fsbar-coordinator-engine-digest-9631",
+      "title": "Coordinator heartbeat attachment and engine digest record",
+      "paths": ["src/Broker.Protocol/HighBarCoordinatorService.fs", "src/Broker.Protocol/BrokerState.fs", "src/Broker.Core/Session.fs", "tests/Broker.NativeProof/FactoryCandidateManifest.fs", "src/Broker.Protocol/LiveControl.fs"],
+      "summary": "The first accepted heartbeat attaches the plugin and records its engine artifact digest; native candidate admission separately requires the canonical catalogue identity and full Recoil source SHA."
+    }
+  ],
+  "flows": [
+    {
+      "id": "fsbar-first-heartbeat-attachment-9631",
+      "title": "Heartbeat engine digest to coordinator attachment audit",
+      "steps": [
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "symbol": "Impl.Heartbeat", "line": 259, "description": "Require strict schema equality before attachment."},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "symbol": "ProxyAiLink", "line": 275, "description": "On the first heartbeat, create the link and copy request.EngineSha256 into engineSha256."},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "symbol": "attachCoordinator", "line": 285, "description": "Attach the first-heartbeat link to BrokerState."},
+        {"path": "src/Broker.Protocol/BrokerState.fs", "symbol": "attachCoordinator", "line": 923, "description": "Emit CoordinatorAttached with the stored engine digest for audit and diagnosis."},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "symbol": "noteHeartbeat", "line": 295, "description": "Refresh liveness for later heartbeats under the captured owner."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "fsbar-first-heartbeat-registers-digest-9631",
+      "kind": "source-fact",
+      "statement": "FSBar treats the first schema-compatible heartbeat as coordinator attachment: it stores request.EngineSha256 in ProxyAiLink and includes that value in CoordinatorAttached audit output. Later heartbeats refresh owner liveness.",
+      "evidence": [
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 268, "symbol": "first attach"},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 282, "symbol": "request.EngineSha256"},
+        {"path": "src/Broker.Protocol/BrokerState.fs", "line": 923, "symbol": "CoordinatorAttached"},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 295, "symbol": "noteHeartbeat"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["receiver", "registration", "first-heartbeat", "engine-artifact-digest", "audit"]
+    },
+    {
+      "id": "fsbar-heartbeat-digest-check-gap-9631",
+      "kind": "source-inference",
+      "statement": "The bounded receiver source performs a strict schema check, stores the engine digest, and audits it, but this heartbeat handler does not compare EngineSha256 with an expected artifact digest. The protocol's stated cross-check remains a runtime qualification gap unless another independently verified path enforces it.",
+      "evidence": [
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 259, "symbol": "schema equality"},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 274, "symbol": "attachment branch"},
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 282, "symbol": "engineSha256 storage"}
+      ],
+      "confidence": "inference",
+      "tags": ["receiver-gap", "no-artifact-digest-comparison", "runtime-unknown"]
+    },
+    {
+      "id": "fsbar-source-and-artifact-identity-axes-9631",
+      "kind": "source-fact",
+      "statement": "FSBar native candidate admission separately requires the full canonical 1ec00cf catalogue string and Recoil source SHA 1ec00cfadab407df1dc03d8756b827990f6847fc. Those source and catalogue checks are distinct from the engine binary digest received on the coordinator heartbeat.",
+      "evidence": [
+        {"path": "src/Broker.Protocol/LiveControl.fs", "line": 13, "symbol": "factoryCandidateEngineVersion"},
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifest.fs", "line": 80, "symbol": "engineSourceSha"},
+        {"path": "src/Broker.Core/Session.fs", "line": 19, "symbol": "engineSha256"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["identity-axes", "catalogue", "engine-source-sha", "engine-artifact-sha"]
+    },
+    {
+      "id": "fsbar-079-rebuild-boundary-9631",
+      "kind": "acceptance-boundary",
+      "statement": "Source wiring explains how a compiled pin becomes observable at receiver attachment. A separate corrected HighBar receipt now reports a 079 plugin V2 rebuild with the reviewed 80ad digest, but this FSBar evidence does not establish that the receiver observed or accepted it, and no native game case ran.",
+      "evidence": [
+        {"path": "src/Broker.Protocol/HighBarCoordinatorService.fs", "line": 282, "symbol": "engineSha256 storage"},
+        {"path": "tests/Broker.NativeProof/FactoryCandidateManifest.fs", "line": 80, "symbol": "candidate source identity"}
+      ],
+      "confidence": "inference",
+      "tags": ["no-rebuilt-plugin", "no-runtime-admission", "native-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Where should the expected engine artifact digest be enforced before the coordinator attachment is admitted?",
+    "Will the rebuilt plugin report 80adf61a42fd2ff156b0d96e61e52ed596c9aa624b7d9f2d77d86c134a8f1301 on the first heartbeat?"
+  ]
+}

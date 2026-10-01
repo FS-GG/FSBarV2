@@ -1,0 +1,118 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-8aee5ac83fd248671f1e504077cecd37999f5dbe",
+    "revision": "8aee5ac83fd248671f1e504077cecd37999f5dbe",
+    "status": "historical candidate; not installed or current"
+  },
+  "components": [
+    {
+      "id": "factory-peer-synchronized-dispatch-8aee",
+      "title": "Per-client synchronized factory submission",
+      "paths": [
+        "rts/Net/NetCommands.cpp",
+        "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp"
+      ],
+      "summary": "Each client handling the authenticated replacement packet resolves the origin authority and applies the decoded Replace or Fence submission to its local synchronized service."
+    },
+    {
+      "id": "factory-peer-local-ai-read-boundary-8aee",
+      "title": "Local callback ownership boundary",
+      "paths": [
+        "rts/Game/Game.cpp",
+        "rts/ExternalAI/SkirmishAILibrary.cpp",
+        "rts/ExternalAI/SSkirmishAICallbackImpl.cpp"
+      ],
+      "summary": "The public factory read callbacks require the currently executing local AI identity and resolve it through the local player, preventing peer B from using this surface to read peer A's origin AI slot."
+    },
+    {
+      "id": "factory-peer-creg-carrier-8aee",
+      "title": "CREG service-state carrier",
+      "paths": [
+        "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp",
+        "rts/System/LoadSave/CregLoadSaveHandler.cpp",
+        "test/engine/ExternalAI/testFactoryReplacementSaveLoad.cpp"
+      ],
+      "summary": "Serializes authority, fence, high-water and result-ring state into the game-state collector and verifies a single synthetic authority round trip."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-peer-apply-read-or-save-8aee",
+      "title": "Authenticated peer apply, local read boundary and conditional save carrier",
+      "steps": [
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "NETMSG_AI_FACTORY_REPLACEMENT", "line": 804, "description": "Receive the synchronized packet on a client, validate origin player/AI identity, decode it and apply it to the local service."},
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "symbol": "GetFactoryReplacementContext", "line": 3707, "description": "Require the requested AI to equal the currently executing AI and resolve that AI through the local player before any callback read."},
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "symbol": "skirmishAiCallback_FactoryReplacement_readResult", "line": 3780, "description": "Read a keyed Replace or Fence result only after the local callback ownership context succeeds."},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "symbol": "FactoryReplacementSimulationService::Serialize", "line": 155, "description": "Serialize authority incarnation, high-water, fence state and every occupied canonical result wire."},
+        {"path": "rts/System/LoadSave/CregLoadSaveHandler.cpp", "symbol": "CGameStateCollector::Serialize", "line": 110, "description": "Include the factory replacement service in the real CREG game-state collector after AI handler state."},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementSaveLoad.cpp", "symbol": "main", "line": 70, "description": "Exercise one synthetic authority's fence result and exact replay classification across an in-memory save/load round trip."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-peer-packet-applies-origin-slot-8aee",
+      "kind": "source-fact",
+      "statement": "The synchronized network handler resolves the packet's origin player and AI, checks incarnation, and applies the submission without requiring the origin player to equal the receiving client's local player.",
+      "evidence": [
+        {"path": "rts/Net/NetCommands.cpp", "line": 804, "symbol": "NETMSG_AI_FACTORY_REPLACEMENT"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 814, "symbol": "NETMSG_AI_FACTORY_REPLACEMENT"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "synchronized", "peer", "apply"]
+    },
+    {
+      "id": "factory-peer-callback-origin-unreadable-8aee",
+      "kind": "source-fact",
+      "statement": "Factory snapshot/result callbacks require the currently executing AI ID and resolve it with gu->myPlayerNum; native AIs are loaded only for the local player's registered AI set.",
+      "evidence": [
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 3714, "symbol": "GetFactoryReplacementContext"},
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 3794, "symbol": "skirmishAiCallback_FactoryReplacement_readResult"},
+        {"path": "rts/Game/Game.cpp", "line": 891, "symbol": "CGame::LoadSkirmishAIs"},
+        {"path": "rts/ExternalAI/SkirmishAILibrary.cpp", "line": 88, "symbol": "CSkirmishAILibrary::HandleEvent"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "callback", "local-ai", "ownership"]
+    },
+    {
+      "id": "factory-peer-state-exists-but-origin-read-gap-8aee",
+      "kind": "inference",
+      "statement": "A receiving peer can apply the origin AI's synchronized submission to its local service copy, but peer B cannot use the public AI callback to read peer A's origin AI state because callback ownership is local. An independent peer result/fence observation therefore needs another source-grounded seam.",
+      "evidence": [
+        {"path": "rts/Net/NetCommands.cpp", "line": 814, "symbol": "NETMSG_AI_FACTORY_REPLACEMENT"},
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 3714, "symbol": "GetFactoryReplacementContext"}
+      ],
+      "confidence": "inference",
+      "tags": ["factory-replacement", "two-peer", "read-gap", "independent-observation"]
+    },
+    {
+      "id": "factory-peer-creg-state-content-8aee",
+      "kind": "source-fact",
+      "statement": "CREG serialization includes per-authority incarnation, high-water, fence watermark, active fence epoch/expiry and each stored Replace or Fence result's canonical wire bytes.",
+      "evidence": [
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 155, "symbol": "FactoryReplacementSimulationService::Serialize"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 169, "symbol": "FactoryReplacementSimulationService::Serialize"},
+        {"path": "rts/System/LoadSave/CregLoadSaveHandler.cpp", "line": 110, "symbol": "CGameStateCollector::Serialize"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "creg", "save", "fence", "result-ring"]
+    },
+    {
+      "id": "factory-peer-creg-only-conditional-8aee",
+      "kind": "runtime-unknown",
+      "statement": "CREG is only a conditional carrier for paired proof: the indexed test shows one synthetic authority round trip, while these sources do not establish matched saves from two actual peers, completed custody, or a bounded offline extractor.",
+      "evidence": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementSaveLoad.cpp", "line": 70, "symbol": "main"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementSaveLoad.cpp", "line": 82, "symbol": "FactoryReplacementStateCollector"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementSaveLoad.cpp", "line": 94, "symbol": "main"}
+      ],
+      "confidence": "inference",
+      "tags": ["factory-replacement", "creg", "conditional", "two-peer", "runtime-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Will a bounded diagnostic at the authenticated per-peer dispatch record before/after service state and keyed results without changing synchronized behavior?",
+    "If CREG is used instead, where is the deterministic typed offline extractor and how are matched peer boundaries and file custody proven?"
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-0e835d1edfff91e7624eab7cf55127fa3645bff5",
+    "revision": "0e835d1edfff91e7624eab7cf55127fa3645bff5"
+  },
+  "components": [
+    {
+      "id": "unit-move-failed-current",
+      "title": "Guarded movement-failure task dispatch",
+      "paths": [
+        "src/circuit/CircuitAI.cpp",
+        "src/circuit/task/UnitTask.cpp",
+        "src/circuit/grpc/CommandDispatch.cpp"
+      ],
+      "summary": "Routes the engine move-failure event to the current task only when one exists and is non-NIL; taskless tactical actors remain an explicit external-control state."
+    }
+  ],
+  "flows": [
+    {
+      "id": "guarded-unit-move-failed",
+      "title": "Engine event to guarded task callback",
+      "steps": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::HandleGameEvent EVENT_UNIT_MOVE_FAILED",
+          "line": 289,
+          "description": "Decode the engine event, resolve the team unit and invoke UnitMoveFailed only for a known wrapper."
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::UnitMoveFailed",
+          "line": 1157,
+          "description": "Ignore an already-stuck unit and retain the repeated-failure STOP, ROAM and reclaim-task branch."
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::UnitMoveFailed",
+          "line": 1170,
+          "description": "Capture GetTask once and require a non-null, non-NIL task before dispatching the callback."
+        },
+        {
+          "path": "src/circuit/task/UnitTask.cpp",
+          "symbol": "IUnitTask::OnUnitMoveFailed",
+          "line": 117,
+          "description": "For an eligible task, compute a corrected radial escape position and issue a bounded move."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "unit-move-failed-null-guard-current",
+      "kind": "safety",
+      "statement": "UnitMoveFailed captures the task once and calls OnUnitMoveFailed only when the pointer is non-null and the task type is non-NIL.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1170,
+          "symbol": "CCircuitAI::UnitMoveFailed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "movement",
+        "task",
+        "null-guard",
+        "current-revision"
+      ]
+    },
+    {
+      "id": "unit-move-failed-task-callback-current",
+      "kind": "behavior",
+      "statement": "The ordinary task callback responds to movement failure with a corrected radial escape move under TRY_UNIT.",
+      "evidence": [
+        {
+          "path": "src/circuit/task/UnitTask.cpp",
+          "line": 117,
+          "symbol": "IUnitTask::OnUnitMoveFailed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "movement",
+        "task",
+        "callback"
+      ]
+    },
+    {
+      "id": "taskless-external-control-current",
+      "kind": "ownership",
+      "statement": "Tactical dispatch treats a null task as an actor with no Circuit scheduler handler and therefore already under external control.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "line": 159,
+          "symbol": "dispatch_under_external_control"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "tactical",
+        "ownership",
+        "null-task"
+      ]
+    },
+    {
+      "id": "null-guard-closes-source-path",
+      "kind": "inference",
+      "statement": "For the documented taskless tactical state, the guarded branch removes the direct null-task dereference present in the earlier movement-failure callback path. This source inference does not establish native runtime acceptance.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1170,
+          "symbol": "CCircuitAI::UnitMoveFailed"
+        },
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "line": 159,
+          "symbol": "dispatch_under_external_control"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "crash-hypothesis",
+        "repair-scope",
+        "native-unqualified"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Will a genuine native run reproduce the taskless tactical movement-failure route without a crash?",
+    "Does the still-separate gateway OnUnitMoveFailed delta hook need production wiring for runtime observability?"
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-7555c836e0457b04100b20149497d088dd9c2ca7",
+    "revision": "7555c836e0457b04100b20149497d088dd9c2ca7",
+    "tree": "874d447b7270f9610e0afc09e62cccf29b5934d0",
+    "status": "registered lookup current; source selection only"
+  },
+  "components": [
+    {
+      "id": "custom-rally-typed-callback",
+      "title": "Custom typed queue callback extension",
+      "paths": [
+        "rts/ExternalAI/AICallback.cpp",
+        "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+        "test/engine/ExternalAI/testRallyQueueCallback.cpp"
+      ],
+      "summary": "Adds a queue-domain selector and typed callback projection with focused queue-domain tests."
+    }
+  ],
+  "flows": [
+    {
+      "id": "custom-rally-typed-read",
+      "title": "Typed native AI queue-domain read",
+      "steps": [
+        {
+          "path": "rts/ExternalAI/AICallback.cpp",
+          "symbol": "CAICallback::GetCurrentUnitCommandsByType",
+          "line": 393,
+          "description": "Resolves the requested queue domain for a team-owned actor."
+        },
+        {
+          "path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+          "symbol": "_intern_Unit_getCurrentCommandQueueByType",
+          "line": 3553,
+          "description": "Applies the normal callback ownership boundary and returns the selected queue."
+        },
+        {
+          "path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+          "symbol": "skirmishAiCallback_Unit_getCurrentCommandsByType",
+          "line": 3575,
+          "description": "Returns the bounded queue size or a negative status."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "custom-rally-source-lineage",
+      "kind": "lineage",
+      "statement": "Revision 7555c836e0457b04100b20149497d088dd9c2ca7 is reported as a direct child of upstream release revision 2639eedac7d1fd67d793ec93ebd27f014f336a14 with ten changed files, 286 insertions and 6 deletions. The indexed callbacks show the added typed queue-domain surface.",
+      "evidence": [
+        {
+          "path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+          "line": 3545,
+          "symbol": "typed command queue callback"
+        }
+      ],
+      "confidence": "reported",
+      "tags": [
+        "custom-engine",
+        "lineage",
+        "rally",
+        "registered-source"
+      ]
+    },
+    {
+      "id": "custom-rally-callback-ownership",
+      "kind": "authority",
+      "statement": "The typed queue callback refuses cheats, resolves through the current skirmish AI callback and returns only a selected team-owned queue domain.",
+      "evidence": [
+        {
+          "path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+          "line": 3553,
+          "symbol": "_intern_Unit_getCurrentCommandQueueByType"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "custom-engine",
+        "rally",
+        "ownership",
+        "callback"
+      ]
+    },
+    {
+      "id": "engine-artifact-custody-not-selection",
+      "kind": "identity-boundary",
+      "statement": "A retained official stock executable and a later custom rally executable have distinct reported SHA-256 identities. Their custody, and this registered source revision, do not establish which engine artifact a current game process selected or loaded.",
+      "evidence": [
+        {
+          "path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+          "line": 3553,
+          "symbol": "_intern_Unit_getCurrentCommandQueueByType"
+        }
+      ],
+      "confidence": "reported",
+      "tags": [
+        "artifact-identity",
+        "runtime-selection",
+        "stock-engine",
+        "custom-engine"
+      ]
+    },
+    {
+      "id": "custom-atomic-candidate-not-current-runtime",
+      "kind": "acceptance-boundary",
+      "statement": "Later historical source revisions add a substantially broader atomic replacement and observer service. Source approval, focused tests and isolated build receipts remain separate from installation, runtime selection and native acceptance.",
+      "evidence": [
+        {
+          "path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp",
+          "line": 3575,
+          "symbol": "skirmishAiCallback_Unit_getCurrentCommandsByType"
+        }
+      ],
+      "confidence": "reported",
+      "tags": [
+        "custom-engine",
+        "atomic-replacement",
+        "native-unqualified",
+        "runtime-unknown"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Which source revision was used to build the artifact selected by the next native process?",
+    "Does runtime readback identify the exact selected executable digest before engine-variant claims are made?",
+    "Will the stock-compatible Lua observation route supersede the custom rally callback for the product profile?"
+  ]
+}
