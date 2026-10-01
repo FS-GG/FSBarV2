@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:preparation": "node --test tactical-native-evidence.test.mjs",
-    "test:tactical": "BARC_RUN_TACTICAL_NATIVE=1 playwright test tactical-native-journey.spec.js"
+    "test:preparation": "node --test tactical-native-evidence.test.mjs stock-native-trace.test.mjs",
+    "test:tactical": "BARC_RUN_TACTICAL_NATIVE=1 playwright test tactical-native-journey.spec.js",
+    "test:stock-smoke": "BARC_RUN_STOCK_NATIVE_SMOKE=1 playwright test tactical-native-journey.spec.js --grep 'selected stock Count1 smoke'",
+    "normalize:stock": "node stock-native-trace.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

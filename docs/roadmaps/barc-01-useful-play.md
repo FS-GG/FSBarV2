@@ -18,7 +18,7 @@ The local `.5c` broker checkpoint assembles complete, content-bound catalogue pa
 
 The broker boundary additionally retains the browser's exact catalogue id/revision for construction and factory production, requires every tactical binding to match the declared actor in order, and safely refuses absent nested targets/positions. Focused contract, protocol, live-boundary and public-surface checks cover stale catalogue, stale queue, mismatched actor binding, malformed build placement, expanded-child refusal and atomic delivery. Rally remains excluded until the native callback join below is qualified.
 
-The stock AI callback provides ordinary and production command queues. A versioned unsynced LuaRules reader supplies production and rally observations using stock APIs, with verified team scope, bounded canonical framing, explicit completeness and final native-thread rereads before submission. Missing, unknown or malformed bridge evidence advertises the affected domain as unavailable and refuses dependent actions. This is a pinned stock plugin/content dependency rather than an engine patch or fixture API. The representative `.5f` rally outcome remains required after the join.
+The stock AI callback provides ordinary and production command queues. A versioned synced LuaRules reader supplies production and rally observations using stock APIs, with verified team scope, bounded canonical framing, explicit completeness and final native-thread rereads before submission. Missing, unknown or malformed bridge evidence advertises the affected domain as unavailable and refuses dependent actions. This is a pinned stock plugin/content dependency rather than an engine patch or fixture API. The representative `.5f` rally outcome remains required after the join.
 
 ## Outcome and retained foundation
 
@@ -113,14 +113,14 @@ No user decision is needed to begin `.5a` and native discovery. Exact factory/ra
 
 ## Factory production correction and remaining native dependency (2026-09-30)
 
-The selected Recoil production queue interprets SHIFT as a quantity multiplier
-and an option-zero build as append. The former shared Append32/Replace0 recipe
-therefore did not implement the declared factory policies. The broker now emits
-option-zero Count1 children, bounds Count against the advertised capability and
-actors×Count against 64 before conversion/expansion, and refuses nonempty
-Replace/RejectIfBusy before delivery. HighBar independently repeats the complete
-queue/revision/policy check before native control acquisition and callback.
-Ordinary Move/Build Append32 and production Repeat64 retain their meanings.
+The selected Recoil production queue interprets SHIFT as a quantity multiplier.
+The former shared Append32/Replace0 recipe therefore did not implement the
+declared factory policies. The broker expands a bounded requested count into
+Count1 children; native applies SHIFT32 for stock production Append and refuses
+stock production Replace/RejectIfBusy before delivery. HighBar independently
+repeats the complete queue/revision/policy check before native control
+acquisition and callback. Ordinary Move/Build Append32 and production Repeat64
+retain their meanings.
 
 HighBar source is delivered through #11 at
 `1f12673ebcbfeb637726088e048d2c9c04609078`, tree

@@ -65,3 +65,65 @@ preexisting effects, wrong lifetimes, foreign-source observations, effects
 that occur after the next action, missing children, wrong causal effect types,
 stale identities, fixture mode, reused credentials, wrong pins or any
 public/default installation claim.
+
+## Selected stock smoke preparation
+
+The separate `barc-live-tactical-stock-v1` route prepares one bounded local
+pointer smoke case. It does not replace or reduce the six journeys above. The
+host waits for revision 2 capabilities, a complete current catalogue/content
+identity, a nonempty scheme 2 stock queue and current native basis and actor
+metadata before it writes the private ready file.
+
+The parent runner combines that authenticated ready record with actual stock
+metadata and setup through `materializeStockHandoff`. It must not write a ready
+flag itself. The resulting `fsbar.barc-stock-native-smoke-handoff/v1` selects
+exactly local/pointer/Count1 and retains exact source, artifact, receiver,
+connection, actor, catalogue and process/channel identities. Run the prepared
+route only after those actual values are available:
+
+```console
+dotnet run -c Release --project tests/Broker.NativeProof/Broker.NativeProof.fsproj -- \
+  --stock-tactical-live-host 127.0.0.1:PORT http://127.0.0.1:PORT \
+  http://127.0.0.1:RECEIVER /private/new-host-dir SOURCE_COMMIT
+
+BARC_STOCK_SMOKE_HANDOFF=/private/stock-smoke-handoff.json \
+  npm --prefix tests/Broker.NativeProof run test:stock-smoke
+```
+
+The route captures an existing nonempty production queue, rally, Append
+Count1, visible Replace refusal with no native submission, ordinary Move and a
+visual Attack. Normalization accepts only the bounded stock CallRules trace and
+uses the pinned generated production codec to compare native, host and browser
+basis bytes. A final stock read joins the native dispatch envelope to actual
+host and browser results; native command index and browser child index remain
+separate identities. Same queue revision at a fresh canonical basis is valid,
+while a duplicate actor/domain/revision/basis is refused.
+
+This is source preparation. No stock native run, generated receiver journey,
+artifact custody, publication or installed adoption is claimed here. The full
+six-journey native qualification and optional custom replacement route remain
+open.
+
+The private supervisor precreates the host role home. The stock host creates a
+unique mode-0700 child beneath it, keeps the host journal open with append
+semantics, and publishes the closed ready, metadata and setup records from the
+actual native basis, catalogue, projected actors, definitions and positions.
+The ready writer identity is the running host PID, process start tick and UID;
+unresolved source or artifact pins refuse before readiness.
+
+The browser process is only a bounded capture producer. It opens a new
+mode-0600 append journal, records canonical production-codec submits, results,
+observations, controller state and the visible Replace refusal, writes one
+terminal completion record, and retains its descriptor until the supervisor
+releases it. It does not read the live engine or host journal and does not
+write qualification output.
+
+After authenticating all running writers, the supervisor freezes complete
+engine, host and browser prefixes. It invokes `stock-native-trace.mjs` with
+exactly `--stock-trace`, `--host-snapshot`, `--browser-observation` and
+`--output`. The normalizer exclusively creates the bounded output. It
+canonicalizes legal protobuf defaults on both sides, validates every selected
+submission lifecycle, and binds terminal host and browser rows through parent,
+input, actor, basis, module, controller, batch, correlation and command-channel
+identities. Native command index remains distinct from browser child index;
+unknown terminal status remains unknown.
