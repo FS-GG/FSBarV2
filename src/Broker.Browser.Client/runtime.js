@@ -440,5 +440,5 @@ function createPreviewRuntime(root, options, emit) {
 }
 
 export function createRuntime(root, options, emit) {
-  return ["barc-live-v1", "barc-live-tactical-v1"].includes(options?.profile) ? createLiveRuntime(root, options, emit) : createPreviewRuntime(root, options, emit);
+  return ["barc-live-v1", "barc-live-tactical-v1", "barc-live-tactical-stock-v1"].includes(options?.profile) ? createLiveRuntime(root, options, emit) : createPreviewRuntime(root, options, emit);
 }

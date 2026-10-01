@@ -1,6 +1,8 @@
 # BARC-01.5 — Authoritative factory replacement dependency
 
-Status: admitted owning amendment; FR1 contract implementation active. FR2–FR6 remain pending.
+Status: preserved optional experiment; FR1–FR6 remain open and inactive for the selected stock product route.
+
+**Preserved optional custom-engine experiment; not selected for the stock product horizon.** The 2026-09-30 parent-admitted experiment and FR1–FR6 technical/native requirements are preserved. Stock product scope was explicitly amended on 2026-10-01 in the owning useful-play plan. This disposition completes no FR unit and grants no stock equivalent to atomic replacement, cancellation/refund, synchronized fencing or independent service-state peer evidence. Retained native acceptance is 0/6; custom repin/installation/native work remains inactive unless the parent selects this optional route again.
 
 Owning amendment: [useful-play roadmap](barc-01-useful-play.md), under existing `.5b/.5c/.5f`; HighBar owns the engine/native implementation and records its technical contract beside the existing engine patch bundle. Original feature/item remains **BARC-01 / BARC-01.5**. Route: **routine**. This is an executable horizon expansion, not a new feature identity or a second completion ledger. Backlink: `.github/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md` §9.8, “Fable BAR client and custom WASM control”.
 
@@ -98,7 +100,7 @@ Completion stays in the owning `.5` roadmap; these are proposed substeps, not du
 
 - [ ] **BARC-01.5-FR6 — Close positive Replace within existing useful-play acceptance — route: routine.** Depends on actual FR5 results, exact-head source gates and protected readbacks. Native evidence owner extends FSBar `tests/Broker.NativeProof/tactical-native-{journey.spec.js,evidence.mjs,evidence.test.mjs}` plus private fixture setup/readback. Parent joins local/generated receiver bytes and reruns required `.5f` product journeys. Only then update existing `.5` evidence and Unified progress. `.7` publication/fleet installation remain separate; no alternate six-case success definition.
 
-**First executable window:** FR1 immediately; FR2 and FR3 after the shared contract is frozen, with separate Recoil worktrees and one engine integrator. FSBar/HighBar safety repairs continue without overlap. Native oracle/fixture preparation can run concurrently on its assigned paths, but launches wait for FR5. Group assembly can be authored in new standalone files against the frozen API; integration waits for safety owner handoff. No new planning-only PR, issue, telemetry registry or host daemon is required.
+**First executable window if the parent reselects this optional route:** FR1 first; FR2 and FR3 after the shared contract is frozen, with separate Recoil worktrees and one engine integrator. FSBar/HighBar safety repairs continue without overlap. Native oracle/fixture preparation can run concurrently on its assigned paths, but launches wait for FR5. Group assembly can be authored in new standalone files against the frozen API; integration waits for safety owner handoff. No new planning-only PR, issue, telemetry registry or host daemon is required.
 
 ## Native acceptance that closes the gap
 
@@ -118,6 +120,6 @@ Generated-workspace impact (§9.9) is confined to the opt-in Fable BAR receiver.
 
 This is larger than the multiplier fix: simulation cancellation/notification atomicity, authenticated synchronized transport/results, count aggregation, ABI/build custody and native acceptance are the cost drivers. Highest risks are Lua hook error/side-effect handling, cancellation reentrancy, deterministic lifetime/result state, and authority ordering across the asynchronous command path. FR1–FR3 technical tests make those risks explicit before expensive installation. The initial supported profile is bounded; save/load, arbitrary game mods, other architectures and public multiplayer distribution need separate qualification and must not be claimed from this run.
 
-No human decision is needed for the admitted owned-patch route. If FR1 finds a game hook that cannot support strict preflight without changing game source, the parent should admit the smallest pinned game amendment within this same horizon; do not weaken native atomicity or stop at indefinite refusal. Preserve the requested positive exit and replan only that demonstrated dependency.
+If the parent reselects the optional owned-patch route and FR1 finds a game hook that cannot support strict preflight without changing game source, the parent should admit the smallest pinned game amendment within that optional horizon; do not weaken native atomicity or stop at indefinite refusal. Preserve the optional route's positive exit and replan only that demonstrated dependency.
 
 **Proposed §9.8 current-horizon sentence:** “BARC-01.5 useful tactical play retains its existing delivered source and safety corrections; positive nonempty factory Replace now has an admitted owned-engine atomic replacement dependency, with bounded typed ingress, Count child preservation and paired native acceptance. Engine installation, `.5f` completion and `.7` publication/adoption remain separately evidenced.” Link this owning amendment after protected delivery; intermediate status does not need a projection-only PR.

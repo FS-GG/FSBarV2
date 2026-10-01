@@ -4192,6 +4192,19 @@ export namespace barc {
                 QUEUE_DOMAIN_FACTORY_RALLY = 3
             }
 
+            /** NativeQueueEvidenceScheme enum. */
+            enum NativeQueueEvidenceScheme {
+
+                /** NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED value */
+                NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED = 0,
+
+                /** NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1 value */
+                NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1 = 1,
+
+                /** NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1 value */
+                NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1 = 2
+            }
+
             /** TacticalDescriptorKind enum. */
             enum TacticalDescriptorKind {
 
@@ -5809,6 +5822,9 @@ export namespace barc {
                 /** TacticalQueue repeat. */
                 repeat?: (boolean|null);
 
+                /** TacticalQueue evidenceScheme. */
+                evidenceScheme: barc.browser.v1.NativeQueueEvidenceScheme;
+
                 /**
                  * Encodes the specified TacticalQueue message. Does not implicitly {@link barc.browser.v1.TacticalQueue.verify|verify} messages.
                  * @param message TacticalQueue message or plain object to encode
@@ -5892,6 +5908,9 @@ export namespace barc {
 
                     /** TacticalQueue repeat */
                     repeat?: (boolean|null);
+
+                    /** TacticalQueue evidenceScheme */
+                    evidenceScheme?: (barc.browser.v1.NativeQueueEvidenceScheme|null);
 
                     /** Unknown fields preserved while decoding when enabled */
                     $unknowns?: Uint8Array[];

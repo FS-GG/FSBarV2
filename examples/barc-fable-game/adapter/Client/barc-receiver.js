@@ -23,7 +23,8 @@ if (
   profile !== null &&
   profile !== "barc-preview-v1" &&
   profile !== "barc-live-v1" &&
-  profile !== "barc-live-tactical-v1"
+  profile !== "barc-live-tactical-v1" &&
+  profile !== "barc-live-tactical-stock-v1"
 ) {
   throw new Error(`Unsupported BAR receiver profile: ${profile}`);
 }
@@ -34,7 +35,7 @@ if (
 const options = {
   assetBaseUrl: new URL("./barc-preview/", document.baseURI).href
 };
-if (profile === "barc-live-v1" || profile === "barc-live-tactical-v1") {
+if (profile === "barc-live-v1" || profile === "barc-live-tactical-v1" || profile === "barc-live-tactical-stock-v1") {
   options.profile = profile;
 }
 const dispose = mount(root, options);

@@ -1,7 +1,12 @@
 import { canonicalObject, encodeObject, v1 } from "../Broker.Browser.Contracts/generated/codec.js";
 import { GuestSupervisor } from "../Broker.Browser.Wasm/index.js";
 
-const LEGACY_PROFILE = "barc-live-v1", TACTICAL_PROFILE = "barc-live-tactical-v1";
+const LEGACY_PROFILE = "barc-live-v1", TACTICAL_PROFILE = "barc-live-tactical-v1", STOCK_TACTICAL_PROFILE = "barc-live-tactical-stock-v1";
+const tacticalNegotiation = new Map([
+  [TACTICAL_PROFILE, { revision:1, evidenceScheme:"FULL_NATIVE_TUPLE_V1", wireEvidenceSchemes:new Set([undefined,"NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED","NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1"]) }],
+  [STOCK_TACTICAL_PROFILE, { revision:2, evidenceScheme:"STOCK_LUA_SUPPORTED_FIELDS_V1", wireEvidenceSchemes:new Set(["NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1"]) }]
+]);
+const isTacticalProfile = profile => tacticalNegotiation.has(profile);
 const MAX_FRAME = 64 * 1024, MAX_ACTORS = 64, MAX_MODULE = 8 * 1024 * 1024, MAX_QUEUE = 8;
 const finite = value => typeof value === "number" && Number.isFinite(value);
 const decimal = value => typeof value === "string" && /^(?:0|[1-9][0-9]*)$/.test(value);
@@ -24,12 +29,13 @@ function validateBasis(value) {
   if (!value?.token || !decimal(value.stateSequence) || !Number.isInteger(value.nativeFrame) || !value.matchId
       || !value.processIncarnation || !value.stateChannelIncarnation) throw new Error("live observation basis is incomplete");
 }
-function validateTacticalBootstrap(value) {
+function validateTacticalBootstrap(value, requestedProfile) {
   const caps = value.capabilities?.tactical, catalogue = value.tacticalCatalogue;
-  if (!caps || caps.profile !== TACTICAL_PROFILE || caps.revision !== 1 || caps.maxCatalogueEntries < 1 || caps.maxCataloguePageEntries < 1
+  const negotiation = tacticalNegotiation.get(requestedProfile);
+  if (!negotiation || !caps || caps.profile !== requestedProfile || caps.revision !== negotiation.revision || caps.maxCatalogueEntries < 1 || caps.maxCataloguePageEntries < 1
       || caps.maxBuildOptionsPerActor < 1 || caps.maxQueueEntriesPerActor < 1 || caps.maxFeatureReferences < 1
       || caps.maxFactoryProductionCount < 1 || caps.maxAreaRadiusWorldUnits < 1 || caps.maxCommandDescriptorsPerActor < 1) throw new Error("tactical capabilities are incomplete");
-  if (!catalogue || catalogue.profile !== TACTICAL_PROFILE || catalogue.revision !== 1 || !catalogue.complete || !catalogue.catalogueId
+  if (!catalogue || catalogue.profile !== requestedProfile || catalogue.revision !== negotiation.revision || !catalogue.complete || !catalogue.catalogueId
       || !decimal(catalogue.catalogueRevision) || catalogue.catalogueRevision === "0" || !catalogue.content?.engineVersion
       || !catalogue.content?.gameName || !catalogue.content?.gameVersion || !catalogue.content?.gameContentSha256
       || !Array.isArray(catalogue.definitions) || catalogue.definitions.length > caps.maxCatalogueEntries) throw new Error("tactical catalogue is incomplete");
@@ -43,7 +49,7 @@ function validateTacticalBootstrap(value) {
 }
 function validateBootstrap(value, pairedSession, requestedProfile) {
   if (!value || value.liveProfile !== requestedProfile || value.preview?.profile !== requestedProfile || value.preview?.sessionId !== pairedSession
-      || ![LEGACY_PROFILE, TACTICAL_PROFILE].includes(requestedProfile)) throw new Error("live bootstrap identity/profile is invalid");
+      || ![LEGACY_PROFILE, ...tacticalNegotiation.keys()].includes(requestedProfile)) throw new Error("live bootstrap identity/profile is invalid");
   const limits = value.limits, caps = value.capabilities, bounds = caps?.mapBounds;
   if (!limits || limits.maxActorCount < 1 || limits.maxActorCount > MAX_ACTORS || limits.maxInputBytes < 1 || limits.maxInputBytes > MAX_FRAME
       || limits.maxOutputBytes < 1 || limits.maxOutputBytes > MAX_FRAME || limits.maxFrameBytes < 1 || limits.maxFrameBytes > MAX_FRAME
@@ -54,7 +60,7 @@ function validateBootstrap(value, pairedSession, requestedProfile) {
       || !finite(bounds.minZ ?? 0) || !finite(bounds.maxZ) || bounds.maxX <= (bounds.minX ?? 0) || bounds.maxZ <= (bounds.minZ ?? 0)) throw new Error("live capabilities or map bounds are invalid");
   if (!value.controller?.sessionId || value.controller.sessionId !== pairedSession || !value.controller.controllerId
       || !value.controller.controllerIncarnation || !decimal(value.controller.authorityEpoch) || value.controller.authorityEpoch === "0") throw new Error("live controller identity is invalid");
-  if (requestedProfile === TACTICAL_PROFILE) validateTacticalBootstrap(value);
+  if (isTacticalProfile(requestedProfile)) validateTacticalBootstrap(value, requestedProfile);
 }
 function validateObservation(value, bootstrap) {
   if (!value?.preview || value.preview.sessionId !== bootstrap.preview.sessionId) throw new Error("live observation session mismatch");
@@ -76,7 +82,7 @@ function validateObservation(value, bootstrap) {
     const preview = previewIds.get(refId(unit.reference));
     if (!preview || preview.observation !== unit.observation) throw new Error("live and preview observation units disagree");
   }
-  if (bootstrap.liveProfile === TACTICAL_PROFILE) {
+  if (isTacticalProfile(bootstrap.liveProfile)) {
     const tactical = value.tactical, caps = bootstrap.capabilities.tactical, catalogue = bootstrap.tacticalCatalogue;
     if (!tactical || tactical.catalogueId !== catalogue.catalogueId || tactical.catalogueRevision !== catalogue.catalogueRevision
         || !Array.isArray(tactical.actors) || tactical.actors.length > bootstrap.limits.maxActorCount
@@ -92,9 +98,13 @@ function validateObservation(value, bootstrap) {
           || !Array.isArray(actor.descriptors) || actor.descriptors.length > caps.maxCommandDescriptorsPerActor || !Array.isArray(actor.queue)) throw new Error("tactical actor binding is invalid");
       actorKeys.add(refKey(actor.actor)); const domains = new Set();
       for (const queue of actor.queue) {
-        if (!decimal(queue.revision) || (queue.complete && queue.revision === "0") || domains.has(queue.domain)
+        const revision=queue.revision??"0", complete=queue.complete===true;
+        if (!decimal(revision) || (complete && revision === "0") || domains.has(queue.domain)
             || !["QUEUE_DOMAIN_ACTOR_ORDER","QUEUE_DOMAIN_FACTORY_PRODUCTION","QUEUE_DOMAIN_FACTORY_RALLY"].includes(queue.domain)
             || !Array.isArray(queue.entries) || queue.entries.length > caps.maxQueueEntriesPerActor) throw new Error("tactical queue metadata is invalid");
+        if (!tacticalNegotiation.get(bootstrap.liveProfile).wireEvidenceSchemes.has(queue.evidenceScheme)) throw new Error("tactical queue evidence scheme does not match the negotiated profile");
+        if (bootstrap.liveProfile === STOCK_TACTICAL_PROFILE && !complete
+            && (revision !== "0" || queue.entries.length !== 0 || Object.hasOwn(queue,"repeat"))) throw new Error("stock tactical unavailable queue fabricated evidence");
         domains.add(queue.domain);
       }
     }
@@ -129,7 +139,7 @@ function validateIntent(intent, observation, bootstrap) {
         || !observation.units.some(unit => unit.observation === "OBSERVATION_KIND_VISUAL" && sameRef(unit.reference, target))) throw new Error("guest live Attack target is not currently visual");
   } else if (intent.action === "stop") return;
   else {
-    if (bootstrap.liveProfile !== TACTICAL_PROFILE || !observation.tactical) throw new Error("guest tactical action was not negotiated");
+    if (!isTacticalProfile(bootstrap.liveProfile) || !observation.tactical) throw new Error("guest tactical action was not negotiated");
     if (!Array.isArray(intent.actorTacticalBindings) || intent.actorTacticalBindings.length !== intent.actors.length) throw new Error("guest tactical actor bindings are incomplete");
     for (let i = 0; i < intent.actors.length; i++) {
       const actor = intent.actors[i], binding = intent.actorTacticalBindings[i], state = observation.tactical.actors.find(value => sameRef(value.actor, actor));
@@ -144,6 +154,14 @@ function validateIntent(intent, observation, bootstrap) {
       const value = intent[intent.action], definition = catalogue.definitions.find(item => item.definitionId === value?.definitionId);
       if (!definition || value.catalogueId !== catalogue.catalogueId || value.catalogueRevision !== catalogue.catalogueRevision
           || intent.actors.some(actor => !descriptorFor(observation, actor, tacticalKind(intent.action))?.allowedDefinitionIds?.includes(value.definitionId))) throw new Error("guest tactical definition or catalogue binding is invalid");
+    }
+    if (bootstrap.liveProfile === STOCK_TACTICAL_PROFILE && intent.action === "factoryProduce") {
+      const policy = intent.factoryProduce?.queuePolicy;
+      if (policy === "TACTICAL_QUEUE_POLICY_REPLACE") throw new Error("Factory produce Replace is unsupported by the stock tactical profile");
+      const queues = intent.actors.map(actor => observation.tactical.actors.find(value => sameRef(value.actor, actor))?.queue?.find(value => value.domain === "QUEUE_DOMAIN_FACTORY_PRODUCTION"));
+      if (queues.some(queue => !queue?.complete || queue.revision === "0")) throw new Error("Factory production queue evidence is unavailable for the stock tactical profile");
+      if (policy === "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY" && queues.some(queue => queue.entries.length !== 0)) throw new Error("Factory produce RejectIfBusy requires an observed empty stock queue");
+      if (policy !== "TACTICAL_QUEUE_POLICY_APPEND" && policy !== "TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY") throw new Error("Factory production policy is unsupported by the stock tactical profile");
     }
     if (intent.action === "reclaimFeature" && !observation.tactical.features.some(value => refKey(value.reference) === refKey(intent.reclaimFeature?.target))) throw new Error("guest tactical feature lifetime is stale");
     if (["guard","repair","reclaimUnit"].includes(intent.action) && !observation.units.some(value => value.observation === "OBSERVATION_KIND_OWN" && sameRef(value.reference,intent[intent.action]?.target))) throw new Error("guest tactical friendly target is stale");
@@ -187,7 +205,7 @@ const svg = (name, attributes = {}) => { const element = document.createElementN
 export function createLiveRuntime(root, options, emit) {
   if (!(root instanceof Element)) throw new Error("BARC live mount root must be an Element");
   const assetBase = new URL(options.assetBaseUrl); if (!assetBase.href.endsWith("/")) throw new Error("assetBaseUrl must end with /");
-  const requestedProfile = options.profile ?? LEGACY_PROFILE, tacticalProfile = requestedProfile === TACTICAL_PROFILE;
+  const requestedProfile = options.profile ?? LEGACY_PROFILE, tacticalProfile = isTacticalProfile(requestedProfile), stockTacticalProfile = requestedProfile === STOCK_TACTICAL_PROFILE;
   const supervisor = new GuestSupervisor({ workerUrl: new URL("src/Broker.Browser.Wasm/guest-worker.js", assetBase), limits: { phaseTimeoutMilliseconds: 250 } });
   let socket = null, disposed = false, pairedSession = null, bootstrap = null, observation = null, moduleBytes = null, moduleName = "No guest loaded", moduleIdentity = null;
   let selected = [], target = { x: 0, z: 0 }, attackTarget = null, friendlyTarget = null, featureTarget = null, movePolicy = "MOVE_POLICY_REPLACE", controllerStage = "CONTROLLER_STAGE_UNSPECIFIED";
@@ -275,6 +293,12 @@ export function createLiveRuntime(root, options, emit) {
     const kind = elements.tacticalAction.value, domain = domainFor(kind), base = { actorTacticalBindings:tacticalBindings(domain) }, definitionId = Number(elements.definition.value), queuePolicy = elements.queuePolicy.value;
     const required=kind==="tacticalMode"?elements.modeKind.value:kind==="queueEdit"?(elements.queueOperation.value==="insert"?"TACTICAL_DESCRIPTOR_QUEUE_INSERT":elements.queueOperation.value==="remove"?"TACTICAL_DESCRIPTOR_QUEUE_REMOVE":"TACTICAL_DESCRIPTOR_QUEUE_REPEAT"):tacticalKind(kind);
     if(!required||selected.some(actor=>!descriptorFor(observation,actor,required))){elements.result.textContent=`${kind} unavailable: current actor descriptor does not enable it.`;render();return}
+    if(stockTacticalProfile&&kind==="factoryProduce"){
+      const queues=selected.map(actor=>actorState(actor)?.queue?.find(value=>value.domain==="QUEUE_DOMAIN_FACTORY_PRODUCTION"));
+      if(queuePolicy==="TACTICAL_QUEUE_POLICY_REPLACE"){elements.result.textContent="Factory produce Replace is unsupported by the stock tactical profile; no Append fallback was submitted.";render();return}
+      if(queues.some(queue=>!queue?.complete||queue.revision==="0")){elements.result.textContent="Factory production is unavailable until a complete current stock queue is observed.";render();return}
+      if(queuePolicy==="TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY"&&queues.some(queue=>queue.entries.length!==0)){elements.result.textContent="Factory produce RejectIfBusy requires an observed empty stock queue.";render();return}
+    }
     let body;
     if (kind === "build") body = { build:{ definitionId, position:target, facing:elements.facing.value, queuePolicy, catalogueId:bootstrap.tacticalCatalogue.catalogueId, catalogueRevision:bootstrap.tacticalCatalogue.catalogueRevision } };
     else if (["guard","repair","reclaimUnit"].includes(kind)) { if (!friendlyTarget) return; body = { [kind]:{ target:friendlyTarget, queuePolicy } }; }
@@ -417,8 +441,13 @@ export function createLiveRuntime(root, options, emit) {
     const selectedState=selected[0]&&actorState(selected[0]), domain=elements.queueDomain.value, queue=selectedState?.queue?.find(value=>value.domain===domain);
     elements.queueState.textContent=tacticalProfile?(queue?.complete?`${domain} revision ${queue.revision} · ${queue.entries.length} entries · repeat ${queue.repeat??"unknown"}`:`${domain} unavailable or incomplete`):"Queues unavailable in legacy live profile";
     const priorQueueEntry=elements.queueEntry.value;elements.queueEntry.replaceChildren(...(queue?.entries??[]).map(entry=>{const option=document.createElement("option");option.value=String(entry.nativeTag);option.textContent=`tag ${entry.nativeTag} · ${entry.action}${entry.definitionId?` · definition ${entry.definitionId}`:""}`;return option}));if([...elements.queueEntry.options].some(option=>option.value===priorQueueEntry))elements.queueEntry.value=priorQueueEntry;
-    const selectedKind=elements.tacticalAction.value, descriptorKind=selectedKind==="tacticalMode"?elements.modeKind.value:selectedKind==="queueEdit"?(elements.queueOperation.value==="insert"?"TACTICAL_DESCRIPTOR_QUEUE_INSERT":elements.queueOperation.value==="remove"?"TACTICAL_DESCRIPTOR_QUEUE_REMOVE":"TACTICAL_DESCRIPTOR_QUEUE_REPEAT"):tacticalKind(selectedKind), available=selected.length>0&&selected.every(actor=>descriptorKind&&descriptorFor(observation,actor,descriptorKind));
-    elements.diagnostic.textContent = confirmed() ? (tacticalProfile ? (available?"Current descriptor and queue bindings available. Commands return through the active guest; dispatch is not completion.":`${selectedKind} is unavailable for the current selection. Missing or disabled producer metadata is never guessed.`) : "Native authority confirmed. All actions must return from the active guest.") : "Live gameplay input is fenced.";
+    const selectedKind=elements.tacticalAction.value, descriptorKind=selectedKind==="tacticalMode"?elements.modeKind.value:selectedKind==="queueEdit"?(elements.queueOperation.value==="insert"?"TACTICAL_DESCRIPTOR_QUEUE_INSERT":elements.queueOperation.value==="remove"?"TACTICAL_DESCRIPTOR_QUEUE_REMOVE":"TACTICAL_DESCRIPTOR_QUEUE_REPEAT"):tacticalKind(selectedKind);
+    const selectedFactoryQueues=selected.map(actor=>actorState(actor)?.queue?.find(value=>value.domain==="QUEUE_DOMAIN_FACTORY_PRODUCTION"));
+    const stockFactoryAvailable=!stockTacticalProfile||selectedKind!=="factoryProduce"||(elements.queuePolicy.value!=="TACTICAL_QUEUE_POLICY_REPLACE"&&selectedFactoryQueues.every(queue=>queue?.complete&&queue.revision!=="0")&&(elements.queuePolicy.value!=="TACTICAL_QUEUE_POLICY_REJECT_IF_BUSY"||selectedFactoryQueues.every(queue=>queue.entries.length===0)));
+    const available=selected.length>0&&selected.every(actor=>descriptorKind&&descriptorFor(observation,actor,descriptorKind))&&stockFactoryAvailable;
+    const evidence=tacticalNegotiation.get(requestedProfile)?.evidenceScheme;
+    const stockReplace=stockTacticalProfile&&selectedKind==="factoryProduce"&&elements.queuePolicy.value==="TACTICAL_QUEUE_POLICY_REPLACE";
+    elements.diagnostic.textContent = stockReplace ? "Factory produce Replace is unsupported by the stock tactical profile, including an observed empty queue. No Append fallback is sent." : confirmed() ? (tacticalProfile ? (available?`Current descriptor and queue bindings available${evidence?` under ${evidence}`:""}. Commands return through the active guest; dispatch is not completion.`:`${selectedKind} is unavailable for the current selection. Missing, incomplete, or disabled producer metadata is never guessed.`) : "Native authority confirmed. All actions must return from the active guest.") : "Live gameplay input is fenced.";
     const buildIds=selected.length?bootstrap?.tacticalCatalogue?.definitions?.filter(definition=>selected.every(actor=>descriptorFor(observation,actor,selectedKind==="factoryProduce"?"TACTICAL_DESCRIPTOR_FACTORY_PRODUCE":"TACTICAL_DESCRIPTOR_BUILD")?.allowedDefinitionIds?.includes(definition.definitionId)))??[]:[];
     const prior=elements.definition.value;elements.definition.replaceChildren(...buildIds.map(definition=>{const option=document.createElement("option");option.value=String(definition.definitionId);option.textContent=`${definition.displayName} (${definition.definitionId}) · ${definition.footprintXCells}×${definition.footprintZCells} · M ${definition.cost?.metal??"?"} E ${definition.cost?.energy??"?"}`;return option}));if([...elements.definition.options].some(option=>option.value===prior))elements.definition.value=prior;
     elements.units.replaceChildren(); if (observation && bootstrap) { const b=bootstrap.capabilities.mapBounds; for(const unit of observation.units){const preview=observation.preview.units.find(value=>(value.id??"0")===refId(unit.reference));if(!preview?.position)continue;const x=(preview.position.x-(b.minX??0))/(b.maxX-(b.minX??0))*800,y=(preview.position.z-(b.minZ??0))/(b.maxZ-(b.minZ??0))*520;const own=unit.observation==="OBSERVATION_KIND_OWN";const shape=unit.observation==="OBSERVATION_KIND_RADAR"?svg("rect",{x:x-7,y:y-7,width:14,height:14}):svg("circle",{cx:x,cy:y,r:own?10:8});shape.dataset.liveRef=refKey(unit.reference);shape.dataset.unitId=refId(unit.reference);shape.dataset.lifetime=unit.reference.lifetime;shape.setAttribute("class",`unit ${own?"own":unit.observation==="OBSERVATION_KIND_VISUAL"?"visual":"radar"}${selected.some(value=>sameRef(value,unit.reference))?" selected":""}`);shape.setAttribute("role","img");const health=Object.hasOwn(preview,"health")?` health ${preview.health}/${preview.maxHealth??"unknown"}`:" health unknown";shape.setAttribute("aria-label",`${unit.observation.replace("OBSERVATION_KIND_","").toLowerCase()} unit ${refId(unit.reference)} lifetime ${unit.reference.lifetime}${health}`);elements.units.append(shape)}}

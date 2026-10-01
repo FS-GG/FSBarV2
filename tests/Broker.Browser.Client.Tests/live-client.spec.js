@@ -14,6 +14,8 @@ const bootstrap = { preview:{ game:"Beyond All Reason", protocolVersion:"barc.br
 const catalogueId="UlJSUlJSUlJSUlJSUlJSUg==", catalogueRevision="9007199254741011", descriptorRevision="9007199254741013";
 const tacticalCapabilities={profile:"barc-live-tactical-v1",revision:1,maxCatalogueEntries:4096,maxCataloguePageEntries:128,maxBuildOptionsPerActor:128,maxQueueEntriesPerActor:128,maxFeatureReferences:256,maxFactoryProductionCount:20,maxAreaRadiusWorldUnits:1024,maxCommandDescriptorsPerActor:32};
 const tacticalBootstrap={...bootstrap,preview:{...bootstrap.preview,profile:"barc-live-tactical-v1"},liveProfile:"barc-live-tactical-v1",capabilities:{...bootstrap.capabilities,tactical:tacticalCapabilities},tacticalCatalogue:{profile:"barc-live-tactical-v1",revision:1,content:{engineVersion:"2025.06.19",gameName:"Beyond All Reason",gameVersion:"test-29926-0571aa8",gameContentSha256:"Y2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2M="},catalogueId,catalogueRevision,complete:true,definitions:[{definitionId:710,internalName:"armmex",displayName:"Metal Extractor",footprintXCells:2,footprintZCells:3,cost:{metal:75,energy:900,buildTime:1200},buildOptionDefinitionIds:[710]}]}};
+const stockProfile="barc-live-tactical-stock-v1",stockCapabilities={...tacticalCapabilities,profile:stockProfile,revision:2};
+const stockBootstrap={...tacticalBootstrap,preview:{...tacticalBootstrap.preview,profile:stockProfile},liveProfile:stockProfile,capabilities:{...tacticalBootstrap.capabilities,tactical:stockCapabilities},tacticalCatalogue:{...tacticalBootstrap.tacticalCatalogue,profile:stockProfile,revision:2}};
 const observation = refs => ({ preview:{ sessionId,sequence:basis.stateSequence,capturedAtUnixMs:"1770000000123",perspectiveId:"team-0",validity:{status:"VALIDITY_STATUS_CURRENT",lastSequence:basis.stateSequence},units:[
   { id:"0",definitionId:501,teamId:0,observation:"OBSERVATION_KIND_OWN",position:{x:1024,z:1024} },
   { id:"31999",definitionId:502,teamId:0,observation:"OBSERVATION_KIND_OWN",position:{x:2048,z:2048} },
@@ -25,6 +27,7 @@ const descriptorKinds=["TACTICAL_DESCRIPTOR_BUILD","TACTICAL_DESCRIPTOR_GUARD","
 const actorTactical=actor=>({actor,descriptorRevision,descriptors:[...descriptorKinds.map(kind=>({kind,allowedDefinitionIds:["TACTICAL_DESCRIPTOR_BUILD","TACTICAL_DESCRIPTOR_FACTORY_PRODUCE"].includes(kind)?[710]:[],allowedModeValues:[]})),{kind:"TACTICAL_DESCRIPTOR_BAR_CONSTRUCTION_PRIORITY",allowedDefinitionIds:[],allowedModeValues:["TACTICAL_MODE_VALUE_DISABLED","TACTICAL_MODE_VALUE_ENABLED"],observedModeValue:"TACTICAL_MODE_VALUE_DISABLED"}],queue:[{domain:"QUEUE_DOMAIN_ACTOR_ORDER",revision:"9007199254741015",entries:[{nativeTag:41,action:"LIVE_ACTION_KIND_MOVE",position:{x:1,z:2}}],complete:true},{domain:"QUEUE_DOMAIN_FACTORY_PRODUCTION",revision:"9007199254741016",entries:[{nativeTag:42,action:"LIVE_ACTION_KIND_FACTORY_PRODUCE",definitionId:710}],complete:true,repeat:false},{domain:"QUEUE_DOMAIN_FACTORY_RALLY",revision:"9007199254741017",entries:[],complete:false}]});
 const feature0={reference:{id:"0",lifetime:"9007199254741019"},definitionId:91,position:{x:1400,elevation:12.5,z:1600},reclaimLeft:.75};
 const tacticalObservation={...fullObservation,tactical:{catalogueId,catalogueRevision,economy:{perspectiveId:"team-0",sampleFrame:basis.nativeFrame,metal:{resourceName:"metal",unit:"resource",current:500,storage:1000,incomePerSecond:8.5,usagePerSecond:4},energy:{resourceName:"energy",unit:"resource",current:2500,storage:5000}},actors:[actorTactical(ref0),actorTactical(ref31999)],features:[feature0]}};
+const stockObservation={...tacticalObservation,tactical:{...tacticalObservation.tactical,actors:tacticalObservation.tactical.actors.map(actor=>({...actor,queue:actor.queue.map(queue=>queue.complete?{...queue,evidenceScheme:"NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1"}:{domain:queue.domain,revision:"0",entries:[],complete:false,evidenceScheme:"NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1"})}))}};
 let server, port, sockets, submissions, armRequests, auth, canonicalFeedback, heldFeedback, resultSequence, revocations, tacticalBootstrapOverride, tacticalObservationOverride, observationDelayMs;
 const routes=[["/client/","src/Broker.Browser.Client/dist/"],["/src/Broker.Browser.Wasm/","src/Broker.Browser.Wasm/"],["/guests/","tests/Broker.Browser.Wasm.Tests/generated/"]];
 
@@ -33,7 +36,8 @@ test.beforeAll(async()=>{
   sockets=new WebSocketServer({noServer:true});server.on("upgrade",(request,socket,head)=>sockets.handleUpgrade(request,socket,head,ws=>sockets.emit("connection",ws)));
   sockets.on("connection",ws=>{ws.once("message",raw=>{
     auth=canonicalObject(v1.LiveClientEnvelope,raw);let currentController=controller,activeModule=null,stateSequence=0;
-    const profile=auth.authenticate.profile, selectedBootstrap=profile==="barc-live-tactical-v1"?(tacticalBootstrapOverride??tacticalBootstrap):bootstrap, selectedObservation=profile==="barc-live-tactical-v1"?(tacticalObservationOverride??tacticalObservation):fullObservation;
+    const profile=auth.authenticate.profile,isTactical=profile==="barc-live-tactical-v1"||profile===stockProfile;
+    const selectedBootstrap=isTactical?(tacticalBootstrapOverride??(profile===stockProfile?stockBootstrap:tacticalBootstrap)):bootstrap, selectedObservation=isTactical?(tacticalObservationOverride??(profile===stockProfile?stockObservation:tacticalObservation)):fullObservation;
     const negotiated=canonicalFeedback?{...selectedBootstrap,limits:{...selectedBootstrap.limits,maxPendingParents:2}}:selectedBootstrap;
     ws.send(encodeObject(v1.LiveServerEnvelope,{bootstrap:{...negotiated,controller:currentController}}));const sendObservation=()=>ws.send(encodeObject(v1.LiveServerEnvelope,{observation:selectedObservation}));if(observationDelayMs)setTimeout(sendObservation,observationDelayMs);else sendObservation();
     ws.on("message",bytes=>{const message=canonicalObject(v1.LiveClientEnvelope,bytes);
@@ -225,6 +229,19 @@ test("tactical pointer and keyboard controls cross the real Worker with exact bi
   await expect(page.locator(".diagnostic")).toContainText("unavailable");
   await expect(page.getByRole("button",{name:"Send tactical command"})).toHaveAttribute("aria-disabled","");
   expect(submissions).toHaveLength(4);
+});
+
+test("stock tactical UI visibly refuses FactoryProduce Replace without an Append fallback before authority",async({page})=>{
+  await page.goto(`http://127.0.0.1:${port}/?profile=${stockProfile}`);
+  await page.getByLabel("Gateway").fill(`ws://127.0.0.1:${port}/live`);await page.getByLabel("Session UUID").fill(sessionUuid);await page.getByLabel("One-time credential").fill("live-credential");await page.getByRole("button",{name:"Pair"}).click();
+  await expect(page.locator('[data-unit-id="0"]')).toBeVisible();expect(auth.authenticate.profile).toBe(stockProfile);
+  await page.locator('[name="tactical-action"]').selectOption("factoryProduce");
+  await page.getByLabel("Queue policy").selectOption("TACTICAL_QUEUE_POLICY_REPLACE");
+  await expect(page.locator(".diagnostic")).toContainText("Replace is unsupported");
+  await expect(page.getByRole("button",{name:"Send tactical command"})).toHaveAttribute("aria-disabled","");
+  await page.getByRole("button",{name:"Send tactical command"}).click({force:true});
+  await expect(page.locator(".diagnostic")).toContainText("No Append fallback");
+  expect(submissions).toHaveLength(0);
 });
 
 test("pointer and keyboard multi-selection preserve ordered actors through the real tactical guest",async({page})=>{

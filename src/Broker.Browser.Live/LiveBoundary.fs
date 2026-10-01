@@ -187,14 +187,14 @@ module LiveBoundary =
             | _ -> Error "live parent, input, or controller identity refused"
     let provisionBootstrapForProfile profile (sessionId: Guid) (perspectiveId: string) state =
         match LiveControl.latestCapabilities state with
-        | Some caps when profile="barc-live-v1" || (profile="barc-live-tactical-v1" && caps.Tactical.IsSome && LiveControl.latestTacticalCatalogue state |> Option.isSome && LiveControl.latestTacticalSnapshot state |> Option.isSome) ->
+        | Some caps when profile="barc-live-v1" || ((profile="barc-live-tactical-v1" || profile="barc-live-tactical-stock-v1") && caps.Tactical |> ValueOption.exists(fun tactical -> tactical.Profile=profile) && LiveControl.latestTacticalCatalogue state |> Option.isSome && LiveControl.latestTacticalSnapshot state |> Option.isSome) ->
             let provisional=LiveControl.provisionController sessionId state
             let limits=LiveLimits(MaxActorCount=caps.MaxActorCount,MaxInputBytes=65536u,MaxOutputBytes=65536u,MaxFrameBytes=65536u,MaxPendingInputs=8u,MaxModuleBytes=8388608u,GuestPhaseTimeoutMs=250u,MaxObservationAgeMs=caps.MaxObservationAgeMs,LiveSnapshotCadenceFrames=caps.SnapshotCadenceCeilingFrames,MaxNativeUnitId=caps.MaxNativeUnitId,MaxPendingParents=LiveControl.maxPendingParents state,MaxRetainedResults=LiveControl.maxRetainedResults state)
             let bounds=MapBounds(MinX=caps.MinWorldX,MaxX=caps.MaxWorldXInclusive,MinZ=caps.MinWorldZ,MaxZ=caps.MaxWorldZInclusive,TerrainElevationAvailable=caps.TerrainElevationAvailable)
             let capability=LiveCapabilities(Stop=caps.SupportsStop,Move=caps.SupportsMove,AttackVisibleUnit=caps.SupportsAttackVisibleUnit,MapBounds=bounds)
             let preview=Bootstrap(Game="bar",ProtocolVersion="1.0.0",Profile=profile,SessionId=ByteString.CopyFrom(sessionId.ToByteArray()),PerspectiveId=perspectiveId,Mode=PreviewMode.ReadOnly)
             let value=LiveBootstrap(Preview=preview,LiveProfile=profile,Limits=limits,Capabilities=capability)
-            if profile="barc-live-tactical-v1" then
+            if profile="barc-live-tactical-v1" || profile="barc-live-tactical-stock-v1" then
                 let nativeCaps=caps.Tactical.Value
                 capability.Tactical<-TacticalCapabilities(Profile=nativeCaps.Profile,Revision=nativeCaps.Revision,MaxCatalogueEntries=nativeCaps.MaxCatalogueEntries,MaxCataloguePageEntries=nativeCaps.MaxCataloguePageEntries,MaxBuildOptionsPerActor=nativeCaps.MaxBuildOptionsPerActor,MaxQueueEntriesPerActor=nativeCaps.MaxQueueEntriesPerActor,MaxFeatureReferences=nativeCaps.MaxFeatureReferences,MaxFactoryProductionCount=nativeCaps.MaxFactoryProductionCount,MaxAreaRadiusWorldUnits=nativeCaps.MaxAreaRadiusWorldUnits,MaxCommandDescriptorsPerActor=nativeCaps.MaxCommandDescriptorsPerActor)
                 let pages=LiveControl.latestTacticalCatalogue state |> Option.get
@@ -267,6 +267,7 @@ module LiveBoundary =
                             result.Descriptors.Add item
                         for queue in actor.Queue do
                             let item=TacticalQueue(Domain=enum<QueueDomain>(int queue.Domain),Revision=queue.Revision,Complete=queue.Complete)
+                            item.EvidenceScheme<-enum<Broker.Browser.Contracts.NativeQueueEvidenceScheme>(int queue.EvidenceScheme)
                             queue.Repeat |> ValueOption.iter(fun x->item.Repeat<-x)
                             for entry in queue.Entries do
                                 match browserQueueAction entry.Action with
