@@ -1,0 +1,76 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-bbeb1eb3243ec5d5bc0a8ba19067c66d208c0f4c",
+    "revision": "bbeb1eb3243ec5d5bc0a8ba19067c66d208c0f4c",
+    "tree": "fa45e998e7e5d8e8815563a0a08084d303df3781",
+    "parent": "f5c83c63153b96ea7b92b1a57d98f61d088ef711",
+    "status": "historical source accepted header repair; dedicated syntax checks passed; full build and runtime acceptance unknown"
+  },
+  "components": [
+    {
+      "id": "chatmessage-cstdint-dependency-bbeb",
+      "title": "Direct fixed width integer dependency",
+      "paths": ["rts/Game/ChatMessage.h"],
+      "summary": "Makes ChatMessage.h directly include cstdint for its existing UINT8_MAX based message size bound."
+    }
+  ],
+  "flows": [
+    {
+      "id": "chatmessage-header-compile-flow-bbeb",
+      "title": "Header dependency to dedicated translation unit",
+      "steps": [
+        {
+          "path": "rts/Game/ChatMessage.h",
+          "symbol": "cstdint",
+          "line": 6,
+          "description": "Import the standard fixed width integer declarations directly in the declaring header."
+        },
+        {
+          "path": "rts/Game/ChatMessage.h",
+          "symbol": "ChatMessage::MAX_MSG_SIZE",
+          "line": 22,
+          "description": "Use UINT8_MAX in the public header's compile time message size bound."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "chatmessage-direct-cstdint-bbeb",
+      "kind": "source-fact",
+      "statement": "ChatMessage.h directly includes cstdint before declaring MAX_MSG_SIZE from UINT8_MAX, so the header no longer relies on a transitive include for that macro.",
+      "evidence": [
+        {"path": "rts/Game/ChatMessage.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Game/ChatMessage.h", "line": 22, "symbol": "ChatMessage::MAX_MSG_SIZE"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["chat-message", "cstdint", "header-dependency", "compiler"]
+    },
+    {
+      "id": "chatmessage-sole-delta-and-syntax-pass-bbeb",
+      "kind": "reported-status",
+      "statement": "The accepted repair report identifies ChatMessage.h as the sole change from parent f5c83c6, with parent blob 14a9f5a5ba8071f43a38343df01c71865079839a and successor blob 4d520fecf514e6ab9cbf82b87d9a1b28a7276f58. It reports PASS for the exact failed ChatMessage.cpp command replayed with -fsyntax-only and for a standalone C++23 translation unit that includes only ChatMessage.h.",
+      "evidence": [
+        {"path": "rts/Game/ChatMessage.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Game/ChatMessage.h", "line": 22, "symbol": "ChatMessage::MAX_MSG_SIZE"}
+      ],
+      "confidence": "reported",
+      "tags": ["source-accept", "syntax-pass", "dedicated-tu", "standalone-header"]
+    },
+    {
+      "id": "chatmessage-build-runtime-boundary-bbeb",
+      "kind": "reported-status",
+      "statement": "The f5 root build is reported to have failed at the dedicated ChatMessage translation unit. The bbeb successor build was still compiling at 1503 of 2532 when reported; this is not a completed build, CTest result, two peer result, callback/refund result, or native runtime acceptance.",
+      "evidence": [
+        {"path": "rts/Game/ChatMessage.h", "line": 6, "symbol": "cstdint"}
+      ],
+      "confidence": "reported",
+      "tags": ["build-in-progress", "runtime-unknown", "no-native-acceptance"]
+    }
+  ],
+  "open_questions": [
+    "Will the exact bbeb source complete a clean root build and execute the focused observer tests?",
+    "Will subsequent two peer, callback atomicity, and refund qualification produce independently custodied runtime evidence?"
+  ]
+}

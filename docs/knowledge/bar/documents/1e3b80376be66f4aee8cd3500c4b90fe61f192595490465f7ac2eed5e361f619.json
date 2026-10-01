@@ -1,0 +1,139 @@
+{
+  "schema": "fsgg.knowledge.bar-project/1",
+  "curatedAt": "2026-10-01",
+  "origin": "explicit transitive supersession closure for multi-generation current-gate records",
+  "items": [
+    {
+      "id": "qualification.stock-native-reader-source-candidate",
+      "kind": "qualification",
+      "title": "HighBar stock native fence and ABI successor accepted at source",
+      "statement": "Independent rereview accepts HighBar c7ba253688b1fb5cf328a7bb3c09761d31387d1f (tree 460c35e34c0bf3da947dde0c4f17b5d172b05e8b). It closes the predecessor deadlock, post-reread deadline and actor fence, exact stock Headless callback identity, and INT32_MIN projection defects. Forty-nine focused tests pass. Frozen plugin d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a is a reviewable source artifact; no engine runtime or native journey was run.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "HighBar stock native plugin",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [
+          "libSkirmishAI.so sha256:d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a"
+        ],
+        "runs": [],
+        "applicability": "source and reviewable plugin artifact accepted; coherent join and runtime qualification open"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-fence-abi-independent-rereview-20261001.md",
+          "digest": "86dd4f22063f8276f7ad9bfe75ca7fe37055ed8fa31a42f1765a1d3c69d559ab",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-40",
+          "summary": "Independent rereview accepts the exact HighBar successor, records 49 focused tests and plugin identity, and retains all runtime gates.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "qualification"
+      ],
+      "supersedes": [
+        "590f794cb91a57684677c6b953485237bf6d25fd01e8f92afe0dc89f023d3a81",
+        "88139c4989ed18ccc76ed44d2cdd2dfa024eb9bf7a9ec007b76c4d7e5a2d97f3",
+        "965eaff20f6096e8a648462a5b47840ffa0c341c7f35d9881829d8391344fa8b"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "title": "What still blocks stock native acceptance after HighBar source acceptance?",
+      "statement": "Lua c147 and HighBar c7ba source gates are independently accepted. FSBar remains blocked at independently reviewed 2ca until the reported d310 lifecycle and typed-float repair passes independent rereview. After coherent protected delivery, open gates still include final joined plugin and content readback, exact overlay discovery, official executable selection and loaded identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, final reread/equality, and all required native journeys. Native acceptance remains reported 0/6.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "remaining stock gates",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "2cae19c3289f264f60c7dfc1e5110546aa552902",
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "open gates after Lua and HighBar source acceptance; no merged delivery or runtime completion"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-fence-abi-independent-rereview-20261001.md",
+          "digest": "86dd4f22063f8276f7ad9bfe75ca7fe37055ed8fa31a42f1765a1d3c69d559ab",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-40",
+          "summary": "HighBar source acceptance and retained runtime boundaries.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-projection-oracle-independent-rereview-20261001.md",
+          "digest": "92cbb5629313b32ecd74334dd50b196ed8a77524d0556f66bfbbbd093fe40fd1",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "Independent FSBar source blockers after B1/B2 closure.",
+          "basis": "observed-document",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-result-lifecycle-repair-report-20261001.md",
+          "digest": "1903d3026797f0890a95df9bffafddfacdade0dc42c5d0ac593f0e1f86f0fff9",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-44",
+          "summary": "Worker-reported FSBar successor awaiting independent rereview.",
+          "basis": "reported",
+          "scope": "Exact named report and candidate only; no merge, installation, selected runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "question"
+      ],
+      "supersedes": [
+        "5722ee904a459933f7493fa9b7e6c9a98b9428a93d9ad6d7f2ee23a40abd474d",
+        "d0d0be03037173fdae8cdb35b35ff949d436a475cf00a54b992d9009540d726d",
+        "eb476997872ea12b9282198bea58cba09456f3e4143d9e84508b3ec0920834fb"
+      ],
+      "conflicts": []
+    }
+  ]
+}

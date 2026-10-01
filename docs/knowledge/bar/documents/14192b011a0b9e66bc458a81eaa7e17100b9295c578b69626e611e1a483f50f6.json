@@ -1,0 +1,101 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-079396c7e3606795e68ef6003264c258d607d10b",
+    "revision": "079396c7e3606795e68ef6003264c258d607d10b",
+    "tree": "23f84900a5b2c4077c226895b0a3b5dc3f579b1a",
+    "parent": "41aa305ce3722c6b4345ab227ff559d7e9daf31b",
+    "custodyRevision": "202284d2407491d94b2525e377616db11781abe4",
+    "custodyTree": "a18c42cf7de4139b2207690cf48223cf88dfa158",
+    "status": "historical source-only engine-pin successor; generated constants verified; rebuilt plugin and native admission unknown"
+  },
+  "components": [
+    {
+      "id": "highbar-engine-artifact-pin-0793",
+      "title": "Pinned engine digest generation and coordinator propagation",
+      "paths": ["CMakeLists.txt", "src/circuit/module/GrpcGatewayModule.cpp", "src/circuit/grpc/CoordinatorClient.cpp", "proto/highbar/coordinator.proto", "tests/unit/factory_replacement_qualification_test.cc"],
+      "summary": "Reads the spring-headless pin at configure time, emits kEngineReleaseId and kEngineSha256, carries the digest into CoordinatorClient, and sends it on each heartbeat including the first attach request."
+    }
+  ],
+  "flows": [
+    {
+      "id": "highbar-pin-to-heartbeat-0793",
+      "title": "Spring headless pin to coordinator attach and heartbeat",
+      "steps": [
+        {"path": "CMakeLists.txt", "symbol": "HIGHBAR_PIN_FILE", "line": 396, "description": "Name data/config/spring-headless.pin as a configure dependency and read its contents."},
+        {"path": "CMakeLists.txt", "symbol": "HIGHBAR_ENGINE_SHA256", "line": 401, "description": "Parse the full sha256 value from the pin file."},
+        {"path": "CMakeLists.txt", "symbol": "SpringHeadlessPin.h", "line": 409, "description": "Generate kEngineReleaseId and kEngineSha256 into SpringHeadlessPin.h."},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "coordinator_engine_sha256_", "line": 557, "description": "Copy compiled kEngineSha256 into coordinator client state for the owning AI."},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "EnsureCoordinatorClientStarted", "line": 623, "description": "Construct CoordinatorClient with the stored compiled engine digest."},
+        {"path": "src/circuit/grpc/CoordinatorClient.cpp", "symbol": "CoordinatorClient::SendHeartbeat", "line": 394, "description": "Put that digest in HeartbeatRequest.engine_sha256; the first accepted heartbeat also acts as coordinator registration on the receiver."},
+        {"path": "proto/highbar/coordinator.proto", "symbol": "HeartbeatRequest.engine_sha256", "line": 69, "description": "Define the field as the gateway startup SHA of the pinned engine for coordinator cross-checking."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "highbar-pin-generated-values-0793",
+      "kind": "source-fact",
+      "statement": "At 079396c, configuration reads data/config/spring-headless.pin and generates the engine constants. The focused source test requires release barc-fr5-peer-observer-1ec00cf and full reviewed engine artifact SHA-256 80adf61a42fd2ff156b0d96e61e52ed596c9aa624b7d9f2d77d86c134a8f1301.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 393, "symbol": "SpringHeadlessPin.h"},
+        {"path": "CMakeLists.txt", "line": 398, "symbol": "file(READ)"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 36, "symbol": "kEngineReleaseId"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 37, "symbol": "kEngineSha256"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["spring-headless-pin", "generated-header", "engine-artifact-sha256", "80adf61a"]
+    },
+    {
+      "id": "highbar-pin-heartbeat-propagation-0793",
+      "kind": "source-fact",
+      "statement": "GrpcGatewayModule copies compiled kEngineSha256 into coordinator_engine_sha256_, passes it to CoordinatorClient, and CoordinatorClient sends the same stored value in HeartbeatRequest.engine_sha256.",
+      "evidence": [
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 557, "symbol": "coordinator_engine_sha256_"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 623, "symbol": "CoordinatorClient"},
+        {"path": "src/circuit/grpc/CoordinatorClient.cpp", "line": 140, "symbol": "engine_sha256_"},
+        {"path": "src/circuit/grpc/CoordinatorClient.cpp", "line": 394, "symbol": "set_engine_sha256"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["coordinator", "registration", "heartbeat", "engine-sha256"]
+    },
+    {
+      "id": "highbar-canonical-identity-remains-1ec-0793",
+      "kind": "source-fact",
+      "statement": "The separate factory qualification identity remains the exact canonical 1ec00cf catalogue value; fixing the binary artifact pin does not replace or weaken that canonical identity check.",
+      "evidence": [
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 41, "symbol": "kFactoryReplacementQualificationEngineHash"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 46, "symbol": "kFactoryReplacementQualificationEngineVersion"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["canonical-identity", "1ec00cf", "qualification", "separate-identity-axis"]
+    },
+    {
+      "id": "highbar-build6-stale-artifact-pin-correction-0793",
+      "kind": "reported-status",
+      "statement": "Exact review of historical 30fc source found that its pin still named predecessor release recoil_2025.06.19 and digest e4f63c1a391f9ddfbb4d1da225d9533b1d56c65133687d036422a7380c84e833. The reported build6 plugin afb1f06 therefore embedded that predecessor digest even though its canonical qualification constants correctly named 1ec00cf. That plugin is not a coherent engine-80ad artifact and is not admitted.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 393, "symbol": "spring-headless.pin generation"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 557, "symbol": "compiled kEngineSha256"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 41, "symbol": "canonical 1ec qualification"}
+      ],
+      "confidence": "reported",
+      "tags": ["source-conflict", "30fc", "build6", "afb1f06", "e4f63c1a", "not-admitted"]
+    },
+    {
+      "id": "highbar-079-source-only-boundary",
+      "kind": "acceptance-boundary",
+      "statement": "The 079 product changes only the engine pin and its focused qualification test. The accepted custody report records passing source reconstruction and focused gates. No plugin was rebuilt from 079, no artifact was admitted, and native game coverage remains 0 of 6; the planned rebuild outcome is unknown.",
+      "evidence": [
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 36, "symbol": "generated pin assertion"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 49, "symbol": "qualification cases"}
+      ],
+      "confidence": "reported",
+      "tags": ["source-only", "no-rebuilt-plugin", "native-0-of-6", "runtime-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Will a plugin rebuilt from 079 embed the reviewed 80ad engine digest and be accepted by the receiver?",
+    "Will native Count 1, 2, and 4 plus paired-peer lifecycle coverage pass with independently verified rebuilt artifacts?"
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "revision": "25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "tree": "3c4b18de8403168ce9ca513c491409b919384f49",
+    "parent": "7bba1bd830e191333a38b8789c8d37300ee46b92",
+    "status": "historical audited source repair; syntax probes passed; full build and runtime acceptance unknown"
+  },
+  "components": [
+    {
+      "id": "owned-rml-cstdint-wrappers-25f6",
+      "title": "Owned RmlUi wrapper header self containment",
+      "paths": [
+        "rts/Rml/Backends/RmlUi_Backend.h",
+        "rts/Rml/Backends/RmlUi_Renderer_GL3_Recoil.h",
+        "rts/Rml/Backends/RmlUi_Renderer_Headless.h",
+        "rts/Rml/Backends/RmlUi_VFSFileInterface.h",
+        "rts/Rml/Components/ElementLuaTexture.h",
+        "rts/Rml/SVG/ElementSVG.h",
+        "rts/Rml/SVG/SVGPlugin.h",
+        "rts/Rml/SolLua/RmlSolLua.h",
+        "rts/Rml/SolLua/bind/bind.h",
+        "rts/Rml/SolLua/plugin/SolLuaDataModel.h",
+        "rts/Rml/SolLua/plugin/SolLuaDocument.h",
+        "rts/Rml/SolLua/plugin/SolLuaEventListener.h",
+        "rts/Rml/SolLua/plugin/SolLuaInstancer.h",
+        "rts/Rml/SolLua/plugin/SolLuaPlugin.h"
+      ],
+      "summary": "Adds direct cstdint declarations before RmlUi dependencies in every audited Recoil owned wrapper that lacked the standard declaration."
+    }
+  ],
+  "flows": [
+    {
+      "id": "rml-header-dependency-flow-25f6",
+      "title": "Owned wrapper dependency before pinned RmlUi headers",
+      "steps": [
+        {
+          "path": "rts/Rml/Backends/RmlUi_VFSFileInterface.h",
+          "symbol": "cstdint",
+          "line": 6,
+          "description": "Declare fixed width integer types before the backend wrapper reaches RmlUi dependencies."
+        },
+        {
+          "path": "rts/Rml/SVG/ElementSVG.h",
+          "symbol": "cstdint",
+          "line": 32,
+          "description": "Make the SVG element wrapper independent of transitive integer declarations."
+        },
+        {
+          "path": "rts/Rml/Components/ElementLuaTexture.h",
+          "symbol": "cstdint",
+          "line": 37,
+          "description": "Make the Lua texture element wrapper independent of transitive integer declarations."
+        },
+        {
+          "path": "rts/Rml/SolLua/RmlSolLua.h",
+          "symbol": "cstdint",
+          "line": 34,
+          "description": "Cover the latent SolLua target before including RmlUi Core."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "rml-owned-header-census-25f6",
+      "kind": "source-fact",
+      "statement": "All 14 audited Recoil owned headers that directly include RmlUi now directly include cstdint first. The set spans backend, component, SVG, SolLua binding, and SolLua plugin wrappers.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_Backend.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/Backends/RmlUi_Renderer_GL3_Recoil.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/Backends/RmlUi_Renderer_Headless.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Rml/Backends/RmlUi_VFSFileInterface.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Rml/Components/ElementLuaTexture.h", "line": 37, "symbol": "cstdint"},
+        {"path": "rts/Rml/SVG/ElementSVG.h", "line": 32, "symbol": "cstdint"},
+        {"path": "rts/Rml/SVG/SVGPlugin.h", "line": 32, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/RmlSolLua.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/bind/bind.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/plugin/SolLuaDataModel.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/plugin/SolLuaDocument.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/plugin/SolLuaEventListener.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/plugin/SolLuaInstancer.h", "line": 34, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/plugin/SolLuaPlugin.h", "line": 34, "symbol": "cstdint"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["rmlui", "cstdint", "owned-header", "self-contained", "14-files"]
+    },
+    {
+      "id": "rml-build4-failure-and-audit-25f6",
+      "kind": "reported-status",
+      "statement": "Build 4 is reported FAILED in exactly three target translation units: RmlUi_VFSFileInterface.cpp, ElementSVG.cpp, and ElementLuaTexture.cpp. The exact 25 target command audit also found RmlSolLua.cpp as a latent instance before this broadened repair.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_VFSFileInterface.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Rml/SVG/ElementSVG.h", "line": 32, "symbol": "cstdint"},
+        {"path": "rts/Rml/Components/ElementLuaTexture.h", "line": 37, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/RmlSolLua.h", "line": 34, "symbol": "cstdint"}
+      ],
+      "confidence": "reported",
+      "tags": ["build4-failed", "three-translation-units", "latent-sollua", "compiler"]
+    },
+    {
+      "id": "rml-25-target-syntax-pass-25f6",
+      "kind": "reported-status",
+      "statement": "The accepted source report, SHA-256 ccbb442d020d493e711830f119f62a65c78db289ec418fe1c48e42a2ccac0b0c, reports PASS for all 25 Rml target translation units replayed from the exact failed target commands with successor includes and syntax-only compilation.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_VFSFileInterface.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/Rml/SolLua/RmlSolLua.h", "line": 34, "symbol": "cstdint"}
+      ],
+      "confidence": "reported",
+      "tags": ["syntax-pass", "25-translation-units", "source-accept"]
+    },
+    {
+      "id": "factory-canonical-wire-identity-25f6",
+      "kind": "source-fact",
+      "statement": "The Recoil source wire identity bytes encode 424152432d4652312d5245434f494c2d41544f4d49432d56312d303737463942, the wire portion of the newly frozen canonical factory identity.",
+      "evidence": [
+        {"path": "rts/ExternalAI/FactoryReplacementTransport.cpp", "line": 13, "symbol": "ENGINE_WIRE_IDENTITY"},
+        {"path": "rts/ExternalAI/FactoryReplacementTransport.cpp", "line": 17, "symbol": "ENGINE_WIRE_IDENTITY"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "wire-identity", "canonical-identity"]
+    },
+    {
+      "id": "factory-canonical-tuple-and-downstream-gap-25f6",
+      "kind": "reported-status",
+      "statement": "Root freezes canonical identity barc-factory-atomic-v1|25f6d81|BARC-01.5-fr5-peer-observer-v1 Headless|424152432d4652312d5245434f494c2d41544f4d49432d56312d303737463942. The audited HighBar runtime qualification header and FSBar allowlist still carry the earlier 8a identity, so successor product, custody, and allowlist sources are required before admission.",
+      "evidence": [
+        {"path": "rts/ExternalAI/FactoryReplacementTransport.cpp", "line": 13, "symbol": "ENGINE_WIRE_IDENTITY"},
+        {"path": "rts/Game/GameVersion.cpp", "line": 57, "symbol": "CreateAdditionalVersion"}
+      ],
+      "confidence": "reported",
+      "tags": ["canonical-identity", "25f6d81", "downstream-stale", "source-gap"]
+    },
+    {
+      "id": "rml-build5-native-boundary-25f6",
+      "kind": "acceptance-boundary",
+      "statement": "No full build of 25f6 is established by the syntax probes. Build 5 is compile-only and nonadmissible even if its CTests pass; native observations remain 0 of 6, and no game, two-peer, callback, refund, or runtime-ready result is established.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_VFSFileInterface.h", "line": 6, "symbol": "cstdint"},
+        {"path": "rts/ExternalAI/FactoryReplacementTransport.cpp", "line": 13, "symbol": "ENGINE_WIRE_IDENTITY"}
+      ],
+      "confidence": "reported",
+      "tags": ["build5-compile-only", "nonadmissible", "native-0-of-6", "runtime-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Which immutable HighBar product/custody revisions bind the complete 25f6 canonical identity?",
+    "Which immutable FSBar revision updates the exact source allowlist?",
+    "Will a later coherent build and six native observations satisfy runtime admission?"
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-f5c83c63153b96ea7b92b1a57d98f61d088ef711",
+    "revision": "f5c83c63153b96ea7b92b1a57d98f61d088ef711",
+    "tree": "10f5995dec00e2dca6c0bffab0eda819e5d4ce16",
+    "parent": "8aee5ac83fd248671f1e504077cecd37999f5dbe",
+    "status": "historical source-accepted observer candidate; not built or runtime accepted"
+  },
+  "components": [
+    {
+      "id": "factory-peer-observer-dispatch-f5c83",
+      "title": "Authenticated per-peer before/apply/after observation",
+      "paths": [
+        "rts/Net/NetCommands.cpp",
+        "rts/Net/FactoryReplacementPeerObserver.cpp",
+        "rts/Net/FactoryReplacementPeerObserver.h"
+      ],
+      "summary": "At the existing authenticated simulation-client dispatch, conditionally captures service state before and after the one existing ApplySubmission call and writes a bounded peer-local record without changing application control flow."
+    },
+    {
+      "id": "factory-peer-observer-service-state-f5c83",
+      "title": "Const origin-authority and result-ring observation",
+      "paths": [
+        "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp",
+        "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.h"
+      ],
+      "summary": "Reads the actual origin authority, full fixed result ring digest, replay classification, keyed read status and canonical stored Fence or Replace result through a const service path."
+    },
+    {
+      "id": "factory-peer-observer-source-gate-f5c83",
+      "title": "Registered real-service source test",
+      "paths": [
+        "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp",
+        "test/CMakeLists.txt",
+        "rts/Net/CMakeLists.txt"
+      ],
+      "summary": "Registers the observer in client engine sources and defines a focused executable against engine simulation dependencies for default-off, remote-origin, nonmutation, fence/replace, replay and evidence-bound behavior."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-peer-observer-operation-flow-f5c83",
+      "title": "Authenticated packet to peer-local service evidence",
+      "steps": [
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "NETMSG_AI_FACTORY_REPLACEMENT", "line": 815, "description": "Resolve the actual authenticated origin player/AI context, decode the submission and reject a stale incarnation."},
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "NETMSG_AI_FACTORY_REPLACEMENT", "line": 840, "description": "Prepare the default-off, frame-windowed observer and capture the keyed pre-state only when recording is enabled."},
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "NETMSG_AI_FACTORY_REPLACEMENT", "line": 849, "description": "Invoke the existing ApplySubmission exactly once regardless of disabled, out-of-window or incomplete observer evidence."},
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "NETMSG_AI_FACTORY_REPLACEMENT", "line": 850, "description": "Capture post-state and record origin identity, submission identity, apply status and before/after service observations."},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "symbol": "FactoryReplacementSimulationService::Observe", "line": 482, "description": "Read the actual origin authority, full-state digest, replay classification and keyed canonical stored result without invoking a mutator."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "RecordImpl", "line": 265, "description": "Emit the bounded JSON record with process/sink custody fields, actual origin, request identity, apply status and before/after states."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-peer-observer-exactly-one-apply-f5c83",
+      "kind": "source-fact",
+      "statement": "The authenticated handler derives operation identity from the decoded submission, conditionally snapshots before and after, and contains exactly one ApplySubmission call; observer preparation or write failure does not bypass that application call.",
+      "evidence": [
+        {"path": "rts/Net/NetCommands.cpp", "line": 828, "symbol": "NETMSG_AI_FACTORY_REPLACEMENT"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 840, "symbol": "NETMSG_AI_FACTORY_REPLACEMENT"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 849, "symbol": "ApplySubmission"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 854, "symbol": "RecordFactoryReplacementPeerObservation"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "peer-observer", "exactly-once", "authenticated-dispatch"]
+    },
+    {
+      "id": "factory-peer-observer-actual-origin-const-read-f5c83",
+      "kind": "source-fact",
+      "statement": "The const observer resolves the authenticated origin authority and incarnation, copies its watermarks and fence fields, classifies the requested operation, and returns the actual keyed stored Fence or Replace canonical wire when found.",
+      "evidence": [
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 482, "symbol": "FactoryReplacementSimulationService::Observe"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 487, "symbol": "FactoryReplacementSimulationService::Observe"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 499, "symbol": "Classify"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 508, "symbol": "ReadResult"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "origin-authority", "const-read", "fence", "replace", "replay"]
+    },
+    {
+      "id": "factory-peer-observer-full-origin-ring-digest-f5c83",
+      "kind": "source-fact",
+      "statement": "The domain-separated SHA-512 digest covers the origin authority active flag, slot, incarnation, high-water and fence state plus every fixed result-ring slot's occupancy, sequence, request identity, result kind, canonical wire length and bytes in fixed order.",
+      "evidence": [
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 88, "symbol": "FullStateDigest"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 94, "symbol": "FullStateDigest"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 103, "symbol": "FullStateDigest"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 114, "symbol": "FullStateDigest"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "sha512", "authority-state", "result-ring", "canonical-digest"]
+    },
+    {
+      "id": "factory-peer-observer-digest-scope-boundary-f5c83",
+      "kind": "scope-inference",
+      "statement": "The digest is complete for the selected origin authority and its result ring. Its encoded fields do not include other authorities, the global incarnation allocator, queues, resources, callback observations or producer assembly state, so those predicates require separate evidence.",
+      "evidence": [
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 37, "symbol": "AuthorityState"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 88, "symbol": "FullStateDigest"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 610, "symbol": "FactoryReplacementSimulationService"}
+      ],
+      "confidence": "inference",
+      "tags": ["factory-replacement", "digest-scope", "acceptance-boundary"]
+    },
+    {
+      "id": "factory-peer-observer-default-off-windowed-f5c83",
+      "kind": "source-fact",
+      "statement": "The observer is disabled when BARC_FR5_PEER_OBSERVER_ROOT is absent; when configured it requires bounded identities and both frame bounds, and capture and record paths reject frames outside the selected window.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 92, "symbol": "Sink::Configure"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 96, "symbol": "BARC_FR5_PEER_OBSERVER_ROOT"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 219, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 242, "symbol": "RecordImpl"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "default-off", "frame-window", "bounded"]
+    },
+    {
+      "id": "factory-peer-observer-private-sink-f5c83",
+      "kind": "source-fact",
+      "statement": "The sink enforces a 4,096-record and 16 MiB process bound, an absolute owned nonsymlink mode-0700 root, and an exclusive NOFOLLOW owned regular mode-0600 one-link file; records include actual PID and root/sink device and inode values.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 25, "symbol": "MAX_OBSERVER_RECORDS"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 118, "symbol": "Sink::Configure"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 131, "symbol": "Sink::Configure"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 156, "symbol": "Sink::Configure"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 265, "symbol": "RecordImpl"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "private-sink", "custody", "bounded-io"]
+    },
+    {
+      "id": "factory-peer-observer-incomplete-no-mutation-f5c83",
+      "kind": "source-fact",
+      "statement": "Preparation and record wrappers catch observer exceptions; record or byte exhaustion becomes sticky incomplete evidence, append/sync failure returns incomplete, and the focused source test checks observer reads preserve serialized service bytes and configuration refusal still permits service application.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 183, "symbol": "MarkIncomplete"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 246, "symbol": "RecordImpl"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 297, "symbol": "RecordImpl"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 309, "symbol": "RecordFactoryReplacementPeerObservation"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 120, "symbol": "SerializedService"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 138, "symbol": "failureChild"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "evidence-incomplete", "no-mutation", "io-failure"]
+    },
+    {
+      "id": "factory-peer-observer-source-test-coverage-f5c83",
+      "kind": "source-fact",
+      "statement": "The registered focused test source covers default-off behavior, remote-origin preservation, before/after nonmutation, deterministic fence and replacement result reads, conflict/gap/eviction classifications, frame bounds and record/byte exhaustion using the real simulation service.",
+      "evidence": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 106, "symbol": "main"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 117, "symbol": "Fence"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 171, "symbol": "conflictObservation"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 195, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 215, "symbol": "evicted"},
+        {"path": "test/CMakeLists.txt", "line": 582, "symbol": "FactoryReplacementPeerObservation"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "test-source", "real-service", "coverage"]
+    },
+    {
+      "id": "factory-peer-observer-source-accepted-not-runtime-f5c83",
+      "kind": "reported-status",
+      "statement": "The accepted review disposition is SOURCE ACCEPT for this exact observer delta. This status does not establish a successful build, executed CTest, two-peer result, callback atomicity, refund behavior or native runtime acceptance.",
+      "evidence": [
+        {"path": "rts/Net/NetCommands.cpp", "line": 840, "symbol": "NETMSG_AI_FACTORY_REPLACEMENT"},
+        {"path": "test/CMakeLists.txt", "line": 582, "symbol": "FactoryReplacementPeerObservation"}
+      ],
+      "confidence": "reported",
+      "tags": ["factory-replacement", "source-accept", "runtime-unknown", "no-native-acceptance"]
+    },
+    {
+      "id": "factory-peer-observer-fresh-build-failed-f5c83",
+      "kind": "reported-status",
+      "statement": "The subsequent fresh root build is reported FAILED before compilation because required generated protobuf outputs were missing. Therefore the actual-service CTest, two-peer run, callback atomicity and refund predicates remain unknown.",
+      "evidence": [
+        {"path": "test/CMakeLists.txt", "line": 582, "symbol": "FactoryReplacementPeerObservation"},
+        {"path": "test/CMakeLists.txt", "line": 590, "symbol": "add_spring_test"}
+      ],
+      "confidence": "reported",
+      "tags": ["factory-replacement", "build-failed", "missing-generated-protobuf", "runtime-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Will a clean exact-source build regenerate the required protobuf outputs and execute all four factory replacement CTests successfully?",
+    "Will two actual synchronized clients emit complete, separately custodied records with identical keyed result/fence outcomes and origin-authority ring digests?",
+    "Do callback-time atomicity and authoritative refund observations agree with the peer service evidence in the same accepted intervals?"
+  ]
+}

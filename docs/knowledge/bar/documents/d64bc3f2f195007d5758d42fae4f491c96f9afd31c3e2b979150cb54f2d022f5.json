@@ -1,0 +1,366 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/tmp/barc-recoil-7555-protectedf541-20260930",
+    "revision": "7555c836e0457b04100b20149497d088dd9c2ca7"
+  },
+  "components": [
+    {
+      "id": "startup-loop",
+      "title": "Process startup and main loop",
+      "paths": ["rts/System/Main.cpp", "rts/System/SpringApp.cpp", "rts/Game/Game.cpp"],
+      "summary": "Creates the application, owns the main controller loop, consumes network frames and advances synchronized simulation."
+    },
+    {
+      "id": "threading-loading",
+      "title": "Loading and thread services",
+      "paths": ["rts/Game/LoadScreen.cpp", "rts/System/GameLoadThread.cpp", "rts/System/Threading/", "rts/System/Platform/Threading.cpp"],
+      "summary": "Provides main-thread identity, load and heartbeat threads, load locking, worker pools and platform thread support."
+    },
+    {
+      "id": "simulation",
+      "title": "Synchronized simulation",
+      "paths": ["rts/Sim/", "rts/Game/Game.cpp", "rts/System/EventHandler.cpp"],
+      "summary": "Owns frame-indexed units, features, commands, movement, resources, projectiles, weapons, LOS and deterministic event order."
+    },
+    {
+      "id": "external-ai",
+      "title": "Skirmish AI host and callbacks",
+      "paths": ["rts/ExternalAI/", "rts/ExternalAI/Interface/", "AI/Interfaces/", "AI/Wrappers/", "AI/Skirmish/"],
+      "summary": "Loads AI libraries, delivers events, exposes the C callback table and translates commands into engine orders."
+    },
+    {
+      "id": "command-ai",
+      "title": "Unit command execution",
+      "paths": ["rts/Sim/Units/CommandAI/", "rts/Game/SelectedUnitsHandler.cpp", "rts/Net/NetCommands.cpp"],
+      "summary": "Validates network orders, invokes Lua command gates, queues commands and dispatches concrete unit behavior."
+    },
+    {
+      "id": "builder-feature",
+      "title": "Builder and feature lifecycle",
+      "paths": ["rts/Sim/Units/CommandAI/BuilderCAI.cpp", "rts/Sim/Units/UnitTypes/Builder.cpp", "rts/Sim/Features/"],
+      "summary": "Implements build, repair, guard, reclaim and resurrect targeting, feature mutation, deferred destruction and ID reuse."
+    },
+    {
+      "id": "resources",
+      "title": "Resource accounting",
+      "paths": ["rts/Sim/Units/Unit.cpp", "rts/Sim/Misc/Team.cpp", "rts/Sim/Misc/TeamHandler.cpp"],
+      "summary": "Checks and applies per-action resource orders, accumulates unit production/use, and rolls team statistics and sharing windows."
+    },
+    {
+      "id": "lua-rules",
+      "title": "Lua rules and projection boundary",
+      "paths": ["rts/Lua/", "rts/System/EventHandler.cpp", "rts/System/EventHandler.h"],
+      "summary": "Hosts synced and unsynced Lua, control gates and lifecycle call-ins, with explicit synced-to-unsynced messaging."
+    },
+    {
+      "id": "network",
+      "title": "Network and protocol",
+      "paths": ["rts/Net/", "rts/Net/Protocol/", "rts/Net/NetCommands.cpp", "rts/Game/SelectedUnitsHandler.cpp"],
+      "summary": "Encodes, validates, distributes and consumes synchronized protocol messages including Skirmish AI commands."
+    },
+    {
+      "id": "persistence",
+      "title": "Save, load and serialization",
+      "paths": ["rts/System/LoadSave/", "rts/System/creg/", "rts/ExternalAI/SkirmishAIWrapper.cpp"],
+      "summary": "Serializes the engine object graph and synced Lua state while delegating AI-private state through AI save/load events."
+    },
+    {
+      "id": "presentation-content",
+      "title": "Rendering, UI and shipped content",
+      "paths": ["rts/Rendering/", "rts/Rml/", "rts/aGui/", "rts/Menu/", "cont/"],
+      "summary": "Owns unsynced presentation, UI frameworks, menu/controller surfaces and engine-distributed Lua/content assets."
+    },
+    {
+      "id": "build-debug-test",
+      "title": "Build, symbols, diagnostics and tests",
+      "paths": ["CMakeLists.txt", "rts/build/", "rts/builds/", "docker-build/", "tools/", "test/", "rts/System/Platform/Linux/CrashHandler.cpp"],
+      "summary": "Defines binaries and build modes, extracts debug symbols, captures crashes, and provides unit and validation suites."
+    },
+    {
+      "id": "documentation-packaging-automation",
+      "title": "Documentation, packaging and automation",
+      "paths": ["doc/", "installer/", "docker-build-v2/", ".github/"],
+      "summary": "Contains repository documentation, installer inputs, current container build definitions and automation workflows."
+    }
+  ],
+  "flows": [
+    {
+      "id": "startup-to-frame",
+      "title": "Startup to synchronized frame",
+      "steps": [
+        {"path": "rts/System/Main.cpp", "symbol": "Run", "line": 30, "description": "Detect cores, register the main thread, construct SpringApp and call Run."},
+        {"path": "rts/System/SpringApp.cpp", "symbol": "SpringApp::Run", "line": 900, "description": "Install crash reporting, initialize, pump input and update the active controller."},
+        {"path": "rts/Game/Game.cpp", "symbol": "CGame::Update", "line": 1159, "description": "Update jobs/network and consume network messages inside synchronized code."},
+        {"path": "rts/Game/Game.cpp", "symbol": "CGame::SimFrame", "line": 1678, "description": "Increment frame number and execute ordered AI, Lua and simulation updates."}
+      ]
+    },
+    {
+      "id": "skirmish-ai-order",
+      "title": "Skirmish AI command to unit command queue",
+      "steps": [
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "symbol": "skirmishAiCallback_Engine_handleCommand", "line": 643, "description": "Translate C ABI command data to an internal Command and preserve its AI command ID."},
+        {"path": "rts/ExternalAI/AICallback.cpp", "symbol": "CAICallback::GiveOrder", "line": 352, "description": "Validate unit/team/order permission and send NETMSG_AICOMMAND."},
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "CGame::ClientReadNet", "line": 750, "description": "Decode the synchronized AI command packet and rebuild the Command."},
+        {"path": "rts/Game/SelectedUnitsHandler.cpp", "symbol": "CSelectedUnitsHandler::AINetOrder", "line": 765, "description": "Validate player and team control and pass the order to the unit command AI."},
+        {"path": "rts/Sim/Units/CommandAI/CommandAI.cpp", "symbol": "CCommandAI::GiveCommand", "line": 816, "description": "Run AllowCommand and UnitCommand events, validate capability and dispatch concrete behavior."}
+      ]
+    },
+    {
+      "id": "reclaim-feature",
+      "title": "Direct feature reclaim and lifetime",
+      "steps": [
+        {"path": "rts/ExternalAI/AISCommands.cpp", "symbol": "newCommand", "line": 650, "description": "Encode plain feature ID as MaxUnits plus feature ID in CMD_RECLAIM."},
+        {"path": "rts/Sim/Units/CommandAI/BuilderCAI.cpp", "symbol": "CBuilderCAI::ExecuteReclaim", "line": 969, "description": "Decode feature-space ID, resolve current feature, and stop safely if absent."},
+        {"path": "rts/Sim/Units/CommandAI/BuilderCAI.cpp", "symbol": "CBuilderCAI::ReclaimObject", "line": 1381, "description": "Move into range and bind the builder reclaim target."},
+        {"path": "rts/Sim/Units/UnitTypes/Builder.cpp", "symbol": "CBuilder::SetReclaimTarget", "line": 605, "description": "Store the target and create a reclaim death dependence."},
+        {"path": "rts/Sim/Units/UnitTypes/Builder.cpp", "symbol": "CBuilder::UpdateReclaim", "line": 365, "description": "Copy the target pointer, validate range/stance and apply negative build power."},
+        {"path": "rts/Sim/Features/Feature.cpp", "symbol": "CFeature::AddBuildPower", "line": 317, "description": "Gate the step, account resources, reduce reclaimLeft and request deletion at completion."},
+        {"path": "rts/Sim/Features/FeatureHandler.cpp", "symbol": "CFeatureHandler::UpdateFeature", "line": 234, "description": "Emit destruction events, clear the index and free the feature object."},
+        {"path": "rts/System/Object.cpp", "symbol": "CObject::~CObject", "line": 52, "description": "Notify dependency listeners before detaching relationships."},
+        {"path": "rts/Sim/Features/FeatureHandler.cpp", "symbol": "CFeatureHandler::TryFreeFeatureID", "line": 217, "description": "Delay returning the ID while builder caches still report reclaim activity."}
+      ]
+    },
+    {
+      "id": "reclaim-resource-order",
+      "title": "Reclaim resource accounting",
+      "steps": [
+        {"path": "rts/Sim/Features/Feature.cpp", "symbol": "CFeature::AddBuildPower", "line": 330, "description": "Compute reclaimed fraction, energy use and resource addition."},
+        {"path": "rts/Sim/Units/Unit.cpp", "symbol": "CUnit::IssueResourceOrder", "line": 2320, "description": "Record pull, check/scale the order and debit and credit resources."},
+        {"path": "rts/Sim/Misc/TeamHandler.cpp", "symbol": "CTeamHandler::GameFrame", "line": 116, "description": "Every 30 frames snapshot resource counters and run team sharing/statistics."}
+      ]
+    },
+    {
+      "id": "linux-crash-handler",
+      "title": "Linux fatal signal ownership",
+      "steps": [
+        {"path": "rts/System/SpringApp.cpp", "symbol": "SpringApp::Run", "line": 900, "description": "Install engine crash reporting after SpringApp construction."},
+        {"path": "rts/System/Platform/Linux/CrashHandler.cpp", "symbol": "CrashHandler::Install", "line": 1039, "description": "If core dumps are disabled, replace handlers for fatal and control signals."},
+        {"path": "rts/System/Platform/Linux/CrashHandler.cpp", "symbol": "HandleSignal", "line": 940, "description": "Log signal identity and attempt a symbolized halted stack trace."},
+        {"path": "rts/System/Platform/Linux/CrashHandler.cpp", "symbol": "CrashHandler::Remove", "line": 1062, "description": "Reset registered signals rather than restoring an earlier external handler."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "simulation-frame-order",
+      "kind": "architecture",
+      "statement": "A simulation frame increments frameNum, updates AI before the main simulation block, fires GameFrame before unit/feature updates, and fires GameFramePost after team/player updates.",
+      "evidence": [{"path": "rts/Game/Game.cpp", "line": 1678, "symbol": "CGame::SimFrame"}],
+      "confidence": "observed-source",
+      "tags": ["frame", "simulation", "ordering"]
+    },
+    {
+      "id": "ai-update-synchronous",
+      "kind": "threading",
+      "statement": "The inspected AI update event is called synchronously from SimFrame through EngineOutHandler and SkirmishAIWrapper.",
+      "evidence": [
+        {"path": "rts/Game/Game.cpp", "line": 1724, "symbol": "CGame::SimFrame"},
+        {"path": "rts/ExternalAI/EngineOutHandler.cpp", "line": 128, "symbol": "CEngineOutHandler::Update"},
+        {"path": "rts/ExternalAI/SkirmishAIWrapper.cpp", "line": 406, "symbol": "CSkirmishAIWrapper::Update"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["ai", "threading", "frame"]
+    },
+    {
+      "id": "callback-static-storage",
+      "kind": "ownership",
+      "statement": "Skirmish AI callback wrappers and legacy callback state reside in fixed engine-owned arrays indexed by AI ID and are reset on release.",
+      "evidence": [
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 54, "symbol": "AI_LEGACY_CALLBACKS"},
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 5643, "symbol": "skirmishAiCallback_GetInstance"},
+        {"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 5656, "symbol": "skirmishAiCallback_Release"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["ai", "callback", "lifetime"]
+    },
+    {
+      "id": "feature-polling",
+      "kind": "api",
+      "statement": "Skirmish AI feature access is a polling callback surface with plain feature IDs; absent IDs return sentinel/default values.",
+      "evidence": [{"path": "rts/ExternalAI/SSkirmishAICallbackImpl.cpp", "line": 4172, "symbol": "skirmishAiCallback_getFeatures"}],
+      "confidence": "observed-source",
+      "tags": ["ai", "feature", "id"]
+    },
+    {
+      "id": "internal-feature-command-id",
+      "kind": "id-mapping",
+      "statement": "Internal reclaim commands distinguish a feature from a unit by encoding the target as MaxUnits plus featureId.",
+      "evidence": [
+        {"path": "rts/ExternalAI/AISCommands.cpp", "line": 650, "symbol": "newCommand"},
+        {"path": "rts/Sim/Units/CommandAI/BuilderCAI.cpp", "line": 1021, "symbol": "CBuilderCAI::ExecuteReclaim"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["command", "feature", "id"]
+    },
+    {
+      "id": "orders-use-network",
+      "kind": "boundary",
+      "statement": "A Skirmish AI order is serialized to NETMSG_AICOMMAND and re-enters the synchronized simulation through ClientReadNet and AINetOrder.",
+      "evidence": [
+        {"path": "rts/ExternalAI/AICallback.cpp", "line": 352, "symbol": "CAICallback::GiveOrder"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 750, "symbol": "CGame::ClientReadNet"},
+        {"path": "rts/Game/SelectedUnitsHandler.cpp", "line": 765, "symbol": "CSelectedUnitsHandler::AINetOrder"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["ai", "network", "sync"]
+    },
+    {
+      "id": "lua-command-gate",
+      "kind": "rules",
+      "statement": "Every admitted unit command passes through the event/Lua AllowCommand gate before concrete command execution.",
+      "evidence": [{"path": "rts/Sim/Units/CommandAI/CommandAI.cpp", "line": 821, "symbol": "CCommandAI::GiveCommand"}],
+      "confidence": "observed-source",
+      "tags": ["lua", "command", "gate"]
+    },
+    {
+      "id": "reclaim-null-guard",
+      "kind": "lifetime",
+      "statement": "ExecuteReclaim resolves the current feature by bounds-checked handler lookup and finishes the command if the feature is absent.",
+      "evidence": [{"path": "rts/Sim/Units/CommandAI/BuilderCAI.cpp", "line": 1021, "symbol": "CBuilderCAI::ExecuteReclaim"}],
+      "confidence": "observed-source",
+      "tags": ["reclaim", "feature", "guard"]
+    },
+    {
+      "id": "reclaim-death-dependence",
+      "kind": "lifetime",
+      "statement": "A builder registers a death dependence on its reclaim target, and target destruction clears the pointer and stops build activity.",
+      "evidence": [
+        {"path": "rts/Sim/Units/UnitTypes/Builder.cpp", "line": 605, "symbol": "CBuilder::SetReclaimTarget"},
+        {"path": "rts/Sim/Units/UnitTypes/Builder.cpp", "line": 896, "symbol": "CBuilder::DependentDied"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["reclaim", "pointer", "lifetime"]
+    },
+    {
+      "id": "reclaim-local-pointer",
+      "kind": "lifetime",
+      "statement": "UpdateReclaim copies curReclaim before AddBuildPower because that call can indirectly clear the member.",
+      "evidence": [{"path": "rts/Sim/Units/UnitTypes/Builder.cpp", "line": 365, "symbol": "CBuilder::UpdateReclaim"}],
+      "confidence": "observed-source",
+      "tags": ["reclaim", "pointer", "mutation"]
+    },
+    {
+      "id": "feature-delete-deferred",
+      "kind": "lifetime",
+      "statement": "Completing feature reclaim marks the feature for deletion; the feature update phase later emits events, clears the indexed pointer and frees the object.",
+      "evidence": [
+        {"path": "rts/Sim/Features/Feature.cpp", "line": 381, "symbol": "CFeature::AddBuildPower"},
+        {"path": "rts/Sim/Features/FeatureHandler.cpp", "line": 149, "symbol": "CFeatureHandler::DeleteFeature"},
+        {"path": "rts/Sim/Features/FeatureHandler.cpp", "line": 234, "symbol": "CFeatureHandler::UpdateFeature"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["feature", "deletion", "frame"]
+    },
+    {
+      "id": "feature-id-reuse-delayed",
+      "kind": "id-mapping",
+      "statement": "Deleted feature IDs are considered for reuse every 32 frames and remain withheld while builder caches report active reclaim.",
+      "evidence": [{"path": "rts/Sim/Features/FeatureHandler.cpp", "line": 198, "symbol": "CFeatureHandler::Update"}],
+      "confidence": "observed-source",
+      "tags": ["feature", "id", "reclaim"]
+    },
+    {
+      "id": "reclaim-resource-atomic-path",
+      "kind": "resources",
+      "statement": "Feature reclaim computes a bounded resource order and mutates reclaimLeft only after IssueResourceOrder succeeds.",
+      "evidence": [{"path": "rts/Sim/Features/Feature.cpp", "line": 330, "symbol": "CFeature::AddBuildPower"}],
+      "confidence": "observed-source",
+      "tags": ["reclaim", "resources", "accounting"]
+    },
+    {
+      "id": "team-resource-clock",
+      "kind": "clock",
+      "statement": "Team pull/income/expense windows, sharing and statistics roll every 30 simulation frames.",
+      "evidence": [
+        {"path": "rts/Sim/Misc/GlobalConstants.h", "line": 67, "symbol": "TEAM_SLOWUPDATE_RATE"},
+        {"path": "rts/Sim/Misc/TeamHandler.cpp", "line": 116, "symbol": "CTeamHandler::GameFrame"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["resources", "clock", "team"]
+    },
+    {
+      "id": "creg-state-graph",
+      "kind": "persistence",
+      "statement": "CREG save state includes units, features, projectiles, teams, command descriptions, Skirmish AI host state and synced Lua state.",
+      "evidence": [
+        {"path": "rts/System/LoadSave/CregLoadSaveHandler.cpp", "line": 78, "symbol": "CGameStateCollector::Serialize"},
+        {"path": "rts/System/LoadSave/CregLoadSaveHandler.cpp", "line": 189, "symbol": "CLuaStateCollector::Serialize"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["save", "creg", "lua", "ai"]
+    },
+    {
+      "id": "engine-signal-replacement",
+      "kind": "diagnostics",
+      "statement": "With core dumps disabled, SpringApp installs Recoil fatal-signal handlers after construction and the Linux installer does not preserve prior handlers in the shown calls.",
+      "evidence": [
+        {"path": "rts/System/SpringApp.cpp", "line": 900, "symbol": "SpringApp::Run"},
+        {"path": "rts/System/Platform/Linux/CrashHandler.cpp", "line": 1039, "symbol": "CrashHandler::Install"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["signal", "crash", "linux"]
+    },
+    {
+      "id": "diagnostic-handler-overwrite",
+      "kind": "diagnostics",
+      "statement": "A constructor-time external signal tracer can be replaced later by Recoil's CrashHandler::Install when core dumps are disabled.",
+      "evidence": [
+        {"path": "rts/System/SpringApp.cpp", "line": 906, "symbol": "SpringApp::Run"},
+        {"path": "rts/System/Platform/Linux/CrashHandler.cpp", "line": 1046, "symbol": "CrashHandler::Install"}
+      ],
+      "confidence": "inference",
+      "tags": ["signal", "diagnostic", "lifecycle"]
+    },
+    {
+      "id": "current-crash-observation",
+      "kind": "diagnostic-observation",
+      "statement": "The current native diagnostic reportedly completed ReclaimFeature and later submitted ReclaimArea before a crash between its NativeAdmission and dispatch markers; no retained native backtrace identifies the failing engine path.",
+      "evidence": [],
+      "confidence": "reported",
+      "tags": ["crash", "reclaim", "unknown"]
+    },
+    {
+      "id": "no-reclaim-cause",
+      "kind": "diagnostic-boundary",
+      "statement": "The available source and reported markers do not establish a ReclaimFeature-specific or ReclaimArea-specific crash cause.",
+      "evidence": [
+        {"path": "rts/Sim/Units/CommandAI/BuilderCAI.cpp", "line": 969, "symbol": "CBuilderCAI::ExecuteReclaim"},
+        {"path": "rts/Sim/Features/FeatureHandler.cpp", "line": 234, "symbol": "CFeatureHandler::UpdateFeature"}
+      ],
+      "confidence": "inference",
+      "tags": ["crash", "causality", "reclaim"]
+    },
+    {
+      "id": "build-default-symbols",
+      "kind": "tooling",
+      "statement": "The default CMake build type is RelWithDebInfo, and the Docker build configuration uses optimized code with debug information for that mode.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 59, "symbol": "CMAKE_BUILD_TYPE"},
+        {"path": "docker-build/scripts/00_setup.sh", "line": 13, "symbol": "RELWITHDEBINFOFLAGS"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["build", "symbols", "debug"]
+    },
+    {
+      "id": "test-gap-reclaim-e2e",
+      "kind": "test-coverage",
+      "statement": "The indexed test tree contains no focused test for the complete Skirmish AI feature-reclaim network-to-feature-deletion flow.",
+      "evidence": [
+        {"path": "test/CMakeLists.txt", "line": 60, "symbol": "add_spring_test"},
+        {"path": "test/README.md", "line": 11, "symbol": "Compiling"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["test", "ai", "reclaim"]
+    }
+  ],
+  "open_questions": [
+    "Which signal, instruction pointer, native thread and loaded module own the reported crash?",
+    "Did the failure occur before ClientReadNet, during packet decoding, in Lua AllowCommand, while queueing, or during a later builder slow update?",
+    "Which exact command occupied the builder queue head at failure time?",
+    "Were core dumps enabled, and which component last installed each fatal-signal handler?",
+    "Was the Skirmish AI callback still active with the same AI and team identity?",
+    "Did Lua delete or mutate a unit or feature during AllowCommand or AllowFeatureBuildStep?",
+    "Can a symbol-matched RelWithDebInfo build reproduce with a retained core or a post-install diagnostic handler?"
+  ]
+}

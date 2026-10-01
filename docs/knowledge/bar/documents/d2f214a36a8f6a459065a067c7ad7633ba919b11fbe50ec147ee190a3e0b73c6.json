@@ -1,0 +1,96 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-1f12673ebcbfeb637726088e048d2c9c04609078",
+    "revision": "1f12673ebcbfeb637726088e048d2c9c04609078",
+    "tree": "17cee5bdfa5b41186609bb7c9701297474582efd",
+    "protectedRef": "FS-GG/HighBarV3 master",
+    "fileHashes": {
+      "src/circuit/grpc/FactoryProductionPolicy.h": "8cbf76e7539f842769ba75354ba5d0fe6f77625fbe1f94d6c3fa4ed9efd83cfe",
+      "src/circuit/grpc/CommandDispatch.cpp": "39571202c0c54f0324042577f99698bff03875f317278528505d69a320a4c26b",
+      "src/circuit/grpc/CommandQueue.cpp": "eb9e16b74b3988e5dbd664098186ff40409d8f973224c57b06cdbf50ac3f898f",
+      "src/circuit/grpc/LiveControlState.cpp": "d07d5b65f639007b51b7c50ba4fa0519525fffaa45c804b71c803ba2319a3a32",
+      "tests/unit/live_control_state_test.cc": "f3fbc5448c80f228e4bf2d6d125072e5ccfdc12594ec3e0ab55c66d4af0d14fb"
+    }
+  },
+  "components": [
+    {
+      "id": "factory-production-policy-current",
+      "title": "Factory production policy and dispatch gate",
+      "paths": ["src/circuit/grpc/FactoryProductionPolicy.h", "src/circuit/grpc/LiveControlState.cpp", "src/circuit/grpc/CommandDispatch.cpp"],
+      "summary": "Requires a complete observed production queue; Append is allowed on empty or busy queues, while Replace and RejectIfBusy require an empty queue. The same rule is checked at snapshot admission and again around the current native dispatch effect."
+    },
+    {
+      "id": "queue-repeat-option-domain-current",
+      "title": "Queue repeat option domains",
+      "paths": ["src/circuit/grpc/CommandQueue.cpp", "src/circuit/grpc/LiveControlState.cpp", "tests/unit/live_control_state_test.cc"],
+      "summary": "Binds SetRepeat to option 64 for FactoryProduction and option 0 for ActorOrder, while FactoryRally repeat remains tactically refused."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-policy-admission-to-native-effect-current",
+      "title": "Observed production queue to guarded native build",
+      "steps": [
+        {"path": "src/circuit/grpc/LiveControlState.cpp", "symbol": "LiveControlState::CheckTacticalCommand", "line": 299, "description": "Require count one, an allowed definition, a complete observed queue and a policy compatible with its emptiness."},
+        {"path": "src/circuit/grpc/CommandDispatch.cpp", "symbol": "ReadCurrentTacticalQueue", "line": 136, "description": "Read the exact current native queue and require its revision and required tag to match before dispatch."},
+        {"path": "src/circuit/grpc/CommandDispatch.cpp", "symbol": "DispatchTacticalCommand FactoryProduce", "line": 208, "description": "Recheck the policy against current queue emptiness immediately around external-control acquisition and the single native CmdBuild effect."}
+      ]
+    },
+    {
+      "id": "repeat-domain-semantic-check-current",
+      "title": "SetRepeat domain option validation",
+      "steps": [
+        {"path": "src/circuit/grpc/CommandQueue.cpp", "symbol": "ValidateLiveSemanticCommand QueueEdit", "line": 293, "description": "Compute option 64 for FactoryProduction and option 0 for other admitted domains, then compare SetRepeat against that value."},
+        {"path": "src/circuit/grpc/LiveControlState.cpp", "symbol": "LiveControlState::CheckTacticalCommand", "line": 313, "description": "Refuse SetRepeat for FactoryRally before native dispatch."},
+        {"path": "tests/unit/live_control_state_test.cc", "symbol": "QueueRepeatUsesDomainSpecificNativeOptions", "line": 691, "description": "Exercise the two admitted option/domain pairs, swapped-option refusals and the FactoryRally refusal."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-policy-empty-and-complete-current",
+      "kind": "admission",
+      "statement": "Factory production policy rejects incomplete queues; Append accepts either empty or nonempty complete queues, while Replace and RejectIfBusy accept only an empty complete queue.",
+      "evidence": [{"path": "src/circuit/grpc/FactoryProductionPolicy.h", "line": 10, "symbol": "FactoryProductionPolicyAllows"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "queue-policy", "fail-closed"]
+    },
+    {
+      "id": "factory-policy-current-dispatch-recheck",
+      "kind": "safety",
+      "statement": "FactoryProduce rechecks the current native queue and places external-control acquisition plus CmdBuild inside the policy gate, so a refused current queue reaches no enclosed native effect.",
+      "evidence": [{"path": "src/circuit/grpc/CommandDispatch.cpp", "line": 136, "symbol": "ReadCurrentTacticalQueue"}, {"path": "src/circuit/grpc/CommandDispatch.cpp", "line": 208, "symbol": "DispatchTacticalCommand FactoryProduce"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "dispatch", "zero-effect-refusal"]
+    },
+    {
+      "id": "factory-production-native-options-zero-current",
+      "kind": "mapping",
+      "statement": "The admitted FactoryProduce child is exactly count one and maps to BuildUnit/CmdBuild with native options zero; the typed queue policy remains a separate admission and broker conflict-policy concern.",
+      "evidence": [{"path": "src/circuit/grpc/CommandQueue.cpp", "line": 266, "symbol": "ValidateLiveSemanticCommand FactoryProduce"}, {"path": "src/circuit/grpc/CommandDispatch.cpp", "line": 208, "symbol": "DispatchTacticalCommand FactoryProduce"}],
+      "confidence": "observed-source",
+      "tags": ["factory-production", "options-zero", "count-one"]
+    },
+    {
+      "id": "set-repeat-domain-options-current",
+      "kind": "mapping",
+      "statement": "SetRepeat semantic validation requires option 64 for FactoryProduction and option 0 for ActorOrder; the opposite pairings are rejected.",
+      "evidence": [{"path": "src/circuit/grpc/CommandQueue.cpp", "line": 293, "symbol": "ValidateLiveSemanticCommand QueueEdit"}, {"path": "tests/unit/live_control_state_test.cc", "line": 691, "symbol": "QueueRepeatUsesDomainSpecificNativeOptions"}],
+      "confidence": "observed-source",
+      "tags": ["set-repeat", "factory-production", "actor-order", "options"]
+    },
+    {
+      "id": "factory-policy-source-tests-not-native-acceptance",
+      "kind": "acceptance-boundary",
+      "statement": "The source regression verifies admission combinations and counts enclosed test effects, but it does not establish genuine native runtime acceptance or physical game effects.",
+      "evidence": [{"path": "tests/unit/live_control_state_test.cc", "line": 588, "symbol": "FactoryProductionDispatchGateRunsNoEffectForRefusedPolicy"}],
+      "confidence": "inference",
+      "tags": ["factory-production", "test-boundary", "native-unqualified"]
+    }
+  ],
+  "open_questions": [
+    "Does genuine native qualification demonstrate each policy against a nonempty production queue without an unintended native write?",
+    "Does the target Recoil engine preserve the documented FactoryProduction option-64 SetRepeat behavior for the exact runtime build?"
+  ]
+}

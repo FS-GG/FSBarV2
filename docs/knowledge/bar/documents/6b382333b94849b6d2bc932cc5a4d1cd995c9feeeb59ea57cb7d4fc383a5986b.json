@@ -1,0 +1,464 @@
+{
+  "schema": "fsgg.knowledge.bar-project/1",
+  "curatedAt": "2026-10-01",
+  "origin": "bounded current-frontier maintenance from three immutable independent source reviews",
+  "items": [
+    {
+      "id": "qualification.stock-lua-successor-source-accepted",
+      "kind": "qualification",
+      "title": "Stock Lua numeric ABI successor accepted at source",
+      "statement": "Independent review accepts HighBar c1471bb2fae0c680f0bdecb62ad3d051b8ef422e (tree 2df62bb057d291899688c9ca150e5cdd818a4e4a) for the exact stock2639 observer source route. Actual stock Lua5.1 with float-number semantics and 14 focused tests pass; the deterministic 5019-byte overlay has SHA-256 c7d6b583a954e7c2b0fdbb9c697355aaf1d2a1cd24049c3d30b9e01dfdd99d4c. This closes the three source/numeric blockers in prior 2a7 while leaving discovery, transport, runtime identity, signed-zero transport, and native acceptance unproved.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "stock Lua observer",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [
+          "barc-stock-observer-r3.sdz sha256:c7d6b583a954e7c2b0fdbb9c697355aaf1d2a1cd24049c3d30b9e01dfdd99d4c"
+        ],
+        "runs": [],
+        "applicability": "source and numeric-ABI acceptance only; prior 2a7 failed attempt remains historical"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-numeric-abi-independent-rereview-20261001.md",
+          "digest": "25f06ead13ae5f0260c4dd6951d201c24657f73c9a3aff89e8a3e411ccf48d47",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-57",
+          "summary": "Exact source identity, three blocker closures, independent stock Lua float-number harness, 14 tests, package identity, and retained runtime gates.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "accepted",
+        "lua",
+        "qualification",
+        "source",
+        "stock",
+        "successor"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.stock-float32-byte-codec",
+      "kind": "constraint",
+      "title": "Stock float32 and SHA byte codec repair is source accepted",
+      "statement": "The accepted c147 Lua successor implements SHA-256 with bounded byte limbs and obtains float32 bytes through stock synced VFS.PackF32 with endian and signed-zero checks. Independent actual stock Lua5.1 float-number tests cover low mantissa bits, subnormal extremes, finite maximum, negative zero, actor0, and frozen bridge vectors. Actual engine command transport remains a native gate.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "Lua binary codec",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "accepted source/numeric boundary, with actual engine parameter transport still unproved"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-numeric-abi-independent-rereview-20261001.md",
+          "digest": "25f06ead13ae5f0260c4dd6951d201c24657f73c9a3aff89e8a3e411ccf48d47",
+          "capturedAt": "2026-10-01",
+          "section": "lines:15-38",
+          "summary": "Independent review verifies the bounded limb SHA and PackF32 repair under actual stock Lua float-number semantics.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "byte",
+        "codec",
+        "constraint",
+        "float32",
+        "stock"
+      ],
+      "supersedes": [
+        "7f8bccc7b7d6f90eb8404cf4671ef44586c59f4f69907989761d1ea2aa0d3832"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-fsbar-consumer-source-blocked",
+      "kind": "qualification",
+      "title": "FSBar stock consumer candidate is source blocked",
+      "statement": "Independent review blocks FSBar 611f4d118692fdf93d046fb7d82b4bf77318b0ec: production LiveBoundary drops EvidenceScheme 2 to default 0, a fresh F# test build fails on native/browser enum collisions hidden by stale --no-build output, and the exported oracle accepts NaN, oversized integers, missing rows, and unrelated actor evidence while reporting observed claims. No consumer source acceptance or native acceptance exists.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "FSBar stock consumer",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "611f4d118692fdf93d046fb7d82b4bf77318b0ec"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "source blocked; repair owner active; no product or runtime acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-consumer-independent-source-review-20261001.md",
+          "digest": "23d1002d45b486475ef79f2ccdc1143c26c0ee3e64eab5e5c9ebf870d9cb4e56",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-65",
+          "summary": "Exact candidate identity, production projection probe, fresh build failure, oracle counterexamples, and bounded repairs.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "blocked",
+        "consumer",
+        "fsbar",
+        "qualification",
+        "source",
+        "stock"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.production-projection-roundtrip-proof",
+      "kind": "constraint",
+      "title": "Cross-codec fixtures must exercise the production projection",
+      "statement": "A manually authored browser queue with EvidenceScheme 2 can pass while the real native-to-browser LiveBoundary projection silently emits default 0. Qualification for cross-codec fields requires a production ingress-to-projection-to-wire round trip, including legacy/default and unavailable forms; a direct fixture does not prove the deployed conversion.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "native-to-browser queue projection",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "611f4d118692fdf93d046fb7d82b4bf77318b0ec"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "general verification lesson grounded in the exact blocked stock candidate"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-consumer-independent-source-review-20261001.md",
+          "digest": "23d1002d45b486475ef79f2ccdc1143c26c0ee3e64eab5e5c9ebf870d9cb4e56",
+          "capturedAt": "2026-10-01",
+          "section": "lines:12-22",
+          "summary": "Production probe observes native scheme2 becoming browser scheme0 while manually authored fixtures pass.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "constraint",
+        "production",
+        "projection",
+        "proof",
+        "roundtrip",
+        "stock"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.no-build-stale-output-not-source-proof",
+      "kind": "constraint",
+      "title": "No-build test success does not qualify changed generated source",
+      "statement": "A 17-test --no-build result used an older assembly that lacked the newly generated EvidenceScheme field; rebuilding the changed source exposes enum type errors. After generated contracts or production projections change, qualification must rebuild the affected source before tests, and must distinguish discovery, compilation, and execution.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "generated-code build verification",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "611f4d118692fdf93d046fb7d82b4bf77318b0ec"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "cross-project process lesson; does not make a source or runtime claim beyond the reviewed candidate"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-consumer-independent-source-review-20261001.md",
+          "digest": "23d1002d45b486475ef79f2ccdc1143c26c0ee3e64eab5e5c9ebf870d9cb4e56",
+          "capturedAt": "2026-10-01",
+          "section": "lines:23-31",
+          "summary": "Fresh F# build fails where the earlier no-build suite used stale assemblies.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "build",
+        "constraint",
+        "no",
+        "not",
+        "output",
+        "proof",
+        "source",
+        "stale",
+        "stock"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-native-reader-source-candidate",
+      "kind": "qualification",
+      "title": "Stock native reader compiles but production plugin source is blocked",
+      "statement": "The stock reader candidate still compiles against Recoil2639 and its parser/state tests pass, but independent review of HighBar 564f84e7beec91cc602a3ecca67a60ea9c23e917 (tree 48f4f054c4fed4eb3af89a442dbab7814e6e2f1d) blocks source admission: the guarded dispatch re-enters a nonrecursive authority mutex, decisive deadline and actor checks occur before a potentially slow CallRules reread, the compatibility predicate rejects the selected headless tuple while admitting a broad 2025 family, and INT32_MIN command projection performs undefined signed negation. Plugin SHA 8891762ffe6976195a11d3319c8f1b7f8ebacb952215982ddf1a0bbef8951675 remains source/build evidence only.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "HighBar stock native plugin",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "564f84e7beec91cc602a3ecca67a60ea9c23e917",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [
+          "libSkirmishAI.so sha256:8891762ffe6976195a11d3319c8f1b7f8ebacb952215982ddf1a0bbef8951675"
+        ],
+        "runs": [],
+        "applicability": "source blocked pending coherent repair and rereview; no runtime acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-plugin-independent-source-review-20261001.md",
+          "digest": "c76dadcfcc4471004cd819fc08f19c2d17afb1dcf14f15b3f8a38ab9f96665a8",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-53",
+          "summary": "Final independent Astra source review records four production defects while retaining passing parser and state tests.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "candidate",
+        "native",
+        "qualification",
+        "reader",
+        "source",
+        "stock"
+      ],
+      "supersedes": [
+        "88139c4989ed18ccc76ed44d2cdd2dfa024eb9bf7a9ec007b76c4d7e5a2d97f3"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "roadmap.stock-frontier-not-joined",
+      "kind": "roadmap-gate",
+      "title": "Current stock source frontier is not a joined or deployed route",
+      "statement": "The Lua c147 source is accepted, while FSBar 611 and HighBar native 564f are source blocked. These local candidates are not a coherent protected merge, installed overlay/plugin, selected runtime, or native result. Optional FR1-FR6 remain inactive, native acceptance remains reported 0/6, and actual runtime identity remains unknown.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "coherent stock source join",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "611f4d118692fdf93d046fb7d82b4bf77318b0ec",
+          "564f84e7beec91cc602a3ecca67a60ea9c23e917"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "current source frontier; not merged, installed, selected, loaded, or natively accepted"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-numeric-abi-independent-rereview-20261001.md",
+          "digest": "25f06ead13ae5f0260c4dd6951d201c24657f73c9a3aff89e8a3e411ccf48d47",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-12",
+          "summary": "Lua source acceptance retains runtime and native gates.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-consumer-independent-source-review-20261001.md",
+          "digest": "23d1002d45b486475ef79f2ccdc1143c26c0ee3e64eab5e5c9ebf870d9cb4e56",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-11",
+          "summary": "FSBar review blocks the exact consumer source and retains native 0/6.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-plugin-independent-source-review-20261001.md",
+          "digest": "c76dadcfcc4471004cd819fc08f19c2d17afb1dcf14f15b3f8a38ab9f96665a8",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-12",
+          "summary": "Native plugin review blocks production source and grants no runtime acceptance.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "frontier",
+        "joined",
+        "not",
+        "roadmap",
+        "stock"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "title": "What still blocks stock native acceptance after Lua source acceptance?",
+      "statement": "The stock-compatible Lua numeric source gate is closed at c147, but coherent delivery remains blocked by the reviewed FSBar production projection/build/oracle defects and HighBar authority-lock/deadline/version/INT32_MIN defects. After source repairs and rereviews, open gates still include a joined protected source set, exact overlay/plugin discovery, selected and loaded stock executable identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, final reread and equality, and all required native journeys. Native acceptance remains reported 0/6.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "remaining stock gates",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "611f4d118692fdf93d046fb7d82b4bf77318b0ec",
+          "564f84e7beec91cc602a3ecca67a60ea9c23e917"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "open gates after Lua source acceptance; no runtime or native completion"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-numeric-abi-independent-rereview-20261001.md",
+          "digest": "25f06ead13ae5f0260c4dd6951d201c24657f73c9a3aff89e8a3e411ccf48d47",
+          "capturedAt": "2026-10-01",
+          "section": "lines:45-57",
+          "summary": "Lua source acceptance and retained runtime gates.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-consumer-independent-source-review-20261001.md",
+          "digest": "23d1002d45b486475ef79f2ccdc1143c26c0ee3e64eab5e5c9ebf870d9cb4e56",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-65",
+          "summary": "FSBar source blockers and retained native gates.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-plugin-independent-source-review-20261001.md",
+          "digest": "c76dadcfcc4471004cd819fc08f19c2d17afb1dcf14f15b3f8a38ab9f96665a8",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-53",
+          "summary": "HighBar source blockers and required repair acceptance.",
+          "basis": "observed-document",
+          "scope": "Exact independently reviewed source candidate and stated checks only; no installed runtime or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "gates",
+        "native",
+        "next",
+        "question",
+        "stock"
+      ],
+      "supersedes": [
+        "5722ee904a459933f7493fa9b7e6c9a98b9428a93d9ad6d7f2ee23a40abd474d"
+      ],
+      "conflicts": []
+    }
+  ]
+}

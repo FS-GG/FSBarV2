@@ -1,0 +1,125 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-44cd9eb676d2c358635d9dc9954107b44860263f",
+    "revision": "44cd9eb676d2c358635d9dc9954107b44860263f",
+    "tree": "64e20ef8b2c723527df4946c65258e356dadec86",
+    "status": "historical product source pin; embedded custody still targets f5 and successor custody is reported separately; no runtime acceptance"
+  },
+  "components": [
+    {
+      "id": "peer-observer-product-pin-44cd",
+      "title": "bbeb qualification identity gate",
+      "paths": ["CMakeLists.txt"],
+      "summary": "Requires bbeb1eb as the reviewed engine identity when factory replacement qualification is nonzero."
+    },
+    {
+      "id": "peer-observer-reconstruction-custody-44cd",
+      "title": "Pinned source and protobuf reconstruction",
+      "paths": [
+        "scripts/build-barc-recoil-factory-atomic.sh",
+        "engine-patches/barc-01.5/factory-atomic-v1/peer-observer-source-pins.txt"
+      ],
+      "summary": "Verifies exact source identities, generator binaries, proto inputs, and 32 generated outputs before configuration, while this exact revision's embedded engine bundle still targets f5c83c6."
+    }
+  ],
+  "flows": [
+    {
+      "id": "peer-observer-custody-flow-44cd",
+      "title": "Pinned sources to deterministic generated inputs",
+      "steps": [
+        {
+          "path": "scripts/build-barc-recoil-factory-atomic.sh",
+          "symbol": "factory_commit",
+          "line": 22,
+          "description": "Bind the rally base, reconstructed engine commit and tree, and exact HighBar product source."
+        },
+        {
+          "path": "scripts/build-barc-recoil-factory-atomic.sh",
+          "symbol": "generate_proto",
+          "line": 43,
+          "description": "Verify protoc 36.1 and the gRPC 1.84.0 plugin by version and SHA-256, then verify the source proto manifest."
+        },
+        {
+          "path": "scripts/build-barc-recoil-factory-atomic.sh",
+          "symbol": "generate_proto",
+          "line": 63,
+          "description": "Generate protobuf and gRPC outputs, verify their manifest, and require exactly 32 generated files."
+        },
+        {
+          "path": "scripts/build-barc-recoil-factory-atomic.sh",
+          "symbol": "bundle reconstruction",
+          "line": 99,
+          "description": "Verify and fetch the retained bundle, compare its exact commit and tree, verify ancestry and readable patch equality, then check out the reconstructed source."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "peer-observer-bbeb-product-pin-44cd",
+      "kind": "source-fact",
+      "statement": "For a nonzero qualification count, HighBar 44cd requires engine hash bbeb1eb together with the reviewed additional version and wire identity; the default remains qualification count zero.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 216, "symbol": "HIGHBAR_FACTORY_REPLACEMENT_QUALIFICATION_COUNT"},
+        {"path": "CMakeLists.txt", "line": 237, "symbol": "peer-observer identity"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["highbar", "peer-observer", "bbeb1eb", "default-off", "source-pin"]
+    },
+    {
+      "id": "peer-observer-protobuf-custody-44cd",
+      "kind": "source-fact",
+      "statement": "The reconstruction recipe verifies protoc 36.1 and grpc_cpp_plugin 1.84.0 by pinned SHA-256, verifies the proto input manifest, regenerates outputs, verifies the output manifest, and requires exactly 32 generated files.",
+      "evidence": [
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 30, "symbol": "protoc_sha256"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 43, "symbol": "generate_proto"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 52, "symbol": "peer-observer-proto-inputs.sha256"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 68, "symbol": "peer-observer-proto-generated.sha256"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 75, "symbol": "generated_files"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["protobuf", "protoc-36.1", "grpc-1.84.0", "32-outputs", "custody"]
+    },
+    {
+      "id": "peer-observer-custody-mismatch-44cd",
+      "kind": "source-conflict",
+      "statement": "This exact 44cd product source gates qualification on bbeb1eb, but its embedded build recipe, bundle and source pin records still target f5c83c6 and its nine commit observer history. Therefore 44cd alone does not reconstruct the gated bbeb source.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 237, "symbol": "peer-observer identity"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 23, "symbol": "factory_commit"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 135, "symbol": "pin_hash"},
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/README.md", "line": 45, "symbol": "peer-observer-commit-chain.txt"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["source-conflict", "bbeb1eb", "f5c83c6", "custody-gap"]
+    },
+    {
+      "id": "peer-observer-successor-custody-1a05",
+      "kind": "reported-status",
+      "statement": "The accepted custody report identifies successor 1a051787c2e15ab88fb924cb931054f16d5f1bd1, tree 1f3be69d383b48f905c054f5c9176efca4deadea, as reconstructing the ten commit chain through bbeb while retaining the verified eight proto inputs and 32 generated outputs. That successor is reported evidence and is not the registered 44cd corpus.",
+      "evidence": [
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 15, "symbol": "recoil-factory-atomic-peer-observer-v1"},
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/peer-observer-source-pins.txt", "line": 34, "symbol": "source inputs"},
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/peer-observer-source-pins.txt", "line": 40, "symbol": "generated file count"}
+      ],
+      "confidence": "reported",
+      "tags": ["successor-custody", "ten-commit-chain", "reported", "not-registered-source"]
+    },
+    {
+      "id": "peer-observer-build-runtime-boundary-44cd",
+      "kind": "acceptance-boundary",
+      "statement": "The source pins and custody checks do not establish completion of the in-progress bbeb root build or any actual-service CTest, two peer, callback, refund, game, or native runtime acceptance.",
+      "evidence": [
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/README.md", "line": 54, "symbol": "Native qualification"},
+        {"path": "engine-patches/barc-01.5/factory-atomic-v1/README.md", "line": 130, "symbol": "BARC_RECONSTRUCT_ONLY"}
+      ],
+      "confidence": "inference",
+      "tags": ["source-only", "build-in-progress", "runtime-unknown", "no-native-acceptance"]
+    }
+  ],
+  "open_questions": [
+    "Will the exact bbeb root build complete and run all focused observer tests?",
+    "Will independently custodied two peer evidence establish callback and refund behavior at runtime?"
+  ]
+}

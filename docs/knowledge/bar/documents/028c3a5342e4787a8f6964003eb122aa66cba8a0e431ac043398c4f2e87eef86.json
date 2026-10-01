@@ -1,0 +1,59 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-0676ccb0d1116ecc40c6346a2aaf5ebb7691a648",
+    "revision": "0676ccb0d1116ecc40c6346a2aaf5ebb7691a648",
+    "tree": "1c1eba6bbced187cde4a393e40ac72a6f75665ad",
+    "status": "historical candidate; not installed or current"
+  },
+  "components": [
+    {
+      "id": "factory-atomic-candidate-assembly",
+      "title": "Factory replacement child assembly and native correlation",
+      "paths": ["src/circuit/grpc/FactoryReplacementAssembler.cpp", "src/circuit/grpc/FactoryReplacementApi.cpp"],
+      "summary": "Groups Count1 children by parent and actor, encodes a correlated replacement request through the appended engine callback, and converts only a decoded correlated committed result with valid native tags into Applied."
+    },
+    {
+      "id": "factory-atomic-candidate-frame-producer",
+      "title": "Engine-thread command drain and result projection",
+      "paths": ["src/circuit/module/GrpcGatewayModule.cpp"],
+      "summary": "Builds replacement children from queued live commands, polls native results during the engine-thread drain, projects terminal per-child dispatch events, then flushes those events through the normal frame delta producer."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-atomic-candidate-command-to-postpoll",
+      "title": "Decoded live child to post-poll frame delta",
+      "steps": [
+        {"path":"src/circuit/module/GrpcGatewayModule.cpp","symbol":"CGrpcGatewayModule::DrainCommandQueue","line":2467,"description":"Materialize one FactoryReplacementChild from the queued decoded live command, binding parent, child index/count, catalogue, authority, actor lifetime, definition and observed snapshot."},
+        {"path":"src/circuit/grpc/FactoryReplacementAssembler.cpp","symbol":"FactoryReplacementAssembler::Add","line":89,"description":"Reject invalid, expired, inconsistent or conflicting children and complete only an indexed full parent group."},
+        {"path":"src/circuit/grpc/FactoryReplacementAssembler.cpp","symbol":"FactoryReplacementExecutor::Submit","line":230,"description":"Re-decode the canonical snapshot, bind operation sequence/request ID/digest and submit the replacement through FactoryReplacementApi."},
+        {"path":"src/circuit/grpc/FactoryReplacementAssembler.cpp","symbol":"FactoryReplacementExecutor::Poll","line":293,"description":"Read the exact sequence/ID/digest result, decode and correlate it, and require valid unique positive committed tags before Applied."},
+        {"path":"src/circuit/module/GrpcGatewayModule.cpp","symbol":"CGrpcGatewayModule::DrainCommandQueue","line":2315,"description":"Poll pending native outcomes and project terminal per-child command-dispatch events into current_frame_delta_."},
+        {"path":"src/circuit/module/GrpcGatewayModule.cpp","symbol":"CGrpcGatewayModule::OnFrameTick","line":1568,"description":"Drain commands before planning the state update and flush the accumulated delta later in the same frame."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id":"factory-atomic-candidate-correlation-failclosed",
+      "kind":"correlation",
+      "statement":"A found native result is not Applied unless its frozen result bytes decode, correlate to the exact request identity, report Committed and supply one valid unique native tag per child.",
+      "evidence":[{"path":"src/circuit/grpc/FactoryReplacementAssembler.cpp","line":293,"symbol":"FactoryReplacementExecutor::Poll"}],
+      "confidence":"observed-source",
+      "tags":["factory-replacement","correlation","tags","fail-closed"]
+    },
+    {
+      "id":"factory-atomic-candidate-frame-join-inference",
+      "kind":"route-join",
+      "statement":"The source forms a command-to-native-result-to-frame-delta route, but source structure alone does not prove that the candidate engine callbacks execute atomically in a real game or that a broker consumes every emitted child outcome.",
+      "evidence":[{"path":"src/circuit/module/GrpcGatewayModule.cpp","line":2315,"symbol":"CGrpcGatewayModule::DrainCommandQueue"},{"path":"src/circuit/module/GrpcGatewayModule.cpp","line":1598,"symbol":"CGrpcGatewayModule::OnFrameTick"}],
+      "confidence":"inference",
+      "tags":["factory-replacement","frame-delta","native-unqualified"]
+    }
+  ],
+  "open_questions": [
+    "Does controlled native Count1/2/4 qualification observe every correlated child tag and physical product without a partial replacement?",
+    "The actively changing FSBar candidate is intentionally absent; which exact protected broker revision will consume these historical-candidate outcomes?"
+  ]
+}

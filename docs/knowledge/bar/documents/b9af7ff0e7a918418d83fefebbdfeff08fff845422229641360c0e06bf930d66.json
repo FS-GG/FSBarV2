@@ -1,0 +1,149 @@
+{
+  "source": {
+    "name": "FSBar",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/FSBar-3e293a536ca72b5b6272a2867a40e04abab899e9",
+    "revision": "3e293a536ca72b5b6272a2867a40e04abab899e9",
+    "tree": "d487575968df8b22bb8e63775b3db511eb868dcb",
+    "parent": "9631bf49515c49f6896e6c42384a3c5b2a7093d4",
+    "status": "historical selected-interval source contract; no native qualification",
+    "reportedDerivedArtifact": {
+      "files": 6,
+      "manifestSha256": "540257f0a3e70cf15bf9670cef6ba2734deb0ce5befbd943fbd08282d9eddc06"
+    }
+  },
+  "components": [
+    {
+      "id": "fsbar-selected-handoff-contract-3e293",
+      "title": "Closed selected factory candidate handoff",
+      "paths": ["tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "tests/Broker.NativeProof/factory-native-candidate-evidence.test.mjs"],
+      "summary": "Defines and tests a versioned one-interval handoff whose external expectation fixes profile, selected count, packet, run, interval, and nonce while the payload carries one live session, credential, factory, and closed provenance."
+    },
+    {
+      "id": "fsbar-selected-browser-route-3e293",
+      "title": "Selected handoff browser initialization and oracle route",
+      "paths": ["tests/Broker.NativeProof/tactical-native-journey.spec.js", "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs"],
+      "summary": "The candidate browser path validates one private selected handoff at module initialization, creates a one-item runtime view, and sends the original selected value plus its independent expectation through the interval oracle."
+    },
+    {
+      "id": "fsbar-aggregate-contract-retained-3e293",
+      "title": "Existing aggregate Count1/2/4 contract remains distinct",
+      "paths": ["tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "tests/Broker.NativeProof/factory-native-candidate-evidence.test.mjs"],
+      "summary": "The aggregate validator still requires ordered Count1, Count2, and Count4 intervals. The interval assertion dispatches explicitly by schema and does not reinterpret an aggregate payload as selected-only."
+    }
+  ],
+  "flows": [
+    {
+      "id": "fsbar-selected-handoff-browser-flow-3e293",
+      "title": "Helper materialization to one browser interval",
+      "steps": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "symbol": "validateSelectedFactoryCandidateHandoff", "line": 28, "description": "Validate exact selected expectation and payload keys before inspecting live or provenance fields."},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "symbol": "selected count", "line": 34, "description": "Require the payload maximum and interval count to equal one externally selected Count1, Count2, or Count4 value."},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "symbol": "candidateExpected", "line": 13, "description": "Build the independent selected expectation from root-controlled environment fields."},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "symbol": "candidateSelectedHandoff", "line": 14, "description": "Read and validate the private selected handoff before creating the browser runtime view."},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "symbol": "assertFactoryCandidateInterval", "line": 124, "description": "Validate published rows against the original selected handoff and expectation for the single selected interval."}
+      ]
+    },
+    {
+      "id": "fsbar-selected-schema-dispatch-flow-3e293",
+      "title": "Selected and aggregate evidence dispatch",
+      "steps": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "symbol": "validateFactoryCandidateHandoff", "line": 69, "description": "Retain the aggregate validator requiring ordered Count1, Count2, and Count4 intervals."},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "symbol": "assertFactoryCandidateInterval", "line": 102, "description": "Dispatch selected schema through its closed validator and runtime view; otherwise call the aggregate validator."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "fsbar-selected-exactly-one-count-3e293",
+      "kind": "source-fact",
+      "statement": "The selected schema has one scalar interval field rather than an intervals array, and validation requires its count and the payload maxCount to equal the independently expected Count 1, 2, or 4 value.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 15, "symbol": "selectedTopKeys"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 34, "symbol": "selected count"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["selected-handoff", "count-1-2-4", "closed-schema", "one-interval"]
+    },
+    {
+      "id": "fsbar-selected-provenance-and-live-refusal-3e293",
+      "kind": "source-fact",
+      "statement": "Exact key checks refuse additional top-level or interval fields, including unselected credentials; the selected interval also requires frozen global and interval provenance, an actual bounded session identifier, a nonempty credential, a lifetime-bearing factory, and six distinct absolute evidence paths.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 30, "symbol": "closed selected factory candidate handoff"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 32, "symbol": "closed selected candidate provenance"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 47, "symbol": "selected live session and credential"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 52, "symbol": "disjoint absolute selected candidate paths"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.test.mjs", "line": 36, "symbol": "extra unselected credentials"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["provenance", "credential-refusal", "live-session", "factory-lifetime", "path-isolation"]
+    },
+    {
+      "id": "fsbar-browser-selected-initialization-3e293",
+      "kind": "source-fact",
+      "statement": "When native factory candidate mode is enabled, browser module initialization requires root-selected count, packet, run, interval, and nonce environment values, validates the private selected handoff, and exposes only that interval to test enumeration.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "line": 12, "symbol": "candidateEnabled"},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "line": 13, "symbol": "candidateExpected"},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "line": 14, "symbol": "candidateSelectedHandoff"},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "line": 109, "symbol": "candidateHandoff.intervals"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["browser-initialization", "root-selection", "one-count-launch"]
+    },
+    {
+      "id": "fsbar-aggregate-path-unchanged-semantics-3e293",
+      "kind": "source-fact",
+      "statement": "The aggregate validator remains a separate schema requiring the ordered Count1, Count2, and Count4 array; interval evidence performs explicit selected-schema dispatch before falling back to that aggregate validator.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 69, "symbol": "validateFactoryCandidateHandoff"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 76, "symbol": "candidate intervals"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 102, "symbol": "assertFactoryCandidateInterval"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.test.mjs", "line": 60, "symbol": "selected interval oracle preserves aggregate semantics"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["aggregate-validator", "schema-dispatch", "count-1-2-4"]
+    },
+    {
+      "id": "fsbar-selected-derived-artifact-reported-3e293",
+      "kind": "reported-artifact-fact",
+      "statement": "Root independently reported a six-file readonly derived source artifact with manifest SHA-256 540257f0a3e70cf15bf9670cef6ba2734deb0ce5befbd943fbd08282d9eddc06. This is artifact custody context, not source evidence or native qualification.",
+      "evidence": [],
+      "confidence": "reported",
+      "tags": ["reported-artifact", "source-candidate", "not-native-proof"]
+    },
+    {
+      "id": "fsbar-selected-inherited-boundary-reported-3e293",
+      "kind": "reported-source-boundary",
+      "statement": "Root reported that this revision changes exactly the evidence module, its Node tests, and tactical browser initialization; inherited host, protocol, engine, plugin, and binary source paths were not changed or rebuilt by this source lane.",
+      "evidence": [],
+      "confidence": "reported",
+      "tags": ["three-js-files", "host-unchanged", "protocol-unchanged", "binary-unchanged"]
+    },
+    {
+      "id": "fsbar-selected-bootstrap-triage-3e293",
+      "kind": "crash-triage-inference",
+      "statement": "If helper bootstrap supplies no actual selected session or factory, an extra credential, mismatched count or identity, or duplicate evidence paths, the selected validator should refuse during browser module initialization. Triage should inspect helper materialization and the five root-selected expectation fields before investigating browser actions or engine execution.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "line": 13, "symbol": "candidateExpected"},
+        {"path": "tests/Broker.NativeProof/tactical-native-journey.spec.js", "line": 14, "symbol": "validateSelectedFactoryCandidateHandoff"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 28, "symbol": "validateSelectedFactoryCandidateHandoff"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 47, "symbol": "selected live session and credential"}
+      ],
+      "confidence": "inference",
+      "tags": ["bootstrap-triage", "pre-browser-refusal", "helper-boundary"]
+    },
+    {
+      "id": "fsbar-selected-native-status-reported-3e293",
+      "kind": "reported-status",
+      "statement": "Helper bootstrap integration remains in progress and native qualification remains 0/6. The selected handoff source and its pure JavaScript tests do not prove any native Count1, Count2, Count4, paired observer, cleanup, or publication gate.",
+      "evidence": [],
+      "confidence": "reported",
+      "tags": ["native-0-of-6", "bootstrap-working", "qualification-pending"]
+    }
+  ],
+  "open_questions": [
+    "Will the helper authenticate and materialize the actual selected live session, factory lifetime, provenance, and disjoint paths before browser initialization?",
+    "Will each separately admitted Count1, Count2, and Count4 native run satisfy the unchanged interval evidence oracle and paired observer gates?"
+  ]
+}

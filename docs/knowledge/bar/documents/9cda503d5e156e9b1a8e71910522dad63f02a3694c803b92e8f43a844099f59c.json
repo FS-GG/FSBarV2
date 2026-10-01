@@ -1,0 +1,297 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "d4844462bad99af81a4831b3c9af8021923023123b4ea40d52b320a64f9cb6eb",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-default-source-and-delivered-successors-20261001.md",
+          "scope": "Source delivery metadata only.",
+          "section": "Delivered FSBar source and public audit",
+          "sourceProof": null,
+          "summary": "Exact protected head, tree and public audit permalink.",
+          "verify": true
+        },
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:FSBar/tests/Broker.NativeProof/LiveHost.fs",
+          "scope": "Exact current manifest-backed delivered source.",
+          "section": "line:86",
+          "sourceProof": {
+            "line": 86,
+            "path": "tests/Broker.NativeProof/LiveHost.fs",
+            "revision": "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+            "sha256": "f76bf081c79c9b5f7a07952fc7ffe154fb6efbf3b64f325ef256f0f3185260c9",
+            "source": "FSBar"
+          },
+          "summary": "One retained usable-stock-factory selection begins here.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-shared-factory-selection-source-ready",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "protected source delivery; no installed or native acceptance",
+        "artifacts": [],
+        "component": "FSBar stock readiness and materialization selection",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "FS-GG/FSBarV2 PR 13 delivered the reviewed shared-selection repair as protected head 5bc309e2cbd5ae701b16b43d5f978742beee607d, tree 3f13b542d484d896a0029f4c725a7f701a9a4299. Readiness and later command materialization now retain one immutable usable stock-factory selection. The public audit is delivered at the exact protected revision. This closes source delivery only; rebuilt managed-host binding, packet review, genuine Count1, browser start, and all six useful-play journeys remain open.",
+      "supersedes": [
+        "de64b5200a46c0461ff0cfef9dd36392ac4248c45ff0ae779ebc028253de82a5"
+      ],
+      "tags": [
+        "stock",
+        "readiness",
+        "shared-selection",
+        "source-delivered",
+        "native-open"
+      ],
+      "title": "Shared immutable factory selection is delivered in protected FSBar"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "d4844462bad99af81a4831b3c9af8021923023123b4ea40d52b320a64f9cb6eb",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-default-source-and-delivered-successors-20261001.md",
+          "scope": "Source and selected CI evidence only.",
+          "section": "Delivered HighBar source",
+          "sourceProof": null,
+          "summary": "Exact protected head, tree, selected CI boundary and corpus identity.",
+          "verify": true
+        },
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:HighBarV3/src/circuit/grpc/CommandDispatch.cpp",
+          "scope": "Exact current manifest-backed delivered source.",
+          "section": "line:299",
+          "sourceProof": {
+            "line": 299,
+            "path": "src/circuit/grpc/CommandDispatch.cpp",
+            "revision": "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+            "sha256": "3ab625ce60ef59fb82373a08f7f92e9b072b6dffaa49a93205769467947213ef",
+            "source": "HighBarV3"
+          },
+          "summary": "Stock FactoryProduce dispatch uses the bounded stock policy and zero-option helper.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-factory-count1-options-source-candidate",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "protected source and selected CI only; hosted native checks were skipped",
+        "artifacts": [],
+        "component": "HighBar stock factory Count1 option translation",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "FS-GG/HighBarV3 PR 14 delivered the reviewed count-one repair as protected head 54e17084c35b90584f8f84efc468bcc8943e4ec0, tree 5498369b7feea00bad13b0fc7d0e74c59532a89d. The stock FactoryProduce Count1 route emits option zero while ordinary tactical Append retains SHIFT and existing refusal behavior. Selected CI 36872764414 succeeded and local stock compilation plus three focused tests passed; hosted C++ and native checks were skipped. Exact artifact rebuild, installed binding, actual produced quantity and native acceptance remain open.",
+      "supersedes": [
+        "647895a12cb99db48a213129721e006edb8f53c7167c80f7e0ed734b865aea78"
+      ],
+      "tags": [
+        "stock",
+        "factory",
+        "Count1",
+        "options-zero",
+        "source-delivered",
+        "native-open"
+      ],
+      "title": "Stock FactoryProduce Count1 options repair is delivered in protected HighBar"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "d4844462bad99af81a4831b3c9af8021923023123b4ea40d52b320a64f9cb6eb",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-default-source-and-delivered-successors-20261001.md",
+          "scope": "Knowledge source-index selection only.",
+          "section": "Exact stock Recoil search corpus",
+          "sourceProof": null,
+          "summary": "Complete corpus coverage, exclusions, blob verification and retained historical lookup.",
+          "verify": true
+        }
+      ],
+      "id": "question.stock-default-source-selection",
+      "kind": "question",
+      "scope": {
+        "applicability": "search coverage only; no installed or loaded engine inference",
+        "artifacts": [],
+        "component": "BAR source-index default Recoil selection",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "Recoil"
+        ],
+        "revisions": [
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+          "7555c836e0457b04100b20149497d088dd9c2ca7"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "The exact official stock Recoil revision 2639eedac7d1fd67d793ec93ebd27f014f336a14, tree 94c1d8ad62b20285b19c1b5f3360a81fbbc54468, now has a complete bounded manifest-backed textual corpus of 3,239 Git blobs and 29,806,454 bytes. All retained bytes match exact Git blob identities, so broad Recoil search now defaults to this stock corpus. Custom 7555c836e0457b04100b20149497d088dd9c2ca7 remains available as a 3,240-file historical exact-revision corpus, and the earlier six-file stock registration remains immutable on disk. This changes knowledge search selection only; it does not select, install, or prove a loaded runtime.",
+      "supersedes": [
+        "ad5938319110511c8f9bb30973e6e51f294bae56efb8639ba0c75fa7dc45db55"
+      ],
+      "tags": [
+        "source-index",
+        "default-selection",
+        "stock-2639",
+        "custom-7555",
+        "complete-corpus"
+      ],
+      "title": "Exact stock Recoil 2639 is now the broad default search selection"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "d4844462bad99af81a4831b3c9af8021923023123b4ea40d52b320a64f9cb6eb",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-default-source-and-delivered-successors-20261001.md",
+          "scope": "No native acceptance claim.",
+          "section": "Remaining acceptance boundary",
+          "sourceProof": null,
+          "summary": "Delivered source boundary and next bounded artifact/native gates.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current frontier after exact protected source delivery",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "The HighBar Count1 option repair and FSBar shared-selection repair are now exact protected source heads. Next, rebuild and bind the exact protected plugin and managed host, regenerate the private helper and immutable packet from those bytes, and independently review the coherent packet. Then run one bounded genuine Count1 prerequisite with actual browser input, correlated child lifecycle, causal queue/product evidence, loaded identities, and separate cleanup truth. No current evidence accepts Count1 or any useful-play journey: all six remain 0/6. Custom FR, resilience, scale and publication remain open, and the delivered Unified source projection adds no installed or native acceptance.",
+      "supersedes": [
+        "32538081e499eb1fcfb4978808d92ff516be65e2e0d4235e95c9217d5fd74093"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "Count1",
+        "source-delivered",
+        "native-0-of-6"
+      ],
+      "title": "What remains after both stock source successors were delivered?"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "d4844462bad99af81a4831b3c9af8021923023123b4ea40d52b320a64f9cb6eb",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-default-source-and-delivered-successors-20261001.md",
+          "scope": "Roadmap projection only.",
+          "section": "Unified source projection",
+          "sourceProof": null,
+          "summary": "Exact merged projection and tree-equality readback.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-source-closure-unified-projection",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "roadmap source projection only; no installed or native acceptance",
+        "artifacts": [],
+        "component": "Unified source closure projection",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "35cbab4fb3e7bdd0e97901f69a7406ddb3604f0c"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "Unified Development Roadmap PR 4060 merged as 35cbab4fb3e7bdd0e97901f69a7406ddb3604f0c, and root API readback confirmed its tree equals reviewed candidate 33d tree e90ee78d73b1b7c104ffdd714b967f21f1a05940. The projection records exact HighBar and FSBar source delivery. Artifact rebuild, installed identities, Count1 and native useful-play qualification remain separately open.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "source-delivered",
+        "unified-projection",
+        "native-open"
+      ],
+      "title": "Unified roadmap projection records the delivered stock source closure"
+    }
+  ],
+  "origin": "Exact stock Recoil complete-corpus default selection and delivered FS-GG HighBar/FSBar source successors; source versus native boundaries retained",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

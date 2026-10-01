@@ -1,0 +1,216 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-2639eedac7d1fd67d793ec93ebd27f014f336a14",
+    "revision": "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+    "tree": "94c1d8ad62b20285b19c1b5f3360a81fbbc54468",
+    "status": "registered historical upstream release source; no runtime selection claim"
+  },
+  "components": [
+    {
+      "id": "stock-engine-command-observation-route",
+      "title": "Released command and queue observation route",
+      "paths": [
+        "rts/ExternalAI/AICallback.cpp",
+        "rts/Lua/LuaSyncedRead.cpp",
+        "rts/Lua/LuaHandle.cpp"
+      ],
+      "summary": "The released engine submits normal AI commands, exposes team-owned command queues, and provides separate Lua views of rally and factory production queues."
+    },
+    {
+      "id": "stock-engine-sequential-edit-route",
+      "title": "Released sequential factory edit route",
+      "paths": [
+        "rts/Lua/LuaSyncedCtrl.cpp",
+        "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+        "rts/Sim/Units/CommandAI/CommandAI.cpp"
+      ],
+      "summary": "Factory count options and insert/remove operations mutate queues through ordinary per-command paths; array submission loops over commands."
+    }
+  ],
+  "flows": [
+    {
+      "id": "stock-engine-ai-submit-and-read",
+      "title": "AI submission and bounded queue observation candidates",
+      "steps": [
+        {
+          "path": "rts/ExternalAI/AICallback.cpp",
+          "symbol": "CAICallback::GiveOrder",
+          "line": 351,
+          "description": "Validates actor ownership and sends one AI command through the synchronized network protocol."
+        },
+        {
+          "path": "rts/Lua/LuaSyncedRead.cpp",
+          "symbol": "LuaSyncedRead::GetUnitCommands",
+          "line": 6342,
+          "description": "For a factory, selects newUnitCommands, which is the rally queue for newly produced units."
+        },
+        {
+          "path": "rts/Lua/LuaSyncedRead.cpp",
+          "symbol": "LuaSyncedRead::GetFactoryCommands",
+          "line": 6392,
+          "description": "Selects the factory commandQue, which is the production queue."
+        },
+        {
+          "path": "rts/Lua/LuaHandle.cpp",
+          "symbol": "CLuaHandle::RecvSkirmishAIMessage",
+          "line": 3864,
+          "description": "Calls the Lua message handler through an explicitly unsynced AI call-in and returns an optional string."
+        }
+      ]
+    },
+    {
+      "id": "stock-engine-sequential-production-edit",
+      "title": "Ordinary factory count and queue edit behavior",
+      "steps": [
+        {
+          "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "symbol": "GetCountMultiplierFromOptions",
+          "line": 146,
+          "description": "Maps option zero to one item, SHIFT to a factor of five and CONTROL to a factor of twenty."
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "symbol": "CFactoryCAI::GiveCommandReal",
+          "line": 244,
+          "description": "Adds or removes the computed number of production entries using ordinary queue mutations."
+        },
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "symbol": "LuaSyncedCtrl::GiveOrderArrayToUnit",
+          "line": 6032,
+          "description": "Parses an array and calls GiveCommand once per command."
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/CommandAI.cpp",
+          "symbol": "CCommandAI::ExecuteRemove",
+          "line": 1216,
+          "description": "Removes matching commands by tag or ID with iterative queue edits."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "stock-engine-rally-production-domains",
+      "kind": "queue-observation",
+      "statement": "At the exact released source revision, GetUnitCommands selects a factory newUnitCommands queue while GetFactoryCommands selects commandQue, providing distinct rally and production observation domains. A bounded team-scoped Lua bridge is therefore a source-supported observation route.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedRead.cpp",
+          "line": 6342,
+          "symbol": "LuaSyncedRead::GetUnitCommands"
+        },
+        {
+          "path": "rts/Lua/LuaSyncedRead.cpp",
+          "line": 6392,
+          "symbol": "LuaSyncedRead::GetFactoryCommands"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "stock-engine",
+        "rally",
+        "factory",
+        "lua",
+        "queue-observation"
+      ]
+    },
+    {
+      "id": "stock-engine-ai-lua-unsynced-boundary",
+      "kind": "authority",
+      "statement": "RecvSkirmishAIMessage is explicitly always unsynced, so it can carry a bounded observation request and response but is not a synchronized mutation or transaction boundary.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaHandle.cpp",
+          "line": 3864,
+          "symbol": "CLuaHandle::RecvSkirmishAIMessage"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "stock-engine",
+        "lua",
+        "unsynced",
+        "authority"
+      ]
+    },
+    {
+      "id": "stock-engine-order-array-not-atomic",
+      "kind": "transaction",
+      "statement": "GiveOrderArrayToUnit loops through commands and invokes GiveCommand separately; the inspected released path contains no rollback around the loop. It cannot establish all-or-none nonempty queue replacement.",
+      "evidence": [
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 6032,
+          "symbol": "LuaSyncedCtrl::GiveOrderArrayToUnit"
+        },
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 6054,
+          "symbol": "LuaSyncedCtrl::GiveOrderArrayToUnit"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "stock-engine",
+        "sequential",
+        "atomicity",
+        "queue-replacement"
+      ]
+    },
+    {
+      "id": "stock-engine-factory-count-options",
+      "kind": "factory-policy",
+      "statement": "Factory production uses a count multiplier of one by default, five for SHIFT and twenty for CONTROL, then appends or removes that many ordinary queue entries.",
+      "evidence": [
+        {
+          "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "line": 146,
+          "symbol": "GetCountMultiplierFromOptions"
+        },
+        {
+          "path": "rts/Sim/Units/CommandAI/FactoryCAI.cpp",
+          "line": 244,
+          "symbol": "CFactoryCAI::GiveCommandReal"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "stock-engine",
+        "factory",
+        "count",
+        "options"
+      ]
+    },
+    {
+      "id": "stock-engine-useful-play-route-limit",
+      "kind": "acceptance-boundary",
+      "statement": "The released source supports useful-play commands and truthful later queue observation, but these paths do not prove the later strict cancellation/refund, synchronized fence, dedupe, rollback, or independent peer-service contract.",
+      "evidence": [
+        {
+          "path": "rts/ExternalAI/AICallback.cpp",
+          "line": 351,
+          "symbol": "CAICallback::GiveOrder"
+        },
+        {
+          "path": "rts/Lua/LuaSyncedCtrl.cpp",
+          "line": 6056,
+          "symbol": "LuaSyncedCtrl::GiveOrderArrayToUnit"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "stock-engine",
+        "useful-play",
+        "acceptance",
+        "strict-contract"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Which exact engine artifact is selected and loaded by the next native game process?",
+    "Will a packaged bounded Lua observation bridge pass real native perspective, completeness, framing and freshness checks?",
+    "Does the product retain strict all-or-none replacement as mandatory, or select the stock-compatible useful-play profile?"
+  ]
+}

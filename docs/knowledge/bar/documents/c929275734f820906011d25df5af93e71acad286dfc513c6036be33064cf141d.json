@@ -1,0 +1,955 @@
+{
+  "schema": "fsgg.knowledge.bar-project/1",
+  "curatedAt": "2026-10-01",
+  "origin": "Reviewed BAR project seed from durable chapters, approved horizon, and bounded 2026-10-01 reports; summaries are retained here so temporary reports are not the sole truth anchor.",
+  "items": [
+    {
+      "id": "architecture.cross-project-command-route",
+      "kind": "architecture",
+      "title": "BAR command and observation ownership",
+      "statement": "BAR content and synced Lua own game policy; Recoil owns simulation and the native AI ABI; HighBar owns the CircuitAI gateway and engine-thread dispatch; FSBar owns broker/browser authority and WASM execution. Admission, delivery, native acceptance, dispatch, and observed effect are separate signals.",
+      "scope": {
+        "feature": "cross-project",
+        "component": "BAR stack",
+        "lineage": "shared",
+        "repositories": [
+          "Game",
+          "Recoil",
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "navigation architecture, not authorization or runtime success"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "document",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/overview.md",
+          "digest": "77c27930d7d8bd9eedadb3f86b81fe0dcc10b61482b4143bf303347a503c37bd",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-45",
+          "summary": "Durable overview records the cross-project route and separate evidence boundaries.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "architecture",
+        "authority",
+        "observation"
+      ],
+      "supersedes": [
+        "94a0b14aa215ca0564830de8130e10590c588d745e0eabf06e8def943ee3a714"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "decision.useful-play-stock-direction",
+      "kind": "decision",
+      "title": "Stock baseline selected for useful play",
+      "statement": "Root recorded the stock Recoil route as the local useful-play direction. This is a project decision, not evidence that the stock engine or overlay is merged, installed, selected, loaded, or natively accepted.",
+      "scope": {
+        "feature": "useful-play",
+        "component": "root roadmap",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "current local project direction only"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-project-knowledge-horizon-plan-20261001.md",
+          "digest": "101b766fde970d961661abbfc816eff84966b54ceb3f937d0dc9fb87060ba407",
+          "capturedAt": "2026-10-01",
+          "section": "lines:62-69",
+          "summary": "Approved horizon records the later stock selection and requires older undecided history not to override it.",
+          "basis": "reported",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "decision",
+        "runtime-unknown"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "contract.stock-paired-correction",
+      "kind": "qualification",
+      "title": "Corrected paired stock source contract accepted",
+      "statement": "Independent rereview reports SOURCE ACCEPT for HighBar 4ff09535751cbbd35d2555c2e67a62417193ce94 and FSBar a93025e09847199ddb9eba04c4284353d64ddffd, with corrected TLV preimage and golden revision vector. Acceptance is limited to paired source contract bytes and tests.",
+      "scope": {
+        "feature": "stock-queue",
+        "component": "paired contract",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [
+          "4ff09535751cbbd35d2555c2e67a62417193ce94",
+          "a93025e09847199ddb9eba04c4284353d64ddffd"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "source contract only; no reader, plugin, overlay, or native acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-contract-correction-independent-source-review-20261001.md",
+          "digest": "a971916008af82e02b5aea33bf6d2991c6b82f72dc04ae3cf84c3f39d0e95d3d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-34",
+          "summary": "Review records exact commits, corrected contract hashes, golden digest, and source-only disposition.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "contract",
+        "TLV",
+        "golden-vector"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.stock-supported-queue-fields",
+      "kind": "constraint",
+      "title": "Stock queue evidence omits timeout",
+      "statement": "The stock evidence scheme contains domain, command id, options.coded, tag, and ordered finite float32 parameter bits. Timeout is unavailable and must never be fabricated as zero or imported through a full-native-tuple fallback.",
+      "scope": {
+        "feature": "stock-queue",
+        "component": "bridge contract",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "stock scheme 2 supported-field boundary"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-contract-correction-independent-source-review-20261001.md",
+          "digest": "a971916008af82e02b5aea33bf6d2991c6b82f72dc04ae3cf84c3f39d0e95d3d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:13-34",
+          "summary": "Corrected contract review states timeout unavailable, exact scheme 2, and no fallback.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "timeout-unavailable",
+        "scheme-2",
+        "no-fallback"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "architecture.stock-custom-engine-lineage",
+      "kind": "architecture",
+      "title": "Stock, rally-extension, and custom engines are distinct",
+      "statement": "The durable lineage separates upstream stock 2639eedac7d1fd67d793ec93ebd27f014f336a14, rally extension 7555c836e0457b04100b20149497d088dd9c2ca7, and custom observer candidate 2572991c77110f8d9893253051aa8d8958b7aec6. Guarantees and artifacts from one lineage do not transfer to another.",
+      "scope": {
+        "feature": "engine-lineage",
+        "component": "Recoil",
+        "lineage": "shared",
+        "repositories": [
+          "Recoil"
+        ],
+        "revisions": [
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+          "7555c836e0457b04100b20149497d088dd9c2ca7",
+          "2572991c77110f8d9893253051aa8d8958b7aec6"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "source/artifact lineage; runtime selection separately proved"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "document",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/chapters/recoil-stock-custom-engine-lineage.md",
+          "digest": "d7b49d6b99df1220525f4351de258a5a42d184d309601f56f160d9a8d9b77d38",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-68",
+          "summary": "Durable chapter preserves exact stock, extension, custom and artifact distinctions.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "engine-lineage",
+        "stock",
+        "custom"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.engine-runtime-identity-unknown",
+      "kind": "constraint",
+      "title": "Retained engine artifacts do not establish loaded runtime",
+      "statement": "A registered source, retained executable hash, or configured pin does not establish which engine binary a current process loaded. Exact selected and observed process artifact identity is required before naming the runtime variant.",
+      "scope": {
+        "feature": "runtime-identity",
+        "component": "engine selection",
+        "lineage": "shared",
+        "repositories": [
+          "Recoil",
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "all native and crash claims"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-engine-lineage-knowledge-update-20261001.md",
+          "digest": "2a9df7b7f002ff6bdbd8343802bbdb0d135e72f2e3ab8cce304ead2ce62b736d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:7-34",
+          "summary": "Lineage update explicitly separates source, retained artifact, configured selection, and observed loaded runtime.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "runtime-identity",
+        "selected-artifact",
+        "loaded-artifact"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "roadmap.optional-fr1-fr6-inactive",
+      "kind": "roadmap-gate",
+      "title": "Custom FR1-FR6 remain optional and inactive",
+      "statement": "The custom atomic replacement and observer guarantees remain historical optional work. The current stock direction does not activate FR1-FR6 or transfer their all-or-none, refund, fence, replay, or peer-service guarantees.",
+      "scope": {
+        "feature": "factory-replacement",
+        "component": "custom FR1-FR6",
+        "lineage": "custom",
+        "repositories": [
+          "Recoil",
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "inactive optional roadmap"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-contract-correction-independent-source-review-20261001.md",
+          "digest": "a971916008af82e02b5aea33bf6d2991c6b82f72dc04ae3cf84c3f39d0e95d3d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:32-34",
+          "summary": "Corrected contract review keeps optional FR1-FR6 open and inactive.",
+          "basis": "reported",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "FR1-FR6",
+        "inactive",
+        "custom"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "roadmap.native-acceptance-zero-of-six",
+      "kind": "roadmap-gate",
+      "title": "Native useful-play acceptance remains zero of six",
+      "statement": "The latest reviewed stock contract and Lua review both retain native acceptance at 0/6. Source contracts, builds, packages, mock tests, and reader candidates do not close local, generated, or imported-module native journeys.",
+      "scope": {
+        "feature": "useful-play",
+        "component": "native qualification",
+        "lineage": "shared",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [
+          "native-six-case"
+        ],
+        "applicability": "current acceptance gate as reported on 2026-10-01"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-contract-correction-independent-source-review-20261001.md",
+          "digest": "a971916008af82e02b5aea33bf6d2991c6b82f72dc04ae3cf84c3f39d0e95d3d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-8",
+          "summary": "Source review explicitly preserves native acceptance 0/6.",
+          "basis": "reported",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-content-independent-source-review-20261001.md",
+          "digest": "8a951cc8dac521edd2437a1211231a961c62a10753d673dee6eed778185f7658",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-8",
+          "summary": "Lua review preserves 0/6 and blocks its source candidate.",
+          "basis": "reported",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "native",
+        "0-of-6",
+        "open"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "incident.clean-protobuf-generation",
+      "kind": "incident",
+      "title": "Clean HighBar build lacked generated protobuf sources",
+      "statement": "A clean HighBar checkout had no ignored generated protobuf files, leaving highbar_proto with an empty source list. The bounded repair pinned eight inputs and exact protoc/gRPC generators, generated and verified 32 outputs, and retained HIGHBAR_REQUIRE_WIRE_DEPS; it did not compile or install an engine.",
+      "scope": {
+        "feature": "build",
+        "component": "HighBar protobuf generation",
+        "lineage": "custom",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "7014798691242d044d1168cd5ae25528d3cc3227"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "named clean build repair only"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/barc-fr5-clean-protobuf-build-repair-20261001-test-report.md",
+          "digest": "c48f780fb20bb1fb2ab4a02ca76126f323d8f4c67735537c2be391c418e49f4d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-31",
+          "summary": "Test report records the clean-checkout cause, pins, refusals, and passed configure gate.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "protobuf",
+        "clean-build",
+        "negative-result"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "incident.build7-objcopy-custody",
+      "kind": "incident",
+      "title": "Build7 custody was broken by an in-place objcopy mistake",
+      "statement": "A read-intended objcopy invocation omitted a distinct output operand and rewrote both build6 and build7 spring-dedicated files in place. Immediate SHA checks detected the incident; contaminated binaries were inadmissible and historical manifests were retained.",
+      "scope": {
+        "feature": "build7",
+        "component": "dedicated artifact custody",
+        "lineage": "custom",
+        "repositories": [
+          "Recoil"
+        ],
+        "revisions": [
+          "2572991c77110f8d9893253051aa8d8958b7aec6"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "specific 2026-10-01 custody incident"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/barc-fr5-authenticated-window-build7-artifact-custody-incident-20261001.md",
+          "digest": "b3097d50bb45a462b89a04be89f6bea18b2e4152a4328d2a916842188a57722d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-39",
+          "summary": "Incident report records the exact command mistake, changed hashes, and stop condition.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "build7",
+        "objcopy",
+        "custody",
+        "negative-experiment"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "incident.build7-comparison-correction",
+      "kind": "incident",
+      "title": "Build7 dedicated identity correction",
+      "statement": "The original claim that build7 dedicated reproduced build6 was false. The correction records distinct dedicated and headless hashes, an inherited predecessor plugin, and the need to rebuild and read back the successor plugin before any repin.",
+      "scope": {
+        "feature": "build7",
+        "component": "artifact comparison",
+        "lineage": "custom",
+        "repositories": [
+          "Recoil",
+          "HighBarV3"
+        ],
+        "revisions": [
+          "2572991c77110f8d9893253051aa8d8958b7aec6"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "corrected build7 artifact set"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/barc-fr5-authenticated-window-build7-artifact-report-correction-20261001.md",
+          "digest": "59327c76db2b38cdb61b13dec48db4e4a242227751c710a649533d5d25863723",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-32",
+          "summary": "Correction preserves the false sentence as history and supplies the exact comparison table.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "build7",
+        "correction",
+        "artifact-identity"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.build7-custody-recovery",
+      "kind": "qualification",
+      "title": "Build7 dedicated custody recovery reproduced protected hashes",
+      "statement": "The recovery report records isolated relinking from existing objects, exact reproduction of the protected build6 and build7 dedicated hashes, and restoration only after equality. This is reported artifact recovery, not native gameplay acceptance.",
+      "scope": {
+        "feature": "build7",
+        "component": "dedicated artifact recovery",
+        "lineage": "custom",
+        "repositories": [
+          "Recoil"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "named custody recovery; no native effect"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/barc-fr5-authenticated-window-build7-artifact-custody-recovery-addendum-20261001.md",
+          "digest": "e68b7c6b5d82471339de848907c2ea732014e75a56beecaf50e48131ae5b43da",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-24",
+          "summary": "Recovery addendum records protected copies, isolated linker replay, exact matches, and bounded restoration.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "build7",
+        "recovery",
+        "no-native-claim"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "architecture.runtime-bootstrap-binding",
+      "kind": "architecture",
+      "title": "Runtime bootstrap must derive binding from owned producers",
+      "statement": "Static preparation can freeze paths, hashes, plans, ports, and deadlines, but live PID/start identity, session credentials, factory setup, producer capture, and full native binding must come from authenticated owned runtime producers. Copying supplied JSON into expected binding defeats independent admission.",
+      "scope": {
+        "feature": "factory-observer",
+        "component": "authenticated bootstrap",
+        "lineage": "custom",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "future native bootstrap design"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "candidate",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/barc-fr5-final-native-bootstrap-feasibility-review-20261001.md",
+          "digest": "dac7c3fc84e8b67abf53887f7de1f76c7bdaa1418c6cab58a2cf62a2dc55f378",
+          "capturedAt": "2026-10-01",
+          "section": "lines:31-65",
+          "summary": "Feasibility review traces the missing runtime binding derivation and closed authenticated route.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "bootstrap",
+        "binding",
+        "producer-custody"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "experiment.selected-interval-materialization-gap",
+      "kind": "experiment",
+      "title": "Selected interval cannot be fabricated from an all-count plan",
+      "statement": "The preserved Count1/2/4 plan is not equivalent to one selected native run. A one-count supervisor cannot satisfy unselected rows with invented sessions, credentials, lifetimes, or future observations; selected-interval materialization needs an explicit authenticated contract.",
+      "scope": {
+        "feature": "factory-observer",
+        "component": "selected interval handoff",
+        "lineage": "custom",
+        "repositories": [
+          "HighBarV3",
+          "FSBar"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "negative feasibility finding for Count1/2/4 bootstrap"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/barc-fr5-final-native-bootstrap-feasibility-review-20261001.md",
+          "digest": "dac7c3fc84e8b67abf53887f7de1f76c7bdaa1418c6cab58a2cf62a2dc55f378",
+          "capturedAt": "2026-10-01",
+          "section": "lines:16-34",
+          "summary": "Review identifies all-count validation versus one-count runtime mismatch and rejects placeholder handoff reuse.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "selected-interval",
+        "no-fabrication",
+        "negative-result"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-lua-candidate-blocked",
+      "kind": "qualification",
+      "title": "Initial stock Lua observer candidate is source-blocked",
+      "statement": "Candidate 2a7ae7f passed 11 mock-Spring tests under system Lua 5.5 and packaged deterministic overlay bytes, but independent stock review found three blockers: removed rawget in synced Lua, float-number loss in SHA/float encoding, and refusal of legal actor ID 0. The package is not stock-runtime compatible or natively accepted.",
+      "scope": {
+        "feature": "stock-queue",
+        "component": "Lua content bridge",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "2a7ae7fbed81ba02d278be23fbb81967a925ccff",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [
+          "62013c7c93be303dc5036ee53df93c70826b066c894a797d9f0ffeda65460f48"
+        ],
+        "runs": [],
+        "applicability": "blocked initial candidate and generic-Lua tests only"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-content-independent-source-review-20261001.md",
+          "digest": "8a951cc8dac521edd2437a1211231a961c62a10753d673dee6eed778185f7658",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-76",
+          "summary": "Independent review records 11/11 generic tests plus three exact stock compatibility defects.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "Lua",
+        "blocked",
+        "rawget",
+        "float32",
+        "actor0"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.fixture-abi-not-engine-abi",
+      "kind": "constraint",
+      "title": "Fixture ABI success does not establish deployed engine ABI",
+      "statement": "Tests using the host system Lua 5.5 cannot establish behavior under stock Recoil synced Lua, where globals are restricted and LUA_NUMBER is float. Boundary tests must match the deployed engine ABI and numeric model.",
+      "scope": {
+        "feature": "qualification",
+        "component": "Lua ABI",
+        "lineage": "stock",
+        "repositories": [
+          "Recoil",
+          "HighBarV3"
+        ],
+        "revisions": [
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "all Lua bridge qualification"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-content-independent-source-review-20261001.md",
+          "digest": "8a951cc8dac521edd2437a1211231a961c62a10753d673dee6eed778185f7658",
+          "capturedAt": "2026-10-01",
+          "section": "lines:21-76",
+          "summary": "Review contrasts system Lua 5.5 fixtures with stock restricted float-number Lua and gives counterexamples.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "fixture-ABI",
+        "engine-ABI",
+        "negative-lesson"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "architecture.stock-callrules-synced-route",
+      "kind": "architecture",
+      "title": "Stock CallRules reaches the synced LuaRules handle",
+      "statement": "The stock AI callback supplies aiTeam and LuaRules CallRules forwards to syncedLuaHandle. A generic comment calling the AI call-in unsynced does not override that explicit dispatch, so moving the reader to unsynced code would be the wrong repair.",
+      "scope": {
+        "feature": "stock-queue",
+        "component": "CallRules bridge",
+        "lineage": "stock",
+        "repositories": [
+          "Recoil",
+          "HighBarV3"
+        ],
+        "revisions": [
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "stock source route as documented by independent source review"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "observed",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-content-independent-source-review-20261001.md",
+          "digest": "8a951cc8dac521edd2437a1211231a961c62a10753d673dee6eed778185f7658",
+          "capturedAt": "2026-10-01",
+          "section": "lines:50-56",
+          "summary": "Review records exact callback, LuaRules handle, and gadget dispatch source locations.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "CallRules",
+        "syncedLuaHandle",
+        "aiTeam"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "constraint.stock-float32-byte-codec",
+      "kind": "constraint",
+      "title": "Stock float32 encoding should use byte-preserving engine support",
+      "statement": "Stock VFS.PackF32 copies float bytes into a Lua string and can support an exact byte codec. Full uint32 assembly in stock float-number Lua loses low bits; SHA-256 needs bounded exact limbs or another exact compatible implementation rather than a different hash algorithm.",
+      "scope": {
+        "feature": "stock-queue",
+        "component": "Lua binary codec",
+        "lineage": "stock",
+        "repositories": [
+          "Recoil",
+          "HighBarV3"
+        ],
+        "revisions": [
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "repair direction, still requiring source review and native qualification"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "candidate",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-content-independent-source-review-20261001.md",
+          "digest": "8a951cc8dac521edd2437a1211231a961c62a10753d673dee6eed778185f7658",
+          "capturedAt": "2026-10-01",
+          "section": "lines:39-68",
+          "summary": "Review identifies VFS.PackF32 and bounded limb SHA as compatible repair directions.",
+          "basis": "observed-document",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "PackF32",
+        "SHA256",
+        "float32"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "title": "What still blocks stock native acceptance?",
+      "statement": "Open gates include a stock-compatible Lua repair, exact overlay discovery and loaded content identity, native parser and plugin compatibility, catalogue/content/profile/actor-lifetime binding, post-acquisition reread and queue equality, exact selected engine identity, and all required local/generated/imported-module native journeys.",
+      "scope": {
+        "feature": "useful-play",
+        "component": "remaining stock gates",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "open questions after source-contract acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "reported",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-contract-correction-independent-source-review-20261001.md",
+          "digest": "a971916008af82e02b5aea33bf6d2991c6b82f72dc04ae3cf84c3f39d0e95d3d",
+          "capturedAt": "2026-10-01",
+          "section": "lines:32-34",
+          "summary": "Contract review lists parser, limits, identity, reread, compatibility, and native gates.",
+          "basis": "reported",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        },
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-lua-content-independent-source-review-20261001.md",
+          "digest": "8a951cc8dac521edd2437a1211231a961c62a10753d673dee6eed778185f7658",
+          "capturedAt": "2026-10-01",
+          "section": "lines:74-76",
+          "summary": "Lua review adds source-compatible codec, actor0, discovery, parser join, and native gates.",
+          "basis": "reported",
+          "scope": "Only the named document and stated attempt; no broader runtime inference.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "open-question",
+        "native-gates",
+        "stock"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-native-reader-source-candidate",
+      "kind": "qualification",
+      "title": "Stock native reader source candidate compiles against exact Recoil",
+      "statement": "HighBar candidate 0e0e84fb1d8362b49630afd5a958ba49411b3aac (tree 7350a0b03fea94fd66efd266c64140a9c49978b7) compiled and linked its strict stock queue reader against unpatched Recoil 2639eedac7d1fd67d793ec93ebd27f014f336a14; focused reader and tactical native state tests passed. This proves a source/build candidate for the accepted wire seam, not coherent runtime or native acceptance. The independently reviewed Lua candidate 2a7ae7f remains blocked on the deployed stock Lua ABI.",
+      "scope": {
+        "feature": "stock-queue",
+        "component": "HighBar stock native reader",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "Recoil"
+        ],
+        "revisions": [
+          "0e0e84fb1d8362b49630afd5a958ba49411b3aac",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "artifacts": [
+          "libSkirmishAI.so sha256:8891762ffe6976195a11d3319c8f1b7f8ebacb952215982ddf1a0bbef8951675"
+        ],
+        "runs": [],
+        "applicability": "source and plugin build qualification only; no engine, game, joined Lua, FSBar, or native acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "candidate",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-plugin-source-report-20261001.md",
+          "digest": "c0b60017960ea9e2391d7442943a3eb5ee5b1d4e366d6b9b7d95418a891d9aa7",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-54",
+          "summary": "Source identity, exact Recoil binding, compiled plugin digest, focused tests, and explicit integration boundaries.",
+          "basis": "observed-document",
+          "scope": "Only the named source/build candidate and report; no runtime or native effect.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "native-reader",
+        "source-build",
+        "candidate"
+      ],
+      "supersedes": [],
+      "conflicts": []
+    }
+  ]
+}

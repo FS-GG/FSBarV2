@@ -1,0 +1,262 @@
+{
+  "source": {
+    "name": "FSBar",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/FSBar-099f8c916d2c8a79d2f7401c0ad72e933a1e8915",
+    "revision": "099f8c916d2c8a79d2f7401c0ad72e933a1e8915"
+  },
+  "components": [
+    {
+      "id": "reclaim-area-current",
+      "title": "Canonical ReclaimInArea admission and translation",
+      "paths": [
+        "src/Broker.Browser.Live/LiveBoundary.fs",
+        "src/Broker.Protocol/LiveControl.fs",
+        "tests/Broker.Browser.Live.Tests/LiveTests.fs"
+      ],
+      "summary": "Maps the browser ReclaimArea intent through tactical admission into one canonical ReclaimInArea command and retains semantic/tactical attribution."
+    },
+    {
+      "id": "factory-count-current",
+      "title": "Advertised and enforced factory production count",
+      "paths": [
+        "src/Broker.Browser.Live/LiveBoundary.fs",
+        "src/Broker.Protocol/LiveControl.fs",
+        "tests/Broker.Browser.Live.Tests/LiveTests.fs"
+      ],
+      "summary": "Projects the native factory-production maximum to the browser, enforces that ceiling in broker admission and expands each admitted count into unit-count native children."
+    }
+  ],
+  "flows": [
+    {
+      "id": "reclaim-area-canonical-route",
+      "title": "Browser ReclaimArea to canonical native command",
+      "steps": [
+        {
+          "path": "src/Broker.Browser.Live/LiveBoundary.fs",
+          "symbol": "tacticalAction",
+          "line": 82,
+          "description": "Convert the browser center, radius and queue policy into NativeReclaimAreaIntent."
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "symbol": "admitTactical actionValid",
+          "line": 895,
+          "description": "Require a finite in-bounds center, positive finite radius within the negotiated maximum and a valid queue policy."
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "symbol": "tacticalToCommands ReclaimArea",
+          "line": 795,
+          "description": "Build ReclaimInAreaCommand with actor, queue options, XYZ position and radius while retaining ReclaimArea semantic and tactical forms."
+        },
+        {
+          "path": "tests/Broker.Browser.Live.Tests/LiveTests.fs",
+          "symbol": "tactical revisions reserve children and ReclaimArea emits the canonical native command",
+          "line": 503,
+          "description": "Exercise the public boundary and assert the exact canonical union case, actor, options, center, elevation, radius and retained tactical fields."
+        }
+      ]
+    },
+    {
+      "id": "factory-count-advertise-enforce-expand",
+      "title": "Factory maximum advertisement to bounded child expansion",
+      "steps": [
+        {
+          "path": "src/Broker.Browser.Live/LiveBoundary.fs",
+          "symbol": "provisionBootstrapForProfile",
+          "line": 199,
+          "description": "Copy the native MaxFactoryProductionCount into the tactical browser capability."
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "symbol": "admitTactical actionValid",
+          "line": 896,
+          "description": "Require a positive requested count no greater than that current tactical capability."
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "symbol": "tacticalCount",
+          "line": 743,
+          "description": "Use the admitted production count as the per-actor expansion factor."
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "symbol": "tacticalToCommands FactoryProduce",
+          "line": 802,
+          "description": "Emit each child as one BuildUnit command and retain a FactoryProduce tactical action with count one."
+        },
+        {
+          "path": "tests/Broker.Browser.Live.Tests/LiveTests.fs",
+          "symbol": "tactical revisions reserve children and ReclaimArea emits the canonical native command",
+          "line": 444,
+          "description": "With advertised maximum four, submit count two and assert two reserved children and two one-count native commands."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "reclaim-area-canonical-command-current",
+      "kind": "mapping",
+      "statement": "ReclaimArea translates to the canonical ReclaimInArea command with actor, queue options, center including elevation, and radius; the semantic and tactical forms remain ReclaimArea.",
+      "evidence": [
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "line": 795,
+          "symbol": "tacticalToCommands ReclaimArea"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "reclaim-area",
+        "canonical-command",
+        "mapping"
+      ]
+    },
+    {
+      "id": "reclaim-area-regression-current",
+      "kind": "test-coverage",
+      "statement": "The current browser-live regression asserts the canonical union case and exact actor, options, XYZ center, radius, semantic action and retained tactical payload.",
+      "evidence": [
+        {
+          "path": "tests/Broker.Browser.Live.Tests/LiveTests.fs",
+          "line": 503,
+          "symbol": "ReclaimArea canonical regression"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "reclaim-area",
+        "regression",
+        "broker-boundary"
+      ]
+    },
+    {
+      "id": "factory-maximum-advertised-current",
+      "kind": "capability",
+      "statement": "Bootstrap copies MaxFactoryProductionCount from the current native tactical capability into the browser-visible tactical capability.",
+      "evidence": [
+        {
+          "path": "src/Broker.Browser.Live/LiveBoundary.fs",
+          "line": 199,
+          "symbol": "provisionBootstrapForProfile"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "factory-produce",
+        "capability",
+        "advertisement"
+      ]
+    },
+    {
+      "id": "factory-count-enforced-current",
+      "kind": "validation",
+      "statement": "Broker tactical admission requires FactoryProduce count to be positive and no greater than the current MaxFactoryProductionCount, in addition to catalogue, definition and queue-policy checks.",
+      "evidence": [
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "line": 896,
+          "symbol": "admitTactical actionValid"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "factory-produce",
+        "count",
+        "admission"
+      ]
+    },
+    {
+      "id": "factory-count-expanded-current",
+      "kind": "mapping",
+      "statement": "An admitted FactoryProduce count becomes the per-actor child multiplier, and each translated child carries one BuildUnit command plus a one-count tactical FactoryProduce action.",
+      "evidence": [
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "line": 743,
+          "symbol": "tacticalCount"
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "line": 802,
+          "symbol": "tacticalToCommands FactoryProduce"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "factory-produce",
+        "expansion",
+        "atomic-delivery"
+      ]
+    },
+    {
+      "id": "factory-count-regression-current",
+      "kind": "test-coverage",
+      "statement": "The current regression configures maximum four, submits count two and asserts exactly two reserved and delivered one-command children whose tactical count is one.",
+      "evidence": [
+        {
+          "path": "tests/Broker.Browser.Live.Tests/LiveTests.fs",
+          "line": 163,
+          "symbol": "setupTactical"
+        },
+        {
+          "path": "tests/Broker.Browser.Live.Tests/LiveTests.fs",
+          "line": 444,
+          "symbol": "FactoryProduce count regression"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "factory-produce",
+        "regression",
+        "count"
+      ]
+    },
+    {
+      "id": "factory-limit-consistency-inference",
+      "kind": "inference",
+      "statement": "Because bootstrap projection and admission both read the current tactical capability, the advertised factory ceiling and broker count ceiling are structurally aligned for that state. This does not prove client compliance or native application.",
+      "evidence": [
+        {
+          "path": "src/Broker.Browser.Live/LiveBoundary.fs",
+          "line": 199,
+          "symbol": "provisionBootstrapForProfile"
+        },
+        {
+          "path": "src/Broker.Protocol/LiveControl.fs",
+          "line": 896,
+          "symbol": "admitTactical actionValid"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "factory-produce",
+        "limit",
+        "native-unqualified"
+      ]
+    },
+    {
+      "id": "reclaim-area-acceptance-boundary",
+      "kind": "inference",
+      "statement": "The canonical ReclaimInArea regression proves broker translation and delivery shape at this revision; it does not by itself establish that a genuine engine applied the action.",
+      "evidence": [
+        {
+          "path": "tests/Broker.Browser.Live.Tests/LiveTests.fs",
+          "line": 508,
+          "symbol": "ReclaimArea canonical regression"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "reclaim-area",
+        "acceptance-boundary",
+        "native-unqualified"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Does a direct over-limit FactoryProduce regression prove zero native child writes when count exceeds the advertised maximum?",
+    "Do genuine native runs apply canonical ReclaimInArea and the exact requested factory child count at these revisions?"
+  ]
+}

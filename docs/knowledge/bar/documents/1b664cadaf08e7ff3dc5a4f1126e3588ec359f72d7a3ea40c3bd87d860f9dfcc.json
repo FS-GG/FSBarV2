@@ -1,0 +1,44 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-bbeb1eb3243ec5d5bc0a8ba19067c66d208c0f4c",
+    "revision": "bbeb1eb3243ec5d5bc0a8ba19067c66d208c0f4c",
+    "tree": "fa45e998e7e5d8e8815563a0a08084d303df3781",
+    "status": "historical source; later build failure reported; successor repair not registered"
+  },
+  "components": [
+    {
+      "id": "rmlui-header-dependency-followup-bbeb",
+      "title": "Next direct header dependency found by full build",
+      "paths": ["rts/Rml/Backends/RmlUi_SystemInterface.h"],
+      "summary": "Records the next reported full build boundary without importing the successor repair."
+    }
+  ],
+  "flows": [],
+  "facts": [
+    {
+      "id": "rmlui-header-build-failure-bbeb",
+      "kind": "reported-status",
+      "statement": "The bbeb root build is subsequently reported FAILED at 1973 of 2532 in RmlUi_SystemInterface.h because a direct cstdint dependency is missing. The indexed bbeb header include block contains the RmlUi and SDL headers but no direct cstdint include.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_SystemInterface.h", "line": 35, "symbol": "header include block"},
+        {"path": "rts/Rml/Backends/RmlUi_SystemInterface.h", "line": 40, "symbol": "TranslationTable"}
+      ],
+      "confidence": "reported",
+      "tags": ["build-failed", "rmlui", "cstdint", "1973-of-2532"]
+    },
+    {
+      "id": "rmlui-successor-repair-unregistered-bbeb",
+      "kind": "reported-status",
+      "statement": "A successor source revision beginning 7bba is reported to repair this header and pass its dedicated syntax check. That revision is not registered or indexed here, and no completed build, CTest, two peer, callback, refund, game, or native runtime result follows from the syntax check.",
+      "evidence": [
+        {"path": "rts/Rml/Backends/RmlUi_SystemInterface.h", "line": 35, "symbol": "header include block"}
+      ],
+      "confidence": "reported",
+      "tags": ["successor-unregistered", "syntax-pass", "runtime-unknown", "no-native-acceptance"]
+    }
+  ],
+  "open_questions": [
+    "Will a later exact registered successor complete the root build and run the focused observer tests?"
+  ]
+}

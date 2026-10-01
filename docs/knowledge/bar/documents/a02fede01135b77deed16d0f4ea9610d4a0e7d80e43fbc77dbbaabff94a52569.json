@@ -1,0 +1,1256 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/tmp/barc-highbar-protected-f541bd-20260930",
+    "revision": "f541bd3680f85d58d4bb6d7a565b2434e7378767"
+  },
+  "components": [
+    {
+      "id": "ai-lifecycle",
+      "title": "CircuitAI lifecycle and event routing",
+      "paths": [
+        "src/circuit/CircuitAI.cpp",
+        "src/circuit/CircuitAI.h"
+      ],
+      "summary": "Engine entry point: initializes interfaces, scheduler, scripts, managers and modules; delegates events; updates scheduled work; tears down in dependency order. Traced."
+    },
+    {
+      "id": "gateway-bridge",
+      "title": "Engine-thread gateway bridge",
+      "paths": [
+        "src/circuit/module/GrpcGatewayModule.cpp",
+        "src/circuit/module/GrpcGatewayModule.h"
+      ],
+      "summary": "Owns gRPC/coordinator adapters, callback-to-delta projection, snapshots, bounded work queues, native command/admin dispatch, health, and fail-closed transitions. Traced."
+    },
+    {
+      "id": "local-grpc",
+      "title": "Local proxy and admin gRPC server",
+      "paths": [
+        "src/circuit/grpc/HighBarService.cpp",
+        "src/circuit/grpc/AdminService.cpp"
+      ],
+      "summary": "Async CQ handlers for observer, AI, validation, callback, counter, snapshot, and admin RPCs; singleton AI and bounded observer ownership. Traced."
+    },
+    {
+      "id": "coordinator",
+      "title": "Coordinator and live-control client",
+      "paths": [
+        "src/circuit/grpc/CoordinatorClient.cpp",
+        "src/circuit/grpc/CoordinatorClient.h"
+      ],
+      "summary": "Outbound heartbeat/state reporting and inbound command/control streams with bounded queues, reconnect, incarnation rotation, acknowledgements and result reports. Traced."
+    },
+    {
+      "id": "state-projection",
+      "title": "Snapshot, delta, replay and fan-out",
+      "paths": [
+        "src/circuit/grpc/SnapshotBuilder.cpp",
+        "src/circuit/grpc/SnapshotTick.cpp",
+        "src/circuit/grpc/RingBuffer.cpp",
+        "src/circuit/grpc/DeltaBus.cpp",
+        "src/circuit/grpc/SubscriberSlot.cpp"
+      ],
+      "summary": "Samples native state, schedules full/incremental publication, enforces monotonic state sequences, retains resume history and evicts slow consumers. Traced."
+    },
+    {
+      "id": "command-pipeline",
+      "title": "Command validation, queue and native dispatch",
+      "paths": [
+        "src/circuit/grpc/CommandValidator.cpp",
+        "src/circuit/grpc/CapabilityProvider.cpp",
+        "src/circuit/grpc/CommandQueue.cpp",
+        "src/circuit/grpc/CommandDispatch.cpp",
+        "src/circuit/grpc/OrderStateTracker.cpp"
+      ],
+      "summary": "Normalizes and validates commands, atomically admits batches, rechecks native targets, invokes engine arms, and records accepted order state. Traced."
+    },
+    {
+      "id": "live-tactical",
+      "title": "Live authority and tactical admission",
+      "paths": [
+        "src/circuit/grpc/LiveControlState.cpp",
+        "src/circuit/grpc/TacticalNativeState.cpp",
+        "src/circuit/grpc/TacticalCatalogueProjection.h",
+        "src/circuit/grpc/TacticalDispatchDiagnostic.h"
+      ],
+      "summary": "Binds coordinator authority, epochs, leases and observation bases to actor/target lifetimes, catalogue identity, queues and tactical parameters. Traced."
+    },
+    {
+      "id": "admin",
+      "title": "Administrative controls",
+      "paths": [
+        "src/circuit/grpc/AdminController.cpp",
+        "src/circuit/grpc/AdminService.cpp"
+      ],
+      "summary": "Role and run-mode checks, validation, leases, bounded engine-thread execution and audit events. Traced."
+    },
+    {
+      "id": "security-readiness",
+      "title": "Authentication, configuration and readiness",
+      "paths": [
+        "src/circuit/grpc/AuthToken.cpp",
+        "src/circuit/grpc/AuthInterceptor.cpp",
+        "src/circuit/grpc/Config.cpp",
+        "src/circuit/grpc/GrpcLog.cpp"
+      ],
+      "summary": "256-bit local token, RPC interception, validated endpoint/queue/timing settings, structured logs and atomic health state. Traced."
+    },
+    {
+      "id": "proto-contracts",
+      "title": "Canonical protobuf contracts",
+      "paths": [
+        "proto/highbar/common.proto",
+        "proto/highbar/events.proto",
+        "proto/highbar/state.proto",
+        "proto/highbar/commands.proto",
+        "proto/highbar/callbacks.proto",
+        "proto/highbar/coordinator.proto",
+        "proto/highbar/live_control.proto",
+        "proto/highbar/service.proto"
+      ],
+      "summary": "Canonical messages and services for proxy, admin, state, commands, callbacks, coordinator and tactical live control. Indexed and key services traced."
+    },
+    {
+      "id": "language-clients",
+      "title": "Generated wrappers and language clients",
+      "paths": [
+        "clients/fsharp/HighBar.Proto.csproj",
+        "clients/fsharp/HighBar.Client.fsproj",
+        "clients/fsharp/src",
+        "clients/python/highbar_client",
+        "clients/python/pyproject.toml"
+      ],
+      "summary": "C# generated protobuf assembly consumed by F#, plus F# wrappers; generated Python protobuf modules and higher-level session/state/command/admin APIs. Indexed."
+    },
+    {
+      "id": "builtin-managers",
+      "title": "CircuitAI decision managers",
+      "paths": [
+        "src/circuit/module/MilitaryManager.cpp",
+        "src/circuit/module/BuilderManager.cpp",
+        "src/circuit/module/FactoryManager.cpp",
+        "src/circuit/module/EconomyManager.cpp"
+      ],
+      "summary": "Built-in combat, construction, production and economy policies. Objects also expose native state; autonomous module activation is conditional. Indexed with task entry points traced."
+    },
+    {
+      "id": "tasks",
+      "title": "Unit task state machines",
+      "paths": [
+        "src/circuit/task",
+        "src/circuit/task/UnitTask.h"
+      ],
+      "summary": "Builder, fighter, common and static tasks with assignment, start, update and assignee removal lifecycle. Indexed."
+    },
+    {
+      "id": "world-model",
+      "title": "Map, terrain, resources and units",
+      "paths": [
+        "src/circuit/map",
+        "src/circuit/terrain",
+        "src/circuit/resource",
+        "src/circuit/unit"
+      ],
+      "summary": "Native world model and algorithms used by built-in AI, snapshot sampling and final dispatch checks. Indexed."
+    },
+    {
+      "id": "runtime-support",
+      "title": "Scheduler, scripting, setup and support libraries",
+      "paths": [
+        "src/circuit/scheduler",
+        "src/circuit/script",
+        "src/circuit/setup",
+        "src/circuit/spring",
+        "src/circuit/util",
+        "src/lib"
+      ],
+      "summary": "Scheduling, AngelScript, setup parsing, engine adapters, utilities and vendored dependencies. Indexed."
+    },
+    {
+      "id": "build-tests",
+      "title": "Build and test entrypoints",
+      "paths": [
+        "CMakeLists.txt",
+        "BUILD.md",
+        "tests/unit",
+        "tests/integration",
+        "tests/headless",
+        "clients/python/tests"
+      ],
+      "summary": "Standalone support-code tests plus engine-tree plugin build, generated proto stubs, unit/integration/headless/client suites and arm coverage. Indexed."
+    },
+    {
+      "id": "external-task-lifecycle",
+      "title": "External-control task ownership and callback lifecycle",
+      "paths": [
+        "src/circuit/CircuitAI.cpp",
+        "src/circuit/grpc/CommandDispatch.cpp",
+        "src/circuit/task/UnitTask.cpp",
+        "src/circuit/module/TaskModule.cpp",
+        "src/circuit/task/PlayerTask.cpp"
+      ],
+      "summary": "At source revision f541bd3, maps raw task assignment/detachment, transfer to PLAYER ownership, taskless tactical admission, and engine callback nullability. Traced."
+    },
+    {
+      "id": "unit-move-failed-postfix",
+      "title": "UnitMoveFailed task-null repair history",
+      "paths": [
+        "src/circuit/CircuitAI.cpp"
+      ],
+      "summary": "Separate source history: merged revision 0e835d1edfff91e7624eab7cf55127fa3645bff5 captures and null-checks the task in UnitMoveFailed. Source inspected; native qualification was still in progress and must not be inferred from the change."
+    }
+  ],
+  "flows": [
+    {
+      "id": "initialization",
+      "title": "Engine initialization to ready gateway",
+      "steps": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::Init",
+          "line": 565,
+          "description": "Captures engine interfaces, creates scheduler, loads setup/scripts and constructs managers."
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::Init",
+          "line": 661,
+          "description": "Conditionally pushes built-in managers as active modules and always pushes the gRPC gateway."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::CGrpcGatewayModule",
+          "line": 370,
+          "description": "Validates config, endpoint and token; creates state, queue, admin and service objects."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::CGrpcGatewayModule",
+          "line": 395,
+          "description": "Writes the initial healthy marker."
+        },
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "symbol": "HighBarService::Bind",
+          "line": 1092,
+          "description": "Restricts binding to UDS or loopback TCP, installs auth, registers services, and starts the CQ worker."
+        }
+      ]
+    },
+    {
+      "id": "frame-publication",
+      "title": "Engine event to ordered state publication",
+      "steps": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::HandleEvent",
+          "line": 152,
+          "description": "Delegates Recoil events to the current handler."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "UnitCreated and related hooks",
+          "line": 1130,
+          "description": "Engine-thread hooks append typed events and update lifetime metadata."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::OnFrameTick",
+          "line": 1364,
+          "description": "Drains pending faults and work, computes snapshot/delta ordering, then publishes."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::FlushDelta",
+          "line": 1462,
+          "description": "Assigns a monotonic state sequence, stores the serialized update, and fans it out."
+        },
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "symbol": "StreamStateCallData",
+          "line": 302,
+          "description": "Serves fresh snapshot or ring replay and suppresses live messages already sent."
+        }
+      ]
+    },
+    {
+      "id": "local-command",
+      "title": "Local SubmitCommands to native result and readback",
+      "steps": [
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "symbol": "SubmitCommandsCallData",
+          "line": 683,
+          "description": "Claims the singleton AI stream and enforces batch sequencing."
+        },
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "symbol": "SubmitCommandsCallData",
+          "line": 792,
+          "description": "Runs CommandValidator and creates normalized queued entries with correlation identity."
+        },
+        {
+          "path": "src/circuit/grpc/CommandQueue.cpp",
+          "symbol": "CommandQueue::TryPushBatch",
+          "line": 54,
+          "description": "Atomically accepts the full batch only when bounded capacity permits."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::DrainCommandQueue",
+          "line": 1992,
+          "description": "On the engine thread, re-resolves mutable units and targets and creates a dispatch event."
+        },
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "symbol": "DispatchCommand / DispatchTacticalCommand",
+          "line": 119,
+          "description": "Performs arm-specific current-native checks and calls the engine interface."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::DrainCommandQueue",
+          "line": 2190,
+          "description": "Records applied/skipped status and accepted order metadata; later state publications expose effects."
+        }
+      ]
+    },
+    {
+      "id": "live-command",
+      "title": "Coordinator authority to guarded native dispatch",
+      "steps": [
+        {
+          "path": "src/circuit/grpc/CoordinatorClient.cpp",
+          "symbol": "CoordinatorClient::StartLiveChannels",
+          "line": 179,
+          "description": "Rotates paired channel incarnations and starts control, command and report workers."
+        },
+        {
+          "path": "src/circuit/grpc/CoordinatorClient.cpp",
+          "symbol": "CoordinatorClient::LiveControlReaderLoop",
+          "line": 202,
+          "description": "Receives directives; channel loss rotates both incarnations and cancels stale gameplay input."
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "symbol": "LiveControlState::ApplyDirective",
+          "line": 76,
+          "description": "Validates full binding, monotonic control sequence, epoch, lease and directive kind."
+        },
+        {
+          "path": "src/circuit/grpc/CoordinatorClient.cpp",
+          "symbol": "CoordinatorClient::LiveCommandReaderLoop",
+          "line": 246,
+          "description": "Admits each live batch, enqueues accepted commands, and reports admission."
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "symbol": "LiveControlState::CheckQueuedCommandLocked",
+          "line": 171,
+          "description": "Checks authority, lease, basis and command deadlines, actor lifetime and target visibility."
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "symbol": "LiveControlState::DispatchGuarded",
+          "line": 334,
+          "description": "Repeats fences under the authority mutex and invokes native dispatch in the guarded region."
+        }
+      ]
+    },
+    {
+      "id": "tactical-command",
+      "title": "Tactical catalogue and observation to native tactical effect",
+      "steps": [
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "BuildAndReportTacticalCatalogue",
+          "line": 617,
+          "description": "Builds a bounded content-addressed action catalogue and reports pages."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "BuildAndReportTacticalSnapshot",
+          "line": 727,
+          "description": "Samples a catalogue-bound basis, actors, queues, descriptors, economy and feature lifetimes."
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "symbol": "LiveControlState::RecordTacticalSnapshot",
+          "line": 216,
+          "description": "Retains only snapshots matching the complete catalogue identity and revision."
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "symbol": "LiveControlState::CheckTacticalCommandLocked",
+          "line": 232,
+          "description": "Checks action descriptor, target, queue, definition and parameter policies."
+        },
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "symbol": "DispatchTacticalCommand",
+          "line": 119,
+          "description": "Rechecks exact native queue/control/capability/site facts and writes one engine action when valid."
+        }
+      ]
+    },
+    {
+      "id": "admin-action",
+      "title": "Admin request to engine-thread mutation and audit",
+      "steps": [
+        {
+          "path": "src/circuit/grpc/AdminService.cpp",
+          "symbol": "ValidateActionCallData",
+          "line": 66,
+          "description": "Parses caller metadata and performs non-mutating validation on the CQ worker."
+        },
+        {
+          "path": "src/circuit/grpc/AdminController.cpp",
+          "symbol": "AdminController::Validate",
+          "line": 147,
+          "description": "Checks role, run mode, bounds, target, staleness and lease conflict."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::QueueAdminAction",
+          "line": 1621,
+          "description": "Places accepted execution in a bounded engine-thread queue and waits with a deadline."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::DrainAdminActionQueue",
+          "line": 1837,
+          "description": "Revalidates against current state and applies the action on the engine thread."
+        },
+        {
+          "path": "src/circuit/grpc/AdminController.cpp",
+          "symbol": "AdminController::Execute / Audit",
+          "line": 309,
+          "description": "Records execution, updates pause/speed leases and emits an audit event."
+        }
+      ]
+    },
+    {
+      "id": "fault-containment",
+      "title": "Worker fault to fail-closed disable",
+      "steps": [
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::RequestDisable",
+          "line": 508,
+          "description": "Worker records the first pending fault without mutating engine-thread state."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::DrainPendingFault",
+          "line": 520,
+          "description": "Frame tick retrieves the fault on the engine thread."
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "symbol": "CGrpcGatewayModule::TransitionToDisabled",
+          "line": 1023,
+          "description": "Stops acceptance, evicts streams, closes services and records structured failure."
+        },
+        {
+          "path": "src/circuit/grpc/GrpcLog.cpp",
+          "symbol": "WriteHealthFile",
+          "line": 164,
+          "description": "Atomically replaces the health file with disabled status and reason."
+        }
+      ]
+    },
+    {
+      "id": "unit-move-failed-external-control",
+      "title": "Taskless external actor to movement-failure callback at f541bd3",
+      "steps": [
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "symbol": "dispatch_under_external_control",
+          "line": 159,
+          "description": "Reads the raw task; a null task is treated as already externally controlled, so tactical native dispatch may proceed without UnitControl."
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::HandleGameEvent",
+          "line": 289,
+          "description": "Decodes EVENT_UNIT_MOVE_FAILED, resolves the team unit, and calls UnitMoveFailed synchronously."
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::UnitMoveFailed",
+          "line": 1157,
+          "description": "Ignores an already-stuck unit or handles repeated failure by STOP, ROAM and a builder reclaim task."
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "symbol": "CCircuitAI::UnitMoveFailed",
+          "line": 1170,
+          "description": "On the earlier-failure branch at f541bd3, dereferences GetTask for type and callback without a null guard."
+        },
+        {
+          "path": "src/circuit/task/UnitTask.cpp",
+          "symbol": "IUnitTask::OnUnitMoveFailed",
+          "line": 117,
+          "description": "When a task exists and is non-NIL, the base callback issues a bounded radial escape move."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "builtin-conditional",
+      "kind": "lifecycle",
+      "statement": "Built-in decision modules are active only when enableBuiltin is true; the gRPC gateway is activated independently.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 661,
+          "symbol": "CCircuitAI::Init"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "builtin",
+        "external-control"
+      ]
+    },
+    {
+      "id": "engine-thread-drain",
+      "kind": "invariant",
+      "statement": "Mutable engine actions are drained from queues on the engine frame thread.",
+      "evidence": [
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 1364,
+          "symbol": "CGrpcGatewayModule::OnFrameTick"
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 1992,
+          "symbol": "CGrpcGatewayModule::DrainCommandQueue"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "threading",
+        "safety"
+      ]
+    },
+    {
+      "id": "atomic-batch",
+      "kind": "invariant",
+      "statement": "A local command batch is enqueued atomically; insufficient capacity admits none of it.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CommandQueue.cpp",
+          "line": 54,
+          "symbol": "CommandQueue::TryPushBatch"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "commands",
+        "queue"
+      ]
+    },
+    {
+      "id": "dispatch-recheck",
+      "kind": "invariant",
+      "statement": "Dispatch re-resolves mutable units and targets and repeats live/tactical fences immediately before native mutation.",
+      "evidence": [
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 2040,
+          "symbol": "CGrpcGatewayModule::DrainCommandQueue"
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "line": 334,
+          "symbol": "LiveControlState::DispatchGuarded"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "commands",
+        "TOCTOU"
+      ]
+    },
+    {
+      "id": "legacy-fenced",
+      "kind": "invariant",
+      "statement": "A locally addressed live control directive engages the live session even if that directive is refused, preventing legacy gameplay bypass.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "line": 91,
+          "symbol": "LiveControlState::ApplyDirective"
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "line": 154,
+          "symbol": "LiveControlState::LegacyGameplayAllowed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "authority",
+        "fail-closed"
+      ]
+    },
+    {
+      "id": "control-loss-rotates",
+      "kind": "invariant",
+      "statement": "Loss of the control stream rotates both paired channel incarnations and cancels the gameplay stream.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CoordinatorClient.cpp",
+          "line": 225,
+          "symbol": "CoordinatorClient::LiveControlReaderLoop"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "authority",
+        "reconnect"
+      ]
+    },
+    {
+      "id": "basis-bounded",
+      "kind": "invariant",
+      "statement": "Live dispatch requires a known basis whose retained expiry, queued basis deadline, command deadline and lease deadline are all current.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "line": 171,
+          "symbol": "LiveControlState::CheckQueuedCommandLocked"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "basis",
+        "lifetime"
+      ]
+    },
+    {
+      "id": "catalogue-bound",
+      "kind": "invariant",
+      "statement": "A tactical snapshot is accepted only against the complete current catalogue identity and revision.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "line": 207,
+          "symbol": "LiveControlState::RecordTacticalCatalogue"
+        },
+        {
+          "path": "src/circuit/grpc/LiveControlState.cpp",
+          "line": 216,
+          "symbol": "LiveControlState::RecordTacticalSnapshot"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "tactical",
+        "catalogue"
+      ]
+    },
+    {
+      "id": "feature-lifetime",
+      "kind": "invariant",
+      "statement": "Visible feature references carry lifetimes so an engine ID reused after disappearance cannot validate an old reference.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/TacticalNativeState.cpp",
+          "line": 129,
+          "symbol": "FeatureLifetimeLedger::ReplaceCompleteVisibleSnapshot"
+        },
+        {
+          "path": "src/circuit/grpc/TacticalNativeState.cpp",
+          "line": 203,
+          "symbol": "FeatureLifetimeLedger::Matches"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "tactical",
+        "lifetime"
+      ]
+    },
+    {
+      "id": "tactical-native-queue",
+      "kind": "invariant",
+      "statement": "Tactical dispatch compares the requested queue revision/tag with the current native queue before action.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "line": 119,
+          "symbol": "DispatchTacticalCommand"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "tactical",
+        "queue"
+      ]
+    },
+    {
+      "id": "state-seq",
+      "kind": "invariant",
+      "statement": "Ring-buffer state sequences must be strictly increasing.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/RingBuffer.cpp",
+          "line": 20,
+          "symbol": "RingBuffer::Push"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "state",
+        "resume"
+      ]
+    },
+    {
+      "id": "stream-dedup",
+      "kind": "invariant",
+      "statement": "After snapshot/replay, StreamState drops live messages whose sequence is not greater than the last sent sequence.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "line": 461,
+          "symbol": "StreamStateCallData"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "state",
+        "ordering"
+      ]
+    },
+    {
+      "id": "bounded-subscriber",
+      "kind": "failure",
+      "statement": "A slow observer is evicted rather than blocking state publication.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/SubscriberSlot.cpp",
+          "line": 11,
+          "symbol": "SubscriberSlot::TryPush"
+        },
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "line": 435,
+          "symbol": "StreamStateCallData"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "stream",
+        "backpressure"
+      ]
+    },
+    {
+      "id": "local-bind",
+      "kind": "security",
+      "statement": "The embedded server binds only a Unix-domain socket or loopback TCP endpoint.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "line": 1092,
+          "symbol": "HighBarService::Bind"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "transport",
+        "security"
+      ]
+    },
+    {
+      "id": "token",
+      "kind": "security",
+      "statement": "The gateway generates a 256-bit token, writes it atomically with private permissions, compares it in constant time, and unlinks it at shutdown.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/AuthToken.cpp",
+          "line": 37,
+          "symbol": "AuthToken::Generate"
+        },
+        {
+          "path": "src/circuit/grpc/AuthToken.cpp",
+          "line": 92,
+          "symbol": "AuthToken::Unlink"
+        },
+        {
+          "path": "src/circuit/grpc/AuthToken.cpp",
+          "line": 100,
+          "symbol": "AuthToken::ConstantTimeEquals"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "auth"
+      ]
+    },
+    {
+      "id": "observer-auth",
+      "kind": "security",
+      "statement": "Hello and observer StreamState bypass the token; mutating and sensitive RPCs are intercepted.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/AuthInterceptor.cpp",
+          "line": 44,
+          "symbol": "AuthInterceptor::RequiresToken"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "auth",
+        "observer"
+      ]
+    },
+    {
+      "id": "ai-singleton",
+      "kind": "invariant",
+      "statement": "The actual AI producer lifetime is owned by the command stream singleton slot rather than a transient Hello.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "line": 176,
+          "symbol": "HelloCallData"
+        },
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "line": 719,
+          "symbol": "SubmitCommandsCallData"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "session",
+        "commands"
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "readiness",
+      "statement": "Construction writes a healthy marker; fail-closed transition atomically writes disabled state with structured subsystem and reason.",
+      "evidence": [
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 395,
+          "symbol": "CGrpcGatewayModule::CGrpcGatewayModule"
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 1054,
+          "symbol": "CGrpcGatewayModule::TransitionToDisabled"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "health",
+        "failure"
+      ]
+    },
+    {
+      "id": "admin-revalidation",
+      "kind": "invariant",
+      "statement": "Admin execution validates on receipt and again on the engine thread before mutation.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/AdminService.cpp",
+          "line": 125,
+          "symbol": "ExecuteActionCallData"
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 1837,
+          "symbol": "CGrpcGatewayModule::DrainAdminActionQueue"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "admin",
+        "threading"
+      ]
+    },
+    {
+      "id": "admin-leases",
+      "kind": "behavior",
+      "statement": "Pause and global-speed controls acquire caller-owned frame-expiring leases.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/AdminController.cpp",
+          "line": 309,
+          "symbol": "AdminController::Execute"
+        },
+        {
+          "path": "src/circuit/grpc/AdminController.cpp",
+          "line": 347,
+          "symbol": "AdminController::ExpireLeases"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "admin",
+        "lease"
+      ]
+    },
+    {
+      "id": "admission-not-effect",
+      "kind": "semantic",
+      "statement": "Command admission and native effect are distinct: admission is reported from transport processing, while applied/skipped dispatch appears in a later state delta.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CoordinatorClient.cpp",
+          "line": 246,
+          "symbol": "CoordinatorClient::LiveCommandReaderLoop"
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 2190,
+          "symbol": "CGrpcGatewayModule::DrainCommandQueue"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "commands",
+        "result"
+      ]
+    },
+    {
+      "id": "cq-fault",
+      "kind": "failure",
+      "statement": "An exception in a completion-queue handler is posted to the engine-thread fault sink and ultimately disables the gateway.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/HighBarService.cpp",
+          "line": 1181,
+          "symbol": "HighBarService::CqWorker"
+        },
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 508,
+          "symbol": "CGrpcGatewayModule::RequestDisable"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "threading",
+        "failure"
+      ]
+    },
+    {
+      "id": "generated-source",
+      "kind": "build",
+      "statement": "Canonical protobuf inputs are under proto/highbar; C++ output is generated into build/gen, F# consumes Grpc.Tools-generated C# types, and Python includes generated modules.",
+      "evidence": [
+        {
+          "path": "CMakeLists.txt",
+          "line": 255,
+          "symbol": "HIGHBAR_PROTO_GEN_DIR"
+        },
+        {
+          "path": "clients/fsharp/HighBar.Proto.csproj",
+          "line": 1,
+          "symbol": "Project"
+        },
+        {
+          "path": "clients/python/pyproject.toml",
+          "line": 1,
+          "symbol": "project metadata"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "proto",
+        "generated"
+      ]
+    },
+    {
+      "id": "test-layering",
+      "kind": "testing",
+      "statement": "Standalone CMake covers support components, while full plugin, validator and engine-thread integration require configuring within the Recoil engine tree.",
+      "evidence": [
+        {
+          "path": "CMakeLists.txt",
+          "line": 155,
+          "symbol": "standalone configuration"
+        },
+        {
+          "path": "CMakeLists.txt",
+          "line": 332,
+          "symbol": "HIGHBAR_BUILD_TESTS"
+        },
+        {
+          "path": "BUILD.md",
+          "line": 39,
+          "symbol": "Standalone CMake Smoke Tests"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "build",
+        "tests"
+      ]
+    },
+    {
+      "id": "architecture-doc-drift",
+      "kind": "documentation",
+      "statement": "Documentation that describes only external decision control may be incomplete because this revision can activate built-in modules through enableBuiltin.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 661,
+          "symbol": "CCircuitAI::Init"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "docs",
+        "builtin"
+      ]
+    },
+    {
+      "id": "runtime-unit-move-failed-route",
+      "kind": "runtime-observation",
+      "statement": "A private address-only runtime trace was reported to symbolize through the Recoil output/wrapper route into HighBar CCircuitAI::UnitMoveFailed; no raw addresses or trace payload are retained here.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 289,
+          "symbol": "CCircuitAI::HandleGameEvent"
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1157,
+          "symbol": "CCircuitAI::UnitMoveFailed"
+        }
+      ],
+      "confidence": "reported",
+      "tags": [
+        "crash",
+        "callback",
+        "private-evidence"
+      ]
+    },
+    {
+      "id": "taskless-tactical-contract",
+      "kind": "invariant",
+      "statement": "At f541bd3, tactical dispatch explicitly accepts a null task as already externally controlled and may dispatch without installing a PLAYER task.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "line": 159,
+          "symbol": "dispatch_under_external_control"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "external-control",
+        "task",
+        "tactical",
+        "revision:f541bd3"
+      ]
+    },
+    {
+      "id": "unit-move-failed-null-deref",
+      "kind": "defect",
+      "statement": "At f541bd3, the non-repeated UnitMoveFailed branch dereferences GetTask twice without checking for null.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1170,
+          "symbol": "CCircuitAI::UnitMoveFailed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "crash",
+        "callback",
+        "null-task",
+        "revision:f541bd3"
+      ]
+    },
+    {
+      "id": "null-task-crash-hypothesis",
+      "kind": "crash-hypothesis",
+      "statement": "The taskless tactical contract plus the reported callback stack makes a null GetTask dereference the strongest source-based explanation, but source does not prove the task pointer value in the runtime failure.",
+      "evidence": [
+        {
+          "path": "src/circuit/grpc/CommandDispatch.cpp",
+          "line": 159,
+          "symbol": "dispatch_under_external_control"
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1170,
+          "symbol": "CCircuitAI::UnitMoveFailed"
+        }
+      ],
+      "confidence": "inference",
+      "tags": [
+        "crash",
+        "external-control",
+        "null-task"
+      ]
+    },
+    {
+      "id": "task-assignment-contract",
+      "kind": "lifecycle",
+      "statement": "Normal task replacement removes the unit from its current task, assigns the replacement, records it on the unit, and starts it; task removal returns the unit to the manager idle task.",
+      "evidence": [
+        {
+          "path": "src/circuit/task/UnitTask.cpp",
+          "line": 62,
+          "symbol": "IUnitTask::AssignTo"
+        },
+        {
+          "path": "src/circuit/task/UnitTask.cpp",
+          "line": 79,
+          "symbol": "IUnitTask::RemoveAssignee"
+        },
+        {
+          "path": "src/circuit/module/TaskModule.cpp",
+          "line": 63,
+          "symbol": "ITaskModule::AssignTask"
+        },
+        {
+          "path": "src/circuit/unit/CircuitUnit.cpp",
+          "line": 107,
+          "symbol": "CCircuitUnit::SetTask"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "task",
+        "ownership",
+        "lifecycle"
+      ]
+    },
+    {
+      "id": "player-task-external-owner",
+      "kind": "lifecycle",
+      "statement": "UnitControl(false) replaces a non-player task with CPlayerTask; that task ignores idle/damage callbacks and detaches destroyed actors, preserving external command ownership.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1683,
+          "symbol": "CCircuitAI::UnitControl"
+        },
+        {
+          "path": "src/circuit/task/PlayerTask.cpp",
+          "line": 23,
+          "symbol": "CPlayerTask::Start and callbacks"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "external-control",
+        "player-task",
+        "ownership"
+      ]
+    },
+    {
+      "id": "nearby-null-guards",
+      "kind": "callback-safety",
+      "statement": "Nearby lifecycle code recognizes task nullability: UnitFinished returns for a null task, and builder/factory/military manager handlers contain task-null guards for unhandled actors.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1082,
+          "symbol": "CCircuitAI::UnitFinished"
+        },
+        {
+          "path": "src/circuit/module/BuilderManager.cpp",
+          "line": 90,
+          "symbol": "CBuilderManager::InitHandlers"
+        },
+        {
+          "path": "src/circuit/module/FactoryManager.cpp",
+          "line": 94,
+          "symbol": "CFactoryManager::InitHandlers"
+        },
+        {
+          "path": "src/circuit/module/MilitaryManager.cpp",
+          "line": 74,
+          "symbol": "CMilitaryManager::InitHandlers"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "callback",
+        "null-task",
+        "guards"
+      ]
+    },
+    {
+      "id": "unit-move-failed-delta-unwired",
+      "kind": "coverage-gap",
+      "statement": "At f541bd3, the gateway defines a safe OnUnitMoveFailed delta hook, but direct source search finds no production call from CCircuitAI::UnitMoveFailed.",
+      "evidence": [
+        {
+          "path": "src/circuit/module/GrpcGatewayModule.cpp",
+          "line": 1253,
+          "symbol": "CGrpcGatewayModule::OnUnitMoveFailed"
+        },
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1157,
+          "symbol": "CCircuitAI::UnitMoveFailed"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "callback",
+        "delta",
+        "observability",
+        "revision:f541bd3"
+      ]
+    },
+    {
+      "id": "unit-move-failed-fix-0e835",
+      "kind": "revision-history",
+      "statement": "At separate merged revision 0e835d1edfff91e7624eab7cf55127fa3645bff5, UnitMoveFailed captures GetTask once, requires non-null and non-NIL, then invokes OnUnitMoveFailed. This source change is not attributed to the chapter's f541bd3 source revision.",
+      "evidence": [
+        {
+          "path": "src/circuit/CircuitAI.cpp",
+          "line": 1170,
+          "symbol": "CCircuitAI::UnitMoveFailed @ 0e835d1edfff91e7624eab7cf55127fa3645bff5"
+        }
+      ],
+      "confidence": "observed-source",
+      "tags": [
+        "revision-history",
+        "fix",
+        "null-task",
+        "revision:0e835d1edfff91e7624eab7cf55127fa3645bff5",
+        "native-unqualified"
+      ]
+    },
+    {
+      "id": "unit-move-failed-fix-not-qualified",
+      "kind": "qualification",
+      "statement": "The 0e835d1 source repair had not completed protected native acceptance at the documentation checkpoint; source structure must not be presented as runtime success.",
+      "evidence": [],
+      "confidence": "reported",
+      "tags": [
+        "qualification",
+        "native",
+        "revision:0e835d1edfff91e7624eab7cf55127fa3645bff5"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Should architecture documentation explicitly describe the enableBuiltin coexistence mode, or is that path retained only for compatibility?",
+    "Which CI artifact is authoritative for the complete per-command-arm native effect-readback matrix beyond the generated 66-arm coverage list?",
+    "Are F# wrapper tests maintained in another repository? This revision contains samples and a latency bench but no comparable committed F# unit-test project.",
+    "Save/load and callback RPC implementations were indexed but not traced to the same depth as state, command, tactical, and admin flows.",
+    "Engine-coupled behavior was not freshly executed during this read-only analysis; validate callback ordering against the pinned Recoil runtime when modifying lifecycle-sensitive code.",
+    "At revision 0e835d1, does a protected native forced-movement-failure run complete without crash while preserving external ownership and native effect semantics?",
+    "Should CCircuitAI::UnitMoveFailed call the existing CGrpcGatewayModule::OnUnitMoveFailed hook so the state stream records the callback exactly once?",
+    "Do other action-loop dereferences such as CCircuitAI::UpdateActions require the same explicit taskless contract, or are taskless actors excluded from actionUnits by a separately enforced invariant?",
+    "A focused test is still needed for taskless external tactical dispatch followed by a genuine EVENT_UNIT_MOVE_FAILED; current external-only and tactical fence tests cover the halves separately."
+  ]
+}

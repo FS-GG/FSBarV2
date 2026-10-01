@@ -1,0 +1,241 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3d96ae984362cee351536b43b53deabe56aba486da2dbdea5c16d1ccde2a033b",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-browser-module-graph-failure-20261001.md",
+          "scope": "Attempt-scoped diagnosis without raw logs or process identities.",
+          "section": "Attempt boundary",
+          "sourceProof": null,
+          "summary": "Browser acquisition followed runtime-closure success, then production module resolution failed before test.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3d96ae984362cee351536b43b53deabe56aba486da2dbdea5c16d1ccde2a033b",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-browser-module-graph-failure-20261001.md",
+          "scope": "Attempt-scoped cleanup only.",
+          "section": "Cleanup truth",
+          "sourceProof": null,
+          "summary": "All four acquired roles settled; first historical cleanup remains unknown.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-browser-production-module-graph-missing",
+      "kind": "incident",
+      "scope": {
+        "applicability": "new a190 attempt only; no product/native result",
+        "artifacts": [
+          "config-sha256:a190e9b04f9930f1d5d05bd5ac92a1d70f7673a9c7adb92de1f1bf8ac902d761"
+        ],
+        "component": "stock Count1 browser module closure",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "In the new genuine operation, executable runtime-closure verification passed and the browser role was acquired. The browser test process then exited before any test or capture because the packaged production spec lacked its exact relative tactical-native-evidence module and transitive stock-native-trace/generated-codec graph. The operation correctly remained UNKNOWN. No browser command, release, final read, Count1 result or native acceptance occurred. All four acquired roles settled with zero remaining members; the first historical cleanup remains UNKNOWN.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "browser",
+        "module-graph",
+        "before-test",
+        "operation-unknown",
+        "cleanup-settled",
+        "native-0-of-6"
+      ],
+      "title": "Browser exited before test because the production module graph was absent"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3d96ae984362cee351536b43b53deabe56aba486da2dbdea5c16d1ccde2a033b",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-browser-module-graph-failure-20261001.md",
+          "scope": "Does not retroactively classify the earlier refusal.",
+          "section": "Attempt boundary",
+          "sourceProof": null,
+          "summary": "This attempt passed readiness and runtime closure before browser acquisition.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-runtime-closure-and-readiness-a190-observed",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "positive boundary evidence for the a190 attempt only",
+        "artifacts": [
+          "config-sha256:a190e9b04f9930f1d5d05bd5ac92a1d70f7673a9c7adb92de1f1bf8ac902d761"
+        ],
+        "component": "protected readiness and executable runtime closure",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "For the a190 genuine attempt, authenticated host readiness, metadata, setup, retained shared selection and executable runtime-closure verification all completed; browser acquisition proves the production ordering reached the next stage. This success is scoped to this attempt and its exact runtime bytes. It does not identify or retroactively repair the earlier 96d806 refusal, whose failed predicate remains unknown, and it does not establish browser execution, Count1 or native acceptance.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "readiness",
+        "runtime-closure",
+        "browser-acquired",
+        "attempt-scoped",
+        "native-open"
+      ],
+      "title": "Protected readiness and runtime closure passed in the a190 attempt"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3d96ae984362cee351536b43b53deabe56aba486da2dbdea5c16d1ccde2a033b",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-browser-module-graph-failure-20261001.md",
+          "scope": "Candidate preparation only, not acceptance.",
+          "section": "Candidate successor",
+          "sourceProof": null,
+          "summary": "Exact module graph and effect-free one-test list result; independent review pending.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-browser-module-graph-packet-candidate",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "candidate packet and effect-free module loading only; independent review pending",
+        "artifacts": [
+          "config-sha256:28427c0013773c94310f1a2dcc8b6c4f3518b4c12091ab83a57546952e7cff91",
+          "inventory-sha256:cafe9483bb84c29e35b0179b62dd6d89c373dcfcefcb7ee33feba82cefc5578e"
+        ],
+        "component": "browser evidence module-graph packet successor",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "candidate",
+      "statement": "Candidate packet config 28427c and inventory cafe9483 add the exact protected FSBar production spec module graph with its relative topology and pinned runtime dependencies. An effect-free pinned Playwright list check loaded exactly one selected stock Count1 test, and local full-packet and custody verification passed. Independent review is in progress, so the packet is candidate source/artifact preparation only and is not accepted or native-qualified.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "browser",
+        "module-graph",
+        "packet-candidate",
+        "review-pending",
+        "no-effect"
+      ],
+      "title": "Browser production module-graph packet successor is review pending"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3d96ae984362cee351536b43b53deabe56aba486da2dbdea5c16d1ccde2a033b",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-browser-module-graph-failure-20261001.md",
+          "scope": "No rerun or candidate acceptance claim.",
+          "section": "Candidate successor",
+          "sourceProof": null,
+          "summary": "Independent packet review precedes any later root-owned attempt.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current frontier after the a190 browser module-graph failure",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "54e17084c35b90584f8f84efc468bcc8943e4ec0",
+          "5bc309e2cbd5ae701b16b43d5f978742beee607d",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "The a190 attempt passed authenticated readiness and executable runtime closure and acquired the browser, then failed before test because the production module graph was incomplete. Complete independent review of candidate packet 28427c/cafe9483 before any new operation. A later root-owned attempt must establish actual selected test execution, capture and release, final-read correlation, Count1 quantity, loaded identities and attempt-scoped cleanup together. The earlier 96d806 runtime-closure predicate remains unknown. All six useful-play journeys remain unaccepted at 0/6.",
+      "supersedes": [
+        "cc63a296f40a291967350f598e409e5eda376daa662104e0dfcc3b4e2162e65d"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "browser",
+        "Count1",
+        "review-pending",
+        "native-0-of-6"
+      ],
+      "title": "What remains after the browser module-graph failure?"
+    }
+  ],
+  "origin": "Genuine a190 attempt: attempt-scoped runtime-closure success, browser production module-graph failure, settled cleanup, and review-pending packet successor",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

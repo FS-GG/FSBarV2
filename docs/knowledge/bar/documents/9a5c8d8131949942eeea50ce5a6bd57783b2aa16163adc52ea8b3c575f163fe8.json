@@ -1,0 +1,147 @@
+{
+  "source": {
+    "name": "FSBar",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/FSBar-1cc8ea3bc503dce3075a6a37f7dfc8cd8822fb7f",
+    "revision": "1cc8ea3bc503dce3075a6a37f7dfc8cd8822fb7f",
+    "tree": "f4daae00744a136bf53340a114441e6d51ca5200",
+    "status": "historical candidate; not current and no native acceptance claim"
+  },
+  "components": [
+    {
+      "id": "factory-ipc-candidate-live-capture-1cc8",
+      "title": "Bounded local live-capture publisher",
+      "paths": [
+        "tests/Broker.NativeProof/factory-native-candidate-capture.mjs",
+        "tests/Broker.NativeProof/factory-native-candidate-handoff.md"
+      ],
+      "summary": "Publishes one selected interval's captured submit, result lifecycle and same-source observations as a bounded private atomic JSON record with writer identity and source hash."
+    },
+    {
+      "id": "factory-ipc-candidate-publication-reader-1cc8",
+      "title": "Root-selected observer and producer publication reader",
+      "paths": [
+        "tests/Broker.NativeProof/factory-native-candidate-observer.mjs",
+        "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs"
+      ],
+      "summary": "Reads only selected private files, binds a root-published receipt to interval identities and file digests, then checks the correlated producer result and fixture observation."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-ipc-capture-to-oracle-1cc8",
+      "title": "Physical capture to bounded publication verification",
+      "steps": [
+        {
+          "path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs",
+          "symbol": "createCandidateCapture",
+          "line": 13,
+          "description": "Require a canonical selected path under an owned private anchor and refuse a preexisting capture target."
+        },
+        {
+          "path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs",
+          "symbol": "publish",
+          "line": 22,
+          "description": "Project captured interval identities, writer/source metadata, submit, prior observation, result rows and preserved replacement/latest observations into the IPC record."
+        },
+        {
+          "path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs",
+          "symbol": "ready",
+          "line": 29,
+          "description": "Declare capture readiness only after the exact terminal child lifecycle and enough fresh product lifetimes are observed."
+        },
+        {
+          "path": "tests/Broker.NativeProof/factory-native-candidate-observer.mjs",
+          "symbol": "waitForFactoryObserver",
+          "line": 47,
+          "description": "Read the selected receipt, require exact packet/run/interval/nonce/submit/producer identity and reject stale or future publication."
+        },
+        {
+          "path": "tests/Broker.NativeProof/factory-native-candidate-observer.mjs",
+          "symbol": "waitForFactoryObserver",
+          "line": 50,
+          "description": "Read bounded observer and native files, verify their receipt hashes, then select exactly one correlated native result."
+        },
+        {
+          "path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs",
+          "symbol": "assertFactoryCandidateInterval",
+          "line": 108,
+          "description": "Require the trusted receipt to bind the complete interval and both content digests before accepting the evidence join."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-ipc-private-bounded-atomic-1cc8",
+      "kind": "source-fact",
+      "statement": "The live capture requires an owned mode-0700 anchor, writes a maximum 1 MiB record through an exclusive mode-0600 temporary file, and publishes it by link or rename with directory synchronization.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs", "line": 11, "symbol": "anchor"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs", "line": 23, "symbol": "publish"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs", "line": 25, "symbol": "publish"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "ipc", "private-file", "bounded", "atomic-publication"]
+    },
+    {
+      "id": "factory-ipc-content-scope-1cc8",
+      "kind": "source-fact",
+      "statement": "The capture projection carries public artifact identity, action, submit, prior/controller state, correlated results and observations; it deliberately does not project a credential or pairing field.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs", "line": 12, "symbol": "createCandidateCapture"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-capture.mjs", "line": 22, "symbol": "publish"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "ipc", "data-minimization", "no-credentials"]
+    },
+    {
+      "id": "factory-ipc-receipt-does-not-self-attest-1cc8",
+      "kind": "acceptance-boundary",
+      "statement": "The source oracle reads a separately published receipt and verifies hashes and correlation; it states that it cannot create the producer or join receipt itself.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-observer.mjs", "line": 37, "symbol": "waitForFactoryObserver"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-observer.mjs", "line": 47, "symbol": "waitForFactoryObserver"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-observer.mjs", "line": 51, "symbol": "waitForFactoryObserver"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "ipc", "receipt", "custody", "acceptance-boundary"]
+    },
+    {
+      "id": "factory-ipc-independent-peer-gap-explicit-1cc8",
+      "kind": "acceptance-boundary",
+      "statement": "The candidate source explicitly retains two-peer result/fence comparison as an open gap, alongside native adversarial intervals and full callback atomicity.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 11, "symbol": "factoryCandidateRemainingGaps"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-evidence.mjs", "line": 123, "symbol": "assertFactoryCandidateInterval"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-handoff.md", "line": 42, "symbol": "source gates"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "two-peer", "fence", "open-gap", "source-fact"]
+    },
+    {
+      "id": "factory-ipc-runtime-delivery-unknown-1cc8",
+      "kind": "runtime-unknown",
+      "statement": "The presence of this publisher, reader and source tests does not establish that an independent second peer emitted a factory-service result or fence record in a real run; runtime delivery remains unknown until separately custodied peer records are verified.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-handoff.md", "line": 42, "symbol": "source gates"},
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-handoff.md", "line": 52, "symbol": "Live physical capture IPC"}
+      ],
+      "confidence": "inference",
+      "tags": ["factory-replacement", "two-peer", "runtime-unknown", "no-delivery-claim"]
+    },
+    {
+      "id": "factory-peer-observer-work-status-1cc8",
+      "kind": "reported-status",
+      "statement": "The work status accompanying this chapter reports the new independent peer observer implementation as IN PROGRESS and provides no delivered runtime record or native acceptance claim.",
+      "evidence": [
+        {"path": "tests/Broker.NativeProof/factory-native-candidate-handoff.md", "line": 42, "symbol": "source gates"}
+      ],
+      "confidence": "reported",
+      "tags": ["factory-replacement", "peer-observer", "in-progress", "no-delivery-claim"]
+    }
+  ],
+  "open_questions": [
+    "Will the in-progress peer observer land at an exact engine revision and produce separately custodied result and fence records from two actual clients?",
+    "Which bounded join will prove that each peer record came from its own synchronized service state rather than a copied producer record?"
+  ]
+}

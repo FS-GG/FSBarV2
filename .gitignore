@@ -24,3 +24,7 @@ coverage/
 
 # macOS / Linux cruft
 .DS_Store
+
+# Rebuildable BAR knowledge caches
+__pycache__/
+/docs/knowledge/bar/*.sqlite*

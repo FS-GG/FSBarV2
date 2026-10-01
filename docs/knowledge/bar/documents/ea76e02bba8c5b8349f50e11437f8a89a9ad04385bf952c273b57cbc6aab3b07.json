@@ -1,0 +1,166 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-2572991c77110f8d9893253051aa8d8958b7aec6",
+    "revision": "2572991c77110f8d9893253051aa8d8958b7aec6",
+    "tree": "e69c63cb287bd52365e306e98fb7347f9d60ecfb",
+    "scope": "exact two-file accepted observer implementation and focused real-service test corpus"
+  },
+  "components": [
+    {
+      "id": "recoil-257-late-bound-peer-observer",
+      "title": "Late-bound authenticated peer observer window",
+      "paths": ["rts/Net/FactoryReplacementPeerObserver.cpp"],
+      "summary": "A process-global sink lazily binds an owned observer root, a closed canonical window document and an exclusive output descriptor when Prepare first runs. Scoped descriptors protect exceptional exits; successful configuration transfers only the validated output descriptor into the long-lived sink."
+    },
+    {
+      "id": "recoil-257-observer-real-service-regression",
+      "title": "Focused observer and real service regression",
+      "paths": ["test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp"],
+      "summary": "The focused executable exercises the real factory replacement simulation service, literal ARM wire encoders, observer failure isolation, injected allocation exceptions, window immutability and bounded peer records. It is source-focused local evidence rather than a full engine or native acceptance run."
+    }
+  ],
+  "flows": [
+    {
+      "id": "recoil-257-lazy-window-load-flow",
+      "title": "Lazy window configuration and frame admission",
+      "steps": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "PrepareFactoryReplacementPeerObservation", "line": 484, "description": "The no-throw preparation entry point begins the lazy observer path for the submitted frame."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::Configure", "line": 339, "description": "Configure first returns a permanent incomplete result after a latched failure and otherwise reads observer configuration only on first use."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::Configure", "line": 347, "description": "The root, run, peer and exact late-bound window path are read from the process environment; the observer remains disabled when the root is absent."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::LoadWindow", "line": 292, "description": "LoadWindow requires the fixed basename under the bound root and validates the owned bounded document before caching its frame interval and digest."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "PrepareFactoryReplacementPeerObservation", "line": 490, "description": "After successful configuration, Prepare only classifies the frame as inside or outside the cached authenticated window."}
+      ]
+    },
+    {
+      "id": "recoil-257-exception-custody-flow",
+      "title": "Allocation exception, descriptor custody and permanent failure",
+      "steps": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "OwnedDescriptor", "line": 47, "description": "The noncopyable RAII owner closes every untransferred descriptor at scope exit."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::LoadWindow", "line": 296, "description": "The window descriptor is owned immediately after openat and remains scoped across allocation, read, parse and digest work."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::Configure", "line": 391, "description": "The root directory descriptor is owned before window loading and later sink-name allocation."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::Configure", "line": 415, "description": "The candidate output descriptor is scoped until custody checks pass."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "Sink::Configure", "line": 427, "description": "Only the validated output descriptor is released into the long-lived sink."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "PrepareFactoryReplacementPeerObservation", "line": 492, "description": "Any preparation exception latches both failed and configured and returns EvidenceIncomplete, preventing later reconfiguration."}
+      ]
+    },
+    {
+      "id": "recoil-257-prepare-record-service-boundary",
+      "title": "Prepare, synchronized service application and RecordImpl remain separate",
+      "steps": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "symbol": "main", "line": 249, "description": "The test observes real service state before application and verifies that observation does not mutate serialized service state."},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "symbol": "main", "line": 304, "description": "An observer configuration refusal is followed by a real ApplySubmission and stored-result read, demonstrating that evidence failure does not decide synchronized application."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "RecordImpl", "line": 500, "description": "RecordImpl consumes already supplied authenticated context, decoded submission, apply status and before/after observations; it does not perform or authorize the application."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "RecordFactoryReplacementPeerObservation", "line": 581, "description": "The public record wrapper converts construction or write exceptions into EvidenceIncomplete and latches sink failure."}
+      ]
+    },
+    {
+      "id": "recoil-257-literal-arm-wire-vectors",
+      "title": "Literal canonical ARM request and committed result vectors",
+      "steps": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "symbol": "main", "line": 258, "description": "The test constructs a distinct ARM request with frames 200/301, epoch 7, sequence 11, incarnation 13 and request ID bytes 0x21."},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "symbol": "main", "line": 281, "description": "EncodeFenceRequest must match the full pinned lowercase hexadecimal ARM request vector."},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "symbol": "main", "line": 286, "description": "EncodeFenceResult must match the full pinned committed ARM result vector with authoritative frame 205 and settled sequence 11."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "recoil-257-window-load-is-lazy-and-one-way",
+      "kind": "source-fact",
+      "statement": "Observer configuration and window loading occur on the first Prepare call, remain disabled when no root is configured, cache an accepted window, and permanently return EvidenceIncomplete after a preparation exception.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 339, "symbol": "Sink::Configure"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 347, "symbol": "BARC_FR5_PEER_OBSERVER_ROOT"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 484, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 492, "symbol": "PrepareFactoryReplacementPeerObservation"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["peer-observer", "late-bound-window", "lazy-load", "permanent-failure-latch", "crash-map"]
+    },
+    {
+      "id": "recoil-257-raii-descriptor-custody",
+      "kind": "source-fact",
+      "statement": "OwnedDescriptor closes the root, window and untransferred candidate sink on normal or exceptional scope exit; only a custody-validated output descriptor transfers into Sink.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 47, "symbol": "OwnedDescriptor"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 296, "symbol": "descriptor"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 391, "symbol": "rootFd"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 415, "symbol": "candidate"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 427, "symbol": "Release"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["raii", "file-descriptor", "exception-safety", "custody", "crash-map"]
+    },
+    {
+      "id": "recoil-257-prepare-record-application-separation",
+      "kind": "source-fact",
+      "statement": "Prepare classifies evidence availability and frame admission; RecordImpl serializes supplied application observations. The focused test calls the real ApplySubmission service boundary separately and proves observer failure does not prevent a stored synchronized result.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 484, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 500, "symbol": "RecordImpl"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 302, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 304, "symbol": "ApplySubmission"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 307, "symbol": "ReadResult"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["prepare", "recordimpl", "real-service-boundary", "application-isolation"]
+    },
+    {
+      "id": "recoil-257-allocation-exception-regression-locations",
+      "kind": "source-fact",
+      "statement": "Two one-shot bad_alloc checkpoints cover the window-open path and the post-window/pre-sink-name path. The focused test checks unchanged descriptor count, permanent refusal after window replacement, one real service application, a readable result and no observer output.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 39, "symbol": "MaybeThrowObserverAllocationFault"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 299, "symbol": "MaybeThrowObserverAllocationFault"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 413, "symbol": "MaybeThrowObserverAllocationFault"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 316, "symbol": "faultStage"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 329, "symbol": "SetFactoryReplacementPeerObserverAllocationFaultForTest"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 332, "symbol": "descriptorsClosed"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 336, "symbol": "latched"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 338, "symbol": "ApplySubmission"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["bad-alloc", "descriptor-leak", "permanent-latch", "focused-test", "crash-map"]
+    },
+    {
+      "id": "recoil-257-arm-wire-vectors",
+      "kind": "source-fact",
+      "statement": "The focused source pins ARM request vector 42465231010003007400000001000000c80000002d01000007000000000000000b000000000000000d0000000000000021212121212121212121212121212121f027e36c7f152353c0a280acbcd04df8a7cc5b4ec8b1a908e49856427fc017d86a1608514d5a46ab0573974dc34a13d38797982c1a2208d67b5ca65cb993c3d4 and committed result vector 42465231010005009400000001010000cd0000000b000000000000000d0000000000000021212121212121212121212121212121f027e36c7f152353c0a280acbcd04df8a7cc5b4ec8b1a908e49856427fc017d86a1608514d5a46ab0573974dc34a13d38797982c1a2208d67b5ca65cb993c3d407000000000000002d01000000000000000000000000000007000000000000002d0100000b00000000000000.",
+      "evidence": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 258, "symbol": "vectorRequest"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 281, "symbol": "EncodeFenceRequest"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 286, "symbol": "EncodeFenceResult"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["arm", "wire-vector", "canonical-encoding", "fence-request", "fence-result"]
+    },
+    {
+      "id": "recoil-257-source-accept-and-focused-tests-only",
+      "kind": "reported-status",
+      "statement": "Independent review reported SOURCE ACCEPT for this exact commit after the focused real-service executable and allocator exception probe passed. Those observations approve the two-file source repair and its focused test boundary only.",
+      "evidence": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 316, "symbol": "faultStage"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 356, "symbol": "ApplySubmission"}
+      ],
+      "confidence": "reported",
+      "tags": ["source-accepted", "focused-tests", "reported-review", "bounded-evidence"]
+    },
+    {
+      "id": "recoil-257-build7-plugin-native-pending",
+      "kind": "acceptance-boundary",
+      "statement": "Build7 engine artifact production and readback, downstream plugin identity repins, helper integration and genuine native qualification remain pending. This registration does not establish installation, plugin load, paired runtime equality or any of the six native cases; native acceptance remains reported as 0/6.",
+      "evidence": [
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 254, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "test/engine/ExternalAI/testFactoryReplacementPeerObservation.cpp", "line": 316, "symbol": "faultStage"}
+      ],
+      "confidence": "reported",
+      "tags": ["build7-pending", "plugin-pending", "helper-pending", "native-0-of-6", "no-runtime-claim"]
+    }
+  ],
+  "open_questions": [
+    "Will build7 reproduce and read back this exact accepted engine source in the final engine artifact?",
+    "Will downstream plugin identity and helper bindings join that artifact without changing the observer window contract?",
+    "Will genuine paired native execution close all six required cases with matching authenticated observer evidence?"
+  ]
+}

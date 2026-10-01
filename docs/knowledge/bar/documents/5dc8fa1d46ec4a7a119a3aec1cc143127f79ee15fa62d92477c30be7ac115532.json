@@ -1,0 +1,338 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c6327800c63d2d0465e56af3aaed0d636d7cce9bd8f1ac6da5a4fd7698550fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-native-failures-ownership-learning-20261001.md",
+          "scope": "Redacted bounded evidence summary only; no raw process identities, argv, payloads, logs, credentials or secrets. Source readiness and native outcomes remain explicitly distinct.",
+          "section": "First genuine Count1 failure",
+          "sourceProof": null,
+          "summary": "First genuine failure, scanner-root cause and non-retroactive cleanup boundary.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-count1-scanner-root-miss",
+      "kind": "incident",
+      "scope": {
+        "applicability": "first genuine Count1 failure and its packaging cause; no loaded-runtime or cleanup acceptance",
+        "artifacts": [
+          "config:445ef2f576a054060a227c58d938bcc7333426f63a070192cd5f2b3ebb941a36",
+          "inventory:832eac1b7d4a5957400d9ab2db3f15dbf0168e344831b28d66401b2e05625a52"
+        ],
+        "component": "stock Rapid content discovery",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The first genuine Count1 packet failed before browser start because its complete BAR Rapid descriptor and pool were nested below runtime-data/game-content while stock Recoil scanned base, maps, games and top-level packages. Static custody and hash checks did not prove scanner reachability. The flattened successor places the descriptor in runtime-data/packages and pool as its sibling. The failed attempt has no Count1 result; its historical cleanup remains UNKNOWN even though a later census found zero current members.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "rapid",
+        "scanner-roots",
+        "preflight-blindspot",
+        "cleanup-unknown",
+        "native-0-of-6"
+      ],
+      "title": "Nested Rapid content was outside stock scanner roots"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c6327800c63d2d0465e56af3aaed0d636d7cce9bd8f1ac6da5a4fd7698550fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-native-failures-ownership-learning-20261001.md",
+          "scope": "Redacted bounded evidence summary only; no raw process identities, argv, payloads, logs, credentials or secrets. Source readiness and native outcomes remain explicitly distinct.",
+          "section": "Scanner roots and sticky ownership",
+          "sourceProof": null,
+          "summary": "Accepted exact scanner layout and preflight lesson.",
+          "verify": true
+        }
+      ],
+      "id": "architecture.stock-rapid-scanner-root-prerequisites",
+      "kind": "architecture",
+      "scope": {
+        "applicability": "stock Recoil 2639 packet construction and preflight; no native loading claim",
+        "artifacts": [],
+        "component": "stock content packaging contract",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "For stock Recoil 2639, a bounded packet must expose the Rapid descriptor directly under the admitted runtime-data/packages root and its referenced pool under sibling runtime-data/pool, or bind an explicitly configured scanner root. Static preflight must join isolation root, descriptor path, sibling pool and complete referenced bytes. Hash completeness without scanner reachability is insufficient.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "packaging",
+        "rapid",
+        "packages",
+        "pool",
+        "scanner-roots"
+      ],
+      "title": "Stock packet layout must match scanner and pool-loader roots"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c6327800c63d2d0465e56af3aaed0d636d7cce9bd8f1ac6da5a4fd7698550fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-native-failures-ownership-learning-20261001.md",
+          "scope": "Redacted bounded evidence summary only; no raw process identities, argv, payloads, logs, credentials or secrets. Source readiness and native outcomes remain explicitly distinct.",
+          "section": "Scanner roots and sticky ownership",
+          "sourceProof": null,
+          "summary": "Reproduced partial-identity defect and independently accepted atomic sticky repair.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-helper-partial-identity-upgrade",
+      "kind": "incident",
+      "scope": {
+        "applicability": "private helper ownership acquisition and cleanup truth; does not change any historical native result",
+        "artifacts": [],
+        "component": "owned native child cleanup",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "The reviewed helper published partial identity fields before all ownership checks completed. A later readable census could then authorize signalling and change identity-unknown into settled. The accepted repair keeps all ownership facts local until complete validation, publishes acquisition atomically, clears partial state on failure, makes UNKNOWN sticky, and retains a fully acquired identity across a receipt-write failure so real cleanup remains possible.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "ownership",
+        "cleanup",
+        "identity",
+        "atomic",
+        "sticky-unknown"
+      ],
+      "title": "Partial ownership acquisition could falsely upgrade cleanup"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c6327800c63d2d0465e56af3aaed0d636d7cce9bd8f1ac6da5a4fd7698550fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-native-failures-ownership-learning-20261001.md",
+          "scope": "Redacted bounded evidence summary only; no raw process identities, argv, payloads, logs, credentials or secrets. Source readiness and native outcomes remain explicitly distinct.",
+          "section": "Second genuine failure and separate cleanup result",
+          "sourceProof": null,
+          "summary": "Second genuine failure cause and attempt-scoped settled cleanup.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-count1-ai-interface-metadata-missing",
+      "kind": "incident",
+      "scope": {
+        "applicability": "second genuine attempt only; its settled cleanup does not alter the first attempt's historical UNKNOWN cleanup",
+        "artifacts": [
+          "config:7915d335e1f5ef3d2e7ef938b9729e1e9f31fea2c520f96b7334188ba822bcf3"
+        ],
+        "component": "stock AI interface discovery",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "The atomic-owned genuine operation used config 7915d335, ran about 29.887 seconds and exited 3. Engine, host and receiver identities were acquired and browser start was not reached. Cleanup for this attempt alone is positively SETTLED with zero retained members. The engine reached fixture loading but rejected both Skirmish AIs because the pinned C interface library lacked AI/Interfaces/C/0.1/InterfaceInfo.lua; the later fixture mismatch was downstream.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "ai-interface",
+        "metadata",
+        "failure-triage",
+        "cleanup-settled",
+        "browser-not-started",
+        "native-0-of-6"
+      ],
+      "title": "Missing InterfaceInfo metadata blocked the second genuine attempt"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c6327800c63d2d0465e56af3aaed0d636d7cce9bd8f1ac6da5a4fd7698550fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-native-failures-ownership-learning-20261001.md",
+          "scope": "Redacted bounded evidence summary only; no raw process identities, argv, payloads, logs, credentials or secrets. Source readiness and native outcomes remain explicitly distinct.",
+          "section": "Metadata successor and current boundary",
+          "sourceProof": null,
+          "summary": "Metadata helper and packet successor source readiness, with native acceptance explicitly open.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-ai-interface-metadata-successor-source-ready",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "source and static packet readiness only; independent review and native execution remain open",
+        "artifacts": [
+          "config:7f1c59663dca467c0e2070a519931072fc75c0aab1bd1d0a584307eac09a20bf",
+          "inventory:22364122239953dd8cfe0d1a8b0db392beab75426c31e0f133880d01f9b3f96e",
+          "helper-manifest:cce49261cd3347c61a5ef744ec0b7cb33322fd7f7debe47f89571a5b663a22dd"
+        ],
+        "component": "AI interface metadata successor",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "candidate",
+      "statement": "The successor requires the exact stock C/0.1 InterfaceInfo.lua path and canonical metadata hash before any child launch. Its helper passed 27 tests, and the joined packet config 7f1c5966 plus inventory 22364122 passed static verification. This is a source and artifact candidate awaiting independent review and a separately authorized fresh native run; it establishes no loaded identity, readiness, browser execution, Count1 or journey acceptance.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "ai-interface",
+        "source-ready",
+        "review-pending",
+        "native-open",
+        "native-0-of-6"
+      ],
+      "title": "AI interface metadata successor is source ready pending review"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c6327800c63d2d0465e56af3aaed0d636d7cce9bd8f1ac6da5a4fd7698550fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-native-failures-ownership-learning-20261001.md",
+          "scope": "Redacted bounded evidence summary only; no raw process identities, argv, payloads, logs, credentials or secrets. Source readiness and native outcomes remain explicitly distinct.",
+          "section": "Metadata successor and current boundary",
+          "sourceProof": null,
+          "summary": "Current source versus native frontier and the distinct cleanup statuses.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current frontier after two failed genuine attempts and a source-ready metadata successor",
+        "artifacts": [
+          "config:7f1c59663dca467c0e2070a519931072fc75c0aab1bd1d0a584307eac09a20bf"
+        ],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Two genuine Count1 attempts failed before browser start: the first exposed scanner-root packaging and retains historical cleanup UNKNOWN; the second exposed missing AI InterfaceInfo metadata and has attempt-scoped cleanup SETTLED. The metadata successor is source-ready but awaits independent review and a fresh root-authorized native run. Actual loaded engine, plugin and content identities for a successful run remain unproved, Count1 remains unaccepted, and all six useful-play journeys remain open at 0/6. Optional custom FR remains inactive.",
+      "supersedes": [
+        "75b1683d5660fd621abe09295a058d4ea18d83b4ce073337871d10f8d7bd5bd3"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "cleanup-scope",
+        "runtime-unknown",
+        "native-0-of-6"
+      ],
+      "title": "What remains after two genuine stock failures?"
+    }
+  ],
+  "origin": "BARC-01.5 stock native failure, scanner ownership and AI metadata learning maintenance; source corpora unchanged",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

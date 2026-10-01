@@ -1,0 +1,99 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-1ec00cfadab407df1dc03d8756b827990f6847fc",
+    "revision": "1ec00cfadab407df1dc03d8756b827990f6847fc",
+    "tree": "7c19553edc2e6d26ae6de73dbcc2a666d8bfd849",
+    "parent": "25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "status": "historical coherent build6 source; tests reported passed; native runtime observations remain absent"
+  },
+  "components": [
+    {
+      "id": "dedicated-factory-wire-membership-1ec",
+      "title": "Dedicated server factory wire link closure",
+      "paths": ["rts/builds/dedicated/CMakeLists.txt", "rts/ExternalAI/FactoryReplacementWire.cpp", "rts/Net/GameServer.cpp"],
+      "summary": "Adds the factory wire implementation directly to the dedicated source list that links GameServer decoder calls."
+    },
+    {
+      "id": "peer-observer-crash-map-1ec",
+      "title": "Peer observer ownership and lifecycle",
+      "paths": ["rts/Net/NetCommands.cpp", "rts/Net/FactoryReplacementPeerObserver.cpp", "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp"],
+      "summary": "Maps authenticated dispatch through default-off preparation, one application, const before/after observation, and bounded private evidence recording."
+    }
+  ],
+  "flows": [
+    {
+      "id": "peer-observer-lifecycle-1ec",
+      "title": "Authenticated factory packet to bounded peer record",
+      "steps": [
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "PrepareFactoryReplacementPeerObservation", "line": 842, "description": "Prepare default-off, frame-windowed capture before applying the authenticated submission."},
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "ApplySubmission", "line": 849, "description": "Apply the submission exactly once on the existing service path."},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "symbol": "Observe", "line": 482, "description": "Read origin authority, replay classification, keyed result or fence, and full ring digest through the const observer."},
+        {"path": "rts/Net/NetCommands.cpp", "symbol": "RecordFactoryReplacementPeerObservation", "line": 855, "description": "Record the before and after observations without changing application control flow."},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "symbol": "RecordImpl", "line": 265, "description": "Emit schema barc.fr5.peer-observation/1 under the bounded owned sink."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "dedicated-wire-source-closure-1ec",
+      "kind": "source-fact",
+      "statement": "The dedicated target source list now includes ExternalAI/FactoryReplacementWire.cpp, closing the source membership gap for GameServer's factory replacement decoder calls.",
+      "evidence": [
+        {"path": "rts/builds/dedicated/CMakeLists.txt", "line": 134, "symbol": "engineDedicatedSources"},
+        {"path": "rts/builds/dedicated/CMakeLists.txt", "line": 138, "symbol": "FactoryReplacementWire.cpp"},
+        {"path": "rts/Net/GameServer.cpp", "line": 1294, "symbol": "DecodeReplaceRequest"},
+        {"path": "rts/ExternalAI/FactoryReplacementWire.cpp", "line": 345, "symbol": "DecodeReplaceRequest"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["dedicated", "factory-replacement", "cmake", "link-closure", "crash-map"]
+    },
+    {
+      "id": "peer-observer-default-off-owned-bounded-1ec",
+      "kind": "source-fact",
+      "statement": "The observer is disabled without BARC_FR5_PEER_OBSERVER_ROOT and limits a process to 4,096 records and 16 MiB; its records use schema barc.fr5.peer-observation/1.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 25, "symbol": "MAX_OBSERVER_RECORDS"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 96, "symbol": "BARC_FR5_PEER_OBSERVER_ROOT"},
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 265, "symbol": "barc.fr5.peer-observation/1"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["peer-observer", "default-off", "bounded", "owned-sink", "schema-v1"]
+    },
+    {
+      "id": "peer-observer-one-apply-const-observe-1ec",
+      "kind": "source-fact",
+      "statement": "The authenticated handler surrounds exactly one ApplySubmission call with conditional observation, while the service observation path reads state without invoking a mutator.",
+      "evidence": [
+        {"path": "rts/Net/NetCommands.cpp", "line": 842, "symbol": "PrepareFactoryReplacementPeerObservation"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 849, "symbol": "ApplySubmission"},
+        {"path": "rts/Net/NetCommands.cpp", "line": 855, "symbol": "RecordFactoryReplacementPeerObservation"},
+        {"path": "rts/Sim/Units/CommandAI/FactoryReplacementSimulationService.cpp", "line": 482, "symbol": "Observe"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["exactly-once", "const-observation", "authenticated-dispatch", "nonmutation"]
+    },
+    {
+      "id": "build6-engine-adapter-tests-reported-1ec",
+      "kind": "reported-status",
+      "statement": "The retained build6 log reports successful spring-dedicated and spring-headless links, engine version 1ec00cf, all four focused engine CTests passed, and all five HighBar adapter CTests passed.",
+      "evidence": [
+        {"path": "rts/builds/dedicated/CMakeLists.txt", "line": 138, "symbol": "FactoryReplacementWire.cpp"},
+        {"path": "test/CMakeLists.txt", "line": 582, "symbol": "FactoryReplacementPeerObservation"}
+      ],
+      "confidence": "reported",
+      "tags": ["build6", "four-engine-tests", "five-adapter-tests", "reported-log"]
+    },
+    {
+      "id": "build6-native-boundary-1ec",
+      "kind": "acceptance-boundary",
+      "statement": "Build and focused CTest success do not establish installation, publication, game execution, paired peer equality, callbacks, refunds, cleanup, useful play, or native admission; native game observations remain 0 of 6.",
+      "evidence": [
+        {"path": "rts/Net/FactoryReplacementPeerObserver.cpp", "line": 265, "symbol": "barc.fr5.peer-observation/1"}
+      ],
+      "confidence": "reported",
+      "tags": ["native-0-of-6", "runtime-unknown", "no-install", "no-publication"]
+    }
+  ],
+  "open_questions": ["Will six native game observations independently confirm the accepted source and build behavior?"]
+}

@@ -1,0 +1,80 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-30fc8de4441a20dddc1595aa2e47b92bb2b5ff3d",
+    "revision": "30fc8de4441a20dddc1595aa2e47b92bb2b5ff3d",
+    "tree": "552476e7eccf6c6587c0307fa07d82aed293ce32",
+    "status": "historical product source; canonical 1ec qualification constants correct; engine artifact pin later found to name predecessor; runtime/native acceptance absent"
+  },
+  "components": [
+    {
+      "id": "factory-coherent-catalogue-gate-30fc",
+      "title": "Exact catalogue and runtime qualification gate, separate from artifact pin",
+      "paths": ["CMakeLists.txt", "src/circuit/grpc/FactoryReplacementQualification.h", "src/circuit/grpc/FactoryReplacementQualification.cpp"],
+      "summary": "Binds the final 1ec00cf catalogue identity and admits configured Count 1, 2, or 4 only after exact qualification pins, a ready probe, and a sufficient native limit. This does not prove that the separately generated engine artifact digest is coherent."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-runtime-qualification-flow-30fc",
+      "title": "Default-off configuration to qualified catalogue identity",
+      "steps": [
+        {"path": "CMakeLists.txt", "symbol": "HIGHBAR_FACTORY_REPLACEMENT_QUALIFICATION_COUNT", "line": 210, "description": "Start with empty identity pins and qualification Count 0."},
+        {"path": "CMakeLists.txt", "symbol": "peer-observer identity", "line": 236, "description": "Require the exact 1ec00cf hash, additional version, and wire identity for nonzero qualification."},
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.cpp", "symbol": "EvaluateFactoryReplacementQualification", "line": 32, "description": "Refuse disabled or invalid counts, missing pins, an unready probe, insufficient native limit, or mismatched identity."},
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.cpp", "symbol": "EvaluateFactoryReplacementQualification", "line": 41, "description": "Construct and compare the exact canonical catalogue value before marking ready."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-final-catalogue-identity-30fc",
+      "kind": "source-fact",
+      "statement": "The runtime constants bind canonical catalogue value barc-factory-atomic-v1|1ec00cf|BARC-01.5-fr5-peer-observer-v1 Headless|424152432d4652312d5245434f494c2d41544f4d49432d56312d303737463942.",
+      "evidence": [
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.h", "line": 13, "symbol": "kFactoryReplacementQualificationEngineHash"},
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.h", "line": 18, "symbol": "kFactoryReplacementQualificationEngineVersion"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["catalogue", "runtime-constants", "1ec00cf", "canonical-identity"]
+    },
+    {
+      "id": "factory-default-off-exact-runtime-gate-30fc",
+      "kind": "source-fact",
+      "statement": "Product configuration defaults to empty pins and Count 0. Runtime readiness accepts only Count 1, 2, or 4 with exact identity pins, a ready capability probe, and native limit at least the configured count; the public effective count defaults to 1 when not ready.",
+      "evidence": [
+        {"path": "CMakeLists.txt", "line": 210, "symbol": "HIGHBAR_FACTORY_REPLACEMENT_ENGINE_HASH"},
+        {"path": "CMakeLists.txt", "line": 216, "symbol": "HIGHBAR_FACTORY_REPLACEMENT_QUALIFICATION_COUNT"},
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.h", "line": 24, "symbol": "effective_count"},
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.cpp", "line": 20, "symbol": "AllowedCount"},
+        {"path": "src/circuit/grpc/FactoryReplacementQualification.cpp", "line": 32, "symbol": "EvaluateFactoryReplacementQualification"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["default-off", "public-count-1", "count-1-2-4", "fail-closed"]
+    },
+    {
+      "id": "factory-final-custody-reported-30fc",
+      "kind": "reported-status",
+      "statement": "The accepted custody report identifies successor 41aa305ce3722c6b4345ab227ff559d7e9daf31b, tree 9f24ece38d32d4cd5fb012ccfb4ebc199d11304b, as retaining the 13-commit exact 1ec source reconstruction, observer schema acknowledgment barc.fr5.peer-observation/1, eight proto inputs, and 32 generated outputs. This custody successor is provenance for the registered 30fc product source, not a promoted current pointer.",
+      "evidence": [
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 129, "symbol": "BARC_SOURCE_ONLY_CANDIDATE_ACK"},
+        {"path": "scripts/build-barc-recoil-factory-atomic.sh", "line": 134, "symbol": "qualification_count"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 83, "symbol": "Count 1, 2, 4"}
+      ],
+      "confidence": "reported",
+      "tags": ["custody", "13-commit-chain", "schema-v1", "source-only"]
+    },
+    {
+      "id": "factory-highbar-build6-boundary-30fc",
+      "kind": "reported-status",
+      "statement": "Build6 reports all five focused adapter CTests passed for this source set. Later exact-source review found that this revision's spring-headless artifact pin still named the predecessor engine digest, so these tests do not establish a coherent rebuilt plugin. They also do not admit an installed artifact or establish any native Count 1, 2, or 4 observation.",
+      "evidence": [
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 37, "symbol": "runtime literals"},
+        {"path": "tests/unit/factory_replacement_qualification_test.cc", "line": 83, "symbol": "Count 1, 2, 4"}
+      ],
+      "confidence": "reported",
+      "tags": ["build6", "five-adapter-tests", "no-artifact-admission", "native-unknown"]
+    }
+  ],
+  "open_questions": ["Will native Count 1, 2, and 4 observations satisfy the runtime gate with independently verified artifacts?"]
+}

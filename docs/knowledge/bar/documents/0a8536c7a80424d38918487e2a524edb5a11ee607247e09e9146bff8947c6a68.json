@@ -1,0 +1,401 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:beyond-all-reason/spring (Recoil engine)/rts/Lua/LuaSyncedRead.cpp",
+          "scope": "Official stock Recoil 2639 source semantics only.",
+          "section": "line:6350",
+          "sourceProof": {
+            "line": 6350,
+            "path": "rts/Lua/LuaSyncedRead.cpp",
+            "revision": "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+            "sha256": "7146e7efff68cfd038c55118011b47a3df8a96b07a65c7e590ed46496ba9e54c",
+            "source": "beyond-all-reason/spring (Recoil engine)"
+          },
+          "summary": "For a factory, GetUnitCommands selects factoryCAI->newUnitCommands, which is the rally/new-unit command queue.",
+          "verify": false
+        },
+        {
+          "basis": "observed-source",
+          "capturedAt": "2026-10-01",
+          "digest": null,
+          "kind": "source-line",
+          "locator": "source:beyond-all-reason/spring (Recoil engine)/rts/Lua/LuaSyncedRead.cpp",
+          "scope": "Official stock Recoil 2639 source semantics only.",
+          "section": "line:6392",
+          "sourceProof": {
+            "line": 6392,
+            "path": "rts/Lua/LuaSyncedRead.cpp",
+            "revision": "2639eedac7d1fd67d793ec93ebd27f014f336a14",
+            "sha256": "7146e7efff68cfd038c55118011b47a3df8a96b07a65c7e590ed46496ba9e54c",
+            "source": "beyond-all-reason/spring (Recoil engine)"
+          },
+          "summary": "GetFactoryCommands obtains the factory command AI and packs factoryCAI->commandQue, the production queue.",
+          "verify": false
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3255ff65189621bff201d68de3b9f0eb473f8c4482c321b091ebc1cd99f81f37",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-fixture-production-api-repair-3255ff65189621bff201d68de3b9f0eb473f8c4482c321b091ebc1cd99f81f37.md",
+          "scope": "Source and deterministic fixture repair only; no native engine execution or gameplay outcome.",
+          "section": "lines:1-102",
+          "sourceProof": null,
+          "summary": "The source repair switches the fixture to GetFactoryCommands, separates production and rally queues in its mock, and passes 12 focused tests including an old-API mutant.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "384cd97bccda9165d6a359d19d69c326c3715a3f020bdafe840f5f4295fd01a0",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-packet-blocked-review-384cd97bccda9165d6a359d19d69c326c3715a3f020bdafe840f5f4295fd01a0.md",
+          "scope": "Historical predecessor packet review; blocked and not runtime acceptance.",
+          "section": "lines:1-62",
+          "sourceProof": null,
+          "summary": "The immutable predecessor review records the wrong factory-queue API and inherited-umask custody failures against config 79c584, preserving the blocked history.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-fixture-factory-queue-mock-blindspot",
+      "kind": "incident",
+      "scope": {
+        "applicability": "exact official-stock API distinction and its source-test blind spot; no claim about a loaded runtime",
+        "artifacts": [
+          "fixture-zip:7f07afd19c6d8862fed995333b5bc7d269b524df34c6f6af101674c01716491a"
+        ],
+        "component": "stock fixture factory queue API",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "The predecessor fixture validated seeded production with Spring.GetUnitCommands(factory, 4), while official stock Recoil 2639 routes a factory GetUnitCommands read to newUnitCommands, the rally queue. Production is exposed by GetFactoryCommands over commandQue. The earlier mock aliased its rally and production concepts, so it could pass while exercising the wrong API. The repaired fixture uses GetFactoryCommands and its stock-faithful mock keeps a positive production queue beside an empty rally queue; an old-API mutant now refuses.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "fixture",
+        "factory-queue",
+        "rally-queue",
+        "mock-blindspot"
+      ],
+      "title": "Aliased fixture mocks hid the stock production-queue API mismatch"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c8c1f26be7d5c550c0e940be158029eae383cea7887b9632b069d146caac5fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-owned-child-umask-repair-c8c1f26be7d5c550c0e940be158029eae383cea7887b9632b069d146caac5fd6.md",
+          "scope": "Private helper source and ordinary local child-process tests only; no game, engine, browser or native journey.",
+          "section": "lines:1-66",
+          "sourceProof": null,
+          "summary": "The helper repair applies umask 077 at the single Popen child-launch seam, preserves the caller mask, and passes 21 tests including ordinary-0022 child file creation and data-root verification.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "384cd97bccda9165d6a359d19d69c326c3715a3f020bdafe840f5f4295fd01a0",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-packet-blocked-review-384cd97bccda9165d6a359d19d69c326c3715a3f020bdafe840f5f4295fd01a0.md",
+          "scope": "Historical predecessor packet review; blocked and not runtime acceptance.",
+          "section": "lines:1-62",
+          "sourceProof": null,
+          "summary": "The immutable predecessor review records the wrong factory-queue API and inherited-umask custody failures against config 79c584, preserving the blocked history.",
+          "verify": true
+        }
+      ],
+      "id": "decision.owned-child-private-umask-at-launch-seam",
+      "kind": "decision",
+      "scope": {
+        "applicability": "private helper child launches and their created files; no general process-wide umask change or native success claim",
+        "artifacts": [],
+        "component": "owned child private file custody",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "Owned native helper children now receive umask 077 through the single subprocess.Popen launch seam. This covers host, engine, receiver and browser without mutating the supervisor process mask. The prior implementation inherited an ordinary 0022 mask and allowed a child FileSink to create a 0644 file before any later verifier could repair custody. The focused regression proves child-created files are 0600, the caller remains at 0022, and actual verify_data_roots accepts the live owned child evidence.",
+      "supersedes": [],
+      "tags": [
+        "custody",
+        "umask",
+        "child-process",
+        "private-files"
+      ],
+      "title": "Set private custody at the owned child-launch seam"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "3255ff65189621bff201d68de3b9f0eb473f8c4482c321b091ebc1cd99f81f37",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-fixture-production-api-repair-3255ff65189621bff201d68de3b9f0eb473f8c4482c321b091ebc1cd99f81f37.md",
+          "scope": "Source and deterministic fixture repair only; no native engine execution or gameplay outcome.",
+          "section": "lines:1-102",
+          "sourceProof": null,
+          "summary": "The source repair switches the fixture to GetFactoryCommands, separates production and rally queues in its mock, and passes 12 focused tests including an old-API mutant.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "c8c1f26be7d5c550c0e940be158029eae383cea7887b9632b069d146caac5fd6",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-owned-child-umask-repair-c8c1f26be7d5c550c0e940be158029eae383cea7887b9632b069d146caac5fd6.md",
+          "scope": "Private helper source and ordinary local child-process tests only; no game, engine, browser or native journey.",
+          "section": "lines:1-66",
+          "sourceProof": null,
+          "summary": "The helper repair applies umask 077 at the single Popen child-launch seam, preserves the caller mask, and passes 21 tests including ordinary-0022 child file creation and data-root verification.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "a79f914f0bffb0792e05be8dc063562e5a7e4bfde3ef11e39444da6cf35746a1",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-successor-packet-materialization-a79f914f0bffb0792e05be8dc063562e5a7e4bfde3ef11e39444da6cf35746a1.md",
+          "scope": "Static successor packet materialization and inventory readback only; actual loaded identity and native result remain unknown.",
+          "section": "lines:1-85",
+          "sourceProof": null,
+          "summary": "The successor materialization joins only the two repairs, records config 445ef2 and inventory 832eac, passes static preflight, and explicitly leaves genuine execution unrun.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "620df9986751733045d29f90208cc535663cda95dd342b16f98a39155386e00a",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-successor-packet-review-620df9986751733045d29f90208cc535663cda95dd342b16f98a39155386e00a.md",
+          "scope": "Independent source/artifact readiness review only; no native admission or runtime success.",
+          "section": "lines:1-59",
+          "sourceProof": null,
+          "summary": "Independent review finds the exact successor packet ready for root admission of one Count1 smoke while keeping useful-play acceptance at 0/6 and actual loaded mappings unknown.",
+          "verify": true
+        }
+      ],
+      "id": "architecture.stock-count1-causal-readiness-join",
+      "kind": "architecture",
+      "scope": {
+        "applicability": "successor preparation for one bounded smoke; runtime mappings, producer descriptors, queue observation and cleanup remain to be observed",
+        "artifacts": [
+          "config:445ef2f576a054060a227c58d938bcc7333426f63a070192cd5f2b3ebb941a36",
+          "inventory:832eac1b7d4a5957400d9ab2db3f15dbf0168e344831b28d66401b2e05625a52",
+          "fixture-zip:7f07afd19c6d8862fed995333b5bc7d269b524df34c6f6af101674c01716491a"
+        ],
+        "component": "Count1 source and artifact readiness join",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "The bounded Count1 route has a causal readiness join: official stock production must be read through GetFactoryCommands with rally kept distinct; the fixture must finish setup before readiness and remain mutation-free afterward; every owned child must create its private files under launch-time umask 077; and the closed packet, final paths and 17 configured artifact pins must pass immutable preflight. These source and artifact conditions permit a root-owned smoke admission. They do not establish the executable, content or plugin actually loaded, nor any native journey outcome.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "Count1",
+        "causal-join",
+        "artifact-readiness",
+        "runtime-unknown"
+      ],
+      "title": "Count1 admission requires queue semantics, child custody and immutable packet readiness"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "a79f914f0bffb0792e05be8dc063562e5a7e4bfde3ef11e39444da6cf35746a1",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-successor-packet-materialization-a79f914f0bffb0792e05be8dc063562e5a7e4bfde3ef11e39444da6cf35746a1.md",
+          "scope": "Static successor packet materialization and inventory readback only; actual loaded identity and native result remain unknown.",
+          "section": "lines:1-85",
+          "sourceProof": null,
+          "summary": "The successor materialization joins only the two repairs, records config 445ef2 and inventory 832eac, passes static preflight, and explicitly leaves genuine execution unrun.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "620df9986751733045d29f90208cc535663cda95dd342b16f98a39155386e00a",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-successor-packet-review-620df9986751733045d29f90208cc535663cda95dd342b16f98a39155386e00a.md",
+          "scope": "Independent source/artifact readiness review only; no native admission or runtime success.",
+          "section": "lines:1-59",
+          "sourceProof": null,
+          "summary": "Independent review finds the exact successor packet ready for root admission of one Count1 smoke while keeping useful-play acceptance at 0/6 and actual loaded mappings unknown.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-count1-successor-packet-source-ready",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "source/artifact readiness for root admission only; not native execution, loaded identity, cleanup or gameplay acceptance",
+        "artifacts": [
+          "config:445ef2f576a054060a227c58d938bcc7333426f63a070192cd5f2b3ebb941a36",
+          "inventory:832eac1b7d4a5957400d9ab2db3f15dbf0168e344831b28d66401b2e05625a52",
+          "helper-manifest:e4dbe8d937e8776feae1a01365bddbf5d3f152d24017f183e9367e80a15d4c22",
+          "helper-checksums:59442209de763e75a0c584ae06962f8340e0d81207131273aa00fc0caada9920"
+        ],
+        "component": "successor Count1 packet qualification",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "Independent review accepts the successor packet for root admission of one bounded genuine Count1 smoke. Its config is 445ef2, packet inventory is 832eac, fixture ZIP is 7f07, helper source manifest is e4dbe8 and helper checksum inventory is 5944. Static preflight and exact copied-source tests pass, while the blocked 79c584 predecessor remains immutable history. This qualification is limited to source and artifact readiness: genuine execution was not observed, loaded executable/content/plugin identities remain unknown, and BAR useful-play acceptance remains 0/6.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "Count1",
+        "source-ready",
+        "artifact-ready",
+        "native-0-of-6"
+      ],
+      "title": "Successor Count1 packet is source and artifact ready"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "620df9986751733045d29f90208cc535663cda95dd342b16f98a39155386e00a",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-successor-packet-review-620df9986751733045d29f90208cc535663cda95dd342b16f98a39155386e00a.md",
+          "scope": "Independent source/artifact readiness review only; no native admission or runtime success.",
+          "section": "lines:1-59",
+          "sourceProof": null,
+          "summary": "Independent review finds the exact successor packet ready for root admission of one Count1 smoke while keeping useful-play acceptance at 0/6 and actual loaded mappings unknown.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "a79f914f0bffb0792e05be8dc063562e5a7e4bfde3ef11e39444da6cf35746a1",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-successor-packet-materialization-a79f914f0bffb0792e05be8dc063562e5a7e4bfde3ef11e39444da6cf35746a1.md",
+          "scope": "Static successor packet materialization and inventory readback only; actual loaded identity and native result remain unknown.",
+          "section": "lines:1-85",
+          "sourceProof": null,
+          "summary": "The successor materialization joins only the two repairs, records config 445ef2 and inventory 832eac, passes static preflight, and explicitly leaves genuine execution unrun.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current frontier after successor source/artifact readiness; genuine Count1 result, loaded identity and all useful-play journeys remain open",
+        "artifacts": [
+          "config:445ef2f576a054060a227c58d938bcc7333426f63a070192cd5f2b3ebb941a36",
+          "inventory:832eac1b7d4a5957400d9ab2db3f15dbf0168e344831b28d66401b2e05625a52"
+        ],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "The successor Count1 packet is source/artifact ready, but no genuine result is recorded here; a running private operation is not evidence of its outcome. Root must independently read back the bounded smoke. Until that evidence arrives, the executable, content and plugin actually selected and loaded remain unknown, and all six BAR useful-play journeys remain open at 0/6. Official stock source is Recoil 2639, distinct from the current registered vanilla/custom 7555 lineage; neither registration proves which binary is installed or loaded. Optional custom FR remains inactive at 0/6.",
+      "supersedes": [
+        "09e2daf19e9606aedecb8f255e7cce29d872a80409b902a4c37b4b33bf76fe0b"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "runtime-unknown",
+        "native-0-of-6"
+      ],
+      "title": "What remains after successor Count1 packet source readiness?"
+    }
+  ],
+  "origin": "BARC-01.5 stock fixture API and owned-child custody learning maintenance; source corpora unchanged",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

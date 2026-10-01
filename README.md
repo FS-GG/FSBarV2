@@ -4,6 +4,12 @@ A minimal F# library scaffold that aligns with the fsharp-opinionated
 Speckit preset: `.fsi`-gated visibility, FSI-first workflow, FAKE-free
 verification via `dotnet test`.
 
+## BAR development knowledge
+
+The [versioned project knowledge archive](docs/knowledge/bar/README.md) preserves architecture,
+decisions, incidents, fixes and qualification history across containers. It restores a compact
+searchable database without storing full source snapshots.
+
 ## Build prerequisites
 
 The F# protobuf generator is a repository-local .NET tool pinned in

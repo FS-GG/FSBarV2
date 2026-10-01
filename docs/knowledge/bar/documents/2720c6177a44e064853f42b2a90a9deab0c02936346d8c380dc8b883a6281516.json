@@ -1,0 +1,161 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-metadata",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-stock-delivery-ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185.json",
+          "scope": "Selected GitHub metadata only; no claim about installed artifacts, loaded runtime, native execution, or causality.",
+          "section": "lines:1-124",
+          "sourceProof": null,
+          "summary": "Independent API readback records both merged pull requests, current workflow state and permissions, visible workflow runs, and the exact ten-job qualification run outcomes.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "69ac3a506750f4cb5dcb5459872c1ae9288356ec5484f35a8f6148752e280c94",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-highbar-coherent-join-report-20261001.md",
+          "scope": "Named source/build report only; artifact digests establish provenance for reported products, not installation or loaded identity.",
+          "section": "lines:1-100",
+          "sourceProof": null,
+          "summary": "Coherent source report records exact plugin and overlay build digests and their source-only qualification boundary.",
+          "verify": true
+        }
+      ],
+      "id": "roadmap.stock-frontier-not-joined",
+      "kind": "roadmap-gate",
+      "scope": {
+        "applicability": "merged source heads and source-build provenance only; runtime and native acceptance remain open",
+        "artifacts": [
+          "libSkirmishAI.so sha256:d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a",
+          "barc-stock-observer-r3.sdz sha256:c7d6b583a954e7c2b0fdbb9c697355aaf1d2a1cd24049c3d30b9e01dfdd99d4c"
+        ],
+        "component": "coherent stock source delivery",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a",
+          "b787c37d20484eb66649fd9b1f98e28730492433",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": [
+          "GitHub Actions 36838356388"
+        ]
+      },
+      "state": "open",
+      "statement": "HighBar PR 12 is merged as 03de478075a588bcc93b8a9ca25cb05006a7355a and FSBar PR 11 is merged as b787c37d20484eb66649fd9b1f98e28730492433. The current registered source heads now contain the coherent stock producer and consumer. Run 36838356388 passed five hosted jobs and skipped five optional self-hosted jobs. The reported plugin d08be63906849bd9e83f758d80e42b78dec96c45f0dc889073cb57e9c7e0137a and overlay c7d6b583a954e7c2b0fdbb9c697355aaf1d2a1cd24049c3d30b9e01dfdd99d4c are source-build provenance only: installation, selection, loaded identity, native trace, and all six native journeys remain unproved, so native acceptance remains 0/6.",
+      "supersedes": [
+        "892a2c0b556c33ab635a7bcb2e2110e65f8d991969ac50b1c59f1886e3493b83",
+        "b927c0c48edcf3fac3bec1ff4d459f557661e6add713b743f07d13a546cc11be",
+        "423dae9d37d5e1684806eded50e4ae92765fa8a9669fa576f394f8fb1aaf4344",
+        "c60bd89f6bad3e61881f76e74d061621eeaf967dc0e27d5be1c8fc406e0076d3"
+      ],
+      "tags": [
+        "stock",
+        "source-delivered",
+        "runtime-open",
+        "native-0-of-6"
+      ],
+      "title": "Coherent stock producer and consumer source heads are delivered"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "40940c383a2e8abd8c2856392d386bd755ff38e5bfa12d605ed6260525cad00e",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-native-horizon-expansion-addendum-20261001.md",
+          "scope": "Planning evidence only; none of the proposed trace, harness, or private supervisor lanes is delivered by this report.",
+          "section": "lines:1-57",
+          "sourceProof": null,
+          "summary": "Horizon review identifies the legacy NativeProof host/handoff and missing production trace seams and assigns three bounded source lanes.",
+          "verify": true
+        },
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "df3ed5ebb42f5f259fbb387342d56a4e6d8a087a2a4f238a3e86d6d319918834",
+          "kind": "report",
+          "locator": "/tmp/bar-stock-trace-handoff-shape-freeze-20261001.md",
+          "scope": "Planning evidence only; frozen interfaces and tests do not establish implementation or native acceptance.",
+          "section": "lines:1-96",
+          "sourceProof": null,
+          "summary": "Trace/handoff freeze specifies the pending HighBar producer, FSBar normalizer/oracle, and private custody interfaces.",
+          "verify": true
+        },
+        {
+          "basis": "observed-metadata",
+          "capturedAt": "2026-10-01",
+          "digest": "ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185",
+          "kind": "metadata",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/github-stock-delivery-ac1ce51336cb122698e400ad6b2c7be162ada46ee64ad1de9bbd34db53315185.json",
+          "scope": "Selected GitHub metadata only; no claim about installed artifacts, loaded runtime, native execution, or causality.",
+          "section": "lines:1-124",
+          "sourceProof": null,
+          "summary": "Independent API readback records both merged pull requests, current workflow state and permissions, visible workflow runs, and the exact ten-job qualification run outcomes.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "post-delivery runtime, custody, trace, and six-journey gates",
+        "artifacts": [],
+        "component": "remaining stock native gates",
+        "feature": "useful-play-stock-route",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "03de478075a588bcc93b8a9ca25cb05006a7355a",
+          "b787c37d20484eb66649fd9b1f98e28730492433",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Source delivery no longer blocks the stock route. Remaining gates include the planned production trace and selected handoff implementation, private PID/file/FD custody, exact overlay discovery, official executable and plugin installation plus loaded identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, authenticated final reread and correlation, cleanup truth, and all required native journeys. The current NativeProof host and handoff are legacy shaped and cannot supply the missing stock trace. The HighBar trace, FSBar harness, and private supervisor lanes are planned but not delivered; native acceptance remains 0/6.",
+      "supersedes": [
+        "75b0a177c333094fc90adceb9d8908982a1b0fead2dbab725fa008d3ef73b41e",
+        "36944db0b2cfe137d02b375b30dd40da69575a747c2fed3e68a4034306235408",
+        "5722ee904a459933f7493fa9b7e6c9a98b9428a93d9ad6d7f2ee23a40abd474d",
+        "d0d0be03037173fdae8cdb35b35ff949d436a475cf00a54b992d9009540d726d",
+        "df9522e33823e4212662fd1da6e531c1e6b9b1bb57e161720fb06b60033e3bb1",
+        "eb476997872ea12b9282198bea58cba09456f3e4143d9e84508b3ec0920834fb"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "trace",
+        "native-0-of-6"
+      ],
+      "title": "What still blocks native acceptance after coherent source delivery?"
+    }
+  ],
+  "origin": "explicit transitive supersession closure for delivered stock source and remaining native gate records",
+  "schema": "fsgg.knowledge.bar-project/1"
+}

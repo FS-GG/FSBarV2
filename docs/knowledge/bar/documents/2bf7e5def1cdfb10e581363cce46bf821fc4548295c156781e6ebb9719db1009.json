@@ -1,0 +1,209 @@
+{
+  "schema": "fsgg.knowledge.bar-project/1",
+  "curatedAt": "2026-10-01",
+  "origin": "bounded final current-gates maintenance from FSBar independent source acceptance",
+  "items": [
+    {
+      "id": "qualification.stock-fsbar-consumer-source-blocked",
+      "kind": "qualification",
+      "title": "FSBar stock consumer successor accepted at source",
+      "statement": "Independent final rereview accepts FSBar d31018018db5a9bf2e6351126f6363f9af41d7a7 (tree 6cb8893dd69a08738daa5e51bcca9d067bb79f1c). It preserves the independently proven production scheme2 projection and fresh compilation fixes, requires each Append child to have the exact ordered broker-accepted, native-accepted, native-applied lifecycle, allows valid cross-child interleaving, refuses missing, extra, duplicate, contradictory, foreign or reordered evidence, and requires float32 bits to be lowercase finite hexadecimal strings. Nineteen tests and independent valid/counterexample probes pass. This is source acceptance, not joined delivery or native acceptance.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "FSBar stock consumer and evidence oracle",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "source accepted for reviewed consumer/oracle scope; production trace custody and joins remain open"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-lifecycle-independent-source-review-20261001.md",
+          "digest": "ad17d999d1eba5e142bb73b60645e10d5f8daacf9e81d714f5b3d8ff9a5ed256",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "Independent final rereview closes B3a/B3b and retains prior B1/B2 production proofs.",
+          "basis": "observed-document",
+          "scope": "Exact independent source rereview only; no coherent delivery, installed artifact, runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "source-accepted"
+      ],
+      "supersedes": [
+        "790d3ae6babefdb556c71220cc9b1d80fc242966c712bd7a9e754b8ee2b10603",
+        "960958e8f3cc11bef82ecf496895ef906d3fe9377bd20f81d97cfcd9d71488bd"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "qualification.stock-fsbar-lifecycle-repair-candidate",
+      "kind": "qualification",
+      "title": "FSBar lifecycle and typed float repair independently accepted",
+      "statement": "Independent final rereview accepts FSBar d31018018db5a9bf2e6351126f6363f9af41d7a7 (tree 6cb8893dd69a08738daa5e51bcca9d067bb79f1c). It preserves the independently proven production scheme2 projection and fresh compilation fixes, requires each Append child to have the exact ordered broker-accepted, native-accepted, native-applied lifecycle, allows valid cross-child interleaving, refuses missing, extra, duplicate, contradictory, foreign or reordered evidence, and requires float32 bits to be lowercase finite hexadecimal strings. Nineteen tests and independent valid/counterexample probes pass. This is source acceptance, not joined delivery or native acceptance.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "FSBar stock result lifecycle oracle",
+        "lineage": "stock",
+        "repositories": [
+          "FSBar"
+        ],
+        "revisions": [
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "reported repair candidate independently rereviewed and source accepted; no runtime acceptance"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "accepted",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-lifecycle-independent-source-review-20261001.md",
+          "digest": "ad17d999d1eba5e142bb73b60645e10d5f8daacf9e81d714f5b3d8ff9a5ed256",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "Independent rereview executes 19 tests plus valid interleaving and malformed evidence probes.",
+          "basis": "observed-document",
+          "scope": "Exact independent source rereview only; no coherent delivery, installed artifact, runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "source-accepted"
+      ],
+      "supersedes": [
+        "c3f98848a5579e3a0ba10e75c8b637b7b06f99ae512b77ddd8ce57a789d2e05b"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "roadmap.stock-frontier-not-joined",
+      "kind": "roadmap-gate",
+      "title": "Current stock source frontier is accepted but not joined",
+      "statement": "Lua c147, HighBar c7ba, and FSBar d310 are independently source accepted within their reviewed scopes. Their coherent protected joins are only prepared and have not been delivered, merged, installed, selected, loaded, or exercised natively. Final joined plugin/content custody and all runtime gates remain open. Optional FR1-FR6 remain inactive, native acceptance remains reported 0/6, and actual runtime identity remains unknown.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "coherent stock source join",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "all three reviewed source components accepted; coherent delivery and runtime qualification open"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-lifecycle-independent-source-review-20261001.md",
+          "digest": "ad17d999d1eba5e142bb73b60645e10d5f8daacf9e81d714f5b3d8ff9a5ed256",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "FSBar final source acceptance retains production trace, coherent join and native gates.",
+          "basis": "observed-document",
+          "scope": "Exact independent source rereview only; no coherent delivery, installed artifact, runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "source-accepted"
+      ],
+      "supersedes": [
+        "423dae9d37d5e1684806eded50e4ae92765fa8a9669fa576f394f8fb1aaf4344",
+        "c60bd89f6bad3e61881f76e74d061621eeaf967dc0e27d5be1c8fc406e0076d3"
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "title": "What still blocks stock native acceptance after all three source acceptances?",
+      "statement": "Lua c147, HighBar c7ba, and FSBar d310 source gates are independently accepted. Open gates are coherent protected delivery, final joined plugin and content rebuild/readback, exact overlay discovery, official executable selection and loaded identity, real CallRules and signed-zero transport, catalogue/content/profile/actor-lifetime binding, production trace custody, final reread/equality, and all required native journeys. Native acceptance remains reported 0/6; source acceptance is not merged delivery or runtime completion.",
+      "scope": {
+        "feature": "useful-play-stock-route",
+        "component": "remaining stock gates",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "c1471bb2fae0c680f0bdecb62ad3d051b8ef422e",
+          "c7ba253688b1fb5cf328a7bb3c09761d31387d1f",
+          "d31018018db5a9bf2e6351126f6363f9af41d7a7"
+        ],
+        "artifacts": [],
+        "runs": [],
+        "applicability": "open delivery and runtime gates after three independent source acceptances"
+      },
+      "asOf": "2026-10-01",
+      "eventDate": "2026-10-01",
+      "state": "open",
+      "basis": "observed-document",
+      "evidence": [
+        {
+          "kind": "report",
+          "locator": "/tmp/bar-stock-fsbar-lifecycle-independent-source-review-20261001.md",
+          "digest": "ad17d999d1eba5e142bb73b60645e10d5f8daacf9e81d714f5b3d8ff9a5ed256",
+          "capturedAt": "2026-10-01",
+          "section": "lines:1-35",
+          "summary": "FSBar source acceptance closes the last current source review blocker while retaining joins and runtime gates.",
+          "basis": "observed-document",
+          "scope": "Exact independent source rereview only; no coherent delivery, installed artifact, runtime, or native acceptance.",
+          "verify": true,
+          "sourceProof": null
+        }
+      ],
+      "tags": [
+        "stock",
+        "current-gates",
+        "source-accepted"
+      ],
+      "supersedes": [
+        "5722ee904a459933f7493fa9b7e6c9a98b9428a93d9ad6d7f2ee23a40abd474d",
+        "d0d0be03037173fdae8cdb35b35ff949d436a475cf00a54b992d9009540d726d",
+        "df9522e33823e4212662fd1da6e531c1e6b9b1bb57e161720fb06b60033e3bb1",
+        "eb476997872ea12b9282198bea58cba09456f3e4143d9e84508b3ec0920834fb"
+      ],
+      "conflicts": []
+    }
+  ]
+}

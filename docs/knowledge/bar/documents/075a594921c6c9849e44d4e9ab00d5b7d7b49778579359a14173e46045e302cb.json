@@ -1,0 +1,91 @@
+{
+  "source": {
+    "name": "HighBarV3",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/HighBarV3-0676ccb0d1116ecc40c6346a2aaf5ebb7691a648",
+    "revision": "0676ccb0d1116ecc40c6346a2aaf5ebb7691a648",
+    "status": "historical candidate; not current"
+  },
+  "components": [
+    {
+      "id": "factory-peer-single-owner-producer-0676",
+      "title": "Single local coordinator owner and replacement evidence sink",
+      "paths": [
+        "src/circuit/module/GrpcGatewayModule.cpp",
+        "src/circuit/grpc/FactoryReplacementEvidenceSink.cpp"
+      ],
+      "summary": "Only the configured local AI owner starts coordinator client mode; polled replacement outcomes may be appended to a bounded private evidence sink."
+    },
+    {
+      "id": "factory-peer-fence-consumer-gap-0676",
+      "title": "Fence result consumer without peer evidence publication",
+      "paths": ["src/circuit/module/GrpcGatewayModule.cpp"],
+      "summary": "Fence results update or clear local active fence state and reset the pending request, while the indexed evidence append path is attached to polled replacement outcomes."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-peer-owner-result-and-fence-flow-0676",
+      "title": "Local owner result evidence and fence consumption",
+      "steps": [
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "CoordinatorOwnerSkirmishAiId", "line": 358, "description": "Choose one configured coordinator owner AI, defaulting to AI ID zero."},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "GrpcGatewayModule initialization", "line": 551, "description": "Enable coordinator client mode only for that local owner and skip it for other local AI instances."},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "factory fence poll", "line": 2202, "description": "Read and correlate the pending fence result, update local active fence state, then consume the pending request."},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "symbol": "factory replacement outcome poll", "line": 2315, "description": "Poll replacement outcomes and append correlated replacement evidence through the configured evidence sink."},
+        {"path": "src/circuit/grpc/FactoryReplacementEvidenceSink.cpp", "symbol": "FactoryReplacementEvidenceSink::Create", "line": 66, "description": "Create an exclusive regular mode-0600 result file below an owned canonical mode-0700 root."}
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-peer-highbar-single-owner-0676",
+      "kind": "source-fact",
+      "statement": "Coordinator client mode is owned by one configured local AI, default AI ID zero, and is skipped for other local AI instances.",
+      "evidence": [
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 358, "symbol": "CoordinatorOwnerSkirmishAiId"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 551, "symbol": "HIGHBAR_COORDINATOR"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "highbar", "local-owner", "producer"]
+    },
+    {
+      "id": "factory-peer-highbar-replacement-sink-0676",
+      "kind": "source-fact",
+      "statement": "Polled replacement outcomes are correlated with pending children and appended to the bounded private evidence sink; sink creation enforces a canonical owned mode-0700 root and an exclusive regular mode-0600 file.",
+      "evidence": [
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2315, "symbol": "factory replacement outcome poll"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2329, "symbol": "FactoryReplacementEvidenceSink::Append"},
+        {"path": "src/circuit/grpc/FactoryReplacementEvidenceSink.cpp", "line": 66, "symbol": "FactoryReplacementEvidenceSink::Create"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "highbar", "result", "evidence-sink"]
+    },
+    {
+      "id": "factory-peer-highbar-fence-not-published-0676",
+      "kind": "acceptance-boundary",
+      "statement": "The indexed fence branch consumes a correlated fence result into local active-fence fields and clears the pending request; the evidence-sink append shown in this module occurs in the separate replacement-outcome poll path.",
+      "evidence": [
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2202, "symbol": "factory fence poll"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2228, "symbol": "factory fence poll"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2329, "symbol": "FactoryReplacementEvidenceSink::Append"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "fence", "publication-gap", "acceptance-boundary"]
+    },
+    {
+      "id": "factory-peer-highbar-not-independent-0676",
+      "kind": "runtime-unknown",
+      "statement": "The local owner producer can supply a correlated replacement result, but this source does not provide an independently emitted peer-B service result or fence record. Runtime peer agreement remains unknown.",
+      "evidence": [
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 551, "symbol": "HIGHBAR_COORDINATOR"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2202, "symbol": "factory fence poll"},
+        {"path": "src/circuit/module/GrpcGatewayModule.cpp", "line": 2315, "symbol": "factory replacement outcome poll"}
+      ],
+      "confidence": "inference",
+      "tags": ["factory-replacement", "two-peer", "independence", "runtime-unknown"]
+    }
+  ],
+  "open_questions": [
+    "Which peer-local observer will publish fence and replacement service records on both actual simulation clients?",
+    "How will the root join each record to its producing process, synchronized interval and immutable packet without copying the owner producer result?"
+  ]
+}

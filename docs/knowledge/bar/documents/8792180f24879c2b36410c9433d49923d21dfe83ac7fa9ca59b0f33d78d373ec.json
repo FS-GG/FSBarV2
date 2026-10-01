@@ -1,0 +1,95 @@
+{
+  "source": {
+    "name": "beyond-all-reason/spring (Recoil engine)",
+    "root": "/home/developer/.local/share/fsgg/knowledge/bar/corpus/Recoil-25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "revision": "25f6d81561bf872ff4030a68c72da1c1e0fbd891",
+    "tree": "3c4b18de8403168ce9ca513c491409b919384f49",
+    "status": "historical source with reported dedicated link failure; successor binding unknown"
+  },
+  "components": [
+    {
+      "id": "factory-dedicated-wire-link-gap-25f6",
+      "title": "Dedicated server factory wire source gap",
+      "paths": [
+        "rts/Net/GameServer.cpp",
+        "rts/ExternalAI/FactoryReplacementWire.cpp",
+        "rts/ExternalAI/CMakeLists.txt",
+        "rts/builds/dedicated/CMakeLists.txt"
+      ],
+      "summary": "GameServer calls factory wire decoders, while the dedicated source list does not include the ExternalAI source set that owns their definitions."
+    }
+  ],
+  "flows": [
+    {
+      "id": "factory-dedicated-decode-link-flow-25f6",
+      "title": "Dedicated packet validation to missing linked definition",
+      "steps": [
+        {
+          "path": "rts/Net/GameServer.cpp",
+          "symbol": "DecodeReplaceRequest",
+          "line": 1290,
+          "description": "Classify the incoming factory message and call the replacement or fence decoder."
+        },
+        {
+          "path": "rts/ExternalAI/FactoryReplacementWire.cpp",
+          "symbol": "DecodeReplaceRequest",
+          "line": 345,
+          "description": "Provide the replacement decoder definition in the ExternalAI wire translation unit."
+        },
+        {
+          "path": "rts/ExternalAI/CMakeLists.txt",
+          "symbol": "sources_engine_ExternalAI",
+          "line": 14,
+          "description": "Register FactoryReplacementWire.cpp in the full engine ExternalAI source set."
+        },
+        {
+          "path": "rts/builds/dedicated/CMakeLists.txt",
+          "symbol": "engineDedicatedSources",
+          "line": 134,
+          "description": "Assemble the separate dedicated source list without the ExternalAI source set."
+        }
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "factory-dedicated-source-binding-gap-25f6",
+      "kind": "source-fact",
+      "statement": "GameServer calls DecodeReplaceRequest and DecodeFenceRequest, whose implementations live in FactoryReplacementWire.cpp. That file belongs to sources_engine_ExternalAI, while the separate engineDedicatedSources list includes NetServer and selected engine files but does not include sources_engine_ExternalAI.",
+      "evidence": [
+        {"path": "rts/Net/GameServer.cpp", "line": 1290, "symbol": "factory replacement decode"},
+        {"path": "rts/ExternalAI/FactoryReplacementWire.cpp", "line": 345, "symbol": "DecodeReplaceRequest"},
+        {"path": "rts/ExternalAI/CMakeLists.txt", "line": 14, "symbol": "FactoryReplacementWire.cpp"},
+        {"path": "rts/builds/dedicated/CMakeLists.txt", "line": 134, "symbol": "engineDedicatedSources"}
+      ],
+      "confidence": "observed-source",
+      "tags": ["factory-replacement", "dedicated", "cmake", "link-source-gap"]
+    },
+    {
+      "id": "factory-build5-terminal-link-failure-25f6",
+      "kind": "reported-status",
+      "statement": "Build 5 is reported terminal FAILED at 2529 of 2532 only while linking spring-dedicated, with an unresolved factory_replacement::DecodeReplaceRequest reference from GameServer. The partially linked headless result is diagnostic only and not admitted; CTests did not run.",
+      "evidence": [
+        {"path": "rts/Net/GameServer.cpp", "line": 1294, "symbol": "DecodeReplaceRequest"},
+        {"path": "rts/builds/dedicated/CMakeLists.txt", "line": 165, "symbol": "engine-dedicated"}
+      ],
+      "confidence": "reported",
+      "tags": ["build5-failed", "2529-of-2532", "undefined-reference", "ctest-not-run"]
+    },
+    {
+      "id": "factory-build5-admission-boundary-25f6",
+      "kind": "acceptance-boundary",
+      "statement": "The headless partial result and the source diagnosis do not establish a complete build, CTest success, final canonical successor binding, native readiness, or runtime acceptance. HighBar and FSBar successor freezes remain dependent on the final Recoil source identity.",
+      "evidence": [
+        {"path": "rts/builds/dedicated/CMakeLists.txt", "line": 164, "symbol": "engine-dedicated"},
+        {"path": "rts/CMakeLists.txt", "line": 148, "symbol": "sources_engine_ExternalAI"}
+      ],
+      "confidence": "inference",
+      "tags": ["partial-diagnostic", "successor-unknown", "runtime-unknown", "no-native-acceptance"]
+    }
+  ],
+  "open_questions": [
+    "Which exact successor binds the required factory wire implementation into spring-dedicated?",
+    "What final canonical seven-character Recoil identity will downstream HighBar and FSBar bind?"
+  ]
+}

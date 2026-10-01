@@ -1,0 +1,176 @@
+{
+  "curatedAt": "2026-10-01",
+  "items": [
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "f29fd0796189f6a83f641170817c06892c773a8e8b27543eeca7b8bbc93891cd",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-runtime-written-settings-custody-20261001.md",
+          "scope": "Safe bounded review summary; excludes command vectors, process identities, payloads, raw logs, credentials and secrets.",
+          "section": "complete document",
+          "sourceProof": null,
+          "summary": "Independent C2 review proves pre-run versus post-run byte drift and the restore requirement.",
+          "verify": true
+        }
+      ],
+      "id": "incident.stock-runtime-written-settings-custody",
+      "kind": "incident",
+      "scope": {
+        "applicability": "stock packet materialization after any native run; no claim about the runtime effect of added settings",
+        "artifacts": [
+          "accepted-settings:57d8992411a23517b273656344201321f7968cc9e542cb83dfa0604d34ef7fd3",
+          "runtime-written-settings:c40b3993a152bb8204c1304eefc87628516a4eb23c64226fc370a828b23f74cb"
+        ],
+        "component": "packet input/output custody",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "accepted",
+      "statement": "A genuine engine run rewrote the admitted 93-byte springsettings.cfg (57d899...) into a 1,864-byte runtime output (c40b39...), including VSyncGame 0 to -1. The next packet copied and inventoried those post-run bytes, so internal hash consistency masked a provenance break. Mutable runtime material must be separated from immutable packet input, or every successor must restore and reverify admitted pre-run bytes before deriving new identities.",
+      "supersedes": [],
+      "tags": [
+        "stock",
+        "custody",
+        "runtime-write",
+        "immutable-input",
+        "packet-drift",
+        "preflight-blindspot"
+      ],
+      "title": "Runtime-written settings contaminated a metadata-only successor"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "f29fd0796189f6a83f641170817c06892c773a8e8b27543eeca7b8bbc93891cd",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-runtime-written-settings-custody-20261001.md",
+          "scope": "Safe bounded review summary; excludes command vectors, process identities, payloads, raw logs, credentials and secrets.",
+          "section": "complete document",
+          "sourceProof": null,
+          "summary": "C2 review accepts metadata source but blocks the exact packet on copied post-run settings.",
+          "verify": true
+        }
+      ],
+      "id": "qualification.stock-ai-interface-metadata-successor-source-ready",
+      "kind": "qualification",
+      "scope": {
+        "applicability": "metadata source/layout accepted; exact joined packet blocked on configuration custody",
+        "artifacts": [
+          "blocked-config:7f1c59663dca467c0e2070a519931072fc75c0aab1bd1d0a584307eac09a20bf",
+          "accepted-settings:57d8992411a23517b273656344201321f7968cc9e542cb83dfa0604d34ef7fd3"
+        ],
+        "component": "AI metadata packet qualification",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "observed",
+      "statement": "Independent review accepts the exact stock InterfaceInfo.lua bytes, versioned placement, helper preflight join and unchanged ownership/cleanup source. The joined config 7f1c5966 packet is blocked because it copied runtime-written c40 settings instead of admitted 57d settings. A new packet must restore the accepted 93-byte input and regenerate identities before review; no retry or native acceptance is authorized.",
+      "supersedes": [
+        "5655d41f44311ab59418ce71c2a343d2e756696c01ea116bcd717a54a288f15c"
+      ],
+      "tags": [
+        "stock",
+        "ai-interface",
+        "source-accepted",
+        "packet-blocked",
+        "custody"
+      ],
+      "title": "AI metadata repair accepted but its joined packet is blocked"
+    },
+    {
+      "asOf": "2026-10-01",
+      "basis": "observed-document",
+      "conflicts": [],
+      "eventDate": "2026-10-01",
+      "evidence": [
+        {
+          "basis": "observed-document",
+          "capturedAt": "2026-10-01",
+          "digest": "f29fd0796189f6a83f641170817c06892c773a8e8b27543eeca7b8bbc93891cd",
+          "kind": "report",
+          "locator": "/home/developer/.local/share/fsgg/knowledge/bar/evidence/bar-stock-runtime-written-settings-custody-20261001.md",
+          "scope": "Safe bounded review summary; excludes command vectors, process identities, payloads, raw logs, credentials and secrets.",
+          "section": "complete document",
+          "sourceProof": null,
+          "summary": "Current gate includes restoration of admitted settings without changing attempt-scoped cleanup history.",
+          "verify": true
+        }
+      ],
+      "id": "question.next-native-stock-gates",
+      "kind": "question",
+      "scope": {
+        "applicability": "current frontier after C2 packet review",
+        "artifacts": [
+          "accepted-settings:57d8992411a23517b273656344201321f7968cc9e542cb83dfa0604d34ef7fd3"
+        ],
+        "component": "remaining stock native gates",
+        "feature": "BARC-01.5",
+        "lineage": "stock",
+        "repositories": [
+          "HighBarV3",
+          "FSBar",
+          "Recoil",
+          "Game"
+        ],
+        "revisions": [
+          "f08555372168cd911f438de0be5ec2898fd1cfb5",
+          "6b9139e83334da903ea6861adb57d97578af2239",
+          "2639eedac7d1fd67d793ec93ebd27f014f336a14"
+        ],
+        "runs": []
+      },
+      "state": "open",
+      "statement": "Two genuine Count1 attempts remain failed before browser start. The first has historical cleanup UNKNOWN; the second has attempt-scoped cleanup SETTLED. AI metadata source/layout is accepted, but config 7f1c5966 is blocked because it incorporated runtime-written settings. The next source/artifact gate is a fresh immutable packet restored from the admitted 57d settings plus the accepted metadata repair, followed by independent review and a new root-authorized run. Actual successful loaded identities, Count1 and all six useful-play journeys remain open at 0/6.",
+      "supersedes": [
+        "48423efdbf18c3a7868ab9602908dfab35e991e647de6b20952f1d9aa9430bfe"
+      ],
+      "tags": [
+        "stock",
+        "native-gates",
+        "packet-blocked",
+        "cleanup-scope",
+        "native-0-of-6"
+      ],
+      "title": "What remains after the metadata packet custody review?"
+    }
+  ],
+  "origin": "BARC-01.5 runtime-written settings custody review supersession; source corpora unchanged",
+  "schema": "fsgg.knowledge.bar-project/1"
+}
