@@ -15,6 +15,15 @@ Every appended revision needs fresh validation for BrowserAdmission, Normalizati
 Release. Prefix mutation, truncation, producer/log/source identity drift, contradictory
 root history, and unavailable observations revoke the scope irreversibly.
 
+Before it reads a request, the executable accepts only
+`--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
+five-file managed census, PDB/source provenance, protected source graph, the complete
+selected hostfxr and shared-framework directory census, and selected runtime mappings.
+It emits a ready envelope, evaluates one request, rechecks the same closure, and emits a
+completed envelope bound to the same digest and invocation. Bounds are 1 MiB for the
+manifest, 1024 files, 1 GiB aggregate, 256 MiB per file, 4 MiB of proc maps, and 1024
+distinct file-backed mapping paths.
+
 The private Python adapter remains responsible only for Linux descriptor/process custody,
 bounded exact-length reads, prefix comparison, invoking this pinned executable, and closing
 its held FD. The F# CLI receives bounded JSON through stdin and returns a closed decision

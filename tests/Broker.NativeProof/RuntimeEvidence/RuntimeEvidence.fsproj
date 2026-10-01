@@ -7,6 +7,6 @@
   <ItemGroup>
     <Compile Include="DataRootPolicy.fsi"/><Compile Include="DataRootPolicy.fs"/>
     <Compile Include="GrowingLogEvidence.fsi"/><Compile Include="GrowingLogEvidence.fs"/>
-    <Compile Include="Codec.fs"/><Compile Include="Program.fs"/>
+    <Compile Include="Codec.fs"/><Compile Include="PolicyClosure.fs"/><Compile Include="PolicyInvocation.fs"/><Compile Include="Program.fs"/>
   </ItemGroup>
 </Project>

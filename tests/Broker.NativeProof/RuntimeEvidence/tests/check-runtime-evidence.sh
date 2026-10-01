@@ -5,7 +5,7 @@ export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-4}"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky)$' --seed 424242 --max-samples 1
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky)$' --seed 424242 --max-samples 1
 quint run "$ROOT/GrowingLogEvidence.qnt" --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 TMP=$(mktemp -d)
 trap 'python3 - "$TMP" <<'"'"'PY'"'"'

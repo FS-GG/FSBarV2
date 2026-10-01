@@ -138,3 +138,15 @@ module GrowingLogEvidence {
     intendedBoundaryIsClosed,
   }
 }
+
+module PolicyInvocationEvidence {
+  type Invocation = { phase: str, invocationId: str, closure: str, authority: bool, stickyInvalid: bool }
+  var invocation: Invocation
+  action policyInit = invocation' = { phase: "none", invocationId: "none", closure: "none", authority: false, stickyInvalid: false }
+  action beginPolicy(id: str, closure: str): bool = all { invocation.phase == "none" or invocation.phase == "completed", id != "none", closure != "none", invocation' = { phase: "started", invocationId: id, closure: closure, authority: false, stickyInvalid: false } }
+  action readyPolicy(id: str, closure: str): bool = all { invocation.phase == "started", invocation.invocationId == id, invocation.closure == closure, invocation' = { ...invocation, phase: "ready" } }
+  action evaluatedPolicy(id: str, closure: str): bool = all { invocation.phase == "ready", invocation.invocationId == id, invocation.closure == closure, invocation' = { ...invocation, phase: "evaluated" } }
+  action completePolicy(id: str, closure: str): bool = all { invocation.phase == "evaluated", invocation.invocationId == id, invocation.closure == closure, invocation' = { ...invocation, phase: "completed", authority: true } }
+  action policyDrift = all { invocation.phase != "none", invocation' = { ...invocation, phase: "invalid", authority: false, stickyInvalid: true } }
+  val invocationInvariant = all { not(invocation.authority) or invocation.phase == "completed", not(invocation.stickyInvalid) or invocation.phase == "invalid" }
+}

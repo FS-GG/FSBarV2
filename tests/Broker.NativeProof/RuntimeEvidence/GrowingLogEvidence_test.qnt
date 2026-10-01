@@ -1,5 +1,6 @@
 module GrowingLogEvidence_test {
   import GrowingLogEvidence.* from "./GrowingLogEvidence"
+  import PolicyInvocationEvidence.* from "./GrowingLogEvidence"
 
   run healthyBoundaries = init.then(acquire).then(sampleInitial).then(validate("browser"))
     .then(consume("browser")).then(benignAppend).then(validate("normalization"))
@@ -38,4 +39,13 @@ module GrowingLogEvidence_test {
   run wrongGenerationIsSticky = init.then(acquire).then(sampleInitial).then(wrongGeneration).then(close).expect(invariant and evidence.stickyInvalid)
   run wrongSourceIsSticky = init.then(acquire).then(sampleInitial).then(wrongSource).then(close).expect(invariant and evidence.stickyInvalid)
   run contradictorySuffixIsSticky = init.then(acquire).then(sampleInitial).then(contradictorySuffix).then(close).expect(invariant and evidence.stickyInvalid)
+
+  run policyInvocationCompletesSameClosure = policyInit.then(beginPolicy("invocation", "closure"))
+    .then(readyPolicy("invocation", "closure")).then(evaluatedPolicy("invocation", "closure"))
+    .then(completePolicy("invocation", "closure"))
+    .expect(invocationInvariant and invocation.authority and invocation.phase == "completed")
+
+  run policyClosureDriftIsSticky = policyInit.then(beginPolicy("invocation", "closure"))
+    .then(readyPolicy("invocation", "closure")).then(policyDrift)
+    .expect(invocationInvariant and not(invocation.authority) and invocation.stickyInvalid)
 }
