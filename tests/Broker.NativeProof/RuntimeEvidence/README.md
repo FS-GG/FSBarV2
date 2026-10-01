@@ -17,12 +17,22 @@ root history, and unavailable observations revoke the scope irreversibly.
 
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
-five-file managed census, PDB/source provenance, protected source graph, the complete
-selected hostfxr and shared-framework directory census, and selected runtime mappings.
+five-file managed census, exact provenance census, PDB-embedded SourceLink, source identity
+objects, build receipt and helper manifest. It also verifies the complete selected hostfxr
+and shared-framework directory census, five distinct runtime roles, loader search layout,
+and every observed filesystem-backed mapping with device, inode, ownership, mode and hash.
 It emits a ready envelope, evaluates one request, rechecks the same closure, and emits a
 completed envelope bound to the same digest and invocation. Bounds are 1 MiB for the
 manifest, 1024 files, 1 GiB aggregate, 256 MiB per file, 4 MiB of proc maps, and 1024
 distinct file-backed mapping paths.
+
+The manifest and v2 growing-log identity carry both apphost and complete-closure digests.
+A closure change on a retained growing-log scope is sticky invalid. The final child step
+rereads and rehashes the manifest, every file, every directory census and actual mappings.
+The disposable fixture uses owner-private directories and read-only checkpoint modes. This
+is a bounded observed checkpoint, not a claim that mode 0444 bytes owned by the invoking UID
+are immutable against that owner. Root adoption must supply its separate concurrency and
+filesystem trust decision.
 
 The private Python adapter remains responsible only for Linux descriptor/process custody,
 bounded exact-length reads, prefix comparison, invoking this pinned executable, and closing
@@ -46,6 +56,7 @@ assembly, and Quint executable bytes. Action mapping is:
 | --- | --- |
 | `acquire` | `GrowingLogEvidence.acquire` |
 | `sampleInitial`, `benignAppend` | `GrowingLogEvidence.sample` |
+| `beginPolicy`, `readyPolicy`, `evaluatedPolicy`, `completePolicy` | typed `PolicyInvocation` transitions around the same production evaluation |
 | `validate:<boundary>` | `GrowingLogEvidence.validate` |
 | `consume:<boundary>` | `GrowingLogEvidence.consume` |
 | mutation/unavailable actions | refused or unknown sticky transitions |

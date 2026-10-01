@@ -15,9 +15,14 @@ module Program =
         try
             if argv.Length<>6 then invalidOp "closed policy argv"
             let invocation=argument "--invocation-id" argv
-            let closure=PolicyClosure.loadAndVerify (argument "--closure-manifest" argv) (argument "--closure-sha256" argv) invocation
+            let manifestPath=argument "--closure-manifest" argv
+            let closureSha=argument "--closure-sha256" argv
+            let closure=PolicyClosure.loadAndVerify manifestPath closureSha invocation
             PolicyClosure.verifyCurrentProcess closure
-            Console.Out.WriteLine(PolicyInvocation.ready invocation closure.ManifestSha256 Environment.ProcessId (startTicks()) (uid()))
+            let identity={ InvocationId=invocation;ClosureSha256=closure.ManifestSha256;Pid=Environment.ProcessId;StartTicks=startTicks();Uid=uid() }
+            let started=PolicyInvocation.beginInvocation identity PolicyInvocation.empty |> PolicyInvocation.requireAccepted
+            let ready=PolicyInvocation.ready identity started |> PolicyInvocation.requireAccepted
+            Console.Out.WriteLine(PolicyInvocation.readyFrame identity ready)
             Console.Out.Flush()
             use input=Console.OpenStandardInput()
             use buffer=new MemoryStream()
@@ -28,9 +33,11 @@ module Program =
                 total <- total+count
                 if total>6*1024*1024 then raise(InvalidDataException("input bound"))
                 buffer.Write(block,0,count);count<-input.Read(block,0,block.Length)
-            let result=Codec.evaluate(buffer.ToArray())
-            PolicyClosure.verifyCurrentProcess closure
-            Console.Out.WriteLine(PolicyInvocation.completed invocation closure.ManifestSha256 result)
+            let result=Codec.evaluate closure.ApphostSha256 closure.ManifestSha256 (buffer.ToArray())
+            let evaluated=PolicyInvocation.evaluated identity ready |> PolicyInvocation.requireAccepted
+            PolicyClosure.revalidate manifestPath closureSha invocation closure |> ignore
+            let completed=PolicyInvocation.complete identity true evaluated |> PolicyInvocation.requireAccepted
+            Console.Out.WriteLine(PolicyInvocation.completedFrame identity completed result)
             Console.Out.Flush();0
         with _ ->
             Console.Error.WriteLine("UNAVAILABLE: bounded growing-log policy input required")

@@ -15,6 +15,9 @@ module GrowingLogEvidence {
     writerPresent: bool,
     authorityActive: bool,
     stickyInvalid: bool,
+    policyPhase: str,
+    policyInvocation: str,
+    policyClosure: str,
   }
 
   var evidence: Evidence
@@ -24,6 +27,29 @@ module GrowingLogEvidence {
     consumedRevision: 0, consumedBoundary: "none", intendedBoundary: "none", producerMatches: false,
     logMatches: false, sourceMatches: false, rootsValid: false,
     prefixIntact: false, writerPresent: false, authorityActive: false, stickyInvalid: false,
+    policyPhase: "none", policyInvocation: "none", policyClosure: "none",
+  }
+
+  action beginPolicy(invocation: str, closure: str): bool = all {
+    evidence.phase == "sampled", evidence.policyPhase == "none",
+    invocation != "none", closure != "none",
+    evidence' = { ...evidence, policyPhase: "started", policyInvocation: invocation, policyClosure: closure }
+  }
+  action readyPolicy(invocation: str, closure: str): bool = all {
+    evidence.policyPhase == "started", evidence.policyInvocation == invocation, evidence.policyClosure == closure,
+    evidence' = { ...evidence, policyPhase: "ready" }
+  }
+  action evaluatedPolicy(invocation: str, closure: str): bool = all {
+    evidence.policyPhase == "ready", evidence.policyInvocation == invocation, evidence.policyClosure == closure,
+    evidence' = { ...evidence, policyPhase: "evaluated" }
+  }
+  action completePolicy(invocation: str, closure: str): bool = all {
+    evidence.policyPhase == "evaluated", evidence.policyInvocation == invocation, evidence.policyClosure == closure,
+    evidence' = { ...evidence, policyPhase: "completed" }
+  }
+  action policyDrift = all {
+    evidence.policyPhase != "none", evidence.policyPhase != "invalid",
+    evidence' = { ...evidence, phase: "invalid", policyPhase: "invalid", stickyInvalid: true, authorityActive: false }
   }
 
   action acquire = all {
@@ -52,6 +78,7 @@ module GrowingLogEvidence {
 
   action consume(boundary: str): bool = all {
     evidence.phase == "validated",
+    evidence.policyPhase == "completed",
     boundary == "browser" or boundary == "normalization" or boundary == "release",
     evidence.validatedRevision == evidence.observedRevision,
     evidence.intendedBoundary == boundary,
@@ -66,7 +93,8 @@ module GrowingLogEvidence {
     evidence.observedRevision < 3,
     evidence' = { ...evidence, phase: "sampled",
       observedRevision: evidence.observedRevision + 1,
-      rootsValid: true, prefixIntact: true, authorityActive: false }
+      rootsValid: true, prefixIntact: true, authorityActive: false,
+      policyPhase: "none", policyInvocation: "none", policyClosure: "none" }
   }
 
   action pendingTail = all {
@@ -112,6 +140,8 @@ module GrowingLogEvidence {
     consume("browser"), consume("normalization"), consume("release"),
     benignAppend, pendingTail, staleBoundary, prefixRewrite, prefixTruncate, replacement, wrongWriter,
     wrongGeneration, wrongSource, contradictorySuffix, unavailable, close,
+    beginPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"), readyPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"),
+    evaluatedPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"), completePolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"), policyDrift,
   }
 
   val consumedOnlyValidated = evidence.consumedRevision == 0 or
@@ -132,21 +162,12 @@ module GrowingLogEvidence {
   val intendedBoundaryIsClosed = evidence.intendedBoundary == "none" or
     evidence.intendedBoundary == "browser" or evidence.intendedBoundary == "normalization" or
     evidence.intendedBoundary == "release"
+  val policyAuthorityIsCausal = evidence.phase != "consumed" or all {
+    evidence.policyPhase == "completed", evidence.policyInvocation != "none", evidence.policyClosure != "none",
+  }
   val invariant = all {
     consumedOnlyValidated, currentConsumptionMatchesValidation,
     authorityRequiresIdentity, invalidityIsSticky, terminalCannotValidate, boundaryIsClosed,
-    intendedBoundaryIsClosed,
+    intendedBoundaryIsClosed, policyAuthorityIsCausal,
   }
-}
-
-module PolicyInvocationEvidence {
-  type Invocation = { phase: str, invocationId: str, closure: str, authority: bool, stickyInvalid: bool }
-  var invocation: Invocation
-  action policyInit = invocation' = { phase: "none", invocationId: "none", closure: "none", authority: false, stickyInvalid: false }
-  action beginPolicy(id: str, closure: str): bool = all { invocation.phase == "none" or invocation.phase == "completed", id != "none", closure != "none", invocation' = { phase: "started", invocationId: id, closure: closure, authority: false, stickyInvalid: false } }
-  action readyPolicy(id: str, closure: str): bool = all { invocation.phase == "started", invocation.invocationId == id, invocation.closure == closure, invocation' = { ...invocation, phase: "ready" } }
-  action evaluatedPolicy(id: str, closure: str): bool = all { invocation.phase == "ready", invocation.invocationId == id, invocation.closure == closure, invocation' = { ...invocation, phase: "evaluated" } }
-  action completePolicy(id: str, closure: str): bool = all { invocation.phase == "evaluated", invocation.invocationId == id, invocation.closure == closure, invocation' = { ...invocation, phase: "completed", authority: true } }
-  action policyDrift = all { invocation.phase != "none", invocation' = { ...invocation, phase: "invalid", authority: false, stickyInvalid: true } }
-  val invocationInvariant = all { not(invocation.authority) or invocation.phase == "completed", not(invocation.stickyInvalid) or invocation.phase == "invalid" }
 }

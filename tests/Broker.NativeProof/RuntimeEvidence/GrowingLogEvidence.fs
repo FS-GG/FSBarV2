@@ -6,7 +6,7 @@ open System.Text.RegularExpressions
 type Boundary = BrowserAdmission | Normalization | Release
 
 type ProducerIdentity = {
-    RunId: string; SourceSetSha256: string; ArtifactSha256: string
+    RunId: string; SourceSetSha256: string; ApphostSha256: string; ClosureSha256: string
     Pid: int; StartTicks: string; Uid: int; Device: string; Inode: string; Path: string
 }
 
@@ -30,7 +30,7 @@ module GrowingLogEvidence =
     let private identityValid value =
         value.Pid > 1 && value.Uid >= 0 && not (String.IsNullOrWhiteSpace value.RunId) &&
         not (String.IsNullOrWhiteSpace value.StartTicks) && value.Device.Length > 0 && value.Inode.Length > 0 &&
-        IO.Path.IsPathFullyQualified value.Path && hex.IsMatch value.SourceSetSha256 && hex.IsMatch value.ArtifactSha256
+        IO.Path.IsPathFullyQualified value.Path && hex.IsMatch value.SourceSetSha256 && hex.IsMatch value.ApphostSha256 && hex.IsMatch value.ClosureSha256
     let private reject reason state = Refused { state with Phase="invalid"; StickyInvalid=true; Reason=Some reason }
     let acquire identity state =
         if state.StickyInvalid then reject "sticky-invalid" state
