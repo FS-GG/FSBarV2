@@ -4,41 +4,40 @@
 open Highbar.V1
 open Broker.NativeProof
 let snapshot () = TacticalSnapshotMetadata.empty()
-let actor () =
+let actor id current allowed =
     let value=NativeActorTacticalMetadata.empty()
     let reference=NativeUnitReference.empty()
-    reference.Id<-42u;reference.Lifetime<-7UL
-    value.Actor <- ValueSome reference
+    reference.Id<-id;reference.Lifetime<-uint64 id+1UL
+    value.Actor<-ValueSome reference
+    let queue=NativeObservedQueue.empty()
+    queue.Domain<-NativeQueueDomain.FactoryProduction;queue.Complete<-true;queue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> 2
+    match current with
+    | Some definition -> let entry=NativeObservedQueueEntry.empty() in entry.DefinitionId<-ValueSome definition;queue.Entries.Add entry
+    | None -> queue.Entries.Add(NativeObservedQueueEntry.empty())
+    value.Queue.Add queue
+    let descriptor=NativeTacticalCommandDescriptor.empty()
+    descriptor.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce
+    descriptor.AllowedDefinitionIds.AddRange allowed
+    value.Descriptors.Add descriptor
     value
-let queue definition =
-    let value=NativeObservedQueue.empty()
-    value.Domain<-NativeQueueDomain.FactoryProduction;value.Complete<-true;value.EvidenceScheme<-enum<NativeQueueEvidenceScheme> 2
-    match definition with Some id -> value.Entries.Add(let entry=NativeObservedQueueEntry.empty() in entry.DefinitionId<-ValueSome id;entry) | None -> value.Entries.Add(NativeObservedQueueEntry.empty())
-    value
-let descriptor ids =
-    let value=NativeTacticalCommandDescriptor.empty()
-    value.Kind<-NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce
-    value.AllowedDefinitionIds.AddRange ids
-    value
-let check expected tactical label = if LiveHost.stockFactoryAvailable tactical<>expected then failwith label
+let unavailable expected tactical =
+    match LiveHost.selectStockFactory tactical with Error reason when reason=expected -> () | result -> failwithf "unexpected selection result %A" result
 let empty=snapshot()
-check false empty "empty tactical snapshot became ready"
+unavailable "complete nonempty scheme-2 factory production queue unavailable" empty
 let missing=snapshot()
-let missingActor=actor()
-missingActor.Queue.Add(queue None)
-missingActor.Descriptors.Add(descriptor [100u;101u])
-missing.Actors.Add missingActor
-check false missing "missing definition became ready"
+missing.Actors.Add(actor 42u None [100u;101u])
+unavailable "factory production definition unavailable" missing
 let same=snapshot()
-let sameActor=actor()
-sameActor.Queue.Add(queue (Some 100u))
-sameActor.Descriptors.Add(descriptor [100u])
-same.Actors.Add sameActor
-check false same "no distinct product became ready"
-let ready=snapshot()
-let readyActor=actor()
-readyActor.Queue.Add(queue (Some 100u))
-readyActor.Descriptors.Add(descriptor [100u;101u])
-ready.Actors.Add readyActor
-check true ready "usable stock factory did not become ready"
-printfn "stock-selection-readiness-ok"
+same.Actors.Add(actor 42u (Some 100u) [100u])
+unavailable "distinct allowed factory product unavailable" same
+let late=snapshot()
+late.Actors.Add(actor 42u (Some 100u) [100u])
+unavailable "distinct allowed factory product unavailable" late
+late.Actors.Add(actor 43u (Some 100u) [100u;101u])
+match LiveHost.selectStockFactory late with
+| Ok selected ->
+    if selected.FactoryReference.Id<>43u || selected.CurrentDefinition<>100u || selected.DistinctProductDefinition<>101u then failwith "selector did not retain the usable second factory"
+    late.Actors.Clear()
+    if selected.FactoryReference.Id<>43u || selected.ObservedQueue.Entries.Count<>1 then failwith "retained selection changed with later projection mutation"
+| Error reason -> failwith reason
+printfn "stock-shared-selection-ok"

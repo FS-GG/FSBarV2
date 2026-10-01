@@ -71,21 +71,44 @@ module LiveHost =
         if not (OperatingSystem.IsWindows()) then File.SetUnixFileMode(child,UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute)
         child
 
-    let stockFactoryAvailable (tactical: TacticalSnapshotMetadata) =
-        let production (actor: NativeActorTacticalMetadata) = actor.Queue |> Seq.tryFind(fun queue -> queue.Domain=NativeQueueDomain.FactoryProduction && queue.Complete && int queue.EvidenceScheme=2 && queue.Entries.Count>0)
-        tactical.Actors
-        |> Seq.exists(fun factory ->
-            match factory.Actor |> ValueOption.toOption,production factory with
-            | Some _,Some queue ->
-                queue.Entries
-                |> Seq.choose(fun entry -> entry.DefinitionId |> ValueOption.toOption)
-                |> Seq.tryHead
-                |> Option.exists(fun currentDefinition ->
-                    factory.Descriptors
-                    |> Seq.filter(fun descriptor -> descriptor.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce && not descriptor.Disabled)
-                    |> Seq.collect(fun descriptor -> descriptor.AllowedDefinitionIds)
-                    |> Seq.exists((<>)currentDefinition))
-            | _ -> false)
+    type StockFactorySelection =
+        { Tactical: TacticalSnapshotMetadata
+          Factory: NativeActorTacticalMetadata
+          FactoryReference: NativeUnitReference
+          ObservedQueue: NativeObservedQueue
+          CurrentDefinition: uint32
+          DistinctProductDefinition: uint32 }
+
+    let selectStockFactory (tactical: TacticalSnapshotMetadata) =
+        let mutable sawObservedQueue=false
+        let mutable sawCurrentDefinition=false
+        let mutable sawDistinctProduct=false
+        let selected =
+            tactical.Actors
+            |> Seq.tryPick(fun factory ->
+                match factory.Actor |> ValueOption.toOption,
+                      factory.Queue |> Seq.tryFind(fun queue -> queue.Domain=NativeQueueDomain.FactoryProduction && queue.Complete && int queue.EvidenceScheme=2 && queue.Entries.Count>0) with
+                | Some factoryReference,Some queue ->
+                    sawObservedQueue<-true
+                    match queue.Entries |> Seq.choose(fun entry -> entry.DefinitionId |> ValueOption.toOption) |> Seq.tryHead with
+                    | None -> None
+                    | Some currentDefinition ->
+                        sawCurrentDefinition<-true
+                        match factory.Descriptors
+                              |> Seq.filter(fun descriptor -> descriptor.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce && not descriptor.Disabled)
+                              |> Seq.collect(fun descriptor -> descriptor.AllowedDefinitionIds)
+                              |> Seq.tryFind((<>)currentDefinition) with
+                        | None -> None
+                        | Some productDefinition ->
+                            sawDistinctProduct<-true
+                            Some { Tactical=tactical.Clone();Factory=factory.Clone();FactoryReference=factoryReference.Clone();ObservedQueue=queue.Clone();CurrentDefinition=currentDefinition;DistinctProductDefinition=productDefinition }
+                | _ -> None)
+        match selected with
+        | Some value -> Ok value
+        | None when not sawObservedQueue -> Error "complete nonempty scheme-2 factory production queue unavailable"
+        | None when not sawCurrentDefinition -> Error "factory production definition unavailable"
+        | None when not sawDistinctProduct -> Error "distinct allowed factory product unavailable"
+        | None -> Error "usable stock factory unavailable"
 
     let run (profile: string) (argv: string array) = task {
         if argv.Length <> 5 then invalidArg "argv" "--live-host requires GRPC_ADDRESS GATEWAY_HTTP ORIGIN PRIVATE_DIRECTORY SOURCE_SHA"
@@ -176,8 +199,11 @@ module LiveHost =
                     member _.OnError error = writeKind "observation-stream-error" (box {|detail=error.Message|})
                     member _.OnCompleted() = writeKind "observation-stream-completed" (box {|detail=""|})}) host.Hub
                 use feedSubscription=feedSubscription
-                let stockSelectionAvailable () =
-                    LiveControl.latestTacticalSnapshot state |> Option.exists stockFactoryAvailable
+                let mutable stockSelection: StockFactorySelection option=None
+                let refreshStockSelection () =
+                    if stock && stockSelection.IsNone then
+                        stockSelection <- LiveControl.latestTacticalSnapshot state |> Option.bind(fun tactical -> match selectStockFactory tactical with Ok value -> Some value | Error _ -> None)
+                refreshStockSelection()
                 if profile="barc-live-tactical-v1" || profile="barc-live-tactical-stock-v1" then
                     use tacticalReady=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)
                     tacticalReady.CancelAfter(TimeSpan.FromSeconds 60.)
@@ -185,8 +211,9 @@ module LiveHost =
                         while LiveControl.latestCapabilities state |> Option.bind (fun value -> value.Tactical |> ValueOption.toOption) |> Option.isNone
                               || LiveControl.latestTacticalCatalogue state |> Option.isNone
                               || LiveControl.latestTacticalSnapshot state |> Option.isNone
-                              || (stock && not(stockSelectionAvailable())) do
+                              || (stock && stockSelection.IsNone) do
                             do! Task.Delay(50,tacticalReady.Token)
+                            refreshStockSelection()
                     with :? OperationCanceledException ->
                         if stock then invalidOp "timed out waiting for usable stock factory, builder, target and paired projections"
                         else invalidOp "timed out waiting for native tactical capabilities, complete catalogue and paired snapshot"
@@ -194,7 +221,7 @@ module LiveHost =
                     if profile="barc-live-tactical-stock-v1" then
                         let capabilities = LiveControl.latestCapabilities state |> Option.bind (fun value -> value.Tactical |> ValueOption.toOption) |> Option.defaultWith(fun () -> invalidOp "stock readiness lost tactical capabilities")
                         let catalogue = LiveControl.latestTacticalCatalogue state |> Option.defaultWith(fun () -> invalidOp "stock readiness lost its complete catalogue")
-                        let tactical = LiveControl.latestTacticalSnapshot state |> Option.defaultWith(fun () -> invalidOp "stock readiness lost its paired tactical snapshot")
+                        let tactical = stockSelection |> Option.map(fun selection -> selection.Tactical) |> Option.defaultWith(fun () -> invalidOp "stock readiness lost its retained factory selection")
                         if capabilities.Profile<>profile || capabilities.Revision<>2u then invalidOp "stock readiness requires exact profile revision 2"
                         if List.isEmpty catalogue || catalogue |> List.exists(fun page -> page.TacticalProfile<>profile || page.TacticalRevision<>2u || not page.Complete || page.CatalogueId.Length<>16 || page.CatalogueRevision=0UL || page.Content |> ValueOption.exists(fun content -> content.EngineVersion="2025.06.19" && not(String.IsNullOrWhiteSpace content.GameName) && not(String.IsNullOrWhiteSpace content.GameVersion) && content.GameContentSha256.Length=32) |> not) then invalidOp "stock readiness requires complete current catalogue/content identity"
                         if tactical.Basis |> ValueOption.exists(fun basis -> basis.Token.Length>0 && basis.MatchIncarnation.Length=16 && basis.StateSequence>0UL && basis.SnapshotSendMonotonicNs>0UL) |> not || tactical.CatalogueId.Length<>16 || tactical.CatalogueRevision=0UL || tactical.Actors.Count=0 then invalidOp "stock readiness requires current basis, catalogue and actor metadata"
@@ -208,16 +235,17 @@ module LiveHost =
                         let metadataPath=requiredEnvironment "BARC_STOCK_SMOKE_METADATA"
                         let setupPath=requiredEnvironment "BARC_STOCK_SMOKE_SETUP"
                         let receiverUrl=requiredEnvironment "BARC_STOCK_SMOKE_RECEIVER_URL"
-                        let tactical=LiveControl.latestTacticalSnapshot state |> Option.defaultWith(fun () -> invalidOp "stock metadata snapshot unavailable")
+                        let selection=stockSelection |> Option.defaultWith(fun () -> invalidOp "stock retained factory selection unavailable")
+                        let tactical=selection.Tactical
                         let snapshot=LiveControl.latestSnapshotMetadata state |> Option.defaultWith(fun () -> invalidOp "stock base snapshot unavailable")
                         let catalogue=LiveControl.latestTacticalCatalogue state |> Option.defaultWith(fun () -> invalidOp "stock catalogue unavailable")
                         let basis=tactical.Basis |> ValueOption.defaultWith(fun () -> invalidOp "stock basis unavailable")
-                        let production (actor: NativeActorTacticalMetadata) = actor.Queue |> Seq.tryFind(fun queue -> queue.Domain=NativeQueueDomain.FactoryProduction && queue.Complete && int queue.EvidenceScheme=2 && queue.Entries.Count>0)
-                        let factory=tactical.Actors |> Seq.tryFind(fun actor -> actor.Actor.IsSome && production actor |> Option.isSome) |> Option.defaultWith(fun () -> invalidOp "actual stock factory unavailable")
-                        let factoryRef=factory.Actor.Value
-                        let factoryQueue=production factory |> Option.get
-                        let existingDefinition=factoryQueue.Entries |> Seq.choose(fun entry -> entry.DefinitionId |> ValueOption.toOption) |> Seq.tryHead |> Option.defaultWith(fun () -> invalidOp "actual existing production definition unavailable")
-                        let productDefinition=factory.Descriptors |> Seq.filter(fun descriptor -> descriptor.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce && not descriptor.Disabled) |> Seq.collect(fun descriptor -> descriptor.AllowedDefinitionIds) |> Seq.tryFind((<>)existingDefinition) |> Option.defaultWith(fun () -> invalidOp "distinct actual factory product definition unavailable")
+                        let factory=selection.Factory
+                        let factoryRef=selection.FactoryReference
+                        let factoryQueue=selection.ObservedQueue
+                        let existingDefinition=selection.CurrentDefinition
+                        let productDefinition=selection.DistinctProductDefinition
+                        if factoryQueue.Domain<>NativeQueueDomain.FactoryProduction || not factoryQueue.Complete || int factoryQueue.EvidenceScheme<>2 || factoryQueue.Entries |> Seq.exists(fun entry -> entry.DefinitionId |> ValueOption.exists((=)existingDefinition)) |> not then invalidOp "retained stock factory selection changed"
                         let builder=tactical.Actors |> Seq.tryFind(fun actor -> actor.Actor.IsSome && actor.Actor.Value.Id<>factoryRef.Id && actor.Descriptors |> Seq.exists(fun descriptor -> descriptor.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorBuild && not descriptor.Disabled)) |> Option.defaultWith(fun () -> invalidOp "actual builder actor unavailable")
                         let builderRef=builder.Actor.Value
                         let combat=snapshot.Units |> Seq.tryFind(fun unit -> unit.Reference.IsSome && unit.Eligibility=NativeLiveUnitEligibility.NativeLiveUnitVisualTarget) |> Option.defaultWith(fun () -> invalidOp "actual visual combat target unavailable")
