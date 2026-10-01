@@ -69,6 +69,29 @@ cmp "$source/src/Broker.Browser.Wasm/barc-wire.js" \
   "$work/evidence/src/Broker.Browser.Wasm/barc-wire.js"
 grep -F 'src/Broker.Browser.Wasm/barc-wire.js' "$work/evidence/BARC-PREVIEW.SHA256" >/dev/null
 
+stock_pins="$work/stock-pins.json"
+jq '.schema="fsbar.barc-live-receiver-pins/v3" |
+    .profile="barc-live-tactical-stock-v1" |
+    .tacticalRevision=2 | .queueEvidenceScheme=2' "$pins" > "$stock_pins"
+"$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$stock_pins" \
+  --output "$work/stock.tar.gz" >/dev/null
+"$repo_root/scripts/qualify-barc-receiver-live-prep.sh" --product-root "$source" \
+  --archive "$work/stock.tar.gz" --pins "$stock_pins" --evidence "$work/stock-evidence" >/dev/null
+jq -e '.schema == "fsbar.barc-live-receiver-preparation/v3" and
+  .profile == "barc-live-tactical-stock-v1" and
+  .negotiation == {protocolVersion:2,tacticalRevision:2,guestAbiVersion:1,
+    explicitOptIn:true,queueEvidenceScheme:2} and
+  .claims.actualNativeRuntime == false and .claims.milestoneComplete == false' \
+  "$work/stock-evidence/qualification.json" >/dev/null
+
+wrong_stock_scheme="$work/wrong-stock-scheme.json"
+jq '.queueEvidenceScheme=1' "$stock_pins" > "$wrong_stock_scheme"
+if "$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$wrong_stock_scheme" \
+  --output "$work/wrong-stock-scheme.tar.gz" >/dev/null 2>&1; then
+  echo "live packager accepted a cross-profile stock queue evidence scheme" >&2
+  exit 1
+fi
+
 duplicate_pins="$work/duplicate-pins.json"
 jq '(.files[] | select(.role == "dependency") | .archivePath) = "src/Broker.Browser.Wasm/guest-worker.js"' \
   "$pins" > "$duplicate_pins"
@@ -144,16 +167,17 @@ fi
 grep -F 'searchParams.get("barc-profile")' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 grep -F 'profile === "barc-live-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 grep -F 'profile === "barc-live-tactical-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
+grep -F 'profile === "barc-live-tactical-stock-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 if [[ -n "${BARC_LIVE_PREP_TEST_RECEIPT:-}" ]]; then
   [[ ! -e "$BARC_LIVE_PREP_TEST_RECEIPT" ]] || { echo "focused receipt path already exists" >&2; exit 1; }
   mkdir -p "$(dirname "$BARC_LIVE_PREP_TEST_RECEIPT")"
   umask 077
   jq -n --arg head "$(git -C "$repo_root" rev-parse HEAD)" '{
     schema:"fsbar.barc-live-receiver-focused-tests/v1",result:"passed",sourceHead:$head,
-    positive:{dependencyPackaged:true,manifestVerified:true,qualificationPrepared:true},
+    positive:{dependencyPackaged:true,manifestVerified:true,qualificationPrepared:true,stockQualificationPrepared:true},
     refusals:{duplicateArchiveDestination:true,firstDotdotComponent:true,
       sourceSymlinkEscape:true,unsafeTarTypeBeforeExtraction:true,outsideSentinelPreserved:true,
-      changedProductBytes:true,nonFrozenTacticalRevision:true},
+      changedProductBytes:true,nonFrozenTacticalRevision:true,crossProfileStockEvidenceScheme:true},
     claims:{liveAcceptance:false,nativeRuntime:false,publication:false}
   }' > "$BARC_LIVE_PREP_TEST_RECEIPT"
   chmod 0600 "$BARC_LIVE_PREP_TEST_RECEIPT"

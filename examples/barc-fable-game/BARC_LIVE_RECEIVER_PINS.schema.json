@@ -4,7 +4,8 @@
   "title": "BARC live generated-receiver pins",
   "oneOf": [
     { "$ref": "#/$defs/liveV1" },
-    { "$ref": "#/$defs/tacticalV2" }
+    { "$ref": "#/$defs/tacticalV2" },
+    { "$ref": "#/$defs/stockTacticalV3" }
   ],
   "$defs": {
     "source": {
@@ -44,6 +45,21 @@
         "profile": { "const": "barc-live-tactical-v1" },
         "protocolVersion": { "const": 2 },
         "tacticalRevision": { "const": 1 },
+        "guestAbiVersion": { "const": 1 },
+        "source": { "$ref": "#/$defs/source" },
+        "files": { "type": "array", "minItems": 11, "items": { "$ref": "#/$defs/file" } }
+      }
+    },
+    "stockTacticalV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "profile", "protocolVersion", "tacticalRevision", "queueEvidenceScheme", "guestAbiVersion", "source", "files"],
+      "properties": {
+        "schema": { "const": "fsbar.barc-live-receiver-pins/v3" },
+        "profile": { "const": "barc-live-tactical-stock-v1" },
+        "protocolVersion": { "const": 2 },
+        "tacticalRevision": { "const": 2 },
+        "queueEvidenceScheme": { "const": 2 },
         "guestAbiVersion": { "const": 1 },
         "source": { "$ref": "#/$defs/source" },
         "files": { "type": "array", "minItems": 11, "items": { "$ref": "#/$defs/file" } }

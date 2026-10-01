@@ -11315,6 +11315,22 @@ export const barc = $root.barc = (() => {
             })();
 
             /**
+             * NativeQueueEvidenceScheme enum.
+             * @name barc.browser.v1.NativeQueueEvidenceScheme
+             * @enum {number}
+             * @property {number} NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED=0 NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED value
+             * @property {number} NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1=1 NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1 value
+             * @property {number} NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1=2 NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1 value
+             */
+            v1.NativeQueueEvidenceScheme = (function() {
+                const valuesById = $Object.create(null), values = $Object.create(valuesById);
+                values[valuesById[0] = "NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED"] = 0;
+                values[valuesById[1] = "NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1"] = 1;
+                values[valuesById[2] = "NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1"] = 2;
+                return values;
+            })();
+
+            /**
              * TacticalDescriptorKind enum.
              * @name barc.browser.v1.TacticalDescriptorKind
              * @enum {number}
@@ -15896,6 +15912,7 @@ export const barc = $root.barc = (() => {
                  * @property {Array.<barc.browser.v1.TacticalQueueEntry.$Properties>|null} [entries] TacticalQueue entries
                  * @property {boolean|null} [complete] TacticalQueue complete
                  * @property {boolean|null} [repeat] TacticalQueue repeat
+                 * @property {barc.browser.v1.NativeQueueEvidenceScheme|null} [evidenceScheme] TacticalQueue evidenceScheme
                  * @property {Array.<Uint8Array>} [$unknowns] Unknown fields preserved while decoding when enabled
                  */
 
@@ -15968,6 +15985,14 @@ export const barc = $root.barc = (() => {
                  */
                 TacticalQueue.prototype.repeat = null;
 
+                /**
+                 * TacticalQueue evidenceScheme.
+                 * @member {barc.browser.v1.NativeQueueEvidenceScheme} evidenceScheme
+                 * @memberof barc.browser.v1.TacticalQueue
+                 * @instance
+                 */
+                TacticalQueue.prototype.evidenceScheme = 0;
+
                 // OneOf field names bound to virtual getters and setters
                 let $oneOfFields;
 
@@ -16004,6 +16029,8 @@ export const barc = $root.barc = (() => {
                         writer.uint32(/* id 4, wireType 0 =*/32).bool(message.complete);
                     if (message.repeat != null && $Object.hasOwnProperty.call(message, "repeat"))
                         writer.uint32(/* id 5, wireType 0 =*/40).bool(message.repeat);
+                    if (message.evidenceScheme != null && $Object.hasOwnProperty.call(message, "evidenceScheme") && message.evidenceScheme !== 0)
+                        writer.uint32(/* id 6, wireType 0 =*/48).int32(message.evidenceScheme);
                     if (message.$unknowns != null && $Object.hasOwnProperty.call(message, "$unknowns"))
                         for (let i = 0; i < message.$unknowns.length; ++i)
                             writer.raw(message.$unknowns[i]);
@@ -16101,6 +16128,15 @@ export const barc = $root.barc = (() => {
                                     break;
                                 message.repeat = reader.bool();
                                 message._repeat = "repeat";
+                                continue;
+                            }
+                        case 6: {
+                                if (wireType !== 0)
+                                    break;
+                                if (value = reader.int32())
+                                    message.evidenceScheme = value;
+                                else
+                                    delete message.evidenceScheme;
                                 continue;
                             }
                         }
@@ -16201,6 +16237,24 @@ export const barc = $root.barc = (() => {
                             message.complete = $Boolean(object.complete);
                     if (object.repeat != null)
                         message.repeat = $Boolean(object.repeat);
+                    if (object.evidenceScheme !== 0 && (typeof object.evidenceScheme !== "string" || $root.barc.browser.v1.NativeQueueEvidenceScheme[object.evidenceScheme] !== 0))
+                        switch (object.evidenceScheme) {
+                        case "NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED":
+                        case 0:
+                            message.evidenceScheme = 0;
+                            break;
+                        case "NATIVE_QUEUE_EVIDENCE_SCHEME_FULL_NATIVE_TUPLE_V1":
+                        case 1:
+                            message.evidenceScheme = 1;
+                            break;
+                        case "NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1":
+                        case 2:
+                            message.evidenceScheme = 2;
+                            break;
+                        default:
+                            if (typeof object.evidenceScheme === "number" && (object.evidenceScheme | 0) === object.evidenceScheme)
+                                message.evidenceScheme = object.evidenceScheme;
+                        }
                     return message;
                 };
 
@@ -16231,6 +16285,7 @@ export const barc = $root.barc = (() => {
                         } else
                             object.revision = options.longs === $String ? "0" : typeof $BigInt !== "undefined" && options.longs === $BigInt ? $BigInt("0") : 0;
                         object.complete = false;
+                        object.evidenceScheme = options.enums === $String ? "NATIVE_QUEUE_EVIDENCE_SCHEME_UNSPECIFIED" : 0;
                     }
                     if (message.domain != null && $Object.hasOwnProperty.call(message, "domain"))
                         object.domain = options.enums === $String ? $root.barc.browser.v1.QueueDomain[message.domain] === $undefined ? message.domain : $root.barc.browser.v1.QueueDomain[message.domain] : message.domain;
@@ -16250,6 +16305,8 @@ export const barc = $root.barc = (() => {
                         object.complete = message.complete;
                     if (message.repeat != null && $Object.hasOwnProperty.call(message, "repeat"))
                         object.repeat = message.repeat;
+                    if (message.evidenceScheme != null && $Object.hasOwnProperty.call(message, "evidenceScheme"))
+                        object.evidenceScheme = options.enums === $String ? $root.barc.browser.v1.NativeQueueEvidenceScheme[message.evidenceScheme] === $undefined ? message.evidenceScheme : $root.barc.browser.v1.NativeQueueEvidenceScheme[message.evidenceScheme] : message.evidenceScheme;
                     return object;
                 };
 

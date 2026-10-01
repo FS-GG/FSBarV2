@@ -34,7 +34,11 @@ jq -e '
     (has("protocolVersion") | not) and (has("tacticalRevision") | not) and
     (has("guestAbiVersion") | not)) or
    (.schema == "fsbar.barc-live-receiver-pins/v2" and .profile == "barc-live-tactical-v1" and
-    .protocolVersion == 2 and .tacticalRevision == 1 and .guestAbiVersion == 1)) and
+    .protocolVersion == 2 and .tacticalRevision == 1 and .guestAbiVersion == 1 and
+    (has("queueEvidenceScheme") | not)) or
+   (.schema == "fsbar.barc-live-receiver-pins/v3" and .profile == "barc-live-tactical-stock-v1" and
+    .protocolVersion == 2 and .tacticalRevision == 2 and .guestAbiVersion == 1 and
+    .queueEvidenceScheme == 2)) and
   (.source.commit | test("^[0-9a-f]{40}$")) and
   (.files | type == "array" and length >= 7) and
   ([.files[] | select(.role != "dependency") | .role] | sort == ["clientCss","clientJs","codec","contract","customGuest","manualGuest","worker"]) and
@@ -126,6 +130,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 adapter="$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js"
 grep -F 'barc-live-v1' "$adapter" >/dev/null
 grep -F 'barc-live-tactical-v1' "$adapter" >/dev/null
+grep -F 'barc-live-tactical-stock-v1' "$adapter" >/dev/null
 grep -F 'barc-preview-v1' "$adapter" >/dev/null
 grep -F 'searchParams.get("barc-profile")' "$adapter" >/dev/null
 
@@ -135,15 +140,18 @@ profile="$(jq -r '.profile' "$pins")"
 protocol_version="$(jq -r '.protocolVersion // 1' "$pins")"
 tactical_revision="$(jq -r '.tacticalRevision // 0' "$pins")"
 guest_abi_version="$(jq -r '.guestAbiVersion // 1' "$pins")"
+queue_evidence_scheme="$(jq -r '.queueEvidenceScheme // 0' "$pins")"
 receipt_schema="fsbar.barc-live-receiver-preparation/v1"
 [[ "$profile" == "barc-live-tactical-v1" ]] && receipt_schema="fsbar.barc-live-receiver-preparation/v2"
+[[ "$profile" == "barc-live-tactical-stock-v1" ]] && receipt_schema="fsbar.barc-live-receiver-preparation/v3"
 jq -n --arg receiptSchema "$receipt_schema" --arg profile "$profile" \
   --argjson protocolVersion "$protocol_version" --argjson tacticalRevision "$tactical_revision" \
-  --argjson guestAbiVersion "$guest_abi_version" --arg sourceCommit "$expected_commit" \
+  --argjson guestAbiVersion "$guest_abi_version" --argjson queueEvidenceScheme "$queue_evidence_scheme" --arg sourceCommit "$expected_commit" \
   --arg archiveSha "$archive_sha" --arg pinsSha "$pins_sha" '
   {schema:$receiptSchema,disposition:"prepared",profile:$profile,
-   negotiation:{protocolVersion:$protocolVersion,tacticalRevision:$tacticalRevision,guestAbiVersion:$guestAbiVersion,
-     explicitOptIn:($profile == "barc-live-tactical-v1")},
+   negotiation:({protocolVersion:$protocolVersion,tacticalRevision:$tacticalRevision,guestAbiVersion:$guestAbiVersion,
+     explicitOptIn:($profile == "barc-live-tactical-v1" or $profile == "barc-live-tactical-stock-v1")}
+     + (if $profile == "barc-live-tactical-stock-v1" then {queueEvidenceScheme:$queueEvidenceScheme} else {} end)),
    source:{commit:$sourceCommit},archive:{sha256:$archiveSha,pinsSha256:$pinsSha,manifestVerified:true},
    receiver:{route:("/barc/?barc-profile=" + $profile),previewRoutePreserved:true,
      publicScaffold:{templates:"0.15.0",sdd:"2.0.3"},pairingStorage:"memory-only"},

@@ -451,11 +451,26 @@ let tests=testList "live broker boundary" [
         mismatchReport.Reporter<-ValueSome reporter;mismatchReport.ReportSequence<-5UL;mismatchReport.TacticalSnapshot<-mismatched
         Expect.equal (LiveControl.reportState mismatchReport now state) LiveStateReportDisposition.LiveStateReportRefused "full-tuple evidence cannot authorize the stock profile"
 
+        let unknown=mismatched.Clone()
+        for actor in unknown.Actors do
+            for queue in actor.Queue do
+                queue.EvidenceScheme<-enum<NativeQueueEvidenceScheme> 99
+        let unknownReport=LiveStateReport.empty()
+        unknownReport.Reporter<-ValueSome reporter;unknownReport.ReportSequence<-5UL;unknownReport.TacticalSnapshot<-unknown
+        Expect.equal (LiveControl.reportState unknownReport now state) LiveStateReportDisposition.LiveStateReportRefused "unknown queue evidence cannot authorize the stock profile"
+
+        let unavailable=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
+        let unavailableProduction=unavailable.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
+        unavailableProduction.Complete<-false;unavailableProduction.Revision<-0UL;unavailableProduction.Entries.Clear();unavailableProduction.Repeat<-ValueNone
+        let unavailableReport=LiveStateReport.empty()
+        unavailableReport.Reporter<-ValueSome reporter;unavailableReport.ReportSequence<-5UL;unavailableReport.TacticalSnapshot<-unavailable
+        Expect.equal (LiveControl.reportState unavailableReport now state) LiveStateReportDisposition.LiveStateReportRecorded "stock bridge unavailability is explicit and does not fabricate a queue revision"
+
         let empty=(LiveControl.latestTacticalSnapshot state |> Option.get).Clone()
         let production=empty.Actors[0].Queue |> Seq.find(fun value->value.Domain=NativeQueueDomain.FactoryProduction)
-        production.Entries.Clear();production.Revision<-9007199254741121UL
+        production.Entries.Clear();production.Revision<-9007199254741121UL;production.Complete<-true
         let emptyReport=LiveStateReport.empty()
-        emptyReport.Reporter<-ValueSome reporter;emptyReport.ReportSequence<-5UL;emptyReport.TacticalSnapshot<-empty
+        emptyReport.Reporter<-ValueSome reporter;emptyReport.ReportSequence<-6UL;emptyReport.TacticalSnapshot<-empty
         Expect.equal (LiveControl.reportState emptyReport now state) LiveStateReportDisposition.LiveStateReportRecorded "stock empty production queue remains observable"
 
         let session=Guid.NewGuid()
@@ -483,6 +498,15 @@ let tests=testList "live broker boundary" [
         Expect.isTrue (results |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Rejected)) "stock Replace is rejected even when the observed queue is empty"
         let mutable delivery=Unchecked.defaultof<LiveControl.CommandDelivery>
         Expect.isFalse(commandLease.reader.TryRead(&delivery)) "stock Replace never reaches native delivery"
+
+        let rejectIfBusy=request.Clone()
+        rejectIfBusy.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        rejectIfBusy.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
+        rejectIfBusy.Intent.FactoryProduce.QueuePolicy<-TacticalQueuePolicy.RejectIfBusy
+        let emptyBusyResults=Expect.wantOk(LiveBoundary.submit session rejectIfBusy now state) "stock RejectIfBusy is admitted only against the observed empty queue"
+        Expect.isTrue (emptyBusyResults |> List.forall(fun result->result.Stage=LiveResultStage.BrokerAdmission && result.Status=LiveResultStatus.Accepted)) "empty stock RejectIfBusy preserves broker admission"
+        Expect.isTrue(commandLease.reader.TryRead(&delivery)) "empty stock RejectIfBusy reaches one native delivery"
+        Expect.equal delivery.batches.Length 1 "stock Count1 emits exactly one child"
 
     testCase "tactical revisions reserve children and ReclaimArea emits the canonical native command" <| fun _ ->
         let now=DateTimeOffset(2026,9,29,13,0,0,TimeSpan.Zero)

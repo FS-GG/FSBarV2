@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { decodeServerFrame, projectGuestResponse, SerialGuestQueue } from "../../src/Broker.Browser.Client/runtime.js";
 import { correlateLiveGuestResponse, LiveQueue, validateLiveControllerState } from "../../src/Broker.Browser.Client/live-runtime.js";
-import { encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
+import { canonicalObject, encodeObject, v1 } from "../../src/Broker.Browser.Contracts/generated/codec.js";
 import { selectProductUrl } from "./product-topology.mjs";
 
 const wire = name => readFile(`../../fixtures/barc-browser/wire/${name}.bin`);
@@ -13,6 +13,15 @@ const bootstrap = {
   validity: { status: "VALIDITY_STATUS_CURRENT", lastSequence: "0" },
   limits: { maxFrameBytes: 65536, authTimeoutMs: 3000, maxEntities: 4096 }
 };
+
+test("stock queue scheme 2 and the legacy omitted scheme round trip distinctly", () => {
+  const base={domain:"QUEUE_DOMAIN_FACTORY_PRODUCTION",revision:"9007199254742001",entries:[],complete:true};
+  const stock=canonicalObject(v1.TacticalQueue,encodeObject(v1.TacticalQueue,{...base,evidenceScheme:"NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1"}));
+  assert.equal(stock.evidenceScheme,"NATIVE_QUEUE_EVIDENCE_SCHEME_STOCK_LUA_SUPPORTED_FIELDS_V1");
+  assert.equal(stock.revision,base.revision);
+  const legacy=canonicalObject(v1.TacticalQueue,encodeObject(v1.TacticalQueue,base));
+  assert.equal(Object.hasOwn(legacy,"evidenceScheme"),false);
+});
 
 test("lossless identities and absent optional values cross the strict gate", async () => {
   const decoded = decodeServerFrame(await wire("observation-optional-absent"), { bootstrap, negotiatedMaxFrameBytes: 65536 });

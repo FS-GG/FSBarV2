@@ -188,7 +188,12 @@ module LiveControl =
             let evidenceMatches =
                 (tactical.Profile=fullTupleTacticalProfile && tactical.Revision=1u && (scheme=0 || scheme=1))
                 || (tactical.Profile=stockTacticalProfile && tactical.Revision=2u && scheme=2)
-            q.Domain<>NativeQueueDomain.Unspecified && q.Revision>0UL
+            let availabilityMatches =
+                if tactical.Profile=stockTacticalProfile then
+                    (q.Complete && q.Revision>0UL)
+                    || (not q.Complete && q.Revision=0UL && q.Entries.Count=0 && q.Repeat.IsNone)
+                else q.Revision>0UL
+            q.Domain<>NativeQueueDomain.Unspecified && availabilityMatches
             && q.Entries.Count<=int tactical.MaxQueueEntriesPerActor && uniqueTags && evidenceMatches
         value.Basis.IsSome && baseSnapshot.Basis.IsSome && equalBasis value.Basis.Value baseSnapshot.Basis.Value
         && value.CatalogueId.Span.SequenceEqual(catalogue.Head.CatalogueId.Span) && value.CatalogueRevision=catalogue.Head.CatalogueRevision
@@ -957,7 +962,7 @@ module LiveControl =
                         match actorMetadata requested.reference with
                         | Some metadata when requested.descriptorRevision=metadata.DescriptorRevision
                             && metadata.Descriptors |> Seq.exists descriptorAllows
-                                && requested.queueRevisions |> List.exists(fun q->q.domain=domain && queueFor metadata |> Option.exists(fun current->current.Revision=q.revision && queueEditAllows current && factoryPolicyAllows current)) -> Some(requested,metadata)
+                                && requested.queueRevisions |> List.exists(fun q->q.domain=domain && q.revision>0UL && queueFor metadata |> Option.exists(fun current->current.Complete && current.Revision=q.revision && queueEditAllows current && factoryPolicyAllows current)) -> Some(requested,metadata)
                         | _ -> None)
                     if checkedActors |> List.exists Option.isNone then reject "broker refused stale or unavailable actor capability or queue revision"
                     else
