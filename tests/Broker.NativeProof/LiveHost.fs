@@ -71,6 +71,22 @@ module LiveHost =
         if not (OperatingSystem.IsWindows()) then File.SetUnixFileMode(child,UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute)
         child
 
+    let stockFactoryAvailable (tactical: TacticalSnapshotMetadata) =
+        let production (actor: NativeActorTacticalMetadata) = actor.Queue |> Seq.tryFind(fun queue -> queue.Domain=NativeQueueDomain.FactoryProduction && queue.Complete && int queue.EvidenceScheme=2 && queue.Entries.Count>0)
+        tactical.Actors
+        |> Seq.exists(fun factory ->
+            match factory.Actor |> ValueOption.toOption,production factory with
+            | Some _,Some queue ->
+                queue.Entries
+                |> Seq.choose(fun entry -> entry.DefinitionId |> ValueOption.toOption)
+                |> Seq.tryHead
+                |> Option.exists(fun currentDefinition ->
+                    factory.Descriptors
+                    |> Seq.filter(fun descriptor -> descriptor.Kind=NativeTacticalDescriptorKind.NativeTacticalDescriptorFactoryProduce && not descriptor.Disabled)
+                    |> Seq.collect(fun descriptor -> descriptor.AllowedDefinitionIds)
+                    |> Seq.exists((<>)currentDefinition))
+            | _ -> false)
+
     let run (profile: string) (argv: string array) = task {
         if argv.Length <> 5 then invalidArg "argv" "--live-host requires GRPC_ADDRESS GATEWAY_HTTP ORIGIN PRIVATE_DIRECTORY SOURCE_SHA"
         if profile <> "barc-live-v1" && profile <> "barc-live-tactical-v1" && profile <> "barc-live-tactical-stock-v1" then invalidArg "profile" "unsupported live profile"
@@ -160,15 +176,20 @@ module LiveHost =
                     member _.OnError error = writeKind "observation-stream-error" (box {|detail=error.Message|})
                     member _.OnCompleted() = writeKind "observation-stream-completed" (box {|detail=""|})}) host.Hub
                 use feedSubscription=feedSubscription
+                let stockSelectionAvailable () =
+                    LiveControl.latestTacticalSnapshot state |> Option.exists stockFactoryAvailable
                 if profile="barc-live-tactical-v1" || profile="barc-live-tactical-stock-v1" then
                     use tacticalReady=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)
                     tacticalReady.CancelAfter(TimeSpan.FromSeconds 60.)
                     try
                         while LiveControl.latestCapabilities state |> Option.bind (fun value -> value.Tactical |> ValueOption.toOption) |> Option.isNone
                               || LiveControl.latestTacticalCatalogue state |> Option.isNone
-                              || LiveControl.latestTacticalSnapshot state |> Option.isNone do
+                              || LiveControl.latestTacticalSnapshot state |> Option.isNone
+                              || (stock && not(stockSelectionAvailable())) do
                             do! Task.Delay(50,tacticalReady.Token)
-                    with :? OperationCanceledException -> invalidOp "timed out waiting for native tactical capabilities, complete catalogue and paired snapshot"
+                    with :? OperationCanceledException ->
+                        if stock then invalidOp "timed out waiting for usable stock factory, builder, target and paired projections"
+                        else invalidOp "timed out waiting for native tactical capabilities, complete catalogue and paired snapshot"
                 let tacticalRevision,queueEvidenceScheme =
                     if profile="barc-live-tactical-stock-v1" then
                         let capabilities = LiveControl.latestCapabilities state |> Option.bind (fun value -> value.Tactical |> ValueOption.toOption) |> Option.defaultWith(fun () -> invalidOp "stock readiness lost tactical capabilities")
