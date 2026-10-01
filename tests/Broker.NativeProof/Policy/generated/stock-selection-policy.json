@@ -1,0 +1,45 @@
+{
+  "schema": "fsbar.stock-selection-policy-artifact/v1",
+  "compiler": {
+    "tool": "fable",
+    "version": "5.18.0"
+  },
+  "runtime": {
+    "package": "@fable-org/fable-library-js",
+    "version": "2.8.0"
+  },
+  "inputs": [
+    {
+      "path": "tests/Broker.NativeProof/Policy/Directory.Build.props",
+      "sha256": "67138f944ecde932291081a4eec27775d65bdb77014a8a369b26d5c0c0cda6fa"
+    },
+    {
+      "path": "tests/Broker.NativeProof/Policy/StockSelection.fs",
+      "sha256": "530af65db48ffd2780dd25a7d9b5641850f745a57a2bed9c77534e7cdefa31b1"
+    },
+    {
+      "path": "tests/Broker.NativeProof/Policy/StockSelection.fsproj",
+      "sha256": "e5056f2704127c8a73c8bc95c7d03dd99b4aa3fd82d2e5ad99f8c0303606941b"
+    },
+    {
+      "path": "tests/Broker.NativeProof/Policy/StockSelection.packages.lock.json",
+      "sha256": "3b7d92b55edf96dd8b8e7506fddf3c257cd801f53473c25410f8670d242c04a5"
+    },
+    {
+      "path": "tests/Broker.NativeProof/Policy/build-stock-selection.mjs",
+      "sha256": "30b1980a3b78cf1fb544f681698f9c7d74f72ec2a87215d813e642ab68b4b4c4"
+    },
+    {
+      "path": "tests/Broker.NativeProof/package.json",
+      "sha256": "8fdb48d3cc0b59522bd690a41028240de9f2c7597f9dcd50a08ddc66fc249698"
+    },
+    {
+      "path": "tests/Broker.NativeProof/package-lock.json",
+      "sha256": "89086da62985d565788cf1f1346225b96b700f17d1c2bed99007b45e901a92e9"
+    }
+  ],
+  "output": {
+    "path": "tests/Broker.NativeProof/Policy/generated/StockSelection.js",
+    "sha256": "f3cdad36b698bab2c8e0129e1064c4c3fa2f5a1a65284518de5a90832127125b"
+  }
+}
