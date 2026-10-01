@@ -3,10 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:stock-policy": "node Policy/build-stock-selection.mjs",
     "test:preparation": "node --test tactical-native-evidence.test.mjs stock-native-trace.test.mjs",
+    "test:stock-policy:dotnet": "dotnet restore Policy/StockSelection.Tests.fsproj --locked-mode && dotnet run --project Policy/StockSelection.Tests.fsproj --no-restore",
+    "test:stock-policy:fable": "dotnet restore Policy/StockSelection.Tests.fsproj --locked-mode && dotnet fable Policy/StockSelection.Tests.fsproj --outDir Policy/fable-tests --noCache --noRestore && node Policy/fable-tests/StockSelection.Tests.js",
     "test:tactical": "BARC_RUN_TACTICAL_NATIVE=1 playwright test tactical-native-journey.spec.js",
     "test:stock-smoke": "BARC_RUN_STOCK_NATIVE_SMOKE=1 playwright test tactical-native-journey.spec.js --grep 'selected stock Count1 smoke'",
     "normalize:stock": "node stock-native-trace.mjs"
+  },
+  "dependencies": {
+    "@fable-org/fable-library-js": "2.8.0"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
