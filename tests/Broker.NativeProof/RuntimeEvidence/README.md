@@ -57,7 +57,9 @@ promoted into current authority by a contradictory response.
 The same executable also projects a bounded post-handoff failure observation through
 `fsbar.barc-stock-failure-projection/v1`. The projection accepts only the closed
 mechanical checkpoint and outcome enums, an optional compatible fixed F# checkpoint,
-the exact source-set/apphost/closure pins, and a failed operation-result binding. Its
+the exact source-set/apphost/closure pins, and the exact bounded bytes and digest of a
+closed failed operation result. F# enforces the category/outcome/policy-observation
+relation and the closed optional runtime-map failure-code variant. Its
 only positive status is `observed-failure`; `nativeAcceptance` is always false. Invalid,
 duplicate, inconsistent, oversized, or unknown input becomes the fixed
 `diagnostic-unavailable` result without echoing caller data. The executable writes at

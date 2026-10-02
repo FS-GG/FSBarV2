@@ -70,6 +70,17 @@ module FailureDiagnostic =
         | "policy-completion","invocation-completion" -> true
         | _ -> false
 
+    let private categoryFor = function
+        | "refused" | "policy-nonaccepted" -> "refused"
+        | "os-unavailable" | "malformed" | "unexpected" -> "error"
+        | "deadline" -> "operation-unknown"
+        | _ -> refuse()
+
+    let private runtimeFailureCodes =
+        Set [ "runtime-map-deleted"; "runtime-map-unadmitted"; "runtime-map-missing"
+              "runtime-map-identity-drift"; "runtime-map-content-drift"; "runtime-map-none"
+              "runtime-engine-map-missing"; "runtime-process-identity-drift" ]
+
     let unavailable () =
         let node=JsonObject()
         node["schema"]<-JsonValue.Create ResultSchema;node["status"]<-JsonValue.Create "diagnostic-unavailable"
@@ -80,7 +91,7 @@ module FailureDiagnostic =
 
     let project (expectedSource:string) (expectedPolicy:string) (expectedClosure:string) (root:JsonElement) =
         try
-            exact root ["schema";"expected";"observation";"observationSha256";"operationResult";"operationResultSha256"]
+            exact root ["schema";"expected";"observation";"observationSha256";"operationResultBase64";"operationResultSha256"]
             require(text "schema" root=RequestSchema)
             let expected=root.GetProperty "expected"
             exact expected ["configSha256";"sourceSetSha256";"policySha256";"closureSha256"]
@@ -95,23 +106,36 @@ module FailureDiagnostic =
             let outcome=text "outcome" observation
             require(checks.Contains check && outcomes.Contains outcome)
             let policyElement=observation.GetProperty "policyObservation"
-            let policyNode =
-                if policyElement.ValueKind=JsonValueKind.Null then null
+            let policyNode,policyKind =
+                if policyElement.ValueKind=JsonValueKind.Null then null,None
                 else
                     exact policyElement ["schema";"checkpoint";"kind"]
                     require(text "schema" policyElement=PolicyObservationSchema)
                     let checkpoint=text "checkpoint" policyElement
                     let kind=text "kind" policyElement
                     require(policyCheckpoints.Contains checkpoint && policyKinds.Contains kind && compatible check checkpoint)
-                    JsonNode.Parse(policyElement.GetRawText())
+                    JsonNode.Parse(policyElement.GetRawText()),Some kind
             let observationHash=digest "observationSha256" root
             require(canonicalHash observation=observationHash)
-            let operation=root.GetProperty "operationResult"
-            exact operation ["schema";"status";"category"]
+            let operationBytes=Convert.FromBase64String(text "operationResultBase64" root)
+            require(operationBytes.Length>0 && operationBytes.Length<=8192)
+            let operationHash=digest "operationResultSha256" root
+            require((SHA256.HashData operationBytes |> Convert.ToHexStringLower)=operationHash)
+            use operationDocument=JsonDocument.Parse(operationBytes,JsonDocumentOptions(AllowTrailingCommas=false,CommentHandling=JsonCommentHandling.Disallow,MaxDepth=8))
+            let operation=operationDocument.RootElement
+            let operationNames=operation.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq
+            require(operationNames=Set ["schema";"status";"category"] || operationNames=Set ["schema";"status";"category";"failureCode"])
+            exact operation operationNames
             require(text "schema" operation="fsbar.barc-stock-operation-result/v1" && text "status" operation="failed")
             let category=text "category" operation
-            require(Set ["refused";"error";"operation-unknown"] |> Set.contains category)
-            let operationHash=digest "operationResultSha256" root
+            require(category=categoryFor outcome)
+            if operationNames.Contains "failureCode" then require(category="refused" && runtimeFailureCodes.Contains(text "failureCode" operation))
+            match policyKind with
+            | None -> require(outcome<>"policy-nonaccepted")
+            | Some "exception" -> require(outcome="refused")
+            | Some "pending" -> require(outcome="policy-nonaccepted" && check="policy-sample-exhausted")
+            | Some kind when kind="refused" || kind="unknown" -> require(outcome="policy-nonaccepted" && check="policy-result-join")
+            | _ -> refuse()
             let node=JsonObject()
             node["schema"]<-JsonValue.Create ResultSchema;node["status"]<-JsonValue.Create "observed-failure"
             node["observationSha256"]<-JsonValue.Create observationHash;node["operationResultSha256"]<-JsonValue.Create operationHash

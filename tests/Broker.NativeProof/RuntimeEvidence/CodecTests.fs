@@ -51,7 +51,10 @@ module CodecTests =
         let policyObservation="{\"schema\":\"fsbar.barc-runtime-evidence-failure-observation/v1\",\"checkpoint\":\"request-evaluation\",\"kind\":\"refused\"}"
         let observation=$"{{\"schema\":\"fsbar.barc-stock-failure-observation/v1\",\"configSha256\":\"{String('d',64)}\",\"sourceSetSha256\":\"{String('a',64)}\",\"policySha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\",\"scope\":\"post-handoff-pre-browser\",\"check\":\"policy-result-join\",\"outcome\":\"policy-nonaccepted\",\"policyObservation\":{policyObservation}}}"
         let observationHash=sha(bytes(observation+"\n"))
-        let diagnostic=$"{{\"schema\":\"fsbar.barc-stock-failure-projection/v1\",\"expected\":{{\"configSha256\":\"{String('d',64)}\",\"sourceSetSha256\":\"{String('a',64)}\",\"policySha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\"}},\"observation\":{observation},\"observationSha256\":\"{observationHash}\",\"operationResult\":{{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"refused\"}},\"operationResultSha256\":\"{String('e',64)}\"}}"
+        let operation="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"refused\"}\n"
+        let operationBase64=Convert.ToBase64String(bytes operation)
+        let operationHash=sha(bytes operation)
+        let diagnostic=$"{{\"schema\":\"fsbar.barc-stock-failure-projection/v1\",\"expected\":{{\"configSha256\":\"{String('d',64)}\",\"sourceSetSha256\":\"{String('a',64)}\",\"policySha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\"}},\"observation\":{observation},\"observationSha256\":\"{observationHash}\",\"operationResultBase64\":\"{operationBase64}\",\"operationResultSha256\":\"{operationHash}\"}}"
         let projected=evaluate diagnostic|>Codec.complete
         if not(projected.Contains("\"status\":\"observed-failure\"")) || not(projected.Contains("\"nativeAcceptance\":false")) || projected.Contains("PRIVATE_SENTINEL") then failwith "valid failure diagnostic projection refused"
         let invalidDiagnostics =
@@ -61,8 +64,8 @@ module CodecTests =
               diagnostic.Replace("\"checkpoint\":\"request-evaluation\"","\"checkpoint\":\"initial-closure\"")
               diagnostic.Replace("\"kind\":\"refused\"","\"kind\":\"PRIVATE_SENTINEL\"")
               diagnostic.Replace("\"outcome\":\"policy-nonaccepted\"","\"outcome\":[]")
-              diagnostic.Replace("\"status\":\"failed\"","\"status\":\"completed\"")
-              diagnostic.Replace("\"category\":\"refused\"","\"category\":null")
+              diagnostic.Replace(operationHash,String('0',64))
+              diagnostic.Replace("\"operationResultBase64\"","\"operationResult\":{},\"operationResultBase64\"")
               diagnostic.Replace("fsbar.barc-stock-failure-projection/v1","unknown-diagnostic/v1")
               diagnostic.Replace("\"policyObservation\":"+policyObservation,"\"policyObservation\":{\"schema\":\"fsbar.barc-runtime-evidence-failure-observation/v1\",\"checkpoint\":\"request-evaluation\",\"checkpoint\":\"request-evaluation\",\"kind\":\"refused\"}")
               diagnostic.Replace("{\"schema\":\"fsbar.barc-stock-failure-projection/v1\"","{\"extra\":true,\"schema\":\"fsbar.barc-stock-failure-projection/v1\"")
@@ -70,6 +73,19 @@ module CodecTests =
         for invalid in invalidDiagnostics do
             let unavailable=evaluate invalid|>Codec.complete
             if not(unavailable.Contains("\"status\":\"diagnostic-unavailable\"")) || unavailable.Contains("PRIVATE_SENTINEL") || unavailable.Contains("observed-failure") then failwith "malformed diagnostic escaped closed projection"
+        let operationUnknown="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"operation-unknown\"}\n"
+        let contradictory=diagnostic.Replace(operationBase64,Convert.ToBase64String(bytes operationUnknown)).Replace(operationHash,sha(bytes operationUnknown))
+        if not((evaluate contradictory|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "contradictory operation category accepted"
+        let runtimeFailure="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"refused\",\"failureCode\":\"runtime-map-missing\"}\n"
+        let runtimeDiagnostic=diagnostic.Replace(operationBase64,Convert.ToBase64String(bytes runtimeFailure)).Replace(operationHash,sha(bytes runtimeFailure))
+        if not((evaluate runtimeDiagnostic|>Codec.complete).Contains("\"status\":\"observed-failure\"")) then failwith "closed runtime failure result refused"
+        let pendingObservation=observation.Replace("\"kind\":\"refused\"","\"kind\":\"pending\"")
+        let pendingContradiction=diagnostic.Replace(observation,pendingObservation).Replace(observationHash,sha(bytes(pendingObservation+"\n")))
+        if not((evaluate pendingContradiction|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "incompatible pending policy observation accepted"
+        let mechanicalObservation=observation.Replace("\"check\":\"policy-result-join\"","\"check\":\"infolog-final-refresh\"").Replace("\"outcome\":\"policy-nonaccepted\"","\"outcome\":\"os-unavailable\"").Replace("\"policyObservation\":"+policyObservation,"\"policyObservation\":null")
+        let errorOperation="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"error\"}\n"
+        let mechanicalDiagnostic=diagnostic.Replace(observation,mechanicalObservation).Replace(observationHash,sha(bytes(mechanicalObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes errorOperation)).Replace(operationHash,sha(bytes errorOperation))
+        if not((evaluate mechanicalDiagnostic|>Codec.complete).Contains("\"status\":\"observed-failure\"")) then failwith "later mechanical failure refused"
         let oversized=diagnostic+String(' ',8193)
         if not((evaluate oversized|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "oversized diagnostic decoded"
         let malformed=Array.append (bytes diagnostic) [|0xffuy|]
