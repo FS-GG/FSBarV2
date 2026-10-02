@@ -3,7 +3,7 @@ namespace FSBar.NativeProof.RuntimeEvidence
 type Boundary = BrowserAdmission | Normalization | Release
 
 type ProducerIdentity = {
-    RunId: string; SourceSetSha256: string; ArtifactSha256: string
+    RunId: string; SourceSetSha256: string; ApphostSha256: string; ClosureSha256: string
     Pid: int; StartTicks: string; Uid: int; Device: string; Inode: string; Path: string
 }
 

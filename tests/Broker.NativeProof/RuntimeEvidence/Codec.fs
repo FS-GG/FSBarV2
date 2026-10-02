@@ -7,6 +7,8 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open System.Text.RegularExpressions
 
+type PolicyEvaluation = private { RequestedBoundary:Boundary; Evaluated:Transition }
+
 module Codec =
     let private exact (element: JsonElement) (names: string array) =
         if element.ValueKind <> JsonValueKind.Object then invalidArg "input" "object required"
@@ -34,8 +36,8 @@ module Codec =
         | _ -> invalidArg "boundary" "closed boundary"
     let private boundaryText = function BrowserAdmission -> "browser" | Normalization -> "normalization" | Release -> "release"
     let private identity (element: JsonElement) : ProducerIdentity =
-        exact element [|"runId";"sourceSetSha256";"artifactSha256";"pid";"startTicks";"uid";"device";"inode";"path"|]
-        { RunId=getString element "runId"; SourceSetSha256=getString element "sourceSetSha256"; ArtifactSha256=getString element "artifactSha256"
+        exact element [|"runId";"sourceSetSha256";"apphostSha256";"closureSha256";"pid";"startTicks";"uid";"device";"inode";"path"|]
+        { RunId=getString element "runId"; SourceSetSha256=getString element "sourceSetSha256"; ApphostSha256=getString element "apphostSha256";ClosureSha256=getString element "closureSha256"
           Pid=getInt element "pid"; StartTicks=getString element "startTicks"; Uid=getInt element "uid"; Device=getString element "device"; Inode=getString element "inode"; Path=getString element "path" }
     let private decodeState (element: JsonElement) : EvidenceState =
         if element.ValueKind = JsonValueKind.Null then GrowingLogEvidence.empty
@@ -54,7 +56,7 @@ module Codec =
     let private set<'T> (node: JsonObject) (name: string) (value: 'T) = node[name] <- JsonValue.Create<'T>(value)
     let private identityNode (value: ProducerIdentity) =
         let node=JsonObject()
-        set node "runId" value.RunId;set node "sourceSetSha256" value.SourceSetSha256;set node "artifactSha256" value.ArtifactSha256
+        set node "runId" value.RunId;set node "sourceSetSha256" value.SourceSetSha256;set node "apphostSha256" value.ApphostSha256;set node "closureSha256" value.ClosureSha256
         set node "pid" value.Pid;set node "startTicks" value.StartTicks;set node "uid" value.Uid;set node "device" value.Device;set node "inode" value.Inode;set node "path" value.Path
         node
     let private stateNode (value: EvidenceState) =
@@ -69,22 +71,23 @@ module Codec =
         node
     let private resultNode status state =
         let value=JsonObject()
-        set value "schema" "fsbar.barc-growing-log-policy-result/v1";set value "status" status
+        set value "schema" "fsbar.barc-growing-log-policy-result/v2";set value "status" status
         value["state"]<-stateNode state
         value.ToJsonString(JsonSerializerOptions(WriteIndented=false)) + "\n"
     let private stateOf = function Accepted state | Pending state | Refused state | Unknown state -> state
     let private statusOf = function Accepted _ -> "accepted" | Pending _ -> "pending" | Refused _ -> "refused" | Unknown _ -> "unknown"
-    let evaluate (input: byte array) =
+    let evaluate expectedApphostSha256 expectedClosureSha256 expectedSourceSetSha256 (input: byte array) =
         if isNull input || input.Length=0 || input.Length>6*1024*1024 then invalidArg "input" "encoded bound"
         use document=JsonDocument.Parse(input,JsonDocumentOptions(AllowTrailingCommas=false,CommentHandling=JsonCommentHandling.Disallow,MaxDepth=24))
         let root=document.RootElement
         exact root [|"schema";"boundary";"expected";"observation";"prior"|]
-        if getString root "schema" <> "fsbar.barc-growing-log-policy/v1" then invalidArg "schema" "schema"
+        if getString root "schema" <> "fsbar.barc-growing-log-policy/v2" then invalidArg "schema" "schema"
         let expected=root.GetProperty("expected")
-        exact expected [|"runId";"sourceSetSha256";"artifactSha256";"writeRoot";"dataRoot"|]
+        exact expected [|"runId";"sourceSetSha256";"apphostSha256";"closureSha256";"writeRoot";"dataRoot"|]
+        if getString expected "apphostSha256"<>expectedApphostSha256 || getString expected "closureSha256"<>expectedClosureSha256 || getString expected "sourceSetSha256"<>expectedSourceSetSha256 then invalidArg "expected" "active closure/source identity mismatch"
         let observation=root.GetProperty("observation")
         exact observation [|"pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256";"previousPrefixIntact";"writerFd";"writerFlags";"writerPosition";"available";"logBase64"|]
-        let identityValue={ RunId=getString expected "runId";SourceSetSha256=getString expected "sourceSetSha256";ArtifactSha256=getString expected "artifactSha256";Pid=getInt observation "pid";StartTicks=getString observation "startTicks";Uid=getInt observation "uid";Device=getString observation "device";Inode=getString observation "inode";Path=getString observation "path" }
+        let identityValue={ RunId=getString expected "runId";SourceSetSha256=getString expected "sourceSetSha256";ApphostSha256=getString expected "apphostSha256";ClosureSha256=getString expected "closureSha256";Pid=getInt observation "pid";StartTicks=getString observation "startTicks";Uid=getInt observation "uid";Device=getString observation "device";Inode=getString observation "inode";Path=getString observation "path" }
         let raw=Convert.FromBase64String(getString observation "logBase64")
         if raw.Length>4*1024*1024 || int64 raw.Length <> getInt64 observation "bytes" then invalidArg "logBase64" "decoded bound"
         let actualSha = SHA256.HashData(raw) |> Convert.ToHexStringLower
@@ -118,7 +121,8 @@ module Codec =
         let sampled=if statusOf acquired="accepted" then GrowingLogEvidence.sample sample afterAcquire else acquired
         let requestedBoundary=boundary(getString root "boundary")
         let validated=match sampled with Accepted state -> GrowingLogEvidence.validate requestedBoundary state | other -> other
-        let consumed=match validated with Accepted state -> GrowingLogEvidence.consume requestedBoundary state | other -> other
+        { RequestedBoundary=requestedBoundary;Evaluated=validated }
+    let complete (evaluation:PolicyEvaluation) =
+        let consumed=match evaluation.Evaluated with Accepted state -> GrowingLogEvidence.consume evaluation.RequestedBoundary state | other -> other
         let finalState=stateOf consumed
-        if statusOf consumed="accepted" && (finalState.Bytes <> int64 raw.Length || finalState.Sha256 <> actualSha) then invalidArg "result" "sample identity mismatch"
         resultNode (statusOf consumed) finalState

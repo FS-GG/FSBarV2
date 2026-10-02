@@ -8,6 +8,9 @@ open FsQuint
 open FSBar.NativeProof.RuntimeEvidence
 
 module CorrespondenceTests =
+    let mutable private policyPhase="none"
+    let mutable private policyInvocation="none"
+    let mutable private policyClosure="none"
     let private unwrap = function Ok value -> value | Error error -> failwithf "%A" error
     let private hashBytes (bytes: byte array) = SHA256.HashData bytes |> Convert.ToHexStringLower
     let private hashFile path = File.ReadAllBytes path |> hashBytes
@@ -19,7 +22,7 @@ module CorrespondenceTests =
     let private boundaryText = function Some BrowserAdmission->"browser"|Some Normalization->"normalization"|Some Release->"release"|None->"none"
     let private state rootsValid prefixIntact writerPresent (value: EvidenceState) =
         let present=value.Identity.IsSome
-        let record=Record ["phase",Text value.Phase;"generation",Integer(if present then "1" else "0");"observedRevision",Integer(string value.ObservedRevision);"validatedRevision",Integer(string value.ValidatedRevision);"intendedBoundary",Text(boundaryText value.ValidatedBoundary);"consumedRevision",Integer(string value.ConsumedRevision);"consumedBoundary",Text(boundaryText value.ConsumedBoundary);"producerMatches",Boolean present;"logMatches",Boolean present;"sourceMatches",Boolean present;"rootsValid",Boolean rootsValid;"prefixIntact",Boolean prefixIntact;"writerPresent",Boolean writerPresent;"authorityActive",Boolean(value.Phase="validated" && not value.StickyInvalid);"stickyInvalid",Boolean value.StickyInvalid]
+        let record=Record ["phase",Text value.Phase;"generation",Integer(if present then "1" else "0");"observedRevision",Integer(string value.ObservedRevision);"validatedRevision",Integer(string value.ValidatedRevision);"intendedBoundary",Text(boundaryText value.ValidatedBoundary);"consumedRevision",Integer(string value.ConsumedRevision);"consumedBoundary",Text(boundaryText value.ConsumedBoundary);"producerMatches",Boolean present;"logMatches",Boolean present;"sourceMatches",Boolean present;"rootsValid",Boolean rootsValid;"prefixIntact",Boolean prefixIntact;"writerPresent",Boolean writerPresent;"authorityActive",Boolean(value.Phase="validated" && not value.StickyInvalid);"stickyInvalid",Boolean value.StickyInvalid;"policyPhase",Text policyPhase;"policyInvocation",Text policyInvocation;"policyClosure",Text policyClosure]
         let draft={Identity="";Bindings=["evidence",record]}
         {draft with Identity=QuintReplay.stateFingerprint draft |> unwrap}
     let private accepted = function Accepted value -> value | other -> failwithf "%A" other
@@ -30,24 +33,75 @@ module CorrespondenceTests =
         let observations=projected|>List.mapi(fun index actual->{Index=index+1;Action=actions[index];Source=source;Actual=actual})
         match QuintReplay.compare trace observations |> unwrap with QuintReplayResult.Equivalent -> trace,observations | other -> failwithf "%s reducer/model divergence: %A" name other
     let run baseDirectory =
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         let tool=locate "quint"
         let environment={Seed="424242";Bounds=["revisions",3L;"generations",2L];ToolFingerprint=hashFile tool;ProfileFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.qnt");Path.Combine(baseDirectory,"GrowingLogEvidence_test.qnt")];ContractFingerprint=hashFile(Path.Combine(baseDirectory,"Codec.fs"));AdapterFingerprint=hashFile(Path.Combine(baseDirectory,"DataRootPolicy.fs"));ImplementationFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.fs");typeof<EvidenceState>.Assembly.Location]}
-        let id={RunId="run";SourceSetSha256=String('a',64);ArtifactSha256=String('b',64);Pid=100;StartTicks="1";Uid=1000;Device="1";Inode="2";Path="/private/infolog.txt"}
+        let id={RunId="run";SourceSetSha256=String('a',64);ApphostSha256=String('b',64);ClosureSha256=String('c',64);Pid=100;StartTicks="1";Uid=1000;Device="1";Inode="2";Path="/private/infolog.txt"}
         let observe rev bytes sha complete available writer roots={Identity=id;Revision=rev;Bytes=bytes;Sha256=sha;PreviousPrefixIntact=true;WriterPresent=writer;CompleteRecord=complete;Available=available;RootsValid=roots;PendingReason=None}
         let mutable current=GrowingLogEvidence.empty
         let states=ResizeArray<QuintReplayState>()
         let push next roots prefix writer=current<-accepted next;states.Add(state roots prefix writer current)
+        let mutable composition:CompositionSession option=None
+        let recordGuard identity session roots prefix writer =
+            composition<-Some session
+            policyPhase<-session.State.Phase;policyInvocation<-identity.InvocationId;policyClosure<-identity.ClosureSha256
+            states.Add(state roots prefix writer current)
+        let beginReady number roots prefix writer =
+            let identity={InvocationId=$"invocation{number}";ClosureSha256=String('c',64);Pid=100;StartTicks="1";Uid=1000}
+            let started=PolicyComposition.start identity
+            recordGuard identity started roots prefix writer
+            let ready=PolicyComposition.ready identity started
+            recordGuard identity ready roots prefix writer
+            identity
+        let evaluateComplete identity roots prefix writer =
+            let evaluated=PolicyComposition.evaluated identity composition.Value
+            recordGuard identity evaluated roots prefix writer
+            match PolicyComposition.finishGuard identity true evaluated with
+            | Choice1Of2 completed -> recordGuard identity completed roots prefix writer
+            | Choice2Of2 refused -> failwithf "healthy final guard refused: %A" refused
+        let identity1=beginReady 1 false false false
         push(GrowingLogEvidence.acquire id current) false false true
         push(GrowingLogEvidence.sample (observe 1 100L (String('c',64)) true true true true) current) true true true
-        push(GrowingLogEvidence.validate BrowserAdmission current) true true true;push(GrowingLogEvidence.consume BrowserAdmission current) true true true
+        push(GrowingLogEvidence.validate BrowserAdmission current) true true true
+        evaluateComplete identity1 true true true
+        push(GrowingLogEvidence.consume BrowserAdmission current) true true true
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         push(GrowingLogEvidence.sample (observe 2 120L (String('d',64)) true true true true) current) true true true
-        push(GrowingLogEvidence.validate Normalization current) true true true;push(GrowingLogEvidence.consume Normalization current) true true true
+        let identity2=beginReady 2 true true true
+        push(GrowingLogEvidence.validate Normalization current) true true true
+        evaluateComplete identity2 true true true
+        push(GrowingLogEvidence.consume Normalization current) true true true
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         push(GrowingLogEvidence.sample (observe 3 140L (String('e',64)) true true true true) current) true true true
-        push(GrowingLogEvidence.validate Release current) true true true;push(GrowingLogEvidence.consume Release current) true true true
-        let healthyActions=["acquire";"sampleInitial";"validate:browser";"consume:browser";"benignAppend";"validate:normalization";"consume:normalization";"benignAppend";"validate:release";"consume:release"]
-        let trace,observations=compareTrace baseDirectory environment "healthy" healthyActions (List.ofSeq states)
-        let changed=observations |> List.mapi(fun index item -> if index=observations.Length-1 then {item with Actual=state false true true current} else item)
-        match QuintReplay.compare trace changed |> unwrap with QuintReplayResult.Diverged _ -> () | other -> failwithf "semantic mutation did not diverge: %A" other
+        let identity3=beginReady 3 true true true
+        push(GrowingLogEvidence.validate Release current) true true true
+        evaluateComplete identity3 true true true
+        push(GrowingLogEvidence.consume Release current) true true true
+        let before n=["beginPolicy:invocation"+string n;"readyPolicy:invocation"+string n]
+        let after n=["evaluatedPolicy:invocation"+string n;"completePolicy:invocation"+string n]
+        let healthyActions=before 1@["acquire";"sampleInitial";"validate:browser"]@after 1@["consume:browser";"benignAppend"]@before 2@["validate:normalization"]@after 2@["consume:normalization";"benignAppend"]@before 3@["validate:release"]@after 3@["consume:release"]
+        compareTrace baseDirectory environment "healthy" healthyActions (List.ofSeq states)|>ignore
+        let guardProbe={InvocationId="invocation";ClosureSha256=String('c',64);Pid=100;StartTicks="1";Uid=1000}
+        current<-GrowingLogEvidence.empty
+        let guardStarted=PolicyComposition.start guardProbe
+        policyPhase<-guardStarted.State.Phase;policyInvocation<-guardProbe.InvocationId;policyClosure<-guardProbe.ClosureSha256
+        let driftStates=ResizeArray<QuintReplayState>()
+        driftStates.Add(state false false false current)
+        let guardReady=PolicyComposition.ready guardProbe guardStarted
+        policyPhase<-guardReady.State.Phase;driftStates.Add(state false false false current)
+        current<-GrowingLogEvidence.acquire id current|>accepted;driftStates.Add(state false false true current)
+        current<-GrowingLogEvidence.sample (observe 1 100L (String('c',64)) true true true true) current|>accepted;driftStates.Add(state true true true current)
+        current<-GrowingLogEvidence.validate BrowserAdmission current|>accepted;driftStates.Add(state true true true current)
+        let guardEvaluated=PolicyComposition.evaluated guardProbe guardReady
+        policyPhase<-guardEvaluated.State.Phase;driftStates.Add(state true true true current)
+        match PolicyComposition.finishGuard guardProbe false guardEvaluated with
+        | Choice2Of2 refused when refused.State.StickyInvalid && not(refused.Events|>List.contains ExternalConsumption) ->
+            policyPhase<-refused.State.Phase
+            current<-{current with Phase="invalid";StickyInvalid=true;Reason=Some "invocation-final-closure"}
+            driftStates.Add(state true true true current)
+        | other -> failwithf "actual final guard weakening control failed: %A" other
+        compareTrace baseDirectory environment "policyClosureDriftIsSticky" (["beginPolicy:invocation";"readyPolicy:invocation";"acquire";"sampleInitial";"validate:browser";"evaluatedPolicy:invocation";"policyDrift"]) (List.ofSeq driftStates)|>ignore
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         let initial ()=GrowingLogEvidence.acquire id GrowingLogEvidence.empty |> accepted
         let sampled value=GrowingLogEvidence.sample (observe 1 100L (String('c',64)) true true true true) value |> accepted
         let validated value=GrowingLogEvidence.validate BrowserAdmission value |> accepted
@@ -57,9 +111,35 @@ module CorrespondenceTests =
         let a=initial()
         let s=sampled a
         let v=validated s
-        sequence "unavailableAfterValidationRevokesCurrentAuthority" ["acquire";"sampleInitial";"validate:browser";"unavailable"] [state false false true a;state true true true s;state true true true v;state true true false (unavailable v)]
+        let aState=state false false true a
+        let sState=state true true true s
+        let vState=state true true true v
+        sequence "unavailableAfterValidationRevokesCurrentAuthority" ["acquire";"sampleInitial";"validate:browser";"unavailable"] [aState;sState;vState;state true true false (unavailable v)]
+        let guardId={InvocationId="invocation";ClosureSha256=String('c',64);Pid=100;StartTicks="1";Uid=1000}
+        current<-GrowingLogEvidence.empty
+        let g0=PolicyComposition.start guardId
+        policyPhase<-g0.State.Phase
+        policyInvocation<-guardId.InvocationId
+        policyClosure<-guardId.ClosureSha256
+        let gs0=state false false false current
+        let g1=PolicyComposition.ready guardId g0
+        policyPhase<-g1.State.Phase
+        let gs1=state false false false current
+        current<-a
+        let ga=state false false true a
+        current<-s
+        let gs=state true true true s
+        current<-v
+        let gv=state true true true v
+        let g2=PolicyComposition.evaluated guardId g1
+        policyPhase<-g2.State.Phase
+        let gs2=state true true true v
+        let g3=match PolicyComposition.finishGuard guardId true g2 with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
+        policyPhase<-g3.State.Phase
+        let gs3=state true true true v
         let c=consumed v
-        sequence "unavailableAfterConsumptionPreservesHistoryOnly" ["acquire";"sampleInitial";"validate:browser";"consume:browser";"unavailable"] [state false false true a;state true true true s;state true true true v;state true true true c;state true true false (unavailable c)]
+        sequence "unavailableAfterConsumptionPreservesHistoryOnly" (before 0@["acquire";"sampleInitial";"validate:browser"]@after 0@["consume:browser";"unavailable"]) [gs0;gs1;ga;gs;gv;gs2;gs3;state true true true c;state true true false (unavailable c)]
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         let pending=GrowingLogEvidence.sample (observe 1 100L (String('c',64)) false true true false) a |> transitioned
         sequence "pendingTailHasNoAuthority" ["acquire";"pendingTail";"close"] [state false false true a;state false true true pending;state false true true (GrowingLogEvidence.close pending)]
         let stale=GrowingLogEvidence.consume Normalization v |> transitioned

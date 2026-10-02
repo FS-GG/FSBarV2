@@ -4,7 +4,7 @@ open FSBar.NativeProof.RuntimeEvidence
 
 module GrowingLogEvidenceTests =
     let private sha c = System.String(c,64)
-    let identity generation = { RunId="run";SourceSetSha256=sha 'a';ArtifactSha256=sha 'b';Pid=100;StartTicks=string generation;Uid=1000;Device="1";Inode="2";Path="/private/infolog.txt" }
+    let identity generation = { RunId="run";SourceSetSha256=sha 'a';ApphostSha256=sha 'b';ClosureSha256=sha 'c';Pid=100;StartTicks=string generation;Uid=1000;Device="1";Inode="2";Path="/private/infolog.txt" }
     let accepted = function Accepted value -> value | other -> failwithf "expected acceptance: %A" other
     let sample identity revision bytes digest intact roots state = GrowingLogEvidence.sample {Identity=identity;Revision=revision;Bytes=bytes;Sha256=digest;PreviousPrefixIntact=intact;WriterPresent=true;CompleteRecord=true;Available=true;RootsValid=roots;PendingReason=None} state
     let run () =

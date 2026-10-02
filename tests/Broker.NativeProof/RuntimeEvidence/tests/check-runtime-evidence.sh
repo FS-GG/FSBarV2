@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-4}"
+export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-1}"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky)$' --seed 424242 --max-samples 1
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky)$' --seed 424242 --max-samples 1
 quint run "$ROOT/GrowingLogEvidence.qnt" --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 TMP=$(mktemp -d)
 trap 'python3 - "$TMP" <<'"'"'PY'"'"'
@@ -33,9 +33,10 @@ unavailableAfterConsumptionPreservesHistoryOnly|GrowingLogEvidence.unavailableAf
 pendingTailHasNoAuthority|GrowingLogEvidence.pendingTailHasNoAuthority.itf.json
 staleBoundaryCannotConsume|GrowingLogEvidence.staleBoundaryCannotConsume.itf.json
 closeRevokesCurrentAuthority|GrowingLogEvidence.closeRevokesCurrentAuthority.itf.json
+policyClosureDriftIsSticky|GrowingLogEvidence.policyClosureDriftIsSticky.itf.json
 EOF
 dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
-dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:4
+dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
 dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build
 
 POLICY_OUTPUT="$ROOT/bin/RuntimeEvidence/Release/net10.0"
