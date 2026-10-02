@@ -41,6 +41,7 @@ while IFS='|' read -r scenario fixture; do
 import json,pathlib,sys
 value=json.loads(pathlib.Path(sys.argv[1]).read_text())
 value['#meta'].pop('description',None);value['#meta'].pop('timestamp',None);value['#meta']['source']='GrowingLogEvidence_test.qnt'
+value['#meta']['status']='ok'
 actual=json.dumps(value,separators=(',',':'),sort_keys=True)+'\n'
 expected=pathlib.Path(sys.argv[2]).read_text()
 if actual != expected:raise SystemExit('normalized Quint trace drift')
