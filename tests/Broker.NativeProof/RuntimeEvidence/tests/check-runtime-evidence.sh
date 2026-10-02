@@ -6,8 +6,6 @@ test "$(dotnet --version)" = "10.0.401"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
-quint run "$ROOT/GrowingLogEvidence.qnt" --backend=typescript --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 TMP=$(mktemp -d)
 trap 'python3 - "$TMP" <<'"'"'PY'"'"'
 import pathlib,shutil,sys
@@ -33,6 +31,15 @@ manifest={'schema':'fsgg.private.barc-selected-framework-census-work-bound-helpe
 PY
 fi
 export BAR_GROWING_LOG_HELPER
+dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
+dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
+test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
+(cd "$BAR_GROWING_LOG_HELPER" && \
+  BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
+  BAR_RUNTIME_EVIDENCE_SOURCE="$(cd "$ROOT/../../.." && pwd)" \
+  python3 -m unittest -v test_growing_log.GrowingLogTests.test_staged_runtime_policy_readiness_preflight)
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
+quint run "$ROOT/GrowingLogEvidence.qnt" --backend=typescript --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 while IFS='|' read -r scenario fixture; do
   quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test \
     --match "^${scenario}$" --out-itf "$TMP/trace_{test}_{seq}.itf.json" \
@@ -62,9 +69,6 @@ pendingThenCompleteResample|GrowingLogEvidence.pendingThenCompleteResample.itf.j
 sharedBudgetAcrossEvaluations|GrowingLogEvidence.sharedBudgetAcrossEvaluations.itf.json
 lastProbeCandidateThenExhausted|GrowingLogEvidence.lastProbeCandidateThenExhausted.itf.json
 EOF
-dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
-dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
-test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
 TRANSCRIPT="$TMP/complete-record-correspondence.json"
 (cd "$BAR_GROWING_LOG_HELPER" && \
   BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \

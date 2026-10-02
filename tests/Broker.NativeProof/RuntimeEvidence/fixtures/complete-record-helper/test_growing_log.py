@@ -244,7 +244,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         real_popen=subprocess.Popen
         def private_runtime_popen(argv,*args,**kwargs):
             if argv and pathlib.Path(argv[0])==self.policy:
-                env=dict(kwargs.get('env') or {});env['DOTNET_ROOT']=str(self.dotnet_root);kwargs['env']=env
+                env=dict(kwargs.get('env') or {});env['DOTNET_ROOT']=str(self.dotnet_root);env['DOTNET_ROOT_X64']=str(self.dotnet_root);env['DOTNET_MULTILEVEL_LOOKUP']='0';kwargs['env']=env
             return real_popen(argv,*args,**kwargs)
         self.popen_patch=mock.patch.object(growing_log.subprocess,'Popen',side_effect=private_runtime_popen);self.popen_patch.start()
     def tearDown(self):
@@ -273,6 +273,34 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         return {'runId':'run','source':{'fsbarCommit':'2cd9f47dd120d43b6781b6edc7dbb1d571cc51a1','highbarCommit':'54e17084c35b90584f8f84efc468bcc8943e4ec0'},'artifacts':{'runtimeEvidencePolicy':{'path':str(executable),'sha256':sha},'runtimeEvidencePolicyClosure':{'path':str(self.closure),'sha256':self.closure_sha}},'commands':{'engine':engine}}
     def consume(self,boundary):return self.handle.consume(boundary,self.config(),time.monotonic()+5)
     def command(self,value):self.child.stdin.write((value+'\n').encode());self.child.stdin.flush();time.sleep(.03)
+    def test_staged_runtime_policy_readiness_preflight(self):
+        runtime_config=json.loads((self.policy.parent/'RuntimeEvidence.runtimeconfig.json').read_text())
+        framework=runtime_config['runtimeOptions']['framework']
+        host=subprocess.run([str(self.dotnet_root/'dotnet'),'--info'],env={'PATH':'/usr/bin:/bin','DOTNET_ROOT':str(self.dotnet_root),'DOTNET_ROOT_X64':str(self.dotnet_root),'DOTNET_MULTILEVEL_LOOKUP':'0'},stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=2)
+        def stream(raw):
+            if not raw:return 'empty'
+            value=raw[:4096].decode('utf-8','replace').lower()
+            if 'you must install or update .net' in value:return 'framework-unavailable'
+            if 'hostfxr' in value:return 'hostfxr-unavailable'
+            if 'permission denied' in value:return 'permission-refused'
+            return 'bounded-nonempty'
+        diagnostic={'schema':'fsbar.public.runtime-evidence-startup-diagnostic/v1','dotnetHostExit':host.returncode,'dotnetStdout':stream(host.stdout),'dotnetStderr':stream(host.stderr),'runtimeFrameworkName':framework['name'],'runtimeFrameworkVersion':framework['version'],'selectedRuntimeVersion':self.dotnet_root.joinpath('shared/Microsoft.NETCore.App').iterdir().__next__().name,'selectedHostfxrVersion':self.dotnet_root.joinpath('host/fxr').iterdir().__next__().name,'runtimeFiles':sum(1 for path in self.dotnet_root.rglob('*') if path.is_file()),'runtimeLinks':sum(1 for path in self.dotnet_root.rglob('*') if path.is_symlink()),'policyDisposition':'not-started','policyCheck':None,'policyObservation':None}
+        self.assertEqual((host.returncode,diagnostic['runtimeLinks']),(0,0))
+        runner=object.__new__(GrowingLog);runner.last_policy_observation=None
+        try:
+            runner._run_policy(str(self.policy),str(self.closure),self.closure_sha,b'{}',time.monotonic()+5)
+            diagnostic['policyDisposition']='ready-completed'
+            if runner.last_policy_observation:diagnostic['policyObservation']=runner.last_policy_observation['checkpoint']+':'+runner.last_policy_observation['kind']
+        except BaseException as error:
+            fact=getattr(error,'_barc_failure_observation',None);diagnostic['policyDisposition']='refused'
+            if isinstance(fact,dict):
+                diagnostic['policyCheck']=fact.get('check')
+                observation=fact.get('policyObservation')
+                if isinstance(observation,dict):diagnostic['policyObservation']=observation.get('checkpoint','unknown')+':'+observation.get('kind','unknown')
+            print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True)
+            raise
+        print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True)
+        self.assertEqual(diagnostic['policyDisposition'],'ready-completed')
     @staticmethod
     def state_projection(value):
         if value is None:return None
