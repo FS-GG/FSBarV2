@@ -56,6 +56,34 @@ class BufferedWriterTests(unittest.TestCase):
     def test_flush_control_promotes_exact_untrimmed_record_sample(self):
         self.command('flush');raw,_,_,probes=self.handle._settle(time.monotonic()+5,0)
         self.assertTrue(raw.endswith(b'\n'));self.assertEqual(probes,1);self.assertEqual(self.handle.counters['tailBytes'],0);self.assertEqual(self.handle.previous,raw);self.assertEqual(self.handle.counters['evaluationsBegun'],0)
+    def test_raw_candidate_retains_actual_libc_unfinished_tail(self):
+        raw,_,_,probes=self.handle._settle(time.monotonic()+5,0,raw_mode=True)
+        self.assertEqual(probes,1);self.assertFalse(raw.endswith(b'\n'))
+        self.assertEqual(raw,self.handle.previous);self.assertGreater(self.handle.counters['tailBytes'],0)
+        self.assertEqual(self.handle.settlement_effects[-1]['event'],'raw')
+        self.assertIsNone(self.handle.state);self.assertEqual(self.handle.counters['evaluationsBegun'],0)
+    def test_final_size_L_observes_append_during_actual_prefix_reread(self):
+        raw,_,_,_=self.handle._settle(time.monotonic()+5,0,raw_mode=True)
+        original=self.handle._read_exact;fired=[]
+        def read(length,deadline=None):
+            value=original(length,deadline)
+            if not fired:fired.append(True);self.command('grow')
+            return value
+        self.handle._read_exact=read
+        current,_=self.handle._custody(raw,False,True,time.monotonic()+5)
+        self.assertGreater(current.st_size,len(raw));self.assertEqual(self.handle.final_observation['rawBytes'],current.st_size)
+        observed=self.handle.final_observation
+        self.assertLessEqual(observed['readStartMicroseconds'],observed['readEndMicroseconds']);self.assertLessEqual(observed['readEndMicroseconds'],observed['linearizedMicroseconds'])
+        next_raw,_,_,_=self.handle._settle(time.monotonic()+5,1,raw_mode=True)
+        self.assertTrue(next_raw.startswith(raw));self.assertEqual(len(next_raw),current.st_size)
+    def test_post_L_append_is_new_raw_custody_on_next_observation(self):
+        raw,_,_,_=self.handle._settle(time.monotonic()+5,0,raw_mode=True)
+        current,_=self.handle._custody(raw,False,True,time.monotonic()+5)
+        at=dict(self.handle.final_observation);self.assertEqual(current.st_size,len(raw))
+        self.command('grow')
+        self.assertEqual(self.handle.final_observation,at)
+        next_raw,_,_,_=self.handle._settle(time.monotonic()+5,1,raw_mode=True)
+        self.assertGreater(len(next_raw),len(raw));self.assertTrue(next_raw.startswith(raw))
 class LogBudgetTests(unittest.TestCase):
     def test_actual_exact_read_supports_full_ten_mib(self):
         expected=b'x'*(10*1024*1024-1)+b'\n'

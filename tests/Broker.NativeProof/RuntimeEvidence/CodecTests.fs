@@ -11,7 +11,7 @@ module CodecTests =
     let private request () =
         let log=Encoding.UTF8.GetBytes("[DataDirLocater::Check] Isolation Mode!\n[DataDirLocater::FindWriteableDataDir] using writeable data-directory \"/write\"\n[DataDirLocater::FilterUsableDataDirs] using read-write data directory: /write/\n[DataDirLocater::FilterUsableDataDirs] using read-only data directory: /data/\n")
         let encoded=Convert.ToBase64String(log)
-        let source=$"{{\"schema\":\"fsbar.barc-growing-log-policy/v2\",\"boundary\":\"browser\",\"expected\":{{\"runId\":\"run\",\"sourceSetSha256\":\"{String('a',64)}\",\"apphostSha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\",\"writeRoot\":\"/write\",\"dataRoot\":\"/data\"}},\"observation\":{{\"pid\":100,\"startTicks\":\"1\",\"uid\":1000,\"device\":\"1\",\"inode\":\"2\",\"path\":\"/private/infolog.txt\",\"revision\":1,\"bytes\":{log.Length},\"sha256\":\"{sha log}\",\"previousPrefixIntact\":true,\"writerFd\":4,\"writerFlags\":1,\"writerPosition\":{log.Length},\"available\":true,\"logBase64\":\"{encoded}\"}},\"prior\":null}}"
+        let source=$"{{\"schema\":\"fsbar.barc-growing-log-policy/v3\",\"boundary\":\"browser\",\"expected\":{{\"runId\":\"run\",\"sourceSetSha256\":\"{String('a',64)}\",\"apphostSha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\",\"writeRoot\":\"/write\",\"dataRoot\":\"/data\"}},\"observation\":{{\"pid\":100,\"startTicks\":\"1\",\"uid\":1000,\"device\":\"1\",\"inode\":\"2\",\"path\":\"/private/infolog.txt\",\"revision\":1,\"bytes\":{log.Length},\"sha256\":\"{sha log}\",\"previousPrefixIntact\":true,\"writerFd\":4,\"writerFlags\":1,\"writerPosition\":{log.Length},\"available\":true,\"logBase64\":\"{encoded}\",\"attemptId\":1,\"probeCount\":1,\"evaluationCount\":1,\"deadlineMicroseconds\":5000000}},\"prior\":null}}"
         source,log
     let private bytes (value:string)=Encoding.UTF8.GetBytes(value)
     let private evaluate value = Codec.evaluate (String('b',64)) (String('c',64)) (String('a',64)) (bytes value)
@@ -23,6 +23,9 @@ module CodecTests =
         try Codec.evaluate (String('b',64)) (String('d',64)) (String('a',64)) (bytes source)|>ignore;failwith "active closure mismatch accepted" with :? ArgumentException -> ()
         try Codec.evaluate (String('b',64)) (String('c',64)) (String('d',64)) (bytes source)|>ignore;failwith "active source set mismatch accepted" with :? ArgumentException -> ()
         if not(result.Contains("\"status\":\"accepted\"")) || result.Contains("logBase64") then failwith "valid closed codec projection failed"
+        use candidateDocument=JsonDocument.Parse(result)
+        let candidate=candidateDocument.RootElement.GetProperty("state")
+        if candidate.GetProperty("phase").GetString()<>"validated" || candidate.GetProperty("consumedRevision").GetInt32()<>0 || candidate.GetProperty("consumption").ValueKind<>JsonValueKind.Null then failwith "policy completion fabricated external consumption"
         let rawCap=10*1024*1024
         let encodedCap=16*1024*1024
         let withRaw (raw:byte array) =
@@ -61,7 +64,7 @@ module CodecTests =
         use firstDocument=JsonDocument.Parse(result)
         let prior=firstDocument.RootElement.GetProperty("state").GetRawText()
         let grown=Array.append log (Encoding.UTF8.GetBytes("unrelated complete record\n"))
-        let next=source.Replace("\"revision\":1","\"revision\":2").Replace($"\"bytes\":{length}",$"\"bytes\":{grown.Length}").Replace(sha log,sha grown).Replace(Convert.ToBase64String(log),Convert.ToBase64String(grown)).Replace("\"prior\":null",$"\"prior\":{prior}")
+        let next=source.Replace("\"revision\":1","\"revision\":2").Replace("\"probeCount\":1","\"probeCount\":2").Replace("\"evaluationCount\":1","\"evaluationCount\":2").Replace($"\"bytes\":{length}",$"\"bytes\":{grown.Length}").Replace(sha log,sha grown).Replace(Convert.ToBase64String(log),Convert.ToBase64String(grown)).Replace("\"prior\":null",$"\"prior\":{prior}")
         let nextResult=evaluate next|>Codec.complete
         if not(nextResult.Contains("\"status\":\"accepted\"")) then failwith "coherent prior prefix refused"
         let changedPrefix=Array.copy grown

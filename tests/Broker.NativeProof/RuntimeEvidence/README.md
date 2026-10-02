@@ -135,3 +135,16 @@ separate bounds. Sustained atlas logging can still exhaust these budgets.
 The capacity change does not fix partial-record or continuously growing-file
 semantics; qualified artifacts and private helper placement need rebuilding
 before a native attempt uses it.
+
+
+## RP2 complete prefix and retained raw tail
+
+The successor growing-log request/result schema is `v3`; the existing current-process invocation frame remains `v2`. Installed predecessor artifacts remain separate. The codec derives the exact raw, complete LF prefix and unfinished tail descriptors from the supplied bytes and rechecks the entire previous raw prefix, including unfinished bytes. Complete records retain the anchored stock root/write/isolation grammar. Missing required complete evidence is pending; contradictions, NUL and malformed UTF-8 refuse. A truncated UTF-8 scalar is pending.
+
+A nonempty tail is eligible only after the complete optional stock timestamp/frame prefix and exact `CTextureRenderAtlas::CreateAtlasTexture()[0] atlas=` or `[1] atlas=` discriminator; the remainder must be ASCII without LF, CR or NUL. Unknown, relevant or short discriminators remain pending. Every observed byte remains in custody. This rule does not promise progress for an indefinitely growing or unknown tail.
+
+F# policy completion returns a **candidate**, without consumed authority. The helper rereads the complete raw horizon, rechecks permanent producer/path/writer changes during that reread, then takes the held-FD size observation L. Any observed growth requires a fresh F# evaluation within the same frozen deadline, shared probes and three evaluations. The receipt binds read-start/read-end/L/release offsets, the exact raw/P/T horizon, boundary and attempt. Release must precede the frozen deadline. Writes after L remain unvalidated; the next boundary resamples from zero. No reusable authority survives consumption. These observed checks do not detect an adversarial ABA between reads or prove future freshness.
+
+The 27 named predecessor witnesses and 14 regenerated ITFs remain historical canonical-model/typed-reducer controls. The current gate requires 11 successor witnesses, actual libc held-FD controls, 14 actual framed F#/helper scenarios, parameterized runs importing the unchanged canonical model, and full modeled-state/ordered-effect joins. The dynamic runs contain fixture constants and expected observed projections, never alternate transition definitions. Semantic mutants exercise omitted/reordered/duplicate candidates, component hashes, invented L, stale terminal, frozen-budget renewal and missing observed-growth revocation.
+
+This window changes source only; qualification requires the gate above. RP3 capacity measurement, RP4 protected executable/engine/plugin custody, RP5 a changed native Count1 and all six useful-play journeys remain independent owner gates. The installed495/2639 failed packet is unchanged.

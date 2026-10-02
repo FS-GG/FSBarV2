@@ -35,17 +35,26 @@ def _policy_observation(raw):
         return value
     except Exception:return None
 
-def _closed_state(value,status,boundary,identity,revision,sample_bytes,sample_sha256,prior):
-    fields={'phase','identity','observedRevision','validatedRevision','validatedBoundary','consumedRevision','consumedBoundary','bytes','sha256','stickyInvalid','reason'}
+def _closed_state(value,status,boundary,identity,revision,sample_bytes,sample_sha256,prior,raw):
+    fields={'phase','identity','observedRevision','validatedRevision','validatedBoundary','consumedRevision','consumedBoundary','bytes','sha256','stickyInvalid','reason','prefix','candidatePrefix','consumedPrefix','consumption','attemptId','probeCount','evaluationCount','deadlineMicroseconds'}
     need(isinstance(value,dict) and set(value)==fields,'closed growing log state')
     expected_identity={'runId':identity['runId'],'sourceSetSha256':identity['sourceSetSha256'],'apphostSha256':identity['apphostSha256'],'closureSha256':identity['closureSha256'],'pid':identity['pid'],'startTicks':identity['startTicks'],'uid':identity['uid'],'device':identity['device'],'inode':identity['inode'],'path':identity['path']}
     need(value['identity']==expected_identity and type(value['phase']) is str and type(value['stickyInvalid']) is bool and type(value['observedRevision']) is int and type(value['validatedRevision']) is int and type(value['consumedRevision']) is int and type(value['bytes']) is int and type(value['sha256']) is str,'growing log state binding')
     need(value['validatedBoundary'] in (None,)+BOUNDARIES and value['consumedBoundary'] in (None,)+BOUNDARIES and (value['reason'] is None or type(value['reason']) is str),'closed growing log state values')
     need(min(value['observedRevision'],value['validatedRevision'],value['consumedRevision'],value['bytes'])>=0 and value['consumedRevision']<=value['validatedRevision']<=value['observedRevision'],'coherent growing log counters')
-    phases={'accepted':'consumed','pending':'sampled','refused':'invalid','unknown':'unknown'}
+    phases={'accepted':'validated','pending':'sampled','refused':'invalid','unknown':'unknown'}
     need(status in phases and value['phase']==phases[status],'growing log status/phase mismatch')
+    previous=prior or {'validatedRevision':0,'validatedBoundary':None,'consumedRevision':0,'consumedBoundary':None,'consumedPrefix':None,'consumption':None}
+    need(value['consumedRevision']==previous['consumedRevision'] and value['consumedBoundary']==previous['consumedBoundary'] and value['consumedPrefix']==previous['consumedPrefix'] and value['consumption']==previous['consumption'],'candidate cannot manufacture consumption')
+    if status in ('accepted','pending'):
+        prefix=value['prefix'];cut=raw.rfind(b'\n')+1
+        need(isinstance(prefix,dict) and set(prefix)=={'rawBytes','rawSha256','completeBytes','completeSha256','tailBytes','tailSha256','completeRecords','tailClass'},'closed raw/P/T descriptor')
+        expected={'rawBytes':len(raw),'rawSha256':hashlib.sha256(raw).hexdigest(),'completeBytes':cut,'completeSha256':hashlib.sha256(raw[:cut]).hexdigest(),'tailBytes':len(raw)-cut,'tailSha256':hashlib.sha256(raw[cut:]).hexdigest(),'completeRecords':raw.count(b'\n')}
+        need(all(type(prefix[key]) is type(item) and prefix[key]==item for key,item in expected.items()),'exact raw/P/T byte join')
+        need(type(prefix['tailClass']) is str and prefix['tailClass'] in ('empty','atlas','pending','pending-utf8','refused-nul','refused-utf8'),'closed F# tail class')
+        if status=='accepted':need(value['candidatePrefix']==prefix and prefix['completeRecords']>0 and prefix['tailClass'] in ('empty','atlas'),'safe F# tail/root candidate')
     if status=='accepted':
-        need(value['observedRevision']==value['validatedRevision']==value['consumedRevision']==revision and value['validatedBoundary']==value['consumedBoundary']==boundary and value['bytes']==sample_bytes and value['sha256']==sample_sha256 and value['stickyInvalid'] is False and value['reason'] is None,'fresh growing log decision')
+        need(value['observedRevision']==value['validatedRevision']==revision and value['validatedBoundary']==boundary and value['bytes']==sample_bytes and value['sha256']==sample_sha256 and value['stickyInvalid'] is False and value['reason'] is None,'fresh growing log decision')
     elif status=='pending':
         previous=prior or {'validatedRevision':0,'validatedBoundary':None,'consumedRevision':0,'consumedBoundary':None}
         need(value['observedRevision']==revision and value['bytes']==sample_bytes and value['sha256']==sample_sha256 and value['stickyInvalid'] is False and type(value['reason']) is str and len(value['reason'])>0,'fresh pending growing log decision')
@@ -176,10 +185,21 @@ class GrowingLog:
         self.counters['maximumObservedBytes']=max(self.counters['maximumObservedBytes'],opened.st_size)
         checkpoint('size-cap');need(opened.st_size<=MAX_LOG,'growing log bound')
         writer=self._writer(self.process,path,opened,deadline)
+        if final:self.final_read_started=time.monotonic()
         if expected is not None:
             checkpoint('size-regression');need(opened.st_size>=len(expected) and (not exact_size or opened.st_size==len(expected)),'growing log changed after policy')
             checkpoint('prefix-read');actual=self._read_exact(len(expected),deadline)
             checkpoint('prefix-drift');need(actual==expected,'growing log prefix changed after read')
+        if final:
+            # The size at L must be observed after the complete prefix reread.
+            # Never return the earlier pre-read fstat as a final horizon.
+            read_end=time.monotonic()
+            # Recheck permanent changes during the reread, then observe size last.
+            self._custody(deadline=deadline)
+            opened=os.fstat(self.fd);at=time.monotonic()
+            need((opened.st_dev,opened.st_ino)==(self.device,self.inode) and opened.st_size>=len(expected),'growing log final identity/size regression')
+            need(opened.st_size<=MAX_LOG,'growing log bound')
+            self.final_observation={'readStartMicroseconds':max(0,int((self.final_read_started-self.counter_started)*1000000)),'readEndMicroseconds':max(0,int((read_end-self.counter_started)*1000000)),'linearizedMicroseconds':max(0,int((at-self.counter_started)*1000000)),'rawBytes':opened.st_size}
         return opened,writer
     def _sample_impl(self,deadline):
         self._deadline(deadline)
@@ -195,7 +215,7 @@ class GrowingLog:
         need(intact,'growing log prefix changed')
         self._deadline(deadline)
         return raw,intact,writer
-    def _settle(self,deadline,probes):
+    def _settle(self,deadline,probes,raw_mode=False,pending_raw=None):
         while probes<MAX_SETTLEMENT_PROBES:
             self._deadline(deadline)
             self.counters['probesBegun']+=1
@@ -207,10 +227,10 @@ class GrowingLog:
             prefix=raw.rfind(b'\n')+1
             self.counters.update(sampleBytes=len(raw),completePrefixBytes=prefix,tailBytes=len(raw)-prefix)
             complete=bool(raw) and raw.endswith(b'\n')
-            event={'kind':'probe','event':'complete' if complete else 'incomplete','probe':probes,'remaining':MAX_SETTLEMENT_PROBES-probes}
+            event={'kind':'probe','event':(('raw' if pending_raw is None or raw!=pending_raw else 'unchanged') if raw_mode else ('complete' if complete else 'incomplete')),'probe':probes,'remaining':MAX_SETTLEMENT_PROBES-probes,'rawBytes':len(raw),'rawSha256':hashlib.sha256(raw).hexdigest(),'completeBytes':prefix,'tailBytes':len(raw)-prefix}
             self.settlement_transcript.append({key:value for key,value in event.items() if key!='kind'})
             self.settlement_effects.append(event)
-            if complete:
+            if (raw_mode and (pending_raw is None or raw!=pending_raw)) or (not raw_mode and complete):
                 self._deadline(deadline)
                 self.revision+=1
                 return raw,intact,writer,probes
@@ -314,6 +334,7 @@ class GrowingLog:
             except (UnicodeError,json.JSONDecodeError) as error:raise Refused('invalid policy completion') from error
             need(set(final)=={'schema','invocationId','closureSha256','pid','startTicks','uid','phase','result'} and final['schema']=='fsbar.barc-runtime-evidence-policy-completed/v2' and final['invocationId']==invocation and final['closureSha256']==closure_sha and final['pid']==process.pid and final['startTicks']==ready_value['startTicks'] and final['uid']==os.geteuid() and final['phase']=='completed','policy completion join')
             self.last_policy_observation=_policy_observation(bytes(diagnostic)) if diagnostic else None
+            self.last_invocation={'invocationId':invocation,'closureSha256':closure_sha,'pid':process.pid,'startTicks':ready_value['startTicks'],'uid':os.geteuid(),'readyPhase':ready_value['phase'],'completedPhase':final['phase']}
             return (json.dumps(final['result'],separators=(',',':'))+'\n').encode()
         except BaseException as error:
             observation=_policy_observation(bytes(diagnostic)) if diagnostic else None
@@ -335,11 +356,19 @@ class GrowingLog:
         except BaseException as error:
             self.revoked=True
             error=mark_failure(error,self.failure_checkpoint)
+            if self.state is not None and not self.state['stickyInvalid']:
+                before=self.state;fact=getattr(error,'_barc_failure_observation',{})
+                unavailable=fact.get('outcome')=='os-unavailable'
+                self.state={**before,'phase':'unknown' if unavailable else 'invalid','stickyInvalid':True,'candidatePrefix':None,'reason':fact.get('check',self.failure_checkpoint)}
+                self.settlement_effects.append({'kind':'revoke','unavailable':unavailable,'reason':self.state['reason'],'beforeState':before,'afterState':self.state})
             self._retain_counter_observation(error,config)
             raise error
     def _consume_impl(self,boundary,config,deadline):
         need(boundary in BOUNDARIES and isinstance(deadline,(int,float)),'closed growing log boundary/deadline')
-        policy_deadline=min(deadline,time.monotonic()+5);self.counter_deadline=policy_deadline
+        policy_deadline=min(deadline,self.counter_started+5);self.counter_deadline=policy_deadline
+        attempt_id=1 if self.state is None else self.state['attemptId']+1
+        frozen_deadline=min(5000000,max(0,int((policy_deadline-self.counter_started)*1000000)))
+        self.settlement_effects.append({'kind':'boundary','boundary':boundary,'attemptId':attempt_id,'deadlineMicroseconds':frozen_deadline,'beforeState':self.state})
         policy=config['artifacts']['runtimeEvidencePolicy'];closure=config['artifacts']['runtimeEvidencePolicyClosure']
         self.failure_checkpoint='policy-artifact';hash_artifact(policy['path'],policy['sha256'],268435456)
         self.failure_checkpoint='policy-closure-precheck';closure_value=self._closure(closure['path'],closure['sha256'],policy_deadline)
@@ -355,8 +384,8 @@ class GrowingLog:
             need(time.monotonic()<policy_deadline,'growing log policy deadline')
             self.failure_checkpoint='infolog-sample'
             self.last_policy_observation=None
-            raw,intact,writer,probes=self._settle(policy_deadline,probes)
-            request={'schema':'fsbar.barc-growing-log-policy/v2','boundary':boundary,'expected':expected,'observation':{'pid':self.process['pid'],'startTicks':self.process['startTicks'],'uid':self.process['uid'],'device':str(self.device),'inode':str(self.inode),'path':self.path,'revision':self.revision,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'previousPrefixIntact':intact,'writerFd':writer['fd'],'writerFlags':writer['flags'],'writerPosition':writer['position'],'available':True,'logBase64':base64.b64encode(raw).decode()},'prior':self.state}
+            raw,intact,writer,probes=self._settle(policy_deadline,probes,raw_mode=True,pending_raw=(self.previous if last=='pending' else None))
+            request={'schema':'fsbar.barc-growing-log-policy/v3','boundary':boundary,'expected':expected,'observation':{'pid':self.process['pid'],'startTicks':self.process['startTicks'],'uid':self.process['uid'],'device':str(self.device),'inode':str(self.inode),'path':self.path,'revision':self.revision,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'previousPrefixIntact':intact,'writerFd':writer['fd'],'writerFlags':writer['flags'],'writerPosition':writer['position'],'available':True,'logBase64':base64.b64encode(raw).decode(),'attemptId':attempt_id,'probeCount':probes,'evaluationCount':self.counters['evaluationsBegun']+1,'deadlineMicroseconds':frozen_deadline},'prior':self.state}
             encoded=json.dumps(request,separators=(',',':'),allow_nan=False).encode();need(len(encoded)<=MAX_POLICY_INPUT,'growing log policy input bound')
             remaining=policy_deadline-time.monotonic();need(remaining>0,'growing log policy deadline')
             self.failure_checkpoint='policy-transport';self.last_policy_observation=None
@@ -366,18 +395,23 @@ class GrowingLog:
             try:value=json.loads(output.decode('utf-8'),object_pairs_hook=_unique,parse_constant=lambda _:(_ for _ in ()).throw(Refused('nonfinite policy JSON')))
             except (UnicodeError,json.JSONDecodeError) as error:raise Refused('invalid growing log policy result') from error
             self.failure_checkpoint='policy-result-join'
-            need(set(value)=={'schema','status','state'} and value['schema']=='fsbar.barc-growing-log-policy-result/v2' and value['status'] in ('accepted','pending','refused','unknown') and isinstance(value['state'],dict),'closed growing log policy result')
+            need(set(value)=={'schema','status','state'} and value['schema']=='fsbar.barc-growing-log-policy-result/v3' and value['status'] in ('accepted','pending','refused','unknown') and isinstance(value['state'],dict),'closed growing log policy result')
             identity=dict(expected);identity.update({'pid':self.process['pid'],'startTicks':self.process['startTicks'],'uid':self.process['uid'],'device':str(self.device),'inode':str(self.inode),'path':self.path})
             sample_sha256=hashlib.sha256(raw).hexdigest()
-            next_state=_closed_state(value['state'],value['status'],boundary,identity,self.revision,len(raw),sample_sha256,self.state);last=value['status']
+            next_state=_closed_state(value['state'],value['status'],boundary,identity,self.revision,len(raw),sample_sha256,self.state,raw);last=value['status']
+            need(next_state['attemptId']==attempt_id and next_state['probeCount']==probes and next_state['evaluationCount']==self.counters['evaluationsCompleted'] and next_state['deadlineMicroseconds']==frozen_deadline,'frozen boundary budget/result join')
             before_state=self.state
             self.state=next_state
             # Qualification consumes this bounded in-memory trace to prove the
             # actual policy transition and its position among settlement probes.
-            self.settlement_effects.append({'kind':'policy','boundary':boundary,'status':last,'expected':expected,'observation':{key:request['observation'][key] for key in ('pid','startTicks','uid','device','inode','path','revision','bytes','sha256')},'beforeState':before_state,'afterState':next_state})
-            # The decision authorizes exactly this still-current sample. Growth
+            self.settlement_effects.append({'kind':'policy','boundary':boundary,'status':last,'expected':expected,'observation':{key:request['observation'][key] for key in ('pid','startTicks','uid','device','inode','path','revision','bytes','sha256','attemptId','probeCount','evaluationCount','deadlineMicroseconds')},'prefix':next_state['prefix'],'rawBase64':request['observation']['logBase64'],'invocation':self.last_invocation,'beforeState':before_state,'afterState':next_state})
+            # This is only a scoped candidate. Growth
             # observed after policy evaluation receives a new revision instead.
+            if last in ('refused','unknown'):
+                self.failure_checkpoint='policy-result-join';self.revoked=True
+                raise mark_failure(Refused('growing log policy refused or unknown'),self.failure_checkpoint,'policy-nonaccepted',self.last_policy_observation)
             self.failure_checkpoint='infolog-final-refresh';current,_=self._custody(raw,False,True,policy_deadline)
+            self.settlement_effects.append({'kind':'final-observation','boundary':boundary,'revision':self.revision,**self.final_observation,'rawSha256':sample_sha256})
             self.failure_checkpoint='policy-final-precheck'
             hash_artifact(policy['path'],policy['sha256'],268435456)
             self._closure(closure['path'],closure['sha256'],policy_deadline)
@@ -385,9 +419,18 @@ class GrowingLog:
             self.counters['maximumObservedBytes']=max(self.counters['maximumObservedBytes'],current.st_size)
             if current.st_size!=len(raw):
                 self.counters['growthAfterEvaluation']+=1
+                before_growth=self.state
+                self.state={**before_growth,'phase':'sampled','candidatePrefix':None,'reason':'observed-growth'}
+                self.settlement_effects.append({'kind':'growth','rawBytes':current.st_size,'beforeState':before_growth,'afterState':self.state})
                 continue
             if last=='accepted':
-                self.settlement_effects.append({'kind':'terminal','outcome':'accepted','check':None,'state':self.state})
+                released=max(0,int((time.monotonic()-self.counter_started)*1000000))
+                final={'boundary':boundary,'revision':self.revision,'rawSha256':sample_sha256,**self.final_observation,'releasedMicroseconds':released,'deadlineMicroseconds':frozen_deadline}
+                need(final['readStartMicroseconds']<=final['readEndMicroseconds']<=final['linearizedMicroseconds']<=released<final['deadlineMicroseconds'],'finite final observation interval')
+                candidate=self.state
+                self.state={**candidate,'phase':'consumed','consumedRevision':self.revision,'consumedBoundary':boundary,'consumedPrefix':candidate['prefix'],'consumption':final}
+                self.settlement_effects.append({'kind':'consume','observation':final,'beforeState':candidate,'afterState':self.state})
+                self.settlement_effects.append({'kind':'terminal' ,'outcome':'accepted','check':None,'state':self.state})
                 return {'boundary':boundary,'revision':self.revision,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'state':self.state}
             if last in ('refused','unknown'):
                 self.failure_checkpoint='policy-result-join';self.revoked=True

@@ -35,3 +35,20 @@ module DataRootPolicyTests =
         let recordCap=bytes(good writeRoot dataRoot (String.replicate (65536-4) "x\n"))
         match DataRootPolicy.evaluate writeRoot dataRoot recordCap with RootAccepted _ -> () | other -> failwithf "65,536 records refused: %A" other
         match DataRootPolicy.evaluate writeRoot dataRoot (Array.append recordCap (bytes "x\n")) with RootRefused "record-bound" -> () | other -> failwithf "65,537 records admitted: %A" other
+
+        for prefix in ["";"[t=00:00:00.123456] ";"[t=00:00:00.123456][f=0000000] "] do
+            for index in [0;1] do
+                let raw=bytes(good writeRoot dataRoot $"{prefix}CTextureRenderAtlas::CreateAtlasTexture()[{index}] atlas=public fixture")
+                match DataRootPolicy.evaluate writeRoot dataRoot raw with RootAccepted _ -> () | other -> failwithf "safe exact atlas tail refused: %A" other
+                let horizon=DataRootPolicy.describe raw
+                if horizon.RawBytes<>horizon.CompleteBytes+horizon.TailBytes || horizon.TailClass<>"atlas" || horizon.CompleteRecords<>4 then failwith "derived raw/P/T descriptor drift"
+        for tail in ["CTextureRenderAtlas::CreateAtlasTexture()[0] atlas";"[t=00:00:00.12345";"[DataDirLocater::FilterUsableDataDirs] using read-only data directory: /wrong";"unknown"] do
+            match DataRootPolicy.evaluate writeRoot dataRoot (bytes(good writeRoot dataRoot tail)) with RootPending _ -> () | other -> failwithf "unknown/relevant/partial tail accepted: %A" other
+        let valid=bytes(good writeRoot dataRoot "")
+        for partial in [[|0xc2uy|];[|0xe2uy;0x82uy|];[|0xf0uy;0x9fuy;0x92uy|]] do
+            match DataRootPolicy.evaluate writeRoot dataRoot (Array.append valid partial) with RootPending "incomplete-utf8" -> () | other -> failwithf "partial UTF8 scalar mishandled: %A" other
+        for malformed in [[|0xffuy|];[|0xe0uy;0x80uy|];[|0xeduy;0xa0uy|];[|0xf4uy;0x90uy|];[|0xc2uy;0x41uy|];[|0uy|]] do
+            match DataRootPolicy.evaluate writeRoot dataRoot (Array.append valid malformed) with RootRefused _ -> () | other -> failwithf "malformed raw tail admitted: %A" other
+        match DataRootPolicy.evaluate writeRoot dataRoot [||] with RootPending "complete-prefix-absent" -> () | other -> failwithf "empty complete prefix admitted: %A" other
+        let missing=(good writeRoot dataRoot "").Replace($"[DataDirLocater::FilterUsableDataDirs] using read-only data directory: {dataRoot}/\n", "")
+        match DataRootPolicy.evaluate writeRoot dataRoot (bytes missing) with RootPending "data-root-record-absent" -> () | other -> failwithf "missing root record is not pending: %A" other
