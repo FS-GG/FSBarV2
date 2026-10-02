@@ -286,7 +286,7 @@ module CorrespondenceTests =
                     if milestone=steps.Length then failwith "actual F# effect omitted/reordered from model steps"
                     let expected=parseState(effect.GetProperty("afterState"))
                     let projected=steps[milestone].GetProperty("state")
-                    let same (property:string) value = if replayValue(projected.GetProperty(property))<>value then failwithf "actual F# field/model join: %s %s" name property
+                    let same (property:string) value = if replayValue(projected.GetProperty(property))<>value then failwithf "actual F# field/model join: %s %s at %s expected=%A actual=%A" name property (steps[milestone].GetProperty("action").GetString()) value (replayValue(projected.GetProperty(property)))
                     same "phase" (Text expected.Phase)
                     same "observedRevision" (Integer(string expected.ObservedRevision));same "validatedRevision" (Integer(string expected.ValidatedRevision));same "intendedBoundary" (Text(boundaryText expected.ValidatedBoundary))
                     same "consumedRevision" (Integer(string expected.ConsumedRevision));same "consumedBoundary" (Text(boundaryText expected.ConsumedBoundary));same "stickyInvalid" (Boolean expected.StickyInvalid)
