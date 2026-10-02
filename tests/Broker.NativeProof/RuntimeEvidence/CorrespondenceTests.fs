@@ -273,6 +273,9 @@ module CorrespondenceTests =
                 | JsonValueKind.False -> Boolean false
                 | JsonValueKind.Object -> Record(element.EnumerateObject() |> Seq.map(fun item->item.Name,replayValue item.Value) |> Seq.toList)
                 | _ -> failwith "closed actual modeled state value"
+            let rec normalizeRecord = function
+                | Record fields -> Record(fields |> List.map(fun (key,value)->key,normalizeRecord value) |> List.sortBy fst)
+                | value -> value
             // Join the actual typed F# milestones to the full modeled states,
             // independently of the generator's intermediate projections.
             let mutable milestone=0
@@ -286,7 +289,7 @@ module CorrespondenceTests =
                     if milestone=steps.Length then failwith "actual F# effect omitted/reordered from model steps"
                     let expected=parseState(effect.GetProperty("afterState"))
                     let projected=steps[milestone].GetProperty("state")
-                    let same (property:string) value = if replayValue(projected.GetProperty(property))<>value then failwithf "actual F# field/model join: %s %s at %s expected=%A actual=%A" name property (steps[milestone].GetProperty("action").GetString()) value (replayValue(projected.GetProperty(property)))
+                    let same (property:string) value = if normalizeRecord(replayValue(projected.GetProperty(property)))<>normalizeRecord value then failwithf "actual F# field/model join: %s %s at %s expected=%A actual=%A" name property (steps[milestone].GetProperty("action").GetString()) value (replayValue(projected.GetProperty(property)))
                     same "phase" (Text expected.Phase)
                     same "observedRevision" (Integer(string expected.ObservedRevision));same "validatedRevision" (Integer(string expected.ValidatedRevision));same "intendedBoundary" (Text(boundaryText expected.ValidatedBoundary))
                     same "consumedRevision" (Integer(string expected.ConsumedRevision));same "consumedBoundary" (Text(boundaryText expected.ConsumedBoundary));same "stickyInvalid" (Boolean expected.StickyInvalid)

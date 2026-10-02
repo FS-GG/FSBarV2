@@ -15,23 +15,20 @@ Every appended revision needs fresh validation for BrowserAdmission, Normalizati
 Release. Prefix mutation, truncation, producer/log/source identity drift, contradictory
 root history, and unavailable observations revoke the scope irreversibly.
 
-The private adapter performs a bounded mechanical complete-record settlement before it
-submits a sample. Incomplete probes do not call this reducer or advance a revision. The
-canonical Quint settlement record models the 32-probe budget, deadline refusal, wait
-without authority, and pending-to-complete resampling while this F# reducer remains the
-only policy state transition.
-The combined gate requires a freshly generated seven-scenario helper transcript and binds
-its bytes and the helper implementation into replay evidence. Its single ordered stream
-records probes, actual policy transitions with complete before/after state, and the terminal
-result. The compiled replay reconstructs every state field from the captured request and
-typed reducer, so byte, digest, identity, or effect-order drift is refused. Boundary entry alone resets
-the 32-probe budget; retries preserve it. Deadline and exhaustion block current
-consumption while historical consumed state remains evidence only.
+The private adapter settles bounded raw candidates, including an unfinished tail,
+under one frozen deadline and shared probe/evaluation budgets. F# derives the
+complete-prefix/tail split and classifies the actual bytes. An unchanged pending
+horizon uses another probe without another policy evaluation; each newly
+observed horizon needs a fresh evaluation. The canonical Quint model includes
+these effects and the final read/size/release interval. Current correspondence
+uses fourteen actual helper scenarios; the predecessor vectors remain separate
+historical controls. Boundary entry alone resets the 32-probe budget. No
+candidate or historical consumption grants reusable authority.
 
 Hosted `dotnet test` runs this gate through the test project's `VSTest` target. With no
 external helper configured, the gate copies the committed sanitized mechanical fixture to
 a temporary directory and creates its manifest from the checked-out `HEAD` and tree. It
-requires Quint 0.32.0, locked NuGet restore, all 27 named model scenarios, 14 ITFs, the
+requires Quint 0.32.0, locked NuGet restore, all 38 named model scenarios, 14 predecessor ITFs, the
 compiled correspondence replay, and duplicate, reordered, and prior-state mutations.
 The `complete-record-source` workflow checks out the exact pull-request head or manually
 selected commit, installs Quint from its integrity-locked tool manifest, selects .NET SDK
@@ -57,7 +54,7 @@ manifest, 1024 files, 1 GiB aggregate, 256 MiB per file, 4096 directories or imm
 directory entries per census, 4 MiB of proc maps, and 1024 distinct file-backed mapping
 paths. Enumeration caps are enforced while traversing, before sorting or materialization.
 
-The v3 closure and v2 growing-log identity carry apphost, complete-closure, and configured
+The v3 closure and v3 growing-log request/result carry apphost, complete-closure, and configured
 product source-set joins.
 A closure change on a retained growing-log scope is sticky invalid. The final child step
 rereads and rehashes the manifest, every file, every directory census and actual mappings.
@@ -75,10 +72,11 @@ frozen deadline, incrementally caps response bytes, and retires the exact policy
 timeout, broken input, early exit, or malformed output. The deadline is checked between
 filesystem operations and after the final census; it is not a hard interrupt for an
 arbitrarily stalled filesystem call or a general descendant-tree guarantee.
-The transport accepts authority only when `accepted` is paired with a fully joined
-`consumed` state for the exact requested boundary, identity, revision, byte count, and
-digest. Pending, refused, and unknown statuses have closed phase mappings and cannot be
-promoted into current authority by a contradictory response.
+The policy transport accepts `accepted` only with a fully joined `validated`
+candidate for the exact requested boundary, identity, revision, byte count and
+digest. The held-FD adapter releases a named consumed horizon only after the
+final read/size/closure checks. Pending, refused and unknown states cannot be
+promoted by a contradictory response.
 
 The same executable also projects a bounded post-handoff failure observation through
 `fsbar.barc-stock-failure-projection/v1`. The projection accepts only the closed
