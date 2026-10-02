@@ -60,6 +60,8 @@ mechanical checkpoint and outcome enums, an optional compatible fixed F# checkpo
 the exact source-set/apphost/closure pins, and the exact bounded bytes and digest of a
 closed failed operation result. F# enforces the category/outcome/policy-observation
 relation and the closed optional runtime-map failure-code variant. Its
+runtime failure codes are joined to their exact validation, executable-map, or final-generation
+checkpoint group. Its
 only positive status is `observed-failure`; `nativeAcceptance` is always false. Invalid,
 duplicate, inconsistent, oversized, or unknown input becomes the fixed
 `diagnostic-unavailable` result without echoing caller data. The executable writes at

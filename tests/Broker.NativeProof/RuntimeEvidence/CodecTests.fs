@@ -77,8 +77,16 @@ module CodecTests =
         let contradictory=diagnostic.Replace(operationBase64,Convert.ToBase64String(bytes operationUnknown)).Replace(operationHash,sha(bytes operationUnknown))
         if not((evaluate contradictory|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "contradictory operation category accepted"
         let runtimeFailure="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"refused\",\"failureCode\":\"runtime-map-missing\"}\n"
-        let runtimeDiagnostic=diagnostic.Replace(operationBase64,Convert.ToBase64String(bytes runtimeFailure)).Replace(operationHash,sha(bytes runtimeFailure))
+        let runtimeObservation=observation.Replace("\"check\":\"policy-result-join\"","\"check\":\"runtime-map-validation\"").Replace("\"outcome\":\"policy-nonaccepted\"","\"outcome\":\"refused\"").Replace("\"policyObservation\":"+policyObservation,"\"policyObservation\":null")
+        let runtimeDiagnostic=diagnostic.Replace(observation,runtimeObservation).Replace(observationHash,sha(bytes(runtimeObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes runtimeFailure)).Replace(operationHash,sha(bytes runtimeFailure))
         if not((evaluate runtimeDiagnostic|>Codec.complete).Contains("\"status\":\"observed-failure\"")) then failwith "closed runtime failure result refused"
+        let impossibleRuntime=runtimeDiagnostic.Replace("\"check\":\"runtime-map-validation\"","\"check\":\"infolog-path\"").Replace(sha(bytes(runtimeObservation+"\n")),sha(bytes(runtimeObservation.Replace("runtime-map-validation","infolog-path")+"\n")))
+        if not((evaluate impossibleRuntime|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "runtime failure accepted at impossible checkpoint"
+        for failureCode,checkpoint in [ "runtime-engine-map-missing","runtime-executable-map"; "runtime-process-identity-drift","runtime-final-generation" ] do
+            let variantObservation=runtimeObservation.Replace("runtime-map-validation",checkpoint)
+            let variantOperation=runtimeFailure.Replace("runtime-map-missing",failureCode)
+            let variant=diagnostic.Replace(observation,variantObservation).Replace(observationHash,sha(bytes(variantObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes variantOperation)).Replace(operationHash,sha(bytes variantOperation))
+            if not((evaluate variant|>Codec.complete).Contains("\"status\":\"observed-failure\"")) then failwith "runtime failure checkpoint positive refused"
         let pendingObservation=observation.Replace("\"kind\":\"refused\"","\"kind\":\"pending\"")
         let pendingContradiction=diagnostic.Replace(observation,pendingObservation).Replace(observationHash,sha(bytes(pendingObservation+"\n")))
         if not((evaluate pendingContradiction|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "incompatible pending policy observation accepted"

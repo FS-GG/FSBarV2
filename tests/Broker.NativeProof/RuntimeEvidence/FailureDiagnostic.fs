@@ -81,6 +81,13 @@ module FailureDiagnostic =
               "runtime-map-identity-drift"; "runtime-map-content-drift"; "runtime-map-none"
               "runtime-engine-map-missing"; "runtime-process-identity-drift" ]
 
+    let private runtimeFailureCheck = function
+        | "runtime-map-deleted" | "runtime-map-unadmitted" | "runtime-map-missing"
+        | "runtime-map-identity-drift" | "runtime-map-content-drift" | "runtime-map-none" -> "runtime-map-validation"
+        | "runtime-engine-map-missing" -> "runtime-executable-map"
+        | "runtime-process-identity-drift" -> "runtime-final-generation"
+        | _ -> refuse()
+
     let unavailable () =
         let node=JsonObject()
         node["schema"]<-JsonValue.Create ResultSchema;node["status"]<-JsonValue.Create "diagnostic-unavailable"
@@ -129,7 +136,9 @@ module FailureDiagnostic =
             require(text "schema" operation="fsbar.barc-stock-operation-result/v1" && text "status" operation="failed")
             let category=text "category" operation
             require(category=categoryFor outcome)
-            if operationNames.Contains "failureCode" then require(category="refused" && runtimeFailureCodes.Contains(text "failureCode" operation))
+            if operationNames.Contains "failureCode" then
+                let failureCode=text "failureCode" operation
+                require(category="refused" && outcome="refused" && policyKind.IsNone && runtimeFailureCodes.Contains failureCode && check=runtimeFailureCheck failureCode)
             match policyKind with
             | None -> require(outcome<>"policy-nonaccepted")
             | Some "exception" -> require(outcome="refused")
