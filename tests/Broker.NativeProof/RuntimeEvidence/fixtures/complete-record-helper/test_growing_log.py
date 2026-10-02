@@ -184,7 +184,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         shutil.copyfile(system_dotnet/'dotnet',cls.dotnet_root/'dotnet')
         for base,directories,files in os.walk(cls.dotnet_root):
             for name in directories:os.chmod(pathlib.Path(base)/name,0o555)
-            for name in files:os.chmod(pathlib.Path(base)/name,0o444)
+            for name in files:os.chmod(pathlib.Path(base)/name,0o555 if '.so' in name else 0o444)
         os.chmod(cls.dotnet_root/'dotnet',0o555);os.chmod(cls.dotnet_root,0o555)
         if any(path.is_symlink() for path in cls.dotnet_root.rglob('*')):raise AssertionError('private runtime staging retained a link')
         def row(path,role=None):
