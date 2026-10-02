@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Security.Cryptography
 open System.Text
+open System.Text.Json
 open FsQuint
 open FSBar.NativeProof.RuntimeEvidence
 
@@ -20,11 +21,13 @@ module CorrespondenceTests =
         |> Array.map (fun root -> Path.Combine(root,name)) |> Array.find File.Exists |> Path.GetFullPath
     let private source={Path="GrowingLogEvidence_test.qnt";Line=1;Column=1}
     let private boundaryText = function Some BrowserAdmission->"browser"|Some Normalization->"normalization"|Some Release->"release"|None->"none"
-    let private state rootsValid prefixIntact writerPresent (value: EvidenceState) =
+    let private stateWithSettlement settlementPhase settlementRemaining deadlineAvailable rootsValid prefixIntact writerPresent (value: EvidenceState) =
         let present=value.Identity.IsSome
-        let record=Record ["phase",Text value.Phase;"generation",Integer(if present then "1" else "0");"observedRevision",Integer(string value.ObservedRevision);"validatedRevision",Integer(string value.ValidatedRevision);"intendedBoundary",Text(boundaryText value.ValidatedBoundary);"consumedRevision",Integer(string value.ConsumedRevision);"consumedBoundary",Text(boundaryText value.ConsumedBoundary);"producerMatches",Boolean present;"logMatches",Boolean present;"sourceMatches",Boolean present;"rootsValid",Boolean rootsValid;"prefixIntact",Boolean prefixIntact;"writerPresent",Boolean writerPresent;"authorityActive",Boolean(value.Phase="validated" && not value.StickyInvalid);"stickyInvalid",Boolean value.StickyInvalid;"policyPhase",Text policyPhase;"policyInvocation",Text policyInvocation;"policyClosure",Text policyClosure]
+        let settlement=Record ["phase",Text settlementPhase;"remaining",Integer(string settlementRemaining);"deadlineAvailable",Boolean deadlineAvailable]
+        let record=Record ["phase",Text value.Phase;"generation",Integer(if present then "1" else "0");"observedRevision",Integer(string value.ObservedRevision);"validatedRevision",Integer(string value.ValidatedRevision);"intendedBoundary",Text(boundaryText value.ValidatedBoundary);"consumedRevision",Integer(string value.ConsumedRevision);"consumedBoundary",Text(boundaryText value.ConsumedBoundary);"producerMatches",Boolean present;"logMatches",Boolean present;"sourceMatches",Boolean present;"rootsValid",Boolean rootsValid;"prefixIntact",Boolean prefixIntact;"writerPresent",Boolean writerPresent;"authorityActive",Boolean(value.Phase="validated" && not value.StickyInvalid);"stickyInvalid",Boolean value.StickyInvalid;"policyPhase",Text policyPhase;"policyInvocation",Text policyInvocation;"policyClosure",Text policyClosure;"settlement",settlement]
         let draft={Identity="";Bindings=["evidence",record]}
         {draft with Identity=QuintReplay.stateFingerprint draft |> unwrap}
+    let private state rootsValid prefixIntact writerPresent value = stateWithSettlement "idle" 32 true rootsValid prefixIntact writerPresent value
     let private accepted = function Accepted value -> value | other -> failwithf "%A" other
     let private transitioned = function Accepted value|Pending value|Refused value|Unknown value -> value
     let private compareTrace baseDirectory environment name actions projected =
@@ -33,6 +36,18 @@ module CorrespondenceTests =
         let observations=projected|>List.mapi(fun index actual->{Index=index+1;Action=actions[index];Source=source;Actual=actual})
         match QuintReplay.compare trace observations |> unwrap with QuintReplayResult.Equivalent -> trace,observations | other -> failwithf "%s reducer/model divergence: %A" name other
     let run baseDirectory =
+        match Environment.GetEnvironmentVariable("BAR_SETTLEMENT_TRANSCRIPT") with
+        | null | "" -> ()
+        | path ->
+            use document=JsonDocument.Parse(File.ReadAllBytes path)
+            let rows=document.RootElement.EnumerateArray()|>Seq.toArray
+            if rows.Length<>2 then failwith "actual settlement transcript length"
+            let read index event probe remaining =
+                let row=rows[index]
+                let names=row.EnumerateObject()|>Seq.map _.Name|>Set.ofSeq
+                if names<>set ["event";"probe";"remaining"] || row.GetProperty("event").GetString()<>event || row.GetProperty("probe").GetInt32()<>probe || row.GetProperty("remaining").GetInt32()<>remaining then failwith "actual settlement transcript mismatch"
+            read 0 "incomplete" 1 31
+            read 1 "complete" 2 30
         policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         let tool=locate "quint"
         let environment={Seed="424242";Bounds=["revisions",3L;"generations",2L];ToolFingerprint=hashFile tool;ProfileFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.qnt");Path.Combine(baseDirectory,"GrowingLogEvidence_test.qnt")];ContractFingerprint=hashFile(Path.Combine(baseDirectory,"Codec.fs"));AdapterFingerprint=hashFile(Path.Combine(baseDirectory,"DataRootPolicy.fs"));ImplementationFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.fs");typeof<EvidenceState>.Assembly.Location]}
@@ -145,3 +160,63 @@ module CorrespondenceTests =
         let stale=GrowingLogEvidence.consume Normalization v |> transitioned
         sequence "staleBoundaryCannotConsume" ["acquire";"sampleInitial";"validate:browser";"staleBoundary"] [state false false true a;state true true true s;state true true true v;state true true true stale]
         sequence "closeRevokesCurrentAuthority" ["acquire";"sampleInitial";"validate:browser";"close"] [state false false true a;state true true true s;state true true true v;state true true true (GrowingLogEvidence.close v)]
+
+        // Settlement steps are mechanical: replay them against the exact same
+        // production reducer state. Only the complete candidate is submitted
+        // to GrowingLogEvidence.sample and advances its revision.
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
+        let waitStates=ResizeArray<QuintReplayState>()
+        waitStates.Add(state false false true a)
+        waitStates.Add(stateWithSettlement "probing" 32 true false false true a)
+        waitStates.Add(stateWithSettlement "probing" 31 true false false true a)
+        waitStates.Add(stateWithSettlement "candidate" 30 true false false true a)
+        waitStates.Add(stateWithSettlement "candidate" 30 true true true true s)
+        let waitGuard=PolicyComposition.start guardId
+        policyPhase<-waitGuard.State.Phase;policyInvocation<-guardId.InvocationId;policyClosure<-guardId.ClosureSha256
+        waitStates.Add(stateWithSettlement "candidate" 30 true true true true s)
+        let waitReady=PolicyComposition.ready guardId waitGuard
+        policyPhase<-waitReady.State.Phase;waitStates.Add(stateWithSettlement "candidate" 30 true true true true s)
+        let waitValidated=GrowingLogEvidence.validate BrowserAdmission s|>accepted
+        waitStates.Add(stateWithSettlement "candidate" 30 true true true true waitValidated)
+        let waitEvaluated=PolicyComposition.evaluated guardId waitReady
+        policyPhase<-waitEvaluated.State.Phase;waitStates.Add(stateWithSettlement "candidate" 30 true true true true waitValidated)
+        let waitCompleted=match PolicyComposition.finishGuard guardId true waitEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
+        policyPhase<-waitCompleted.State.Phase;waitStates.Add(stateWithSettlement "candidate" 30 true true true true waitValidated)
+        let waitConsumed=GrowingLogEvidence.consume BrowserAdmission waitValidated|>accepted
+        waitStates.Add(stateWithSettlement "candidate" 30 true true true true waitConsumed)
+        sequence "completeRecordWaitThenConsume" ["acquire";"beginSettlement";"incompleteRecordProbe";"completeRecordCandidate";"sampleInitial";"beginPolicy:invocation";"readyPolicy:invocation";"validate:browser";"evaluatedPolicy:invocation";"completePolicy:invocation";"consume:browser"] (List.ofSeq waitStates)
+
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
+        let exhaustedStates=ResizeArray<QuintReplayState>()
+        exhaustedStates.Add(state false false true a)
+        exhaustedStates.Add(stateWithSettlement "probing" 32 true false false true a)
+        for remaining in 31..-1..0 do exhaustedStates.Add(stateWithSettlement "probing" remaining true false false true a)
+        exhaustedStates.Add(stateWithSettlement "refused" 0 true false false true a)
+        sequence "completeRecordWaitExhausted" (["acquire";"beginSettlement"] @ List.replicate 32 "incompleteRecordProbe" @ ["recordSettlementExhausted"]) (List.ofSeq exhaustedStates)
+        sequence "completeRecordWaitDeadline" ["acquire";"beginSettlement";"incompleteRecordProbe";"recordSettlementDeadline"] [state false false true a;stateWithSettlement "probing" 32 true false false true a;stateWithSettlement "probing" 31 true false false true a;stateWithSettlement "deadline" 31 false false false true a]
+
+        let afterConsumeStates=ResizeArray<QuintReplayState>()
+        afterConsumeStates.Add(state false false true a)
+        afterConsumeStates.Add(stateWithSettlement "probing" 32 true false false true a)
+        afterConsumeStates.Add(stateWithSettlement "candidate" 31 true false false true a)
+        afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true s)
+        let afterGuard=PolicyComposition.start guardId
+        policyPhase<-afterGuard.State.Phase;policyInvocation<-guardId.InvocationId;policyClosure<-guardId.ClosureSha256
+        afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true s)
+        let afterReady=PolicyComposition.ready guardId afterGuard
+        policyPhase<-afterReady.State.Phase;afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true s)
+        let afterValidated=GrowingLogEvidence.validate BrowserAdmission s|>accepted
+        afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true afterValidated)
+        let afterEvaluated=PolicyComposition.evaluated guardId afterReady
+        policyPhase<-afterEvaluated.State.Phase;afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true afterValidated)
+        let afterCompleted=match PolicyComposition.finishGuard guardId true afterEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
+        policyPhase<-afterCompleted.State.Phase;afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true afterValidated)
+        let afterConsumed=GrowingLogEvidence.consume BrowserAdmission afterValidated|>accepted
+        afterConsumeStates.Add(stateWithSettlement "candidate" 31 true true true true afterConsumed)
+        afterConsumeStates.Add(stateWithSettlement "probing" 32 true true true true afterConsumed)
+        afterConsumeStates.Add(stateWithSettlement "probing" 31 true true true true afterConsumed)
+        sequence "waitAfterConsumptionHasNoNewAuthority" ["acquire";"beginSettlement";"completeRecordCandidate";"sampleInitial";"beginPolicy:invocation";"readyPolicy:invocation";"validate:browser";"evaluatedPolicy:invocation";"completePolicy:invocation";"consume:browser";"beginSettlement";"incompleteRecordProbe"] (List.ofSeq afterConsumeStates)
+
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
+        let completedPending=GrowingLogEvidence.sample (observe 2 120L (String('d',64)) true true true true) pending|>accepted
+        sequence "pendingThenCompleteResample" ["acquire";"pendingTail";"beginSettlement";"incompleteRecordProbe";"completeRecordCandidate";"pendingCompleteResample"] [state false false true a;state false true true pending;stateWithSettlement "probing" 32 true false true true pending;stateWithSettlement "probing" 31 true false true true pending;stateWithSettlement "candidate" 30 true false true true pending;stateWithSettlement "candidate" 30 true true true true completedPending]

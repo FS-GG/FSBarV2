@@ -1,4 +1,5 @@
 module GrowingLogEvidence {
+  type Settlement = { phase: str, remaining: int, deadlineAvailable: bool }
   type Evidence = {
     phase: str,
     generation: int,
@@ -18,6 +19,7 @@ module GrowingLogEvidence {
     policyPhase: str,
     policyInvocation: str,
     policyClosure: str,
+    settlement: Settlement,
   }
 
   var evidence: Evidence
@@ -28,6 +30,7 @@ module GrowingLogEvidence {
     logMatches: false, sourceMatches: false, rootsValid: false,
     prefixIntact: false, writerPresent: false, authorityActive: false, stickyInvalid: false,
     policyPhase: "none", policyInvocation: "none", policyClosure: "none",
+    settlement: { phase: "idle", remaining: 32, deadlineAvailable: true },
   }
 
   action beginPolicy(invocation: str, closure: str): bool = all {
@@ -60,14 +63,55 @@ module GrowingLogEvidence {
       writerPresent: true }
   }
 
+  action beginSettlement = all {
+    evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
+    evidence.settlement.phase == "idle" or evidence.settlement.phase == "candidate",
+    evidence' = { ...evidence, authorityActive: false,
+      settlement: { phase: "probing", remaining: 32, deadlineAvailable: true } }
+  }
+
+  action incompleteRecordProbe = all {
+    evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
+    evidence.settlement.remaining > 0,
+    evidence' = { ...evidence,
+      settlement: { phase: "probing", remaining: evidence.settlement.remaining - 1, deadlineAvailable: true } }
+  }
+
+  action completeRecordCandidate = all {
+    evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
+    evidence.settlement.remaining > 0,
+    evidence' = { ...evidence,
+      settlement: { phase: "candidate", remaining: evidence.settlement.remaining - 1, deadlineAvailable: true } }
+  }
+
+  action recordSettlementExhausted = all {
+    evidence.settlement.phase == "probing", evidence.settlement.remaining == 0,
+    evidence' = { ...evidence, authorityActive: false,
+      settlement: { ...evidence.settlement, phase: "refused" } }
+  }
+
+  action recordSettlementDeadline = all {
+    evidence.settlement.phase == "probing",
+    evidence' = { ...evidence, authorityActive: false,
+      settlement: { ...evidence.settlement, phase: "deadline", deadlineAvailable: false } }
+  }
+
   action sampleInitial = all {
     evidence.phase == "acquired",
     evidence' = { ...evidence, phase: "sampled", observedRevision: 1,
       rootsValid: true, prefixIntact: true }
   }
 
+  action pendingCompleteResample = all {
+    evidence.phase == "sampled", not(evidence.stickyInvalid),
+    evidence.settlement.phase == "candidate", evidence.observedRevision < 3,
+    evidence' = { ...evidence, observedRevision: evidence.observedRevision + 1,
+      rootsValid: true, prefixIntact: true, authorityActive: false }
+  }
+
   action validate(boundary: str): bool = all {
     evidence.phase == "sampled",
+    evidence.settlement.phase == "idle" or evidence.settlement.phase == "candidate",
     boundary == "browser" or boundary == "normalization" or boundary == "release",
     not(evidence.stickyInvalid), evidence.producerMatches, evidence.logMatches,
     evidence.sourceMatches, evidence.writerPresent, evidence.rootsValid,
@@ -137,7 +181,9 @@ module GrowingLogEvidence {
   }
 
   action step = any {
-    acquire, sampleInitial, validate("browser"), validate("normalization"), validate("release"),
+    acquire, beginSettlement, incompleteRecordProbe, completeRecordCandidate,
+    recordSettlementExhausted, recordSettlementDeadline, pendingCompleteResample,
+    sampleInitial, validate("browser"), validate("normalization"), validate("release"),
     consume("browser"), consume("normalization"), consume("release"),
     benignAppend, pendingTail, staleBoundary, prefixRewrite, prefixTruncate, replacement, wrongWriter,
     wrongGeneration, wrongSource, contradictorySuffix, unavailable, close,
@@ -166,9 +212,11 @@ module GrowingLogEvidence {
   val policyAuthorityIsCausal = evidence.phase != "consumed" or all {
     evidence.policyPhase == "completed", evidence.policyInvocation != "none", evidence.policyClosure != "none",
   }
+  val settlementIsBounded = evidence.settlement.remaining >= 0 and evidence.settlement.remaining <= 32
+  val waitingDoesNotAuthorize = evidence.settlement.phase != "probing" or not(evidence.authorityActive)
   val invariant = all {
     consumedOnlyValidated, currentConsumptionMatchesValidation,
     authorityRequiresIdentity, invalidityIsSticky, terminalCannotValidate, boundaryIsClosed,
-    intendedBoundaryIsClosed, policyAuthorityIsCausal,
+    intendedBoundaryIsClosed, policyAuthorityIsCausal, settlementIsBounded, waitingDoesNotAuthorize,
   }
 }

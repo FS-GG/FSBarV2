@@ -33,6 +33,7 @@ module FailureDiagnostic =
               "infolog-final-descriptor-identity"; "infolog-final-file-custody"
               "infolog-final-size-cap"; "infolog-final-size-regression"
               "infolog-final-prefix-read"; "infolog-final-prefix-drift"
+              "infolog-record-settlement-exhausted"; "infolog-record-settlement-deadline"
               "policy-sample-exhausted"; "browser-start" ]
     let outcomes = Set [ "refused"; "os-unavailable"; "deadline"; "malformed"; "unexpected"; "policy-nonaccepted" ]
     let policyCheckpoints = Set [ "initial-closure"; "current-process"; "invocation-ready"; "request-read"; "request-evaluation"; "final-closure"; "invocation-completion" ]

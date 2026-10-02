@@ -15,6 +15,12 @@ Every appended revision needs fresh validation for BrowserAdmission, Normalizati
 Release. Prefix mutation, truncation, producer/log/source identity drift, contradictory
 root history, and unavailable observations revoke the scope irreversibly.
 
+The private adapter performs a bounded mechanical complete-record settlement before it
+submits a sample. Incomplete probes do not call this reducer or advance a revision. The
+canonical Quint settlement record models the 32-probe budget, deadline refusal, wait
+without authority, and pending-to-complete resampling while this F# reducer remains the
+only policy state transition.
+
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
 five-file managed census, exact provenance census, PDB-embedded SourceLink, source identity

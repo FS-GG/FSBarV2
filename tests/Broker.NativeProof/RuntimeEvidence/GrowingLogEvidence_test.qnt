@@ -47,4 +47,25 @@ module GrowingLogEvidence_test {
   run policyClosureDriftIsSticky = init.then(beginPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
     .then(readyPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(acquire).then(sampleInitial).then(validate("browser")).then(evaluatedPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(policyDrift)
     .expect(invariant and evidence.policyPhase == "invalid" and evidence.stickyInvalid)
+
+
+  run completeRecordWaitThenConsume = init.then(acquire).then(beginSettlement).then(incompleteRecordProbe).then(completeRecordCandidate).then(sampleInitial)
+    .then(beginPolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(readyPolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
+    .then(validate("browser")).then(evaluatedPolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(completePolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(consume("browser"))
+    .expect(invariant and evidence.consumedRevision == 1 and evidence.settlement.remaining == 30)
+
+  run completeRecordWaitExhausted = init.then(acquire).then(beginSettlement).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(incompleteRecordProbe).then(recordSettlementExhausted)
+    .expect(invariant and evidence.observedRevision == 0 and evidence.consumedRevision == 0 and evidence.settlement.phase == "refused")
+
+  run completeRecordWaitDeadline = init.then(acquire).then(beginSettlement).then(incompleteRecordProbe).then(recordSettlementDeadline)
+    .expect(invariant and evidence.observedRevision == 0 and evidence.consumedRevision == 0 and evidence.settlement.phase == "deadline")
+
+  run waitAfterConsumptionHasNoNewAuthority = init.then(acquire).then(beginSettlement).then(completeRecordCandidate).then(sampleInitial)
+    .then(beginPolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(readyPolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
+    .then(validate("browser")).then(evaluatedPolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(completePolicy("invocation","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")).then(consume("browser"))
+    .then(beginSettlement).then(incompleteRecordProbe)
+    .expect(invariant and evidence.consumedRevision == 1 and not(evidence.authorityActive) and evidence.settlement.phase == "probing")
+
+  run pendingThenCompleteResample = init.then(acquire).then(pendingTail).then(beginSettlement).then(incompleteRecordProbe).then(completeRecordCandidate).then(pendingCompleteResample)
+    .expect(invariant and evidence.observedRevision == 2 and evidence.validatedRevision == 0 and evidence.settlement.phase == "candidate")
 }

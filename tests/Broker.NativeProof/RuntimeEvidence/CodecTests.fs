@@ -106,6 +106,12 @@ module CodecTests =
             let finalDiagnostic=diagnostic.Replace(observation,finalObservation).Replace(observationHash,sha(bytes(finalObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes refusedOperation)).Replace(operationHash,sha(bytes refusedOperation))
             let projected=evaluate finalDiagnostic|>Codec.complete
             if not(projected.Contains("\"status\":\"observed-failure\"") && projected.Contains($"\"check\":\"{check}\"") && projected.Contains("\"nativeAcceptance\":false")) then failwithf "final custody check refused: %s" check
+        for check,outcome,category in [ "infolog-record-settlement-exhausted","refused","refused"; "infolog-record-settlement-deadline","deadline","operation-unknown" ] do
+            let settlementObservation=observation.Replace("\"check\":\"policy-result-join\"",$"\"check\":\"{check}\"").Replace("\"outcome\":\"policy-nonaccepted\"",$"\"outcome\":\"{outcome}\"").Replace("\"policyObservation\":"+policyObservation,"\"policyObservation\":null")
+            let settlementOperation=$"{{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"{category}\"}}\n"
+            let settlementDiagnostic=diagnostic.Replace(observation,settlementObservation).Replace(observationHash,sha(bytes(settlementObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes settlementOperation)).Replace(operationHash,sha(bytes settlementOperation))
+            let projected=evaluate settlementDiagnostic|>Codec.complete
+            if not(projected.Contains("\"status\":\"observed-failure\"") && projected.Contains($"\"check\":\"{check}\"") && projected.Contains("\"policyObservation\":null") && projected.Contains("\"nativeAcceptance\":false")) then failwithf "settlement diagnostic refused: %s" check
         let rawLeak=mechanicalDiagnostic.Replace("\"check\":\"infolog-final-refresh\"","\"check\":\"PRIVATE_SENTINEL\"")
         if (evaluate rawLeak|>Codec.complete).Contains("PRIVATE_SENTINEL") then failwith "unrecognized diagnostic detail escaped"
         let oversized=diagnostic+String(' ',8193)
