@@ -164,3 +164,25 @@ engine/plugin custody and positive Replace acceptance remain open at native
 0/6. It preserves frozen browser v1 types and the old rally patch/evidence.
 Stock source merge does not activate that custom engine, qualify
 local/generated input journeys or publish/install the product.
+
+### BARC-01.5f buffered-producer continuation
+
+- [ ] **BARC-01.5f-RP1 — Reproduce stock buffering and distinguish bounded refusal causes.**
+  The source candidate adds [ordinary libc buffered-writer controls](../../tests/Broker.NativeProof/RuntimeEvidence/fixtures/complete-record-helper/test_buffered_writer.py)
+  against the actual held-FD adapter. Five public checks pass: growing partial
+  EOF exhausts 32 completed probes; a one-byte read control exhausts 128 calls
+  during the first probe; flush promotes the exact untrimmed sample; failed
+  consumption retains bounded counters with a digest receipt; destination
+  collision preserves original refusal and existing bytes. The two exhaustion
+  controls retain the same policy failure code while distinguishing their
+  mechanical cause. Two focused real compiled-policy checks pass against the
+  protected `4955ae7` artifact (4.572 seconds): both the existing writer and
+  the libc buffered writer reach exactly three completed evaluations and three
+  post-evaluation growth observations, then refuse at the unchanged cap. The
+  buffered control also retains the separate mechanical observation/receipt.
+  The [fixture contract](../../tests/Broker.NativeProof/RuntimeEvidence/fixtures/complete-record-helper/README.md)
+  describes the separate observation/receipt retained by the actual adapter in
+  the attempt root. Typed F# authority, settlement behavior and runtime caps are
+  unchanged. RP1 source delivery does not qualify useful play (still 0/6) or
+  authorize native dispatch: RP2 complete-record contract qualification and RP3
+  capacity evidence are both required before a joined successor and operation.

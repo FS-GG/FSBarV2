@@ -38,6 +38,13 @@ test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
   BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
   BAR_RUNTIME_EVIDENCE_SOURCE="$(cd "$ROOT/../../.." && pwd)" \
   python3 -m unittest -v test_growing_log.GrowingLogTests.test_staged_runtime_policy_readiness_preflight)
+(cd "$BAR_GROWING_LOG_HELPER" && python3 -m unittest -v test_buffered_writer)
+(cd "$BAR_GROWING_LOG_HELPER" && \
+  BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
+  BAR_RUNTIME_EVIDENCE_SOURCE="$(cd "$ROOT/../../.." && pwd)" \
+  python3 -m unittest -v \
+    test_growing_log.GrowingLogTests.test_three_accepted_growth_samples_report_mechanical_exhaustion \
+    test_growing_log.GrowingLogTests.test_full_buffered_writer_growth_after_real_policy_exhausts_three_evaluations)
 quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
 quint run "$ROOT/GrowingLogEvidence.qnt" --backend=typescript --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 while IFS='|' read -r scenario fixture; do

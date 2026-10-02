@@ -87,6 +87,33 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         with self.assertRaises(Refused) as caught:self.consume('browser')
         fact=caught.exception._barc_failure_observation
         self.assertEqual(calls[0],3);self.assertEqual((fact['check'],fact['outcome'],fact['policyObservation']),('policy-sample-exhausted','refused',None))
+        counters=caught.exception._barc_infolog_mechanical_observation
+        self.assertEqual((counters['terminalCause'],counters['evaluationsBegun'],counters['evaluationsCompleted'],counters['growthAfterEvaluation']),('policy-evaluation-growth-cap',3,3,3))
+        self.assertEqual(counters['probesCompleted'],3)
+    def test_full_buffered_writer_growth_after_real_policy_exhausts_three_evaluations(self):
+        self.child=subprocess.Popen([sys.executable,str(pathlib.Path(__file__).with_name('buffered_writer.py')),str(self.log),base64.b64encode(self.text()).decode()],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,start_new_session=True)
+        def ack(expected):
+            need=__import__('select').select([self.child.stdout],[],[],2)[0]
+            self.assertTrue(need,'public buffered writer ack deadline')
+            self.assertEqual(self.child.stdout.readline().strip(),expected)
+        ack('ready')
+        self.handle=acquire_data_root_evidence(self.log,{'pid':self.child.pid,'startTicks':start_ticks(self.child.pid),'uid':os.geteuid()})
+        original=self.handle._run_policy
+        def grow(*args):
+            result=original(*args)
+            self.child.stdin.write('growflush\n');self.child.stdin.flush();ack('done')
+            return result
+        self.handle._run_policy=grow
+        try:
+            with self.assertRaises(Refused) as caught:self.consume('browser')
+            counters=caught.exception._barc_infolog_mechanical_observation
+            self.assertEqual((counters['terminalCause'],counters['evaluationsBegun'],counters['evaluationsCompleted'],counters['growthAfterEvaluation']),('policy-evaluation-growth-cap',3,3,3))
+            self.assertEqual(counters['probesCompleted'],3)
+            self.assertEqual(counters['terminalCheck'],'policy-sample-exhausted')
+            self.assertEqual(counters['tailBytes'],0)
+            self.assertTrue(caught.exception._barc_infolog_mechanical_retained)
+        finally:
+            self.child.stdin.write('close\n');self.child.stdin.flush();self.child.communicate(timeout=2)
     def test_genuine_pending_exhaustion_retains_policy_observation(self):
         self.spawn(self.text().replace(b'[DataDirLocater::Check] Isolation Mode!\n',b''))
         with self.assertRaises(Refused) as caught:self.consume('browser')
@@ -282,7 +309,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
     def config(self):
         executable=self.policy.resolve();sha=hashlib.sha256(executable.read_bytes()).hexdigest()
         engine=['engine','--isolation','--isolation-dir',str(self.data),'--write-dir',str(self.write),'--config','settings','script']
-        return {'runId':'run','source':{'fsbarCommit':'2cd9f47dd120d43b6781b6edc7dbb1d571cc51a1','highbarCommit':'54e17084c35b90584f8f84efc468bcc8943e4ec0'},'artifacts':{'runtimeEvidencePolicy':{'path':str(executable),'sha256':sha},'runtimeEvidencePolicyClosure':{'path':str(self.closure),'sha256':self.closure_sha}},'commands':{'engine':engine}}
+        return {'runId':'run','roots':{'attemptRoot':str(self.root)},'source':{'fsbarCommit':'2cd9f47dd120d43b6781b6edc7dbb1d571cc51a1','highbarCommit':'54e17084c35b90584f8f84efc468bcc8943e4ec0'},'artifacts':{'runtimeEvidencePolicy':{'path':str(executable),'sha256':sha},'runtimeEvidencePolicyClosure':{'path':str(self.closure),'sha256':self.closure_sha}},'commands':{'engine':engine}}
     def consume(self,boundary):return self.handle.consume(boundary,self.config(),time.monotonic()+5)
     def command(self,value):self.child.stdin.write((value+'\n').encode());self.child.stdin.flush();time.sleep(.03)
     def test_staged_runtime_policy_readiness_preflight(self):
