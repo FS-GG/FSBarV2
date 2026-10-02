@@ -96,7 +96,7 @@ does not replace the ready/completed protocol or authorize a boundary.
 
 Post-policy infolog custody failures retain fixed, sanitized checkpoints for scope,
 producer identity, path and parent custody, named and retained-descriptor identity,
-file custody, the 4 MiB size cap, size regression, and prefix read or comparison.
+file custody, the 10 MiB size cap, size regression, and prefix read or comparison.
 The earlier aggregate `infolog-final-refresh` value remains decodable for existing
 receipts. Writer census and match failures keep their existing specific checkpoints.
 No path, log bytes, exception text, or other private runtime value enters the
@@ -123,3 +123,15 @@ dependency manifest, runtime configuration, and FSharp.Core closure and prints t
 SHA-256 values for the adopting runner. The model is bounded and sampled. It does not prove
 OS provenance, absence of an unobserved rewrite-and-restore, atomicity with browser work,
 future append behavior, owned-role cleanup, Count1, or native acceptance.
+
+### Log budget selected on 2026-10-02
+
+The user selected a 10 MiB raw infolog cap for the next qualification, to be
+revisited against the actual workload. Encoded policy requests permit 16 MiB to
+carry Base64 plus metadata. Each exact read permits 160 calls of up to 64 KiB,
+sufficient for the full admitted raw sample. The 65,536-record ceiling, 32
+settlement probes, three policy evaluations and five-second deadline remain
+separate bounds. Sustained atlas logging can still exhaust these budgets.
+The capacity change does not fix partial-record or continuously growing-file
+semantics; qualified artifacts and private helper placement need rebuilding
+before a native attempt uses it.

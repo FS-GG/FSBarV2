@@ -78,7 +78,7 @@ module Codec =
     let private stateOf = function Accepted state | Pending state | Refused state | Unknown state -> state
     let private statusOf = function Accepted _ -> "accepted" | Pending _ -> "pending" | Refused _ -> "refused" | Unknown _ -> "unknown"
     let evaluate expectedApphostSha256 expectedClosureSha256 expectedSourceSetSha256 (input: byte array) =
-        if isNull input || input.Length=0 || input.Length>6*1024*1024 then invalidArg "input" "encoded bound"
+        if isNull input || input.Length=0 || input.Length>16*1024*1024 then invalidArg "input" "encoded bound"
         let diagnosticMarker=Encoding.UTF8.GetBytes("\"operationResultSha256\"")
         let diagnostic=input.AsSpan().IndexOf(diagnosticMarker)>=0
         if diagnostic then
@@ -102,7 +102,7 @@ module Codec =
             exact observation [|"pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256";"previousPrefixIntact";"writerFd";"writerFlags";"writerPosition";"available";"logBase64"|]
             let identityValue={ RunId=getString expected "runId";SourceSetSha256=getString expected "sourceSetSha256";ApphostSha256=getString expected "apphostSha256";ClosureSha256=getString expected "closureSha256";Pid=getInt observation "pid";StartTicks=getString observation "startTicks";Uid=getInt observation "uid";Device=getString observation "device";Inode=getString observation "inode";Path=getString observation "path" }
             let raw=Convert.FromBase64String(getString observation "logBase64")
-            if raw.Length>4*1024*1024 || int64 raw.Length <> getInt64 observation "bytes" then invalidArg "logBase64" "decoded bound"
+            if raw.Length>10*1024*1024 || int64 raw.Length <> getInt64 observation "bytes" then invalidArg "logBase64" "decoded bound"
             let actualSha = SHA256.HashData(raw) |> Convert.ToHexStringLower
             if getString observation "sha256" <> actualSha then invalidArg "sha256" "decoded digest mismatch"
             let roots=DataRootPolicy.evaluate (getString expected "writeRoot") (getString expected "dataRoot") raw

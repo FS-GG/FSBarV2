@@ -312,6 +312,42 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         return {'runId':'run','roots':{'attemptRoot':str(self.root)},'source':{'fsbarCommit':'2cd9f47dd120d43b6781b6edc7dbb1d571cc51a1','highbarCommit':'54e17084c35b90584f8f84efc468bcc8943e4ec0'},'artifacts':{'runtimeEvidencePolicy':{'path':str(executable),'sha256':sha},'runtimeEvidencePolicyClosure':{'path':str(self.closure),'sha256':self.closure_sha}},'commands':{'engine':engine}}
     def consume(self,boundary):return self.handle.consume(boundary,self.config(),time.monotonic()+5)
     def command(self,value):self.child.stdin.write((value+'\n').encode());self.child.stdin.flush();time.sleep(.03)
+    def test_actual_entrypoint_encoded_sixteen_mib_boundary(self):
+        self.spawn();requests=[];actual=self.handle._run_policy
+        def capture(*args):requests.append(args[3]);return actual(*args)
+        self.handle._run_policy=capture;self.consume('browser')
+        original=requests[0];cap=16*1024*1024
+        for size in (cap,cap+1):
+            with self.subTest(encodedBytes=size):
+                encoded=original+b' '*(size-len(original))
+                self.assertEqual(len(encoded),size)
+                process=subprocess.Popen([str(self.policy),'--closure-manifest',str(self.closure),'--closure-sha256',self.closure_sha,'--invocation-id',f'encoded-bound-{size}'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env={'PATH':'/usr/bin:/bin'})
+                try:output,error=process.communicate(encoded,timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill();process.communicate();raise
+                frames=[json.loads(line) for line in output.splitlines()]
+                self.assertEqual(frames[0]['phase'],'ready')
+                if size==cap:
+                    self.assertEqual(process.returncode,0);self.assertEqual(len(frames),2)
+                    self.assertEqual(frames[1]['phase'],'completed');self.assertEqual(frames[1]['result']['status'],'accepted')
+                else:
+                    self.assertEqual(process.returncode,2);self.assertEqual(len(frames),1)
+                    self.assertEqual(json.loads(error),{'schema':'fsbar.barc-runtime-evidence-failure-observation/v1','checkpoint':'request-read','kind':'exception'})
+    def test_full_ten_mib_retained_sample_real_policy_under_fixed_deadline(self):
+        self.spawn();header=self.text();cap=10*1024*1024
+        padding=b'x'*(cap-len(header)-1)+b'\n'
+        self.command('appendraw:'+base64.b64encode(padding).decode())
+        self.assertEqual(self.log.stat().st_size,cap)
+        began=time.monotonic();deadline=began+5
+        self.handle.consume('browser',self.config(),deadline)
+        self.assertLess(time.monotonic(),deadline)
+        self.assertEqual(len(self.handle.previous),cap)
+        self.assertEqual(self.handle.previous,header+padding)
+        self.assertEqual(self.handle.counters['requestedReadBytes'],cap)
+        self.assertEqual(self.handle.counters['readCallsInOperation'],160)
+        self.assertEqual(self.handle.counters['bytesReadInOperation'],cap)
+        self.assertEqual(self.handle.counters['evaluationsBegun'],1)
+        self.assertEqual(self.handle.counters['evaluationsCompleted'],1)
     def test_staged_runtime_policy_readiness_preflight(self):
         runtime_config=json.loads((self.policy.parent/'RuntimeEvidence.runtimeconfig.json').read_text())
         framework=runtime_config['runtimeOptions']['framework']

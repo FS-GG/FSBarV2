@@ -3,12 +3,12 @@ import base64,hashlib,json,os,re,selectors,stat,subprocess,time
 from pathlib import Path
 from private_io import Refused,SHA,atomic_bytes_new,atomic_new,canonical,components,hash_artifact,need,read_bytes
 from runtime_identity import mark_failure,proc_bytes,start_ticks
-MAX_LOG=4*1024*1024
-MAX_POLICY_INPUT=6*1024*1024
+MAX_LOG=10*1024*1024
+MAX_POLICY_INPUT=16*1024*1024
 MAX_FDS=256
 MAX_SAMPLES=3
 MAX_SETTLEMENT_PROBES=32
-MAX_PREAD_CALLS=128
+MAX_PREAD_CALLS=160
 SETTLEMENT_PAUSE_SECONDS=0.01
 BOUNDARIES=('browser','normalization','release')
 CLOSURE_SCHEMA='fsbar.barc-runtime-evidence-policy-closure/v3'

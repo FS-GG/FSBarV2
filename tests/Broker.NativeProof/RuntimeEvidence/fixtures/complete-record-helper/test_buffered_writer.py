@@ -27,7 +27,7 @@ class BufferedWriterTests(unittest.TestCase):
         self.assertEqual(observation['terminalCause'],'settlement-probe-cap');self.assertEqual((observation['probesBegun'],observation['probesCompleted'],observation['evaluationsBegun']),(32,32,0))
         self.assertEqual(len(set(sizes)),32);self.assertGreater(observation['tailBytes'],0)
         self.assertEqual(observation['completePrefixBytes']+observation['tailBytes'],observation['sampleBytes']);self.assertEqual(observation['sampleSha256'],hashlib.sha256(self.handle.previous).hexdigest())
-        self.assertLess(observation['maximumObservedBytes'],growing_log.MAX_LOG);self.assertGreater(observation['readCalls'],64);self.assertLessEqual(observation['readCallsInOperation'],128)
+        self.assertLess(observation['maximumObservedBytes'],growing_log.MAX_LOG);self.assertGreater(observation['readCalls'],64);self.assertLessEqual(observation['readCallsInOperation'],160)
         self.assertNotIn('/public/',json.dumps(observation));self.assertNotIn(str(self.root),json.dumps(observation))
     def test_actual_short_read_call_cap_is_distinct_from_probe_cap(self):
         real=os.pread
@@ -35,7 +35,7 @@ class BufferedWriterTests(unittest.TestCase):
         with mock.patch.object(growing_log.os,'pread',side_effect=short):
             with self.assertRaises(Refused) as caught:self.handle._settle(time.monotonic()+5,0)
         observation=self.handle._counter_observation(caught.exception._barc_failure_observation['check'])
-        self.assertEqual(observation['terminalCause'],'exact-read-call-cap');self.assertEqual((observation['probesBegun'],observation['probesCompleted'],observation['readCalls'],observation['readCallsInOperation']),(1,0,128,128));self.assertEqual(observation['terminalCheck'],'infolog-record-settlement-exhausted')
+        self.assertEqual(observation['terminalCause'],'exact-read-call-cap');self.assertEqual((observation['probesBegun'],observation['probesCompleted'],observation['readCalls'],observation['readCallsInOperation']),(1,0,160,160));self.assertEqual(observation['terminalCheck'],'infolog-record-settlement-exhausted')
     def test_failed_consume_retains_bounded_sidecar_and_digest_receipt(self):
         config={'roots':{'attemptRoot':str(self.root)},'source':{'public':'synthetic'}}
         self.handle._consume_impl=lambda *args:self.handle._settle(time.monotonic()+5,0)
@@ -56,4 +56,19 @@ class BufferedWriterTests(unittest.TestCase):
     def test_flush_control_promotes_exact_untrimmed_record_sample(self):
         self.command('flush');raw,_,_,probes=self.handle._settle(time.monotonic()+5,0)
         self.assertTrue(raw.endswith(b'\n'));self.assertEqual(probes,1);self.assertEqual(self.handle.counters['tailBytes'],0);self.assertEqual(self.handle.previous,raw);self.assertEqual(self.handle.counters['evaluationsBegun'],0)
+class LogBudgetTests(unittest.TestCase):
+    def test_actual_exact_read_supports_full_ten_mib(self):
+        expected=b'x'*(10*1024*1024-1)+b'\n'
+        with tempfile.TemporaryFile() as stream:
+            stream.write(expected);stream.flush()
+            handle=object.__new__(GrowingLog);handle.fd=stream.fileno();handle.previous=b'';handle._reset_counters(None)
+            actual=handle._read_exact(len(expected),time.monotonic()+5)
+            self.assertEqual(actual,expected)
+            self.assertEqual(handle.counters['readCallsInOperation'],160)
+    def test_full_ten_mib_base64_fits_encoded_transport_budget(self):
+        import base64
+        raw=b'x'*(10*1024*1024)
+        request=json.dumps({'observation':{'logBase64':base64.b64encode(raw).decode()},'metadata':'x'*65536},separators=(',',':')).encode()
+        self.assertEqual(growing_log.MAX_LOG,10*1024*1024)
+        self.assertLess(len(request),growing_log.MAX_POLICY_INPUT)
 if __name__=='__main__':unittest.main()

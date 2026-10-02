@@ -28,7 +28,7 @@ module DataRootPolicy =
             if normalized.Length > 4096 then None else Some normalized
 
     let evaluate expectedWriteRoot expectedDataRoot (sample: byte array) =
-        if isNull sample || sample.Length = 0 || sample.Length > 4 * 1024 * 1024 then RootRefused "custody-or-bound"
+        if isNull sample || sample.Length = 0 || sample.Length > 10 * 1024 * 1024 then RootRefused "custody-or-bound"
         elif sample[sample.Length - 1] <> byte '\n' then RootPending "incomplete-record"
         elif Array.contains 0uy sample then RootRefused "nul-record"
         else
