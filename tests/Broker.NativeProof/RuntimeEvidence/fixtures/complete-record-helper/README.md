@@ -21,13 +21,15 @@ attempt root, mode 0600, exclusive creation. The <=4096-byte observation contain
 only closed categories, counters, byte lengths, sample hash and monotonic elapsed
 microseconds; the receipt binds its filename, bytes/hash and source-set hash.
 No raw log, path, process identity or exception text is included. A read-call cap
-is per exact-read operation; aggregate calls across probes can exceed 128.
+is per exact-read operation; aggregate calls across probes can exceed 160.
 `sampleSha256`, complete-prefix/tail lengths describe the last fully checked
 retained sample; requested/read-in-operation counts describe the current read.
 `settlementBudgetMicroseconds` is the frozen relative budget, or null for direct
 mechanical probes. This sidecar is separate mechanical evidence and never
 acceptance authority. Failed publication preserves the original exception and
 sets its retention flag false; absent/unjoined receipt is an evidence gap.
-The existing typed F# failure diagnostic schema, settlement semantics and caps
-remain unchanged. Source-only RP1 does not authorize another native attempt;
+The existing typed F# failure diagnostic schema and settlement semantics remain
+unchanged. The subsequent user-selected budget is 10 MiB raw, 16 MiB encoded,
+and 160 calls per exact read; record/probe/evaluation/deadline bounds are unchanged.
+Source-only RP1 does not authorize another native attempt;
 RP2 contract qualification and RP3 capacity evidence remain required.

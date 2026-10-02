@@ -23,6 +23,26 @@ module CodecTests =
         try Codec.evaluate (String('b',64)) (String('d',64)) (String('a',64)) (bytes source)|>ignore;failwith "active closure mismatch accepted" with :? ArgumentException -> ()
         try Codec.evaluate (String('b',64)) (String('c',64)) (String('d',64)) (bytes source)|>ignore;failwith "active source set mismatch accepted" with :? ArgumentException -> ()
         if not(result.Contains("\"status\":\"accepted\"")) || result.Contains("logBase64") then failwith "valid closed codec projection failed"
+        let rawCap=10*1024*1024
+        let encodedCap=16*1024*1024
+        let withRaw (raw:byte array) =
+            source.Replace(Convert.ToBase64String(log),Convert.ToBase64String(raw)).Replace(sha log,sha raw)
+                .Replace($"\"bytes\":{length}",$"\"bytes\":{raw.Length}")
+                .Replace($"\"writerPosition\":{length}",$"\"writerPosition\":{raw.Length}")
+        let fullRaw=Array.append log (Array.append (Array.create (rawCap-length-1) (byte 'x')) [|byte '\n'|])
+        let fullRequest=withRaw fullRaw
+        let fullResult=evaluate fullRequest|>Codec.complete
+        if not(fullResult.Contains("\"status\":\"accepted\"")) || fullResult.Contains("logBase64") then failwith "codec refused exact decoded 10 MiB"
+        if not(refused(withRaw(Array.append fullRaw [|byte '\n'|]))) then failwith "codec admitted decoded 10 MiB + 1"
+        let atEncodedCap=fullRequest+String(' ',encodedCap-(bytes fullRequest).Length)
+        if (bytes atEncodedCap).Length<>encodedCap then failwith "encoded boundary fixture length"
+        if not((evaluate atEncodedCap|>Codec.complete).Contains("\"status\":\"accepted\"")) then failwith "codec refused encoded 16 MiB"
+        if not(refused(atEncodedCap+" ")) then failwith "codec admitted encoded 16 MiB + 1"
+        let invalidUtf8=Array.append (bytes source) [|0xffuy|]
+        try
+            Codec.evaluate (String('b',64)) (String('c',64)) (String('a',64)) invalidUtf8|>ignore
+            failwith "codec admitted invalid UTF-8 request"
+        with :? JsonException -> ()
         if not(refused(source.Replace("{\"schema\":","{\"unexpected\":1,\"schema\":"))) then failwith "unknown field accepted"
         if not(refused(source.Replace("{\"schema\":","{\"schema\":\"duplicate\",\"schema\":"))) then failwith "duplicate field accepted"
         if not(refused(source.Replace("\"revision\":1","\"revision\":\"1\""))) then failwith "typed numeric field accepted as text"

@@ -27,3 +27,11 @@ module DataRootPolicyTests =
         match DataRootPolicy.evaluate writeRoot dataRoot (bytes traversal) with RootRefused "noncanonical-root" -> () | other -> failwithf "lexical traversal accepted: %A" other
         match DataRootPolicy.evaluate writeRoot dataRoot (bytes(good writeRoot dataRoot "unfinished")) with RootPending "incomplete-record" -> () | other -> failwithf "unfinished record accepted: %A" other
         match DataRootPolicy.evaluate writeRoot dataRoot [|0xffuy;0x0auy|] with RootRefused "invalid-utf8" -> () | other -> failwithf "invalid UTF-8 accepted: %A" other
+        let header=bytes(good writeRoot dataRoot "")
+        let atCap=Array.append header (Array.append (Array.create (10*1024*1024-header.Length-1) (byte 'x')) [|byte '\n'|])
+        match DataRootPolicy.evaluate writeRoot dataRoot atCap with RootAccepted _ -> () | other -> failwithf "10 MiB complete sample refused: %A" other
+        let aboveCap=Array.append atCap [|byte '\n'|]
+        match DataRootPolicy.evaluate writeRoot dataRoot aboveCap with RootRefused "custody-or-bound" -> () | other -> failwithf "10 MiB + 1 accepted: %A" other
+        let recordCap=bytes(good writeRoot dataRoot (String.replicate (65536-4) "x\n"))
+        match DataRootPolicy.evaluate writeRoot dataRoot recordCap with RootAccepted _ -> () | other -> failwithf "65,536 records refused: %A" other
+        match DataRootPolicy.evaluate writeRoot dataRoot (Array.append recordCap (bytes "x\n")) with RootRefused "record-bound" -> () | other -> failwithf "65,537 records admitted: %A" other

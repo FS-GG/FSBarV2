@@ -36,7 +36,7 @@ module Program =
             let mutable count=input.Read(block,0,block.Length)
             while count>0 do
                 total <- total+count
-                if total>6*1024*1024 then raise(InvalidDataException("input bound"))
+                if total>16*1024*1024 then raise(InvalidDataException("input bound"))
                 buffer.Write(block,0,count);count<-input.Read(block,0,block.Length)
             checkpoint<-"request-evaluation"
             let evaluation=Codec.evaluate closure.ApphostSha256 closure.ManifestSha256 closure.ProductSourceSetSha256 (buffer.ToArray())
