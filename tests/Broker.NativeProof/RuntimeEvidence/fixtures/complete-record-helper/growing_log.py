@@ -61,6 +61,8 @@ class GrowingLog:
     def _reset_counters(self,boundary):
         self.counter_started=time.monotonic();self.counter_cause=None;self.counter_deadline=None
         self.counters={'boundary':boundary,'probesBegun':0,'probesCompleted':0,'readOperations':0,'readCalls':0,'readCallsInOperation':0,'requestedReadBytes':0,'bytesReadInOperation':0,'evaluationsBegun':0,'evaluationsCompleted':0,'growthAfterEvaluation':0,'maximumObservedBytes':0,'sampleBytes':0,'completePrefixBytes':0,'tailBytes':0}
+        prefix=self.previous.rfind(b'\n')+1
+        self.counters.update(sampleBytes=len(self.previous),completePrefixBytes=prefix,tailBytes=len(self.previous)-prefix)
     def _counter_observation(self,check):
         elapsed=max(0,int((time.monotonic()-self.counter_started)*1000000))
         return {'schema':'fsbar.barc-infolog-mechanical-observation/v1',**self.counters,'elapsedMicroseconds':elapsed,'settlementBudgetMicroseconds':None if self.counter_deadline is None else max(0,int((self.counter_deadline-self.counter_started)*1000000)),'terminalCheck':check,'terminalCause':self.counter_cause or ('settlement-deadline' if check=='infolog-record-settlement-deadline' else 'other'),'sampleSha256':hashlib.sha256(self.previous).hexdigest(),'nativeAcceptance':False}
