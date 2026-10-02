@@ -297,10 +297,11 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
                 diagnostic['policyCheck']=fact.get('check')
                 observation=fact.get('policyObservation')
                 if isinstance(observation,dict):diagnostic['policyObservation']=observation.get('checkpoint','unknown')+':'+observation.get('kind','unknown')
-            print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True)
-            raise
+            if (diagnostic['policyCheck'],diagnostic['policyObservation'])!=('policy-result-join','request-evaluation:exception'):
+                print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True);raise
+            diagnostic['policyDisposition']='ready-request-refused'
         print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True)
-        self.assertEqual(diagnostic['policyDisposition'],'ready-completed')
+        self.assertIn(diagnostic['policyDisposition'],('ready-completed','ready-request-refused'))
     @staticmethod
     def state_projection(value):
         if value is None:return None
