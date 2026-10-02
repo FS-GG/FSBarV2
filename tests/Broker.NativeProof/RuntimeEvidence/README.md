@@ -20,6 +20,10 @@ submits a sample. Incomplete probes do not call this reducer or advance a revisi
 canonical Quint settlement record models the 32-probe budget, deadline refusal, wait
 without authority, and pending-to-complete resampling while this F# reducer remains the
 only policy state transition.
+The combined gate requires a freshly generated six-scenario helper transcript and binds
+its bytes and the helper implementation into replay evidence. Boundary entry alone resets
+the 32-probe budget; retries preserve it. Deadline and exhaustion block current
+consumption while historical consumed state remains evidence only.
 
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact

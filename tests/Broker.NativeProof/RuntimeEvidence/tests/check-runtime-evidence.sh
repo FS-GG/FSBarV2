@@ -5,7 +5,7 @@ export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-1}"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample)$' --seed 424242 --max-samples 1
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget)$' --seed 424242 --max-samples 1
 quint run "$ROOT/GrowingLogEvidence.qnt" --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 TMP=$(mktemp -d)
 trap 'python3 - "$TMP" <<'"'"'PY'"'"'
@@ -39,10 +39,19 @@ completeRecordWaitExhausted|GrowingLogEvidence.completeRecordWaitExhausted.itf.j
 completeRecordWaitDeadline|GrowingLogEvidence.completeRecordWaitDeadline.itf.json
 waitAfterConsumptionHasNoNewAuthority|GrowingLogEvidence.waitAfterConsumptionHasNoNewAuthority.itf.json
 pendingThenCompleteResample|GrowingLogEvidence.pendingThenCompleteResample.itf.json
+sharedBudgetAcrossEvaluations|GrowingLogEvidence.sharedBudgetAcrossEvaluations.itf.json
 EOF
 dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
 dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
-dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build
+: "${BAR_GROWING_LOG_HELPER:?BAR_GROWING_LOG_HELPER is required for complete-record correspondence}"
+test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
+TRANSCRIPT="$TMP/complete-record-correspondence.json"
+(cd "$BAR_GROWING_LOG_HELPER" && \
+  BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
+  BAR_RUNTIME_EVIDENCE_SOURCE="$(cd "$ROOT/../../.." && pwd)" \
+  BAR_SETTLEMENT_TRANSCRIPT="$TRANSCRIPT" \
+  python3 -m unittest -v test_growing_log.GrowingLogTests.test_required_complete_record_correspondence_bundle)
+BAR_GROWING_LOG_HELPER="$BAR_GROWING_LOG_HELPER" BAR_SETTLEMENT_TRANSCRIPT="$TRANSCRIPT" dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build
 
 POLICY_OUTPUT="$ROOT/bin/RuntimeEvidence/Release/net10.0"
 for artifact in RuntimeEvidence RuntimeEvidence.dll RuntimeEvidence.deps.json RuntimeEvidence.runtimeconfig.json FSharp.Core.dll; do

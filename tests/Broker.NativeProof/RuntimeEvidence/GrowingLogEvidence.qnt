@@ -1,5 +1,5 @@
 module GrowingLogEvidence {
-  type Settlement = { phase: str, remaining: int, deadlineAvailable: bool }
+  type Settlement = { phase: str, boundary: str, remaining: int, deadlineAvailable: bool }
   type Evidence = {
     phase: str,
     generation: int,
@@ -30,12 +30,14 @@ module GrowingLogEvidence {
     logMatches: false, sourceMatches: false, rootsValid: false,
     prefixIntact: false, writerPresent: false, authorityActive: false, stickyInvalid: false,
     policyPhase: "none", policyInvocation: "none", policyClosure: "none",
-    settlement: { phase: "idle", remaining: 32, deadlineAvailable: true },
+    settlement: { phase: "idle", boundary: "none", remaining: 32, deadlineAvailable: true },
   }
 
   action beginPolicy(invocation: str, closure: str): bool = all {
     evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
     evidence.policyPhase == "none",
+    evidence.settlement.phase == "idle" or evidence.settlement.phase == "candidate",
+    evidence.settlement.deadlineAvailable,
     invocation != "none", closure != "none",
     evidence' = { ...evidence, policyPhase: "started", policyInvocation: invocation, policyClosure: closure }
   }
@@ -63,25 +65,38 @@ module GrowingLogEvidence {
       writerPresent: true }
   }
 
-  action beginSettlement = all {
+  def canBeginSettlement(boundary: str): bool = all {
     evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
-    evidence.settlement.phase == "idle" or evidence.settlement.phase == "candidate",
+    evidence.settlement.phase == "idle",
+    boundary == "browser" or boundary == "normalization" or boundary == "release",
+  }
+
+  action beginSettlement(boundary: str): bool = all {
+    canBeginSettlement(boundary),
     evidence' = { ...evidence, authorityActive: false,
-      settlement: { phase: "probing", remaining: 32, deadlineAvailable: true } }
+      settlement: { phase: "probing", boundary: boundary, remaining: 32, deadlineAvailable: true } }
+  }
+
+  action retrySettlement(boundary: str): bool = all {
+    evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
+    evidence.settlement.phase == "candidate", evidence.settlement.boundary == boundary,
+    evidence.settlement.deadlineAvailable, evidence.settlement.remaining > 0,
+    evidence' = { ...evidence, authorityActive: false,
+      settlement: { ...evidence.settlement, phase: "probing" } }
   }
 
   action incompleteRecordProbe = all {
     evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
     evidence.settlement.remaining > 0,
     evidence' = { ...evidence,
-      settlement: { phase: "probing", remaining: evidence.settlement.remaining - 1, deadlineAvailable: true } }
+      settlement: { ...evidence.settlement, phase: "probing", remaining: evidence.settlement.remaining - 1 } }
   }
 
   action completeRecordCandidate = all {
     evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
     evidence.settlement.remaining > 0,
     evidence' = { ...evidence,
-      settlement: { phase: "candidate", remaining: evidence.settlement.remaining - 1, deadlineAvailable: true } }
+      settlement: { ...evidence.settlement, phase: "candidate", remaining: evidence.settlement.remaining - 1 } }
   }
 
   action recordSettlementExhausted = all {
@@ -98,6 +113,7 @@ module GrowingLogEvidence {
 
   action sampleInitial = all {
     evidence.phase == "acquired",
+    evidence.settlement.phase == "idle" or evidence.settlement.phase == "candidate",
     evidence' = { ...evidence, phase: "sampled", observedRevision: 1,
       rootsValid: true, prefixIntact: true }
   }
@@ -112,6 +128,7 @@ module GrowingLogEvidence {
   action validate(boundary: str): bool = all {
     evidence.phase == "sampled",
     evidence.settlement.phase == "idle" or evidence.settlement.phase == "candidate",
+    evidence.settlement.phase == "idle" or evidence.settlement.boundary == boundary,
     boundary == "browser" or boundary == "normalization" or boundary == "release",
     not(evidence.stickyInvalid), evidence.producerMatches, evidence.logMatches,
     evidence.sourceMatches, evidence.writerPresent, evidence.rootsValid,
@@ -121,16 +138,29 @@ module GrowingLogEvidence {
       authorityActive: true }
   }
 
-  action consume(boundary: str): bool = all {
+  def canConsume(boundary: str): bool = all {
     evidence.phase == "validated",
     evidence.policyPhase == "completed",
     boundary == "browser" or boundary == "normalization" or boundary == "release",
     evidence.validatedRevision == evidence.observedRevision,
     evidence.intendedBoundary == boundary,
+    evidence.authorityActive, evidence.settlement.deadlineAvailable,
+    evidence.settlement.phase == "idle" or all { evidence.settlement.phase == "candidate", evidence.settlement.boundary == boundary },
     not(evidence.stickyInvalid),
+  }
+
+  action consume(boundary: str): bool = all {
+    canConsume(boundary),
     evidence' = { ...evidence, phase: "consumed",
       consumedRevision: evidence.observedRevision, consumedBoundary: boundary,
       authorityActive: false }
+  }
+
+  action completeBoundary(boundary: str): bool = all {
+    evidence.phase == "consumed", evidence.consumedBoundary == boundary,
+    evidence.settlement.phase == "idle" or all { evidence.settlement.phase == "candidate", evidence.settlement.boundary == boundary },
+    evidence' = { ...evidence,
+      settlement: { ...evidence.settlement, phase: "idle", boundary: "none" } }
   }
 
   action benignAppend = all {
@@ -181,10 +211,12 @@ module GrowingLogEvidence {
   }
 
   action step = any {
-    acquire, beginSettlement, incompleteRecordProbe, completeRecordCandidate,
+    acquire, beginSettlement("browser"), beginSettlement("normalization"), beginSettlement("release"),
+    retrySettlement("browser"), retrySettlement("normalization"), retrySettlement("release"), incompleteRecordProbe, completeRecordCandidate,
     recordSettlementExhausted, recordSettlementDeadline, pendingCompleteResample,
     sampleInitial, validate("browser"), validate("normalization"), validate("release"),
     consume("browser"), consume("normalization"), consume("release"),
+    completeBoundary("browser"), completeBoundary("normalization"), completeBoundary("release"),
     benignAppend, pendingTail, staleBoundary, prefixRewrite, prefixTruncate, replacement, wrongWriter,
     wrongGeneration, wrongSource, contradictorySuffix, unavailable, close,
     beginPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"), readyPolicy("invocation", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"),
@@ -214,9 +246,14 @@ module GrowingLogEvidence {
   }
   val settlementIsBounded = evidence.settlement.remaining >= 0 and evidence.settlement.remaining <= 32
   val waitingDoesNotAuthorize = evidence.settlement.phase != "probing" or not(evidence.authorityActive)
+  val terminalSettlementDoesNotAuthorize =
+    (evidence.settlement.phase != "deadline" and evidence.settlement.phase != "refused") or not(evidence.authorityActive)
+  val settlementBoundaryIsClosed = evidence.settlement.boundary == "none" or evidence.settlement.boundary == "browser" or evidence.settlement.boundary == "normalization" or evidence.settlement.boundary == "release"
+  val idleSettlementHasNoBoundary = evidence.settlement.phase != "idle" or evidence.settlement.boundary == "none"
   val invariant = all {
     consumedOnlyValidated, currentConsumptionMatchesValidation,
     authorityRequiresIdentity, invalidityIsSticky, terminalCannotValidate, boundaryIsClosed,
     intendedBoundaryIsClosed, policyAuthorityIsCausal, settlementIsBounded, waitingDoesNotAuthorize,
+    terminalSettlementDoesNotAuthorize, settlementBoundaryIsClosed, idleSettlementHasNoBoundary,
   }
 }
