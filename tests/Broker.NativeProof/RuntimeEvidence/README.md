@@ -20,8 +20,11 @@ submits a sample. Incomplete probes do not call this reducer or advance a revisi
 canonical Quint settlement record models the 32-probe budget, deadline refusal, wait
 without authority, and pending-to-complete resampling while this F# reducer remains the
 only policy state transition.
-The combined gate requires a freshly generated six-scenario helper transcript and binds
-its bytes and the helper implementation into replay evidence. Boundary entry alone resets
+The combined gate requires a freshly generated seven-scenario helper transcript and binds
+its bytes and the helper implementation into replay evidence. Its single ordered stream
+records probes, actual policy transitions with complete before/after state, and the terminal
+result. The compiled replay reconstructs every state field from the captured request and
+typed reducer, so byte, digest, identity, or effect-order drift is refused. Boundary entry alone resets
 the 32-probe budget; retries preserve it. Deadline and exhaustion block current
 consumption while historical consumed state remains evidence only.
 

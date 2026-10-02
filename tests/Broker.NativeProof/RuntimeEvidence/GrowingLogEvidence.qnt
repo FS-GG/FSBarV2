@@ -80,21 +80,21 @@ module GrowingLogEvidence {
   action retrySettlement(boundary: str): bool = all {
     evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
     evidence.settlement.phase == "candidate", evidence.settlement.boundary == boundary,
-    evidence.settlement.deadlineAvailable, evidence.settlement.remaining > 0,
+    evidence.settlement.deadlineAvailable, evidence.settlement.remaining >= 0,
     evidence' = { ...evidence, authorityActive: false,
       settlement: { ...evidence.settlement, phase: "probing" } }
   }
 
   action incompleteRecordProbe = all {
     evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
-    evidence.settlement.remaining > 0,
+    evidence.settlement.remaining >= 0,
     evidence' = { ...evidence,
       settlement: { ...evidence.settlement, phase: "probing", remaining: evidence.settlement.remaining - 1 } }
   }
 
   action completeRecordCandidate = all {
     evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
-    evidence.settlement.remaining > 0,
+    evidence.settlement.remaining >= 0,
     evidence' = { ...evidence,
       settlement: { ...evidence.settlement, phase: "candidate", remaining: evidence.settlement.remaining - 1 } }
   }

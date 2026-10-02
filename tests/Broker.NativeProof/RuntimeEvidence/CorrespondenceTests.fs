@@ -50,47 +50,98 @@ module CorrespondenceTests =
             let actual=element.EnumerateObject()|>Seq.map _.Name|>Set.ofSeq
             if actual<>set names then failwith "closed settlement transcript object"
         exactNames transcript ["schema";"helperSha256";"scenarios"]
-        if transcript.GetProperty("schema").GetString()<>"fsbar.barc-complete-record-settlement-correspondence/v1" || transcript.GetProperty("helperSha256").GetString()<>hashFile helperPath then failwith "settlement helper/transcript binding"
+        if transcript.GetProperty("schema").GetString()<>"fsbar.barc-complete-record-settlement-correspondence/v2" || transcript.GetProperty("helperSha256").GetString()<>hashFile helperPath then failwith "settlement helper/transcript binding"
         let scenarios=transcript.GetProperty("scenarios").EnumerateArray()|>Seq.toArray
-        if scenarios.Length<>6 then failwith "closed settlement scenario census"
+        if scenarios.Length<>7 then failwith "closed settlement scenario census"
         let scenario name =
-            let matches=scenarios|>Array.filter(fun row->exactNames row ["name";"events";"effects"];row.GetProperty("name").GetString()=name)
+            let matches=scenarios|>Array.filter(fun row->exactNames row ["name";"timeline"];row.GetProperty("name").GetString()=name)
             if matches.Length<>1 then failwithf "required settlement scenario absent/duplicate: %s" name
             matches[0]
+        let timeline name=(scenario name).GetProperty("timeline").EnumerateArray()|>Seq.toArray
         let events name =
-            scenario name|>fun row->row.GetProperty("events").EnumerateArray()|>Seq.mapi(fun index event->
-                exactNames event ["event";"probe";"remaining"]
+            timeline name|>Array.filter(fun event->event.GetProperty("kind").GetString()="probe")|>Array.mapi(fun index event->
+                exactNames event ["kind";"event";"probe";"remaining"]
                 let kind=event.GetProperty("event").GetString()
                 let probe=event.GetProperty("probe").GetInt32()
                 let remaining=event.GetProperty("remaining").GetInt32()
                 if (kind<>"incomplete" && kind<>"complete") || probe<>index+1 || remaining<>32-probe then failwithf "noncausal settlement event: %s" name
-                kind,probe,remaining)|>Seq.toList
-        let effects name =
-            let value=(scenario name).GetProperty("effects")
-            exactNames value ["policyCalls";"revisions";"outcome";"check";"beforeState";"afterState"]
-            value
-        let requireEffects name calls revisions outcome check =
-            let value=effects name
-            let actualRevisions=value.GetProperty("revisions").EnumerateArray()|>Seq.map _.GetInt32()|>Seq.toList
-            let actualCheck=if value.GetProperty("check").ValueKind=JsonValueKind.Null then None else Some(value.GetProperty("check").GetString())
-            if value.GetProperty("policyCalls").GetInt32()<>calls || actualRevisions<>revisions || value.GetProperty("outcome").GetString()<>outcome || actualCheck<>check then failwithf "settlement effects mismatch: %s" name
-        requireEffects "completeRecordWaitThenConsume" 1 [1] "accepted" None
-        requireEffects "completeRecordWaitExhausted" 0 [] "refused" (Some "infolog-record-settlement-exhausted")
-        requireEffects "completeRecordWaitDeadline" 0 [] "deadline" (Some "infolog-record-settlement-deadline")
-        requireEffects "sharedBudgetAcrossEvaluations" 1 [1] "refused" (Some "infolog-record-settlement-exhausted")
-        requireEffects "pendingThenCompleteResample" 2 [1;2] "accepted" None
-        requireEffects "waitAfterConsumptionHasNoNewAuthority" 0 [] "refused" (Some "infolog-record-settlement-exhausted")
-        for name in ["completeRecordWaitExhausted";"completeRecordWaitDeadline"] do
-            let value=effects name
-            if value.GetProperty("beforeState").ValueKind<>JsonValueKind.Null || value.GetProperty("afterState").ValueKind<>JsonValueKind.Null then failwithf "mechanical wait changed production state: %s" name
-        let historical=effects "waitAfterConsumptionHasNoNewAuthority"
-        if historical.GetProperty("beforeState").GetRawText()<>historical.GetProperty("afterState").GetRawText() then failwith "wait changed historical production state"
-        let requireProductionState name (element:JsonElement) (value:EvidenceState) =
-            exactNames element ["phase";"observedRevision";"validatedRevision";"validatedBoundary";"consumedRevision";"consumedBoundary";"bytes";"sha256";"stickyInvalid";"reason";"identitySha256"]
-            let optionalText (property:string) = let item=element.GetProperty property in if item.ValueKind=JsonValueKind.Null then None else Some(item.GetString())
-            let validDigest (property:string) = let text=element.GetProperty(property).GetString() in text.Length=64 && text|>Seq.forall(fun c->Char.IsDigit c || (c>='a' && c<='f'))
-            let boundaryOptionText = function Some boundary->Some(boundaryText(Some boundary))|None->None
-            if element.GetProperty("phase").GetString()<>value.Phase || element.GetProperty("observedRevision").GetInt32()<>value.ObservedRevision || element.GetProperty("validatedRevision").GetInt32()<>value.ValidatedRevision || optionalText "validatedBoundary"<>boundaryOptionText value.ValidatedBoundary || element.GetProperty("consumedRevision").GetInt32()<>value.ConsumedRevision || optionalText "consumedBoundary"<>boundaryOptionText value.ConsumedBoundary || element.GetProperty("stickyInvalid").GetBoolean()<>value.StickyInvalid || optionalText "reason"<>value.Reason || element.GetProperty("bytes").GetInt64()<0L || not(validDigest "sha256" && validDigest "identitySha256") then failwithf "production settlement state mismatch: %s" name
+                kind,probe,remaining)|>Array.toList
+        let parseBoundary = function "browser"->BrowserAdmission|"normalization"->Normalization|"release"->Release|value->failwithf "closed boundary: %s" value
+        let optionalText (element:JsonElement) (property:string) =
+            let item=element.GetProperty property
+            if item.ValueKind=JsonValueKind.Null then None else Some(item.GetString())
+        let parseIdentity (element:JsonElement) =
+            exactNames element ["runId";"sourceSetSha256";"apphostSha256";"closureSha256";"pid";"startTicks";"uid";"device";"inode";"path"]
+            {RunId=element.GetProperty("runId").GetString();SourceSetSha256=element.GetProperty("sourceSetSha256").GetString();ApphostSha256=element.GetProperty("apphostSha256").GetString();ClosureSha256=element.GetProperty("closureSha256").GetString();Pid=element.GetProperty("pid").GetInt32();StartTicks=element.GetProperty("startTicks").GetString();Uid=element.GetProperty("uid").GetInt32();Device=element.GetProperty("device").GetString();Inode=element.GetProperty("inode").GetString();Path=element.GetProperty("path").GetString()}
+        let parseState (element:JsonElement) =
+            exactNames element ["phase";"observedRevision";"validatedRevision";"validatedBoundary";"consumedRevision";"consumedBoundary";"bytes";"sha256";"stickyInvalid";"reason";"identity"]
+            let identity=element.GetProperty("identity")
+            { Phase=element.GetProperty("phase").GetString()
+              Identity=(if identity.ValueKind=JsonValueKind.Null then None else Some(parseIdentity identity))
+              ObservedRevision=element.GetProperty("observedRevision").GetInt32()
+              ValidatedRevision=element.GetProperty("validatedRevision").GetInt32()
+              ValidatedBoundary=optionalText element "validatedBoundary"|>Option.map parseBoundary
+              ConsumedRevision=element.GetProperty("consumedRevision").GetInt32()
+              ConsumedBoundary=optionalText element "consumedBoundary"|>Option.map parseBoundary
+              Bytes=element.GetProperty("bytes").GetInt64()
+              Sha256=element.GetProperty("sha256").GetString()
+              StickyInvalid=element.GetProperty("stickyInvalid").GetBoolean()
+              Reason=optionalText element "reason" }
+        let parseNullableState (element:JsonElement)=if element.ValueKind=JsonValueKind.Null then None else Some(parseState element)
+        let transitionState = function Accepted value|Pending value|Refused value|Unknown value->value
+        let verifyTimeline name expectedOutcome expectedCheck =
+            let rows=timeline name
+            if rows.Length=0 then failwithf "empty settlement timeline: %s" name
+            let terminals=rows|>Array.indexed|>Array.filter(fun (_,row)->row.GetProperty("kind").GetString()="terminal")
+            if terminals.Length<>1 || fst terminals[0]<>rows.Length-1 then failwithf "terminal ordering: %s" name
+            let terminal=snd terminals[0]
+            exactNames terminal ["kind";"outcome";"check";"state"]
+            let check=optionalText terminal "check"
+            if terminal.GetProperty("outcome").GetString()<>expectedOutcome || check<>expectedCheck then failwithf "terminal result mismatch: %s" name
+            let mutable completeSeen=false
+            let mutable terminalSeen=false
+            let mutable lastConcrete:EvidenceState option=None
+            for row in rows do
+                let kind=row.GetProperty("kind").GetString()
+                if terminalSeen then failwithf "effect after terminal: %s" name
+                match kind with
+                | "probe" -> if row.GetProperty("event").GetString()="complete" then completeSeen<-true
+                | "historical" ->
+                    exactNames row ["kind";"beforeState";"afterState"]
+                    let before=parseState(row.GetProperty("beforeState"))
+                    let after=parseState(row.GetProperty("afterState"))
+                    if before<>after then failwithf "historical state changed: %s" name
+                    lastConcrete<-Some after
+                | "policy" ->
+                    if not completeSeen then failwithf "policy before complete candidate: %s" name
+                    exactNames row ["kind";"boundary";"status";"expected";"observation";"beforeState";"afterState"]
+                    let expected=row.GetProperty("expected")
+                    let observed=row.GetProperty("observation")
+                    exactNames expected ["runId";"sourceSetSha256";"apphostSha256";"closureSha256";"writeRoot";"dataRoot"]
+                    exactNames observed ["pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256"]
+                    let identity={RunId=expected.GetProperty("runId").GetString();SourceSetSha256=expected.GetProperty("sourceSetSha256").GetString();ApphostSha256=expected.GetProperty("apphostSha256").GetString();ClosureSha256=expected.GetProperty("closureSha256").GetString();Pid=observed.GetProperty("pid").GetInt32();StartTicks=observed.GetProperty("startTicks").GetString();Uid=observed.GetProperty("uid").GetInt32();Device=observed.GetProperty("device").GetString();Inode=observed.GetProperty("inode").GetString();Path=observed.GetProperty("path").GetString()}
+                    let before=parseNullableState(row.GetProperty("beforeState"))
+                    if before.IsSome && before.Value.Identity<>Some identity then failwithf "policy prior identity mismatch: %s" name
+                    let acquired=match before with Some value->value|None->GrowingLogEvidence.acquire identity GrowingLogEvidence.empty|>transitionState
+                    let status=row.GetProperty("status").GetString()
+                    let after=parseState(row.GetProperty("afterState"))
+                    let observation={Identity=identity;Revision=observed.GetProperty("revision").GetInt32();Bytes=observed.GetProperty("bytes").GetInt64();Sha256=observed.GetProperty("sha256").GetString();PreviousPrefixIntact=true;WriterPresent=true;CompleteRecord=status="accepted";Available=true;RootsValid=status="accepted";PendingReason=if status="pending" then after.Reason else None}
+                    let sampled=GrowingLogEvidence.sample observation acquired|>transitionState
+                    let expectedState=if status="accepted" then GrowingLogEvidence.validate (parseBoundary(row.GetProperty("boundary").GetString())) sampled|>transitionState|>GrowingLogEvidence.consume (parseBoundary(row.GetProperty("boundary").GetString()))|>transitionState else sampled
+                    if expectedState<>after then failwithf "full production policy state mismatch: %s" name
+                    lastConcrete<-Some after
+                | "terminal" ->
+                    terminalSeen<-true
+                    let state=parseNullableState(row.GetProperty("state"))
+                    if state<>lastConcrete then failwithf "terminal concrete state mismatch: %s" name
+                | other->failwithf "closed ordered effect kind %s" other
+        verifyTimeline "completeRecordWaitThenConsume" "accepted" None
+        verifyTimeline "completeRecordWaitExhausted" "refused" (Some "infolog-record-settlement-exhausted")
+        verifyTimeline "completeRecordWaitDeadline" "deadline" (Some "infolog-record-settlement-deadline")
+        verifyTimeline "sharedBudgetAcrossEvaluations" "refused" (Some "infolog-record-settlement-exhausted")
+        verifyTimeline "pendingThenCompleteResample" "accepted" None
+        verifyTimeline "waitAfterConsumptionHasNoNewAuthority" "refused" (Some "infolog-record-settlement-exhausted")
+        verifyTimeline "lastProbeCandidateThenExhausted" "refused" (Some "infolog-record-settlement-exhausted")
         policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         let tool=locate "quint"
         let environment={Seed="424242";Bounds=["revisions",3L;"generations",2L];ToolFingerprint=hashFile tool;ProfileFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.qnt");Path.Combine(baseDirectory,"GrowingLogEvidence_test.qnt")];ContractFingerprint=hashFile(Path.Combine(baseDirectory,"Codec.fs"));AdapterFingerprint=hashJoined [Path.Combine(baseDirectory,"DataRootPolicy.fs");helperPath;transcriptPath];ImplementationFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.fs");typeof<EvidenceState>.Assembly.Location]}
@@ -235,7 +286,6 @@ module CorrespondenceTests =
         let waitCompleted=match PolicyComposition.finishGuard guardId true waitEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
         policyPhase<-waitCompleted.State.Phase;waitStates.Add(stateWithSettlement "candidate" "browser" completionRemaining true true true true waitValidated)
         let waitConsumed=GrowingLogEvidence.consume BrowserAdmission waitValidated|>accepted
-        requireProductionState "completeRecordWaitThenConsume" ((effects "completeRecordWaitThenConsume").GetProperty("afterState")) waitConsumed
         waitStates.Add(stateWithSettlement "candidate" "browser" completionRemaining true true true true waitConsumed)
         sequence "completeRecordWaitThenConsume" (["acquire";"beginSettlement:browser"]@eventActions completionEvents@["sampleInitial";"beginPolicy:invocation";"readyPolicy:invocation";"validate:browser";"evaluatedPolicy:invocation";"completePolicy:invocation";"consume:browser"]) (List.ofSeq waitStates)
 
@@ -279,7 +329,6 @@ module CorrespondenceTests =
         let sharedCompleted=match PolicyComposition.finishGuard guardId true sharedEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
         policyPhase<-sharedCompleted.State.Phase;sharedStates.Add(stateWithSettlement "candidate" "browser" sharedRemaining true true true true sharedValidated)
         let sharedConsumed=GrowingLogEvidence.consume BrowserAdmission sharedValidated|>accepted
-        requireProductionState "sharedBudgetAcrossEvaluations" ((effects "sharedBudgetAcrossEvaluations").GetProperty("afterState")) sharedConsumed
         sharedStates.Add(stateWithSettlement "candidate" "browser" sharedRemaining true true true true sharedConsumed)
         sharedStates.Add(stateWithSettlement "probing" "browser" sharedRemaining true true true true sharedConsumed)
         appendEventStates sharedStates "browser" true true true sharedConsumed (sharedEvents|>List.tail)
@@ -315,7 +364,6 @@ module CorrespondenceTests =
         let pendingCompleted=match PolicyComposition.finishGuard guardId true pendingEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
         policyPhase<-pendingCompleted.State.Phase;pendingStates.Add(stateWithSettlement "candidate" "browser" pendingR3 true true true true pendingValidated)
         let pendingConsumed=GrowingLogEvidence.consume BrowserAdmission pendingValidated|>accepted
-        requireProductionState "pendingThenCompleteResample" ((effects "pendingThenCompleteResample").GetProperty("afterState")) pendingConsumed
         pendingStates.Add(stateWithSettlement "candidate" "browser" pendingR3 true true true true pendingConsumed)
         sequence "pendingThenCompleteResample" ["acquire";"beginSettlement:browser";"completeRecordCandidate";"pendingTail";"retrySettlement:browser";"incompleteRecordProbe";"completeRecordCandidate";"pendingCompleteResample";"beginPolicy:invocation";"readyPolicy:invocation";"validate:browser";"evaluatedPolicy:invocation";"completePolicy:invocation";"consume:browser"] (List.ofSeq pendingStates)
 
@@ -338,10 +386,34 @@ module CorrespondenceTests =
         let afterCompleted=match PolicyComposition.finishGuard guardId true afterEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
         policyPhase<-afterCompleted.State.Phase;afterConsumeStates.Add(stateWithSettlement "candidate" "browser" 31 true true true true afterValidated)
         let afterConsumed=GrowingLogEvidence.consume BrowserAdmission afterValidated|>accepted
-        requireProductionState "waitAfterConsumptionHasNoNewAuthority" (historical.GetProperty("beforeState")) afterConsumed
         afterConsumeStates.Add(stateWithSettlement "candidate" "browser" 31 true true true true afterConsumed)
         afterConsumeStates.Add(stateWithSettlement "idle" "none" 31 true true true true afterConsumed)
         afterConsumeStates.Add(stateWithSettlement "probing" "normalization" 32 true true true true afterConsumed)
         appendEventStates afterConsumeStates "normalization" true true true afterConsumed afterEvents
         afterConsumeStates.Add(stateWithSettlement "refused" "normalization" 0 true true true true afterConsumed)
         sequence "waitAfterConsumptionHasNoNewAuthority" (["acquire";"beginSettlement:browser";"completeRecordCandidate";"sampleInitial";"beginPolicy:invocation";"readyPolicy:invocation";"validate:browser";"evaluatedPolicy:invocation";"completePolicy:invocation";"consume:browser";"completeBoundary:browser";"beginSettlement:normalization"]@eventActions afterEvents@["recordSettlementExhausted"]) (List.ofSeq afterConsumeStates)
+
+        policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
+        let lastEvents=events "lastProbeCandidateThenExhausted"
+        if lastEvents.Length<>32 || (lastEvents|>List.take 31|>List.exists(fun (kind,_,_)->kind<>"incomplete")) || (lastEvents|>List.last|>fun (kind,_,remaining)->kind<>"complete" || remaining<>0) then failwith "last-probe actual event order"
+        let lastStates=ResizeArray<QuintReplayState>()
+        lastStates.Add(state false false true a)
+        lastStates.Add(stateWithSettlement "probing" "browser" 32 true false false true a)
+        appendEventStates lastStates "browser" false false true a lastEvents
+        lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true s)
+        let lastGuard=PolicyComposition.start guardId
+        policyPhase<-lastGuard.State.Phase;policyInvocation<-guardId.InvocationId;policyClosure<-guardId.ClosureSha256
+        lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true s)
+        let lastReady=PolicyComposition.ready guardId lastGuard
+        policyPhase<-lastReady.State.Phase;lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true s)
+        let lastValidated=GrowingLogEvidence.validate BrowserAdmission s|>accepted
+        lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true lastValidated)
+        let lastEvaluated=PolicyComposition.evaluated guardId lastReady
+        policyPhase<-lastEvaluated.State.Phase;lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true lastValidated)
+        let lastCompleted=match PolicyComposition.finishGuard guardId true lastEvaluated with Choice1Of2 value->value|Choice2Of2 value->failwithf "%A" value
+        policyPhase<-lastCompleted.State.Phase;lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true lastValidated)
+        let lastConsumed=GrowingLogEvidence.consume BrowserAdmission lastValidated|>accepted
+        lastStates.Add(stateWithSettlement "candidate" "browser" 0 true true true true lastConsumed)
+        lastStates.Add(stateWithSettlement "probing" "browser" 0 true true true true lastConsumed)
+        lastStates.Add(stateWithSettlement "refused" "browser" 0 true true true true lastConsumed)
+        sequence "lastProbeCandidateThenExhausted" (["acquire";"beginSettlement:browser"]@eventActions lastEvents@["sampleInitial";"beginPolicy:invocation";"readyPolicy:invocation";"validate:browser";"evaluatedPolicy:invocation";"completePolicy:invocation";"consume:browser";"retrySettlement:browser";"recordSettlementExhausted"]) (List.ofSeq lastStates)
