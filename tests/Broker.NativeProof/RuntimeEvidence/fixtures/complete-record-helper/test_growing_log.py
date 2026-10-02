@@ -1,4 +1,4 @@
-import base64,hashlib,json,os,pathlib,shutil,stat,subprocess,sys,tempfile,threading,time,unittest
+import base64,fnmatch,hashlib,json,os,pathlib,shutil,stat,subprocess,sys,tempfile,threading,time,unittest
 from unittest import mock
 import growing_log
 from growing_log import GrowingLog
@@ -198,8 +198,20 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
             for line in output.splitlines():
                 fields=line.replace('=>',' ').split()
                 runtime_paths.update(pathlib.Path(x).resolve() for x in fields if x.startswith('/') and pathlib.Path(x).is_file())
-        for pattern in ('libicu*.so*','libcrypto.so*','libssl.so*','libbrotli*.so*','libz.so*','libzstd.so*'):
-            runtime_paths.update(path.resolve() for path in pathlib.Path('/usr/lib').glob(pattern) if path.is_file() and not path.is_symlink())
+        dynamic_patterns={'icu':'libicu*.so*','crypto':'libcrypto.so*','ssl':'libssl.so*','brotli':'libbrotli*.so*','zlib':'libz.so*','zstd':'libzstd.so*'}
+        ldconfig=subprocess.run(['ldconfig','-p'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
+        if len(ldconfig.stdout)>1024*1024 or len(ldconfig.stderr)>4096:raise AssertionError('bounded loader cache census')
+        dynamic={name:set() for name in dynamic_patterns}
+        for line in ldconfig.stdout.decode('utf-8','strict').splitlines():
+            if '=>' not in line:continue
+            raw=line.rsplit('=>',1)[1].strip();path=pathlib.Path(raw)
+            for name,pattern in dynamic_patterns.items():
+                if fnmatch.fnmatchcase(path.name,pattern):
+                    resolved=path.resolve(strict=True)
+                    if resolved.is_file():dynamic[name].add(resolved)
+        if sum(map(len,dynamic.values()))>128:raise AssertionError('bounded dynamic runtime census')
+        cls.dynamic_libraries={name:sorted(paths) for name,paths in dynamic.items()}
+        runtime_paths.update(path for paths in cls.dynamic_libraries.values() for path in paths)
         runtime_paths.add(pathlib.Path('/etc/ld.so.cache'))
         runtime=[row(path) for path in sorted(runtime_paths)]
         roles={'hostfxr':str(fxr/'libhostfxr.so'),'hostpolicy':str(framework/'libhostpolicy.so'),'coreLib':str(framework/'System.Private.CoreLib.dll'),'coreClr':str(framework/'libcoreclr.so'),'jit':str(framework/'libclrjit.so')}
@@ -284,7 +296,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
             if 'hostfxr' in value:return 'hostfxr-unavailable'
             if 'permission denied' in value:return 'permission-refused'
             return 'bounded-nonempty'
-        diagnostic={'schema':'fsbar.public.runtime-evidence-startup-diagnostic/v1','dotnetHostExit':host.returncode,'dotnetStdout':stream(host.stdout),'dotnetStderr':stream(host.stderr),'runtimeFrameworkName':framework['name'],'runtimeFrameworkVersion':framework['version'],'selectedRuntimeVersion':self.dotnet_root.joinpath('shared/Microsoft.NETCore.App').iterdir().__next__().name,'selectedHostfxrVersion':self.dotnet_root.joinpath('host/fxr').iterdir().__next__().name,'runtimeFiles':sum(1 for path in self.dotnet_root.rglob('*') if path.is_file()),'runtimeLinks':sum(1 for path in self.dotnet_root.rglob('*') if path.is_symlink()),'policyDisposition':'not-started','policyCheck':None,'policyObservation':None}
+        diagnostic={'schema':'fsbar.public.runtime-evidence-startup-diagnostic/v1','dotnetHostExit':host.returncode,'dotnetStdout':stream(host.stdout),'dotnetStderr':stream(host.stderr),'runtimeFrameworkName':framework['name'],'runtimeFrameworkVersion':framework['version'],'selectedRuntimeVersion':self.dotnet_root.joinpath('shared/Microsoft.NETCore.App').iterdir().__next__().name,'selectedHostfxrVersion':self.dotnet_root.joinpath('host/fxr').iterdir().__next__().name,'runtimeFiles':sum(1 for path in self.dotnet_root.rglob('*') if path.is_file()),'runtimeLinks':sum(1 for path in self.dotnet_root.rglob('*') if path.is_symlink()),'dynamicLibraryCounts':{name:len(paths) for name,paths in self.dynamic_libraries.items()},'policyDisposition':'not-started','policyCheck':None,'policyObservation':None}
         self.assertEqual((host.returncode,diagnostic['runtimeLinks']),(0,0))
         runner=object.__new__(GrowingLog);runner.last_policy_observation=None
         try:
@@ -300,6 +312,16 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
             if (diagnostic['policyCheck'],diagnostic['policyObservation'])!=('policy-result-join','request-evaluation:exception'):
                 print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True);raise
             diagnostic['policyDisposition']='ready-request-refused'
+        icu={str(path) for path in self.dynamic_libraries['icu']};self.assertTrue(icu)
+        omitted=json.loads(self.closure.read_text());omitted['runtime']=[row for row in omitted['runtime'] if row['path'] not in icu]
+        omitted_path=pathlib.Path(self.fixture.name)/'current-process-omitted-icu.json';omitted_raw=json.dumps(omitted,separators=(',',':')).encode();omitted_path.write_bytes(omitted_raw);os.chmod(omitted_path,0o600)
+        omitted_runner=object.__new__(GrowingLog);omitted_runner.last_policy_observation=None
+        try:
+            with self.assertRaises(Refused) as caught:omitted_runner._run_policy(str(self.policy),str(omitted_path),hashlib.sha256(omitted_raw).hexdigest(),b'{}',time.monotonic()+5)
+            fact=caught.exception._barc_failure_observation;observation=fact['policyObservation']
+            self.assertEqual((fact['check'],observation['checkpoint'],observation['kind']),('policy-artifact','current-process','exception'))
+            diagnostic['omittedIcuControl']='current-process-refused'
+        finally:omitted_path.unlink(missing_ok=True)
         print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True)
         self.assertIn(diagnostic['policyDisposition'],('ready-completed','ready-request-refused'))
     @staticmethod
