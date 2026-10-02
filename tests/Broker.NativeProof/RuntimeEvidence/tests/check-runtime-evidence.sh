@@ -5,7 +5,7 @@ export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-1}"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
 quint run "$ROOT/GrowingLogEvidence.qnt" --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 TMP=$(mktemp -d)
 trap 'python3 - "$TMP" <<'"'"'PY'"'"'
@@ -53,6 +53,22 @@ TRANSCRIPT="$TMP/complete-record-correspondence.json"
   BAR_SETTLEMENT_TRANSCRIPT="$TRANSCRIPT" \
   python3 -m unittest -v test_growing_log.GrowingLogTests.test_required_complete_record_correspondence_bundle)
 BAR_GROWING_LOG_HELPER="$BAR_GROWING_LOG_HELPER" BAR_SETTLEMENT_TRANSCRIPT="$TRANSCRIPT" dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build
+python3 - "$TRANSCRIPT" "$TMP" <<'PY'
+import copy,json,pathlib,sys
+value=json.loads(pathlib.Path(sys.argv[1]).read_text());root=pathlib.Path(sys.argv[2])
+def named(v,name):return next(row for row in v['scenarios'] if row['name']==name)['timeline']
+duplicate=copy.deepcopy(value);rows=named(duplicate,'completeRecordWaitThenConsume');policy=next(row for row in rows if row['kind']=='policy');rows[-1:-1]=[copy.deepcopy(policy) for _ in range(4)]
+reordered=copy.deepcopy(value);rows=named(reordered,'pendingThenCompleteResample');indexes=[index for index,row in enumerate(rows) if row['kind']=='policy'];second=rows.pop(indexes[1]);rows.insert(indexes[0]+1,second)
+prior=copy.deepcopy(value);rows=named(prior,'pendingThenCompleteResample');next(row for row in rows if row['kind']=='policy' and row['observation']['revision']==2)['beforeState']=None
+for name,bundle in [('duplicate-policy',duplicate),('reordered-policy',reordered),('prior-state-chain',prior)]:
+    (root/f'{name}.json').write_text(json.dumps(bundle,separators=(',',':'),sort_keys=True)+'\n')
+PY
+for mutation in duplicate-policy reordered-policy prior-state-chain; do
+  if BAR_GROWING_LOG_HELPER="$BAR_GROWING_LOG_HELPER" BAR_SETTLEMENT_TRANSCRIPT="$TMP/$mutation.json" dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build >/dev/null 2>&1; then
+    echo "settlement timeline mutation accepted: $mutation" >&2
+    exit 1
+  fi
+done
 
 POLICY_OUTPUT="$ROOT/bin/RuntimeEvidence/Release/net10.0"
 for artifact in RuntimeEvidence RuntimeEvidence.dll RuntimeEvidence.deps.json RuntimeEvidence.runtimeconfig.json FSharp.Core.dll; do

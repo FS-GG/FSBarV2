@@ -85,16 +85,19 @@ module GrowingLogEvidence {
       settlement: { ...evidence.settlement, phase: "probing" } }
   }
 
-  action incompleteRecordProbe = all {
+  def canProbe: bool = all {
     evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
-    evidence.settlement.remaining >= 0,
+    evidence.settlement.remaining > 0,
+  }
+
+  action incompleteRecordProbe = all {
+    canProbe,
     evidence' = { ...evidence,
       settlement: { ...evidence.settlement, phase: "probing", remaining: evidence.settlement.remaining - 1 } }
   }
 
   action completeRecordCandidate = all {
-    evidence.settlement.phase == "probing", evidence.settlement.deadlineAvailable,
-    evidence.settlement.remaining >= 0,
+    canProbe,
     evidence' = { ...evidence,
       settlement: { ...evidence.settlement, phase: "candidate", remaining: evidence.settlement.remaining - 1 } }
   }

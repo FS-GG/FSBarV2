@@ -89,23 +89,49 @@ module CorrespondenceTests =
               Reason=optionalText element "reason" }
         let parseNullableState (element:JsonElement)=if element.ValueKind=JsonValueKind.Null then None else Some(parseState element)
         let transitionState = function Accepted value|Pending value|Refused value|Unknown value->value
-        let verifyTimeline name expectedOutcome expectedCheck =
+        let verifyTimeline name expectedPolicies expectedOutcome expectedCheck =
             let rows=timeline name
             if rows.Length=0 then failwithf "empty settlement timeline: %s" name
+            let tokens=rows|>Array.map(fun row->
+                match row.GetProperty("kind").GetString() with
+                | "probe"->"probe:"+row.GetProperty("event").GetString()
+                | "policy"->"policy:"+row.GetProperty("status").GetString()
+                | "terminal"->"terminal:"+row.GetProperty("outcome").GetString()
+                | "historical"->"historical"
+                | other->"unknown:"+other)|>Array.toList
+            let expectedTokens=
+                match name with
+                | "completeRecordWaitThenConsume"->["probe:incomplete";"probe:complete";"policy:accepted";"terminal:accepted"]
+                | "completeRecordWaitExhausted"->List.replicate 32 "probe:incomplete"@["terminal:refused"]
+                | "completeRecordWaitDeadline"->["probe:incomplete";"terminal:deadline"]
+                | "sharedBudgetAcrossEvaluations"->["probe:complete";"policy:accepted"]@List.replicate 31 "probe:incomplete"@["terminal:refused"]
+                | "pendingThenCompleteResample"->["probe:complete";"policy:pending";"probe:incomplete";"probe:complete";"policy:accepted";"terminal:accepted"]
+                | "waitAfterConsumptionHasNoNewAuthority"->["historical"]@List.replicate 32 "probe:incomplete"@["terminal:refused"]
+                | "lastProbeCandidateThenExhausted"->List.replicate 31 "probe:incomplete"@["probe:complete";"policy:accepted";"terminal:refused"]
+                | _->failwithf "unknown settlement scenario: %s" name
+            if tokens<>expectedTokens then failwithf "ordered timeline/canonical action join: %s" name
             let terminals=rows|>Array.indexed|>Array.filter(fun (_,row)->row.GetProperty("kind").GetString()="terminal")
             if terminals.Length<>1 || fst terminals[0]<>rows.Length-1 then failwithf "terminal ordering: %s" name
             let terminal=snd terminals[0]
             exactNames terminal ["kind";"outcome";"check";"state"]
             let check=optionalText terminal "check"
             if terminal.GetProperty("outcome").GetString()<>expectedOutcome || check<>expectedCheck then failwithf "terminal result mismatch: %s" name
-            let mutable completeSeen=false
+            let mutable candidateAvailable=false
             let mutable terminalSeen=false
             let mutable lastConcrete:EvidenceState option=None
+            let mutable probeCount=0
+            let mutable policyCount=0
             for row in rows do
                 let kind=row.GetProperty("kind").GetString()
                 if terminalSeen then failwithf "effect after terminal: %s" name
                 match kind with
-                | "probe" -> if row.GetProperty("event").GetString()="complete" then completeSeen<-true
+                | "probe" ->
+                    probeCount<-probeCount+1
+                    if probeCount>32 || row.GetProperty("probe").GetInt32()<>probeCount then failwithf "settlement probe bound/order: %s" name
+                    if row.GetProperty("event").GetString()="complete" then
+                        if candidateAvailable then failwithf "unconsumed complete candidate: %s" name
+                        candidateAvailable<-true
+                    else candidateAvailable<-false
                 | "historical" ->
                     exactNames row ["kind";"beforeState";"afterState"]
                     let before=parseState(row.GetProperty("beforeState"))
@@ -113,7 +139,10 @@ module CorrespondenceTests =
                     if before<>after then failwithf "historical state changed: %s" name
                     lastConcrete<-Some after
                 | "policy" ->
-                    if not completeSeen then failwithf "policy before complete candidate: %s" name
+                    if not candidateAvailable then failwithf "policy without fresh complete candidate: %s" name
+                    candidateAvailable<-false
+                    policyCount<-policyCount+1
+                    if policyCount>3 then failwithf "policy evaluation bound: %s" name
                     exactNames row ["kind";"boundary";"status";"expected";"observation";"beforeState";"afterState"]
                     let expected=row.GetProperty("expected")
                     let observed=row.GetProperty("observation")
@@ -121,10 +150,12 @@ module CorrespondenceTests =
                     exactNames observed ["pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256"]
                     let identity={RunId=expected.GetProperty("runId").GetString();SourceSetSha256=expected.GetProperty("sourceSetSha256").GetString();ApphostSha256=expected.GetProperty("apphostSha256").GetString();ClosureSha256=expected.GetProperty("closureSha256").GetString();Pid=observed.GetProperty("pid").GetInt32();StartTicks=observed.GetProperty("startTicks").GetString();Uid=observed.GetProperty("uid").GetInt32();Device=observed.GetProperty("device").GetString();Inode=observed.GetProperty("inode").GetString();Path=observed.GetProperty("path").GetString()}
                     let before=parseNullableState(row.GetProperty("beforeState"))
+                    if before<>lastConcrete then failwithf "policy prior state chain mismatch: %s" name
                     if before.IsSome && before.Value.Identity<>Some identity then failwithf "policy prior identity mismatch: %s" name
                     let acquired=match before with Some value->value|None->GrowingLogEvidence.acquire identity GrowingLogEvidence.empty|>transitionState
                     let status=row.GetProperty("status").GetString()
                     let after=parseState(row.GetProperty("afterState"))
+                    if observed.GetProperty("revision").GetInt32()<>policyCount then failwithf "policy revision progression: %s" name
                     let observation={Identity=identity;Revision=observed.GetProperty("revision").GetInt32();Bytes=observed.GetProperty("bytes").GetInt64();Sha256=observed.GetProperty("sha256").GetString();PreviousPrefixIntact=true;WriterPresent=true;CompleteRecord=status="accepted";Available=true;RootsValid=status="accepted";PendingReason=if status="pending" then after.Reason else None}
                     let sampled=GrowingLogEvidence.sample observation acquired|>transitionState
                     let expectedState=if status="accepted" then GrowingLogEvidence.validate (parseBoundary(row.GetProperty("boundary").GetString())) sampled|>transitionState|>GrowingLogEvidence.consume (parseBoundary(row.GetProperty("boundary").GetString()))|>transitionState else sampled
@@ -135,13 +166,14 @@ module CorrespondenceTests =
                     let state=parseNullableState(row.GetProperty("state"))
                     if state<>lastConcrete then failwithf "terminal concrete state mismatch: %s" name
                 | other->failwithf "closed ordered effect kind %s" other
-        verifyTimeline "completeRecordWaitThenConsume" "accepted" None
-        verifyTimeline "completeRecordWaitExhausted" "refused" (Some "infolog-record-settlement-exhausted")
-        verifyTimeline "completeRecordWaitDeadline" "deadline" (Some "infolog-record-settlement-deadline")
-        verifyTimeline "sharedBudgetAcrossEvaluations" "refused" (Some "infolog-record-settlement-exhausted")
-        verifyTimeline "pendingThenCompleteResample" "accepted" None
-        verifyTimeline "waitAfterConsumptionHasNoNewAuthority" "refused" (Some "infolog-record-settlement-exhausted")
-        verifyTimeline "lastProbeCandidateThenExhausted" "refused" (Some "infolog-record-settlement-exhausted")
+            if policyCount<>expectedPolicies then failwithf "scenario policy census: %s" name
+        verifyTimeline "completeRecordWaitThenConsume" 1 "accepted" None
+        verifyTimeline "completeRecordWaitExhausted" 0 "refused" (Some "infolog-record-settlement-exhausted")
+        verifyTimeline "completeRecordWaitDeadline" 0 "deadline" (Some "infolog-record-settlement-deadline")
+        verifyTimeline "sharedBudgetAcrossEvaluations" 1 "refused" (Some "infolog-record-settlement-exhausted")
+        verifyTimeline "pendingThenCompleteResample" 2 "accepted" None
+        verifyTimeline "waitAfterConsumptionHasNoNewAuthority" 0 "refused" (Some "infolog-record-settlement-exhausted")
+        verifyTimeline "lastProbeCandidateThenExhausted" 1 "refused" (Some "infolog-record-settlement-exhausted")
         policyPhase<-"none";policyInvocation<-"none";policyClosure<-"none"
         let tool=locate "quint"
         let environment={Seed="424242";Bounds=["revisions",3L;"generations",2L];ToolFingerprint=hashFile tool;ProfileFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.qnt");Path.Combine(baseDirectory,"GrowingLogEvidence_test.qnt")];ContractFingerprint=hashFile(Path.Combine(baseDirectory,"Codec.fs"));AdapterFingerprint=hashJoined [Path.Combine(baseDirectory,"DataRootPolicy.fs");helperPath;transcriptPath];ImplementationFingerprint=hashJoined [Path.Combine(baseDirectory,"GrowingLogEvidence.fs");typeof<EvidenceState>.Assembly.Location]}
