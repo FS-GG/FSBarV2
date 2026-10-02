@@ -52,7 +52,7 @@ def _rp2_canonical_trace(source,timeline,name,directory):
         kind=row['kind']
         if kind=='boundary':
             if mech['settlement']['phase']!='idle':raise AssertionError('boundary without terminal')
-            mech['settlement']={'phase':'probing','boundary':row['boundary'],'remaining':32,'deadlineAvailable':True};emit('beginSettlement('+literal(row['boundary'])+')')
+            mech['settlement']={'phase':'probing','boundary':row['boundary'],'remaining':32,'deadlineAvailable':True};mech.update(policyPhase='none',policyInvocation='none',policyClosure='none',finalPhase='none');emit('beginObservedBoundary('+literal(row['boundary'])+')')
         elif kind=='probe':
             if mech['settlement']['phase']=='candidate':
                 mech['settlement']['phase']='probing';mech.update(policyPhase='none',policyInvocation='none',policyClosure='none',finalPhase='none')

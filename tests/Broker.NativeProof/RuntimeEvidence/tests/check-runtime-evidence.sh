@@ -31,8 +31,8 @@ manifest={'schema':'fsgg.private.barc-selected-framework-census-work-bound-helpe
 PY
 fi
 export BAR_GROWING_LOG_HELPER
-dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
-dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
+dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode --source https://api.nuget.org/v3/index.json -p:DisableImplicitLibraryPacksFolder=true -m:1 -nr:false
+dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1 -nr:false -p:UseSharedCompilation=false -p:DisableImplicitLibraryPacksFolder=true
 test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
 (cd "$BAR_GROWING_LOG_HELPER" && \
   BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \

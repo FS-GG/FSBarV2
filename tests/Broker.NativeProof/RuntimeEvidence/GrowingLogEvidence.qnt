@@ -101,6 +101,15 @@ module GrowingLogEvidence {
       settlement: { phase: "probing", boundary: boundary, remaining: 32, deadlineAvailable: true } }
   }
 
+  // A fresh actual boundary retains historical consumption but opens a new
+  // one-shot policy invocation; predecessor settlement fixtures stay unchanged.
+  action beginObservedBoundary(boundary: str): bool = all {
+    canBeginSettlement(boundary),
+    evidence' = { ...evidence, authorityActive: false,
+      policyPhase: "none", policyInvocation: "none", policyClosure: "none", finalPhase: "none",
+      settlement: { phase: "probing", boundary: boundary, remaining: 32, deadlineAvailable: true } }
+  }
+
   action retrySettlement(boundary: str): bool = all {
     evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
     evidence.settlement.phase == "candidate", evidence.settlement.boundary == boundary,
