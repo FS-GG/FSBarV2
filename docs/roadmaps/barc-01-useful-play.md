@@ -10,6 +10,30 @@ The stock queue observation contract reports the actual fields supported by the 
 
 The linked custom atomic-replacement experiment remains optional and open, with its all-or-none nonempty replacement, cancellation/refund, synchronized fence and independent peer proof requirements unchanged. Its native 0/6 and preserved custom artifacts are not stock acceptance. BARC-01.5 stock useful-play acceptance also remains open until new exact-profile local/generated pointer, keyboard and imported-module native journeys pass.
 
+## Selected stock engine update — 2026-10-02
+
+The owner selected unmodified Recoil **2026.07.04**, upstream source
+`de69361239d8c8b1012dba3f5aa3122954ea4da3`, to replace 2025.06.19 for the
+next product candidate. Official amd64 Linux archive SHA-256:
+`9824c2c38124e4b90a9b5f7c4e7200c3ea6503c0bd4bff0e0ff46212ec29dcab`;
+extracted headless SHA-256:
+`651d6dca67ad99fde1a593d57eede0dfee167e200558988f154ad2bac1cfce21`.
+The separate candidate installation actually reports
+`spring-headless version 2026.07.04 (Headless)`.
+
+The [upstream headless atlas guard](https://github.com/beyond-all-reason/RecoilEngine/blob/de69361239d8c8b1012dba3f5aa3122954ea4da3/rts/Rendering/Textures/TextureRenderAtlas.cpp#L389)
+addresses the retry function found in the failed old-engine attempt. An actual
+successor run must establish its local effect; acquisition and version checks
+alone do not close the atlas incident, Lua errors, Count1 or native useful play.
+
+The producer pin, closed version tuple, stock trace and build source pin must
+agree with the consumer contract and native catalogue readiness. Historical
+2025.06.19 attempts and hash-algorithm vectors stay unchanged. Source adoption
+precedes a freshly joined plugin/engine/private-runtime candidate; installed
+old packets never become new-engine evidence. The stock tactical wire revision
+and factory/queue promises are unchanged, and useful-play acceptance remains 0/6.
+See the [qualification plan](https://github.com/FS-GG/.github/blob/main/docs/roadmaps/2026-10-02-bar-headless-infolog-qualification.md).
+
 ## Current frontier — 2026-10-01
 
 Selected product profile: unmodified Recoil2025.06.19 plus the ABI-matched HighBar plugin and bounded synced Lua queue observer. Delivered default source heads are HighBar `f08555372168cd911f438de0be5ec2898fd1cfb5` and FSBar `6b9139e83334da903ea6861adb57d97578af2239`; neither source merge establishes installation or gameplay acceptance. The existing custom FR1–FR6 experiment remains optional, inactive and open.
