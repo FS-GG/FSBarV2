@@ -28,6 +28,11 @@ module FailureDiagnostic =
               "policy-apphost-join"; "policy-scope-join"; "infolog-sample"
               "policy-child-start"; "policy-ready"; "policy-transport"; "policy-completion"
               "policy-result-join"; "infolog-final-refresh"; "policy-final-precheck"
+              "infolog-final-scope"; "infolog-final-process"; "infolog-final-path"
+              "infolog-final-parent"; "infolog-final-named-identity"
+              "infolog-final-descriptor-identity"; "infolog-final-file-custody"
+              "infolog-final-size-cap"; "infolog-final-size-regression"
+              "infolog-final-prefix-read"; "infolog-final-prefix-drift"
               "policy-sample-exhausted"; "browser-start" ]
     let outcomes = Set [ "refused"; "os-unavailable"; "deadline"; "malformed"; "unexpected"; "policy-nonaccepted" ]
     let policyCheckpoints = Set [ "initial-closure"; "current-process"; "invocation-ready"; "request-read"; "request-evaluation"; "final-closure"; "invocation-completion" ]
