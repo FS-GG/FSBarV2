@@ -40,10 +40,19 @@ module Codec =
         exact element [|"runId";"sourceSetSha256";"apphostSha256";"closureSha256";"pid";"startTicks";"uid";"device";"inode";"path"|]
         { RunId=getString element "runId"; SourceSetSha256=getString element "sourceSetSha256"; ApphostSha256=getString element "apphostSha256";ClosureSha256=getString element "closureSha256"
           Pid=getInt element "pid"; StartTicks=getString element "startTicks"; Uid=getInt element "uid"; Device=getString element "device"; Inode=getString element "inode"; Path=getString element "path" }
+    let private decodePrefix (element: JsonElement) : PrefixEvidence =
+        exact element [|"rawBytes";"rawSha256";"completeBytes";"completeSha256";"tailBytes";"tailSha256";"completeRecords";"tailClass"|]
+        { RawBytes=getInt64 element "rawBytes";RawSha256=getString element "rawSha256";CompleteBytes=getInt64 element "completeBytes";CompleteSha256=getString element "completeSha256"
+          TailBytes=getInt64 element "tailBytes";TailSha256=getString element "tailSha256";CompleteRecords=getInt element "completeRecords";TailClass=getString element "tailClass" }
+    let private decodeConsumption (element: JsonElement) : ConsumptionObservation =
+        exact element [|"boundary";"revision";"rawBytes";"rawSha256";"readStartMicroseconds";"readEndMicroseconds";"linearizedMicroseconds";"releasedMicroseconds";"deadlineMicroseconds"|]
+        { Boundary=boundary(getString element "boundary");Revision=getInt element "revision";RawBytes=getInt64 element "rawBytes";RawSha256=getString element "rawSha256"
+          ReadStartMicroseconds=getInt64 element "readStartMicroseconds";ReadEndMicroseconds=getInt64 element "readEndMicroseconds";LinearizedMicroseconds=getInt64 element "linearizedMicroseconds"
+          ReleasedMicroseconds=getInt64 element "releasedMicroseconds";DeadlineMicroseconds=getInt64 element "deadlineMicroseconds" }
     let private decodeState (element: JsonElement) : EvidenceState =
         if element.ValueKind = JsonValueKind.Null then GrowingLogEvidence.empty
         else
-            exact element [|"phase";"identity";"observedRevision";"validatedRevision";"validatedBoundary";"consumedRevision";"consumedBoundary";"bytes";"sha256";"stickyInvalid";"reason"|]
+            exact element [|"phase";"identity";"observedRevision";"validatedRevision";"validatedBoundary";"consumedRevision";"consumedBoundary";"bytes";"sha256";"stickyInvalid";"reason";"prefix";"candidatePrefix";"consumedPrefix";"consumption";"attemptId";"probeCount";"evaluationCount";"deadlineMicroseconds"|]
             let optionalString (name: string) =
                 let value=element.GetProperty(name)
                 if value.ValueKind=JsonValueKind.Null then None
@@ -53,12 +62,28 @@ module Codec =
             { Phase=getString element "phase"; Identity=if identityValue.ValueKind=JsonValueKind.Null then None else Some(identity identityValue)
               ObservedRevision=getInt element "observedRevision"; ValidatedRevision=getInt element "validatedRevision"; ValidatedBoundary=optionalString "validatedBoundary" |> Option.map boundary; ConsumedRevision=getInt element "consumedRevision"
               ConsumedBoundary=optionalString "consumedBoundary" |> Option.map boundary; Bytes=getInt64 element "bytes"; Sha256=getString element "sha256"
-              StickyInvalid=getBoolean element "stickyInvalid"; Reason=optionalString "reason" }
+              StickyInvalid=getBoolean element "stickyInvalid"; Reason=optionalString "reason"
+              Prefix=decodePrefix(element.GetProperty("prefix"))
+              CandidatePrefix=(let item=element.GetProperty("candidatePrefix") in if item.ValueKind=JsonValueKind.Null then None else Some(decodePrefix item))
+              ConsumedPrefix=(let item=element.GetProperty("consumedPrefix") in if item.ValueKind=JsonValueKind.Null then None else Some(decodePrefix item))
+              Consumption=(let item=element.GetProperty("consumption") in if item.ValueKind=JsonValueKind.Null then None else Some(decodeConsumption item))
+              AttemptId=getInt element "attemptId"; ProbeCount=getInt element "probeCount";EvaluationCount=getInt element "evaluationCount";DeadlineMicroseconds=getInt64 element "deadlineMicroseconds" }
     let private set<'T> (node: JsonObject) (name: string) (value: 'T) = node[name] <- JsonValue.Create<'T>(value)
     let private identityNode (value: ProducerIdentity) =
         let node=JsonObject()
         set node "runId" value.RunId;set node "sourceSetSha256" value.SourceSetSha256;set node "apphostSha256" value.ApphostSha256;set node "closureSha256" value.ClosureSha256
         set node "pid" value.Pid;set node "startTicks" value.StartTicks;set node "uid" value.Uid;set node "device" value.Device;set node "inode" value.Inode;set node "path" value.Path
+        node
+    let private prefixNode (value: PrefixEvidence) =
+        let node=JsonObject()
+        set node "rawBytes" value.RawBytes;set node "rawSha256" value.RawSha256;set node "completeBytes" value.CompleteBytes;set node "completeSha256" value.CompleteSha256
+        set node "tailBytes" value.TailBytes;set node "tailSha256" value.TailSha256;set node "completeRecords" value.CompleteRecords;set node "tailClass" value.TailClass
+        node
+    let private consumptionNode (value: ConsumptionObservation) =
+        let node=JsonObject()
+        set node "boundary" (boundaryText value.Boundary);set node "revision" value.Revision;set node "rawBytes" value.RawBytes;set node "rawSha256" value.RawSha256
+        set node "readStartMicroseconds" value.ReadStartMicroseconds;set node "readEndMicroseconds" value.ReadEndMicroseconds;set node "linearizedMicroseconds" value.LinearizedMicroseconds
+        set node "releasedMicroseconds" value.ReleasedMicroseconds;set node "deadlineMicroseconds" value.DeadlineMicroseconds
         node
     let private stateNode (value: EvidenceState) =
         let node=JsonObject()
@@ -67,12 +92,17 @@ module Codec =
         set node "observedRevision" value.ObservedRevision;set node "validatedRevision" value.ValidatedRevision;set node "consumedRevision" value.ConsumedRevision
         node["validatedBoundary"] <- match value.ValidatedBoundary with Some item -> JsonValue.Create(boundaryText item) :> JsonNode | None -> null
         node["consumedBoundary"] <- match value.ConsumedBoundary with Some item -> JsonValue.Create(boundaryText item) :> JsonNode | None -> null
+        node["prefix"] <- prefixNode value.Prefix
+        node["candidatePrefix"] <- match value.CandidatePrefix with Some item -> prefixNode item :> JsonNode | None -> null
+        node["consumedPrefix"] <- match value.ConsumedPrefix with Some item -> prefixNode item :> JsonNode | None -> null
+        node["consumption"] <- match value.Consumption with Some item -> consumptionNode item :> JsonNode | None -> null
+        set node "attemptId" value.AttemptId;set node "probeCount" value.ProbeCount;set node "evaluationCount" value.EvaluationCount;set node "deadlineMicroseconds" value.DeadlineMicroseconds
         set node "bytes" value.Bytes;set node "sha256" value.Sha256;set node "stickyInvalid" value.StickyInvalid
         node["reason"] <- match value.Reason with Some item -> JsonValue.Create(item) :> JsonNode | None -> null
         node
     let private resultNode status state =
         let value=JsonObject()
-        set value "schema" "fsbar.barc-growing-log-policy-result/v2";set value "status" status
+        set value "schema" "fsbar.barc-growing-log-policy-result/v3";set value "status" status
         value["state"]<-stateNode state
         value.ToJsonString(JsonSerializerOptions(WriteIndented=false)) + "\n"
     let private stateOf = function Accepted state | Pending state | Refused state | Unknown state -> state
@@ -94,24 +124,25 @@ module Codec =
             use document=JsonDocument.Parse(input,JsonDocumentOptions(AllowTrailingCommas=false,CommentHandling=JsonCommentHandling.Disallow,MaxDepth=24))
             let root=document.RootElement
             exact root [|"schema";"boundary";"expected";"observation";"prior"|]
-            if getString root "schema" <> "fsbar.barc-growing-log-policy/v2" then invalidArg "schema" "schema"
+            if getString root "schema" <> "fsbar.barc-growing-log-policy/v3" then invalidArg "schema" "schema"
             let expected=root.GetProperty("expected")
             exact expected [|"runId";"sourceSetSha256";"apphostSha256";"closureSha256";"writeRoot";"dataRoot"|]
             if getString expected "apphostSha256"<>expectedApphostSha256 || getString expected "closureSha256"<>expectedClosureSha256 || getString expected "sourceSetSha256"<>expectedSourceSetSha256 then invalidArg "expected" "active closure/source identity mismatch"
             let observation=root.GetProperty("observation")
-            exact observation [|"pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256";"previousPrefixIntact";"writerFd";"writerFlags";"writerPosition";"available";"logBase64"|]
+            exact observation [|"pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256";"previousPrefixIntact";"writerFd";"writerFlags";"writerPosition";"available";"logBase64";"attemptId";"probeCount";"evaluationCount";"deadlineMicroseconds"|]
             let identityValue={ RunId=getString expected "runId";SourceSetSha256=getString expected "sourceSetSha256";ApphostSha256=getString expected "apphostSha256";ClosureSha256=getString expected "closureSha256";Pid=getInt observation "pid";StartTicks=getString observation "startTicks";Uid=getInt observation "uid";Device=getString observation "device";Inode=getString observation "inode";Path=getString observation "path" }
             let raw=Convert.FromBase64String(getString observation "logBase64")
             if raw.Length>10*1024*1024 || int64 raw.Length <> getInt64 observation "bytes" then invalidArg "logBase64" "decoded bound"
             let actualSha = SHA256.HashData(raw) |> Convert.ToHexStringLower
             if getString observation "sha256" <> actualSha then invalidArg "sha256" "decoded digest mismatch"
+            let prefix=DataRootPolicy.describe raw
             let roots=DataRootPolicy.evaluate (getString expected "writeRoot") (getString expected "dataRoot") raw
-            let complete,rootsValid,pendingReason = match roots with RootAccepted _ -> true,true,None | RootPending reason -> false,false,Some reason | RootRefused _ -> true,false,None
+            let complete,rootsValid,pendingReason = match roots with RootAccepted _ -> true,true,None | RootPending reason -> false,false,Some reason | RootRefused reason -> true,false,Some reason
             let prior=decodeState(root.GetProperty("prior"))
             if prior.ObservedRevision < 0 || prior.ValidatedRevision < 0 || prior.ConsumedRevision < 0 ||
                prior.ValidatedRevision > prior.ObservedRevision || prior.ConsumedRevision > prior.ValidatedRevision ||
                prior.Bytes < 0L || (prior.ObservedRevision = 0 && (prior.Bytes <> 0L || prior.Sha256 <> "")) ||
-               (prior.ObservedRevision > 0 && (prior.Bytes = 0L || not (Regex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant).IsMatch prior.Sha256))) then
+               (prior.ObservedRevision > 0 && (not (Regex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant).IsMatch prior.Sha256))) then
                 invalidArg "prior" "incoherent prior state"
             let phases=Set ["empty";"acquired";"sampled";"validated";"consumed";"invalid";"unknown";"closed"]
             if not(phases.Contains prior.Phase) ||
@@ -124,13 +155,19 @@ module Codec =
             if prior.Bytes > 0L then
                 let prefixSha=SHA256.HashData(raw.AsSpan(0,int prior.Bytes)) |> Convert.ToHexStringLower
                 if prefixSha<>prior.Sha256 then invalidArg "prior" "prior prefix digest mismatch"
+            if prior.Prefix <> DataRootPolicy.describe(raw[0 .. int prior.Bytes - 1]) then invalidArg "prior" "prior raw/P/T descriptor mismatch"
+            if (prior.Phase="validated" && prior.CandidatePrefix<>Some prior.Prefix) || (prior.Phase="sampled" && prior.CandidatePrefix.IsSome) then invalidArg "prior" "candidate horizon mismatch"
+            match prior.ConsumedPrefix, prior.Consumption with
+            | None, None when prior.ConsumedRevision=0 -> ()
+            | Some previous, Some final when final.Revision=prior.ConsumedRevision && Some final.Boundary=prior.ConsumedBoundary && final.RawBytes=previous.RawBytes && final.RawSha256=previous.RawSha256 && previous.RawBytes<=int64 raw.Length && previous.RawBytes>=0L && previous=DataRootPolicy.describe(raw[0 .. int previous.RawBytes - 1]) -> ()
+            | _ -> invalidArg "prior" "consumed historical horizon mismatch"
             let acquired = if prior.Phase="empty" then GrowingLogEvidence.acquire identityValue prior else Accepted prior
             let afterAcquire=stateOf acquired
             let writerFd=getInt observation "writerFd"
             let writerFlags=getInt observation "writerFlags"
             let writerPosition=getInt64 observation "writerPosition"
             let writerPresent=writerFd>=0 && writerPosition>=0L && ((writerFlags &&& 3)=1 || (writerFlags &&& 3)=2)
-            let sample={ Identity=identityValue;Revision=getInt observation "revision";Bytes=getInt64 observation "bytes";Sha256=getString observation "sha256";PreviousPrefixIntact=getBoolean observation "previousPrefixIntact";WriterPresent=writerPresent;CompleteRecord=complete;Available=getBoolean observation "available";RootsValid=rootsValid;PendingReason=pendingReason }
+            let sample={ Identity=identityValue;Revision=getInt observation "revision";Bytes=getInt64 observation "bytes";Sha256=getString observation "sha256";PreviousPrefixIntact=getBoolean observation "previousPrefixIntact";WriterPresent=writerPresent;CompleteRecord=complete;Available=getBoolean observation "available";RootsValid=rootsValid;PendingReason=pendingReason;Prefix=prefix;AttemptId=getInt observation "attemptId";ProbeCount=getInt observation "probeCount";EvaluationCount=getInt observation "evaluationCount";DeadlineMicroseconds=getInt64 observation "deadlineMicroseconds" }
             let sampled=if statusOf acquired="accepted" then GrowingLogEvidence.sample sample afterAcquire else acquired
             let requestedBoundary=boundary(getString root "boundary")
             let validated=match sampled with Accepted state -> GrowingLogEvidence.validate requestedBoundary state | other -> other
@@ -139,9 +176,9 @@ module Codec =
         match evaluation with
         | FailureDiagnosticEvaluation result -> result
         | GrowingLogEvaluation(requestedBoundary,evaluated) ->
-            let consumed=match evaluated with Accepted state -> GrowingLogEvidence.consume requestedBoundary state | other -> other
-            let finalState=stateOf consumed
-            resultNode (statusOf consumed) finalState
+            // Completion seals the invocation/closure. External consumption
+            // still requires the helper's exact final held-FD observation L.
+            resultNode (statusOf evaluated) (stateOf evaluated)
     let policyObservation = function
         | FailureDiagnosticEvaluation _ -> None
         | GrowingLogEvaluation(_,evaluated) ->

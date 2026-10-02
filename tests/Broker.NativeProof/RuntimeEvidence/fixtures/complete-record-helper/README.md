@@ -33,3 +33,8 @@ unchanged. The subsequent user-selected budget is 10 MiB raw, 16 MiB encoded,
 and 160 calls per exact read; record/probe/evaluation/deadline bounds are unchanged.
 Source-only RP1 does not authorize another native attempt;
 RP2 contract qualification and RP3 capacity evidence remain required.
+
+
+RP2 transports the entire raw sample, including an unfinished tail, to the real compiled F# classifier. Repeated unchanged pending observations consume the shared probe budget without inventing new policy evaluations. Newly observed bytes require reevaluation; the helper never classifies atlas/root text. The final size observation occurs after the full-prefix reread and repeated permanent custody checks, before closure completion and receipt release. The returned `v3` state names its exact consumed horizon and finite L interval; later producer bytes require the next boundary's fresh evaluation.
+
+The stable owning correspondence entrypoint now collects 14 successor scenarios. It includes an actual libc full-buffered writer with a nonempty atlas tail and a later boundary extending that exact prefix. Generated scenario modules import the byte-exact production `GrowingLogEvidence.qnt`; every ordered projection is asserted against its canonical actions and checked by the real F# reader/reducer. Private synthetic transcripts and dynamic ITFs are qualification artifacts, not public or native acceptance evidence.

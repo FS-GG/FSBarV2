@@ -91,4 +91,37 @@ module GrowingLogEvidence_test {
 
   run retriesShareOneProbeBudget = init.then(acquire).then(beginSettlement("browser")).then(completeRecordCandidate).then(retrySettlement("browser")).then(incompleteRecordProbe).then(completeRecordCandidate).then(retrySettlement("browser"))
     .expect(invariant and evidence.settlement.phase == "probing" and evidence.settlement.remaining == 29 and not(canBeginSettlement("browser")))
+
+  pure val safeAtlas = { rawBytes: 120, rawSha256: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", completeBytes: 100, completeSha256: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", tailBytes: 20, tailSha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", completeRecords: 4, tailClass: "atlas" }
+  pure val pendingRoot = { ...safeAtlas, tailClass: "pending" }
+  pure val pendingUtf8 = { ...safeAtlas, tailClass: "pending-utf8" }
+  action candidate = init.then(acquire).then(observeRaw(safeAtlas,true,1,1,1,5000000))
+    .then(beginPolicy("rp2","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
+    .then(readyPolicy("rp2","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
+    .then(validate("browser")).then(evaluatedPolicy("rp2","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
+    .then(completePolicy("rp2","cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"))
+
+  run rp2SafeTailConsumesExactHorizon = candidate.then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(120,30)).then(consumeAt("browser",40,5000000))
+    .expect(invariant and evidence.consumedPrefix.tailBytes == 20 and evidence.consumption.linearizedMicroseconds == 30)
+  run rp2PostLAppendRemainsUnvalidated = candidate.then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(120,30)).then(producerAppend(10,true)).then(consumeAt("browser",40,5000000))
+    .expect(invariant and evidence.producerBytes == 130 and evidence.consumedPrefix.rawBytes == 120 and not(evidence.authorityActive))
+  run rp2NextBoundaryCannotReusePriorConsumption = candidate.then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(120,30)).then(consumeAt("browser",40,5000000)).then(completeBoundary("browser"))
+    .then(producerAppend(10,true)).then(observeRaw({ ...safeAtlas, rawBytes: 130, tailBytes: 30, tailClass: "pending" },false,2,1,1,5000000))
+    .expect(invariant and evidence.consumedRevision == 1 and evidence.observedRevision == 2 and not(canConsume("normalization")))
+  run rp2ObservedGrowthRequiresReevaluation = candidate.then(beginFinalRead(10)).then(producerAppend(10,true)).then(endFinalRead(20)).then(observeFinalSize(130,30)).then(observedGrowth)
+    .expect(invariant and evidence.consumedRevision == 0 and evidence.candidateBytes == 0 and not(canConsumeAt("browser",40,5000000)))
+  run rp2PolicyAppendRequiresReevaluation = candidate.then(producerAppend(10,false)).then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(130,30))
+    .expect(invariant and not(canConsumeAt("browser",40,5000000)))
+  run rp2RelevantTailCannotValidate = init.then(acquire).then(observeRaw(pendingRoot,false,1,1,1,5000000))
+    .expect(invariant and evidence.validatedRevision == 0 and not(canConsume("browser")))
+  run rp2PartialUtf8CannotValidate = init.then(acquire).then(observeRaw(pendingUtf8,false,1,1,1,5000000))
+    .expect(invariant and not(safeTail(evidence.prefix)) and evidence.consumedRevision == 0)
+  run rp2NoRecordsCannotValidate = init.then(acquire).then(observeRaw({ ...safeAtlas, completeBytes: 0, tailBytes: 120, completeRecords: 0 },false,1,1,1,5000000))
+    .expect(invariant and evidence.consumedRevision == 0)
+  run rp2InventedLAndLateReleaseCannotConsume = candidate.then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(120,30))
+    .expect(invariant and not(finalInterval(10,20,0,40,5000000)) and not(canConsumeAt("browser",5000000,5000000)) and not(canConsumeAt("browser",40,4000000)))
+  run rp2StaleBoundaryCannotConsume = candidate.then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(120,30))
+    .expect(invariant and not(canConsumeAt("normalization",40,5000000)))
+  run rp2OneConsumptionPerCandidate = candidate.then(beginFinalRead(10)).then(endFinalRead(20)).then(observeFinalSize(120,30)).then(consumeAt("browser",40,5000000))
+    .expect(invariant and not(canConsumeAt("browser",41,5000000)))
 }

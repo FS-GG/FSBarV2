@@ -31,8 +31,8 @@ manifest={'schema':'fsgg.private.barc-selected-framework-census-work-bound-helpe
 PY
 fi
 export BAR_GROWING_LOG_HELPER
-dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
-dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
+dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode --source https://api.nuget.org/v3/index.json -p:DisableImplicitLibraryPacksFolder=true -m:1 -nr:false
+dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1 -nr:false -p:UseSharedCompilation=false -p:DisableImplicitLibraryPacksFolder=true
 test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
 (cd "$BAR_GROWING_LOG_HELPER" && \
   BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
@@ -45,7 +45,7 @@ test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
   python3 -m unittest -v \
     test_growing_log.GrowingLogTests.test_three_accepted_growth_samples_report_mechanical_exhaustion \
     test_growing_log.GrowingLogTests.test_full_buffered_writer_growth_after_real_policy_exhausts_three_evaluations)
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|zeroBudgetCannotProbe|completeRecordWaitDeadline|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|lastProbeCandidateThenExhausted|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|rp2SafeTailConsumesExactHorizon|rp2PostLAppendRemainsUnvalidated|rp2NextBoundaryCannotReusePriorConsumption|rp2ObservedGrowthRequiresReevaluation|rp2PolicyAppendRequiresReevaluation|rp2RelevantTailCannotValidate|rp2PartialUtf8CannotValidate|rp2NoRecordsCannotValidate|rp2InventedLAndLateReleaseCannotConsume|rp2StaleBoundaryCannotConsume|rp2OneConsumptionPerCandidate)$' --seed 424242 --max-samples 1
 quint run "$ROOT/GrowingLogEvidence.qnt" --backend=typescript --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 while IFS='|' read -r scenario fixture; do
   quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test \
@@ -86,16 +86,35 @@ BAR_GROWING_LOG_HELPER="$BAR_GROWING_LOG_HELPER" BAR_SETTLEMENT_TRANSCRIPT="$TRA
 python3 - "$TRANSCRIPT" "$TMP" <<'PY'
 import copy,json,pathlib,sys
 value=json.loads(pathlib.Path(sys.argv[1]).read_text());root=pathlib.Path(sys.argv[2])
-def named(v,name):return next(row for row in v['scenarios'] if row['name']==name)['timeline']
-duplicate=copy.deepcopy(value);rows=named(duplicate,'completeRecordWaitThenConsume');policy=next(row for row in rows if row['kind']=='policy');rows[-1:-1]=[copy.deepcopy(policy) for _ in range(4)]
-reordered=copy.deepcopy(value);rows=named(reordered,'pendingThenCompleteResample');indexes=[index for index,row in enumerate(rows) if row['kind']=='policy'];second=rows.pop(indexes[1]);rows.insert(indexes[0]+1,second)
-prior=copy.deepcopy(value);rows=named(prior,'pendingThenCompleteResample');next(row for row in rows if row['kind']=='policy' and row['observation']['revision']==2)['beforeState']=None
-for name,bundle in [('duplicate-policy',duplicate),('reordered-policy',reordered),('prior-state-chain',prior)]:
-    (root/f'{name}.json').write_text(json.dumps(bundle,separators=(',',':'),sort_keys=True)+'\n')
+def rows(v,name):return next(row for row in v['scenarios'] if row['name']==name)['timeline']
+def item(v,name,kind):return next(row for row in rows(v,name) if row['kind']==kind)
+for name in ['dropped-policy','duplicate-policy','reordered-policy','wrong-raw-hash','wrong-prefix-hash','wrong-tail-hash','invented-L','stale-terminal','budget-renewal','reordered-final','duplicate-consume','missing-growth','wrong-status']:
+    v=copy.deepcopy(value);safe=rows(v,'rp2SafeTailConsume')
+    if name=='dropped-policy':safe.remove(item(v,'rp2SafeTailConsume','policy'))
+    elif name=='duplicate-policy':safe.insert(2,copy.deepcopy(item(v,'rp2SafeTailConsume','policy')))
+    elif name=='reordered-policy':
+        r=rows(v,'rp2SafeTailExtend');policies=[x for x in r if x['kind']=='policy'];r.remove(policies[1]);r.insert(r.index(policies[0])+1,policies[1])
+    elif name=='wrong-raw-hash':item(v,'rp2SafeTailConsume','policy')['observation']['sha256']='0'*64
+    elif name=='wrong-prefix-hash':item(v,'rp2SafeTailConsume','policy')['prefix']['completeSha256']='0'*64
+    elif name=='wrong-tail-hash':item(v,'rp2SafeTailConsume','policy')['prefix']['tailSha256']='0'*64
+    elif name=='invented-L':
+        item(v,'rp2SafeTailConsume','final-observation')['linearizedMicroseconds']=0
+        item(v,'rp2SafeTailConsume','consume')['observation']['linearizedMicroseconds']=0
+        item(v,'rp2SafeTailConsume','consume')['afterState']['consumption']['linearizedMicroseconds']=0
+    elif name=='stale-terminal':item(v,'rp2SafeTailConsume','terminal')['state']['consumedRevision']=0
+    elif name=='budget-renewal':
+        p=[x for x in rows(v,'rp2ContradictionDuringPolicy') if x['kind']=='policy'][1];p['observation']['deadlineMicroseconds']-=1
+    elif name=='reordered-final':
+        final=item(v,'rp2SafeTailConsume','final-observation');safe.remove(final);safe.insert(1,final)
+    elif name=='duplicate-consume':safe.insert(len(safe)-1,copy.deepcopy(item(v,'rp2SafeTailConsume','consume')))
+    elif name=='missing-growth':
+        r=rows(v,'rp2ContradictionDuringPolicy');r.remove(next(x for x in r if x['kind']=='growth'))
+    elif name=='wrong-status':item(v,'rp2SafeTailConsume','policy')['status']='pending'
+    (root/f'{name}.json').write_text(json.dumps(v,separators=(',',':'),sort_keys=True)+'\n')
 PY
-for mutation in duplicate-policy reordered-policy prior-state-chain; do
-  if BAR_GROWING_LOG_HELPER="$BAR_GROWING_LOG_HELPER" BAR_SETTLEMENT_TRANSCRIPT="$TMP/$mutation.json" dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build >/dev/null 2>&1; then
-    echo "settlement timeline mutation accepted: $mutation" >&2
+for mutation in dropped-policy duplicate-policy reordered-policy wrong-raw-hash wrong-prefix-hash wrong-tail-hash invented-L stale-terminal budget-renewal reordered-final duplicate-consume missing-growth wrong-status; do
+  if BAR_GROWING_LOG_HELPER="$BAR_GROWING_LOG_HELPER" BAR_SETTLEMENT_TRANSCRIPT="$TMP/$mutation.json" dotnet "$ROOT/bin/RuntimeEvidence.Tests/Release/net10.0/RuntimeEvidence.Tests.dll" >/dev/null 2>&1; then
+    echo "RP2 semantic mutation accepted: $mutation" >&2
     exit 1
   fi
 done

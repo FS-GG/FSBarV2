@@ -21,6 +21,107 @@ for command in sys.stdin.buffer:
  elif command==b'close':f.close();break
 """
 
+def _rp2_canonical_trace(source,timeline,name,directory):
+    """Concrete action parameters from actual framed F# and held-FD effects.
+    The expected core states are independently checked by the F# reader. The
+    canonical Quint actions check every projected field at every ordered step.
+    This fixture code grants no runtime authority and is never imported by the
+    production helper.
+    """
+    empty_hash=hashlib.sha256(b'').hexdigest()
+    empty_prefix={'rawBytes':0,'rawSha256':empty_hash,'completeBytes':0,'completeSha256':empty_hash,'tailBytes':0,'tailSha256':empty_hash,'completeRecords':0,'tailClass':'empty'}
+    no_consumption={'boundary':'none','revision':0,'rawBytes':0,'rawSha256':'','readStartMicroseconds':0,'readEndMicroseconds':0,'linearizedMicroseconds':0,'releasedMicroseconds':0,'deadlineMicroseconds':0}
+    core={'phase':'empty','identity':None,'observedRevision':0,'validatedRevision':0,'validatedBoundary':None,'consumedRevision':0,'consumedBoundary':None,'bytes':0,'sha256':'','stickyInvalid':False,'reason':None,'prefix':empty_prefix,'candidatePrefix':None,'consumedPrefix':None,'consumption':None,'attemptId':0,'probeCount':0,'evaluationCount':0,'deadlineMicroseconds':0}
+    mech={'rootsValid':False,'prefixIntact':False,'writerPresent':False,'policyPhase':'none','policyInvocation':'none','policyClosure':'none','settlement':{'phase':'idle','boundary':'none','remaining':32,'deadlineAvailable':True},'producerBytes':0,'producerContradiction':False,'finalPhase':'none','finalSize':0,'readStart':0,'readEnd':0,'linearized':0}
+    steps=[]
+    def literal(value):
+        if type(value) is bool:return 'true' if value else 'false'
+        if type(value) is int:return str(value)
+        if type(value) is str:return json.dumps(value)
+        if type(value) is dict:return '{ '+', '.join(key+': '+literal(item) for key,item in value.items())+' }'
+        raise AssertionError('closed Quint literal')
+    def project():
+        present=core['identity'] is not None
+        return {'phase':core['phase'],'generation':1 if present else 0,'observedRevision':core['observedRevision'],'validatedRevision':core['validatedRevision'],'intendedBoundary':core['validatedBoundary'] or 'none','consumedRevision':core['consumedRevision'],'consumedBoundary':core['consumedBoundary'] or 'none','producerMatches':present,'logMatches':present,'sourceMatches':present,'rootsValid':mech['rootsValid'],'prefixIntact':mech['prefixIntact'],'writerPresent':mech['writerPresent'],'authorityActive':False,'stickyInvalid':core['stickyInvalid'],'policyPhase':mech['policyPhase'],'policyInvocation':mech['policyInvocation'],'policyClosure':mech['policyClosure'],'settlement':dict(mech['settlement']),'prefix':core['prefix'],'consumedPrefix':core['consumedPrefix'] or empty_prefix,'consumption':core['consumption'] or no_consumption,'producerBytes':mech['producerBytes'],'producerContradiction':mech['producerContradiction'],'candidateBytes':(core['candidatePrefix'] or {}).get('rawBytes',0),'candidateSha256':(core['candidatePrefix'] or {}).get('rawSha256',''),'finalPhase':mech['finalPhase'],'finalSize':mech['finalSize'],'readStart':mech['readStart'],'readEnd':mech['readEnd'],'linearized':mech['linearized'],'evaluations':core['evaluationCount'],'attemptId':core['attemptId'],'probeCount':core['probeCount'],'deadlineMicroseconds':core['deadlineMicroseconds']}
+    def emit(action):steps.append({'action':action,'state':json.loads(json.dumps(project()))})
+    first=next(row for row in timeline if row['kind']=='policy')
+    identity={key:first['expected'][key] for key in ('runId','sourceSetSha256','apphostSha256','closureSha256')}
+    identity.update({key:first['observation'][key] for key in ('pid','startTicks','uid','device','inode','path')})
+    core={**core,'phase':'acquired','identity':identity};mech['writerPresent']=True;emit('acquire')
+    for row in timeline:
+        kind=row['kind']
+        if kind=='boundary':
+            if mech['settlement']['phase']!='idle':raise AssertionError('boundary without terminal')
+            mech['settlement']={'phase':'probing','boundary':row['boundary'],'remaining':32,'deadlineAvailable':True};mech.update(policyPhase='none',policyInvocation='none',policyClosure='none',finalPhase='none');emit('beginObservedBoundary('+literal(row['boundary'])+')')
+        elif kind=='probe':
+            if mech['settlement']['phase']=='candidate':
+                mech['settlement']['phase']='probing';mech.update(policyPhase='none',policyInvocation='none',policyClosure='none',finalPhase='none')
+                core={**core,'phase':'sampled','candidatePrefix':None};emit('retryObserved('+literal(mech['settlement']['boundary'])+')')
+            mech['settlement']['remaining']=row['remaining']
+            if row['event']=='raw':mech['settlement']['phase']='candidate';emit('completeRecordCandidate')
+            else:emit('incompleteRecordProbe')
+        elif kind=='policy':
+            inv=row['invocation'];args=literal(inv['invocationId'])+','+literal(inv['closureSha256'])
+            mech.update(policyPhase='started',policyInvocation=inv['invocationId'],policyClosure=inv['closureSha256']);emit('beginPolicy('+args+')')
+            mech['policyPhase']='ready';emit('readyPolicy('+args+')')
+            after=row['afterState'];before=core;core=json.loads(json.dumps(after))
+            if row['status']=='accepted':core.update(phase='sampled',validatedRevision=before['validatedRevision'],validatedBoundary=before['validatedBoundary'],candidatePrefix=None)
+            mech.update(rootsValid=row['status']=='accepted',prefixIntact=True,producerBytes=max(mech['producerBytes'],after['bytes']))
+            extras=str(after['attemptId'])+','+str(after['probeCount'])+','+str(after['evaluationCount'])+','+str(after['deadlineMicroseconds'])
+            params=literal(after['prefix'])+','+extras
+            emit(('rejectRaw('+params+')') if row['status']=='refused' else 'observeRaw('+literal(after['prefix'])+','+literal(row['status']=='accepted')+','+extras+')')
+            if row['status']=='accepted':
+                core=after;emit('validate('+literal(row['boundary'])+')')
+            mech['policyPhase']='evaluated';emit('evaluatedPolicy('+args+')')
+            mech['policyPhase']='completed';emit('completePolicy('+args+')')
+        elif kind=='final-observation':
+            mech.update(finalPhase='reading',readStart=row['readStartMicroseconds']);emit('beginFinalRead('+str(mech['readStart'])+')')
+            mech.update(finalPhase='read',readEnd=row['readEndMicroseconds']);emit('endFinalRead('+str(mech['readEnd'])+')')
+            if row['rawBytes']>mech['producerBytes']:
+                mech['producerBytes']=row['rawBytes'];emit('producerSize('+str(row['rawBytes'])+',false)')
+            mech.update(finalSize=row['rawBytes'],linearized=row['linearizedMicroseconds'],finalPhase='unchanged' if row['rawBytes']==core['bytes'] else 'grown')
+            emit('observeFinalSize('+str(row['rawBytes'])+','+str(row['linearizedMicroseconds'])+')')
+        elif kind=='growth':
+            core=row['afterState'];mech.update(rootsValid=False,policyPhase='none',policyInvocation='none',policyClosure='none',finalPhase='none');emit('observedGrowth')
+        elif kind=='producer-after-L':
+            mech.update(producerBytes=row['rawBytes'],producerContradiction=row['contradictory']);emit('producerSize('+str(row['rawBytes'])+','+literal(row['contradictory'])+')')
+        elif kind=='consume':
+            core=row['afterState'];mech['finalPhase']='released';obs=row['observation'];emit('consumeAt('+literal(obs['boundary'])+','+str(obs['releasedMicroseconds'])+','+str(obs['deadlineMicroseconds'])+')')
+        elif kind=='revoke':
+            core=row['afterState']
+            if row['unavailable']:mech['writerPresent']=False
+            emit('revokeObserved('+literal(row['unavailable'])+')')
+        elif kind=='terminal':
+            if row['outcome']=='accepted':
+                mech['settlement'].update(phase='idle',boundary='none');emit('completeBoundary('+literal(core['consumedBoundary'])+')')
+            elif row['check']=='infolog-record-settlement-exhausted':
+                mech['settlement']['phase']='refused';emit('recordSettlementExhausted')
+            else:
+                # Policy/root refusal and evaluation exhaustion have already
+                # produced the concrete sticky revocation edge.
+                if not core['stickyInvalid']:raise AssertionError('unrevoked terminal')
+        else:raise AssertionError('closed RP2 effect')
+    # Dynamic constants contain public fixture values only. Import exactly the
+    # production canonical model; no alternate transition definitions.
+    directory.mkdir(parents=True,exist_ok=True)
+    shutil.copyfile(source/'GrowingLogEvidence.qnt',directory/'GrowingLogEvidence.qnt')
+    qnt=directory/(name+'.qnt')
+    body='module RP2_actual_test {\n import GrowingLogEvidence.* from "./GrowingLogEvidence"\n run actual = init'
+    for step in steps:body+='\n .then('+step['action']+').expect(evidence == '+literal(step['state'])+')'
+    qnt.write_text(body+'\n}\n')
+    trace=directory/(name+'.itf.json')
+    run=subprocess.run(['quint','test',str(qnt),'--backend=typescript','--main','RP2_actual_test','--match','^actual$','--out-itf',str(directory/(name+'_{test}_{seq}.itf.json')),'--seed','424242','--max-samples','1'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=30)
+    (directory/(name+'.log')).write_text(run.stdout)
+    if run.returncode:raise AssertionError('actual full-state canonical correspondence: '+name+'\n'+run.stdout)
+    generated=directory/(name+'_actual_0.itf.json')
+    itf=json.loads(generated.read_text())
+    # Apply the same volatile-metadata normalization as the owning predecessor
+    # gate. Preserve every generated variable and ordered state unchanged.
+    itf['#meta'].pop('description',None);itf['#meta'].pop('timestamp',None)
+    itf['#meta']['status']='ok'
+    trace.write_text(json.dumps(itf,separators=(',',':'),sort_keys=True)+'\n')
+    return {'steps':steps,'trace':trace.name}
+
 class GrowingLogTests(unittest.TestCase):
     def test_policy_diagnostic_decoder_is_total_closed_and_never_echoes(self):
         valid=b'{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1","checkpoint":"request-evaluation","kind":"refused"}\n'
@@ -390,7 +491,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
     @staticmethod
     def state_projection(value):
         if value is None:return None
-        return {'phase':value['phase'],'observedRevision':value['observedRevision'],'validatedRevision':value['validatedRevision'],'validatedBoundary':value['validatedBoundary'],'consumedRevision':value['consumedRevision'],'consumedBoundary':value['consumedBoundary'],'bytes':value['bytes'],'sha256':value['sha256'],'stickyInvalid':value['stickyInvalid'],'reason':value['reason'],'identity':value['identity']}
+        return dict(value)
     def final_failure(self,mutation,expected,initial=None):
         if self.handle is None:self.spawn(initial)
         actual=self.handle._run_policy
@@ -625,7 +726,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         self.spawn();original=self.handle._run_policy;observed=[]
         def run(*args):
             value=json.loads(original(*args))
-            self.assertEqual((value['status'],value['state']['phase']),('accepted','consumed'))
+            self.assertEqual((value['status'],value['state']['phase']),('accepted','validated'))
             observed.append((value['state']['bytes'],value['state']['sha256']))
             mutate(value)
             return (json.dumps(value,separators=(',',':'))+'\n').encode()
@@ -642,7 +743,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
                 self._mutated_genuine_response(boundary,mutate)
 
     def test_closed_status_phase_combinations_refuse_mismatches(self):
-        expected={'accepted':'consumed','pending':'sampled','refused':'invalid','unknown':'unknown'}
+        expected={'accepted':'validated','pending':'sampled','refused':'invalid','unknown':'unknown'}
         for status in expected:
             for phase in expected.values():
                 if phase==expected[status]:continue
@@ -655,7 +756,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         mutations=(
             lambda value:value['state'].update(bytes=value['state']['bytes']-1),
             lambda value:value['state'].update(sha256='0'*64),
-            lambda value:value['state'].update(consumedRevision=0),
+            lambda value:value['state'].update(consumedRevision=1),
             lambda value:value['state'].update(consumedBoundary='release'),
             lambda value:value['state'].update(stickyInvalid=True),
             lambda value:value['state'].update(reason='contradiction'),
@@ -668,7 +769,7 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
     def test_unknown_status_preserves_history_without_current_authority(self):
         self.spawn();first=self.consume('browser');history=dict(first['state']);original=self.handle._run_policy
         def unknown(*args):
-            genuine=json.loads(original(*args));self.assertEqual((genuine['status'],genuine['state']['phase']),('accepted','consumed'))
+            genuine=json.loads(original(*args));self.assertEqual((genuine['status'],genuine['state']['phase']),('accepted','validated'))
             state=dict(history);state.update(phase='unknown',stickyInvalid=True,reason='observation-unavailable')
             return (json.dumps({'schema':genuine['schema'],'status':'unknown','state':state},separators=(',',':'))+'\n').encode()
         self.handle._run_policy=unknown
@@ -783,107 +884,97 @@ raise SystemExit(p.returncode)
         self.assertEqual(result['bytes'],self.log.stat().st_size)
 
     def test_required_complete_record_correspondence_bundle(self):
+        # Keep the owning entrypoint stable while qualifying the successor
+        # protocol; the 27/14 predecessor vectors remain in the canonical gate.
+        return self.test_rp2_required_actual_correspondence_bundle()
+
+    def test_rp2_required_actual_correspondence_bundle(self):
         output=os.environ.get('BAR_SETTLEMENT_TRANSCRIPT')
-        if not output:self.skipTest('combined correspondence output not requested')
-        selected=self.policy.parent/'RuntimeEvidence.dll'
-        os.chmod(selected,0o644)
-        try:
-            with self.assertRaisesRegex(Refused,'policy closure file custody'):GrowingLog._closure(str(self.closure),self.closure_sha,time.monotonic()+5)
-        finally:os.chmod(selected,0o444)
-        displaced=pathlib.Path(self.fixture.name)/'displaced-managed-dll';os.chmod(self.policy.parent,0o755);selected.rename(displaced);shutil.copyfile(displaced,selected);os.chmod(selected,0o444);os.chmod(self.policy.parent,0o555)
-        try:
-            with self.assertRaisesRegex(Refused,'policy closure file custody'):GrowingLog._closure(str(self.closure),self.closure_sha,time.monotonic()+5)
-        finally:
-            os.chmod(self.policy.parent,0o755);selected.unlink();displaced.rename(selected);os.chmod(self.policy.parent,0o555)
+        self.assertTrue(output,'RP2 correspondence output required')
         scenarios=[]
-        def reset(kind):
+        atlas=b'CTextureRenderAtlas::CreateAtlasTexture()[0] atlas=public-fixture'
+        def reset(tail=b''):
             if self.handle or self.child:self.tearDown();self.setUp()
-            initial=self.text()
-            if kind=='partial':initial=initial[:-1]
-            elif kind=='missing-isolation':initial=initial.replace(b'[DataDirLocater::Check] Isolation Mode!\n',b'')
-            self.spawn(initial)
-        def timeline():
-            rows=[]
-            for row in self.handle.settlement_effects:
-                item=dict(row)
-                if item['kind']=='policy':
-                    item['beforeState']=self.state_projection(item['beforeState'])
-                    item['afterState']=self.state_projection(item['afterState'])
-                elif item['kind']=='terminal':item['state']=self.state_projection(item['state'])
-                rows.append(item)
-            return rows
-        def terminal(outcome,check):
-            self.handle.settlement_effects.append({'kind':'terminal','outcome':outcome,'check':check,'state':self.handle.state})
-        def effect(name):scenarios.append({'name':name,'timeline':timeline()})
-
-        reset('partial');actual_sample=self.handle._sample;samples=[0]
-        def complete_sample(deadline):
-            value=actual_sample(deadline);samples[0]+=1
-            if samples[0]==1:self.command('appendraw:'+base64.b64encode(b'\n').decode())
-            return value
-        self.handle._sample=complete_sample
-        self.consume('browser');effect('completeRecordWaitThenConsume')
-
-        reset('partial')
-        try:self.consume('browser');self.fail('partial record unexpectedly settled')
-        except Refused as error:
-            fact=error._barc_failure_observation;terminal('refused',fact['check']);effect('completeRecordWaitExhausted')
-
-        reset('partial');actual_sample=self.handle._sample;expired=[False];base=time.monotonic()
-        def deadline_sample(deadline):
-            value=actual_sample(deadline);expired[0]=True;return value
-        self.handle._sample=deadline_sample
-        with mock.patch.object(growing_log.time,'monotonic',side_effect=lambda:base+2 if expired[0] else base):
-            try:self.handle._settle(base+1,0);self.fail('expired settlement promoted')
-            except Refused as error:
-                fact=error._barc_failure_observation;terminal('deadline',fact['check']);effect('completeRecordWaitDeadline')
-
-        reset('complete');actual_policy=self.handle._run_policy;calls=[]
-        def shared_policy(*args):
-            calls.append(1);result=actual_policy(*args)
-            if len(calls)==1:self.command('appendraw:'+base64.b64encode(b'partial').decode())
+            self.spawn(self.text()+tail)
+        def record(name):
+            scenarios.append({'name':name,'timeline':json.loads(json.dumps(self.handle.settlement_effects))})
+        def refused(boundary='browser'):
+            with self.assertRaises(Refused) as caught:self.consume(boundary)
+            fact=caught.exception._barc_failure_observation
+            self.handle.settlement_effects.append({'kind':'terminal','outcome':'refused','check':fact['check'],'state':self.handle.state})
+            self.assertTrue(self.handle.revoked)
+            return caught.exception
+        def contradiction():return b'[DataDirLocater::FilterUsableDataDirs] using read-only data directory: /public/wrong/\n'
+        reset(atlas)
+        first=self.consume('browser');self.assertEqual(first['state']['prefix']['tailClass'],'atlas');self.assertGreater(first['state']['prefix']['tailBytes'],0)
+        record('rp2SafeTailConsume')
+        reset(atlas)
+        first=self.consume('browser');old_raw=self.handle.previous
+        self.command('appendraw:'+base64.b64encode(b' completed\nbenign complete record\n').decode())
+        second=self.consume('normalization');self.assertTrue(self.handle.previous.startswith(old_raw))
+        self.assertEqual(second['state']['consumedRevision'],first['state']['consumedRevision']+1)
+        record('rp2SafeTailExtend')
+        for name,tail in [('rp2RelevantTailPending',b'[DataDirLocater::FilterUsableDataDirs] using read-only data directory: /wrong'),('rp2UnknownTailPending',b'unknown'),('rp2PartialUtf8Pending',b'\xe2\x82')]:
+            reset(tail);failure=refused();counters=failure._barc_infolog_mechanical_observation
+            self.assertEqual((counters['probesCompleted'],counters['evaluationsCompleted']),(32,1))
+            self.assertEqual(counters['terminalCause'],'settlement-probe-cap');record(name)
+        reset(b'\xff');refused();record('rp2MalformedUtf8Refused')
+        reset(contradiction());refused();record('rp2ContradictionBeforeSample')
+        reset(atlas);original=self.handle._run_policy;fired=[]
+        def during_policy(*args):
+            result=original(*args)
+            if not fired:fired.append(True);self.command('appendraw:'+base64.b64encode(b'\n'+contradiction()).decode())
             return result
-        self.handle._run_policy=shared_policy
-        try:self.consume('browser');self.fail('shared budget unexpectedly reset')
-        except Refused as error:
-            fact=error._barc_failure_observation;terminal('refused',fact['check']);effect('sharedBudgetAcrossEvaluations')
-
-        reset('missing-isolation');actual_sample=self.handle._sample;actual_policy=self.handle._run_policy;calls=[];samples=[0]
-        def resample_sample(deadline):
-            value=actual_sample(deadline);samples[0]+=1
-            if samples[0]==2:self.command('appendraw:'+base64.b64encode(b'\n').decode())
-            return value
-        def resample_policy(*args):
-            calls.append(1);result=actual_policy(*args)
-            if len(calls)==1:self.command('appendraw:'+base64.b64encode(b'[DataDirLocater::Check] Isolation Mode!').decode())
+        self.handle._run_policy=during_policy;refused();self.assertEqual(self.handle.counters['evaluationsCompleted'],2);record('rp2ContradictionDuringPolicy')
+        reset();original_read=self.handle._read_exact;fired=[]
+        def during_read(length,deadline=None):
+            result=original_read(length,deadline)
+            if self.handle.failure_checkpoint=='infolog-final-prefix-read' and not fired:
+                fired.append(True);self.command('appendraw:'+base64.b64encode(contradiction()).decode())
             return result
-        self.handle._sample=resample_sample;self.handle._run_policy=resample_policy
-        self.consume('browser');effect('pendingThenCompleteResample')
-
-        reset('complete');self.consume('browser');before=self.state_projection(self.handle.state);offset=len(self.handle.settlement_effects);self.command('appendraw:'+base64.b64encode(b'partial').decode())
-        try:self.handle._settle(time.monotonic()+5,0);self.fail('post-consumption partial record settled')
-        except Refused as error:
-            fact=error._barc_failure_observation;terminal('refused',fact['check'])
-            self.handle.settlement_effects=self.handle.settlement_effects[offset:]
-            self.handle.settlement_effects.insert(0,{'kind':'historical','beforeState':self.handle.state,'afterState':self.handle.state})
-            self.assertEqual(before,self.state_projection(self.handle.state));effect('waitAfterConsumptionHasNoNewAuthority')
-
-        # Probe 32 is complete and evaluated once. Growth after that policy
-        # returns to settlement with the already exhausted shared budget.
-        reset('partial');actual_sample=self.handle._sample;actual_policy=self.handle._run_policy;samples=[0]
-        def last_probe_sample(deadline):
-            value=actual_sample(deadline);samples[0]+=1
-            if samples[0]==31:self.command('appendraw:'+base64.b64encode(b'\n').decode())
-            return value
-        def last_probe_policy(*args):
-            result=actual_policy(*args);self.command('appendraw:'+base64.b64encode(b'partial').decode());return result
-        self.handle._sample=last_probe_sample;self.handle._run_policy=last_probe_policy
-        try:self.consume('browser');self.fail('last-probe candidate renewed the budget')
-        except Refused as error:
-            fact=error._barc_failure_observation;terminal('refused',fact['check']);effect('lastProbeCandidateThenExhausted')
-
-        helper_sha=hashlib.sha256(pathlib.Path(growing_log.__file__).read_bytes()).hexdigest()
-        bundle={'schema':'fsbar.barc-complete-record-settlement-correspondence/v2','helperSha256':helper_sha,'scenarios':scenarios}
+        self.handle._read_exact=during_read;refused();self.assertTrue(fired);self.assertEqual(self.handle.counters['evaluationsCompleted'],2);record('rp2ContradictionDuringRead')
+        reset();original_closure=self.handle._closure;fired=[]
+        def after_L(*args):
+            result=original_closure(*args)
+            if hasattr(self.handle,'final_observation') and not fired:
+                fired.append(True);self.command('appendraw:'+base64.b64encode(contradiction()).decode())
+                # This producer write is after L. The adapter makes no further
+                # FD read before releasing the named old horizon.
+                self.handle.settlement_effects.append({'kind':'producer-after-L','rawBytes':len(self.text())+len(contradiction()),'contradictory':True})
+            return result
+        self.handle._closure=after_L
+        first=self.consume('browser');self.assertEqual(first['bytes'],len(self.text()));self.assertTrue(fired)
+        refused('normalization');self.assertEqual(self.handle.state['consumedPrefix'],first['state']['consumedPrefix']);record('rp2ContradictionAfterL')
+        reset();original=self.handle._run_policy
+        def grow(*args):
+            result=original(*args);self.command('append:benign complete record');return result
+        self.handle._run_policy=grow;failure=refused()
+        self.assertEqual((failure._barc_infolog_mechanical_observation['evaluationsCompleted'],failure._barc_infolog_mechanical_observation['growthAfterEvaluation']),(3,3))
+        self.assertEqual(failure._barc_infolog_mechanical_observation['terminalCause'],'policy-evaluation-growth-cap');record('rp2BenignGrowthCap')
+        self.tearDown();self.setUp()
+        self.spawn(atlas);refused();record('rp2NoCompleteRecords')
+        if self.handle or self.child:self.tearDown();self.setUp()
+        self.child=subprocess.Popen([sys.executable,str(pathlib.Path(__file__).with_name('buffered_writer.py')),str(self.log),base64.b64encode(self.text()).decode()],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,start_new_session=True)
+        def ack(expected):
+            self.assertTrue(__import__('select').select([self.child.stdout],[],[],2)[0]);self.assertEqual(self.child.stdout.readline().strip(),expected)
+        ack('ready')
+        def grow_to_full_atlas_tail():
+            # Prepare an actual libc flush cut with the complete public family
+            # header. Other cuts remain pending; this is fixture scheduling,
+            # never a production classifier or retry-budget exception.
+            for _ in range(16):
+                self.child.stdin.write('grow\n');self.child.stdin.flush();ack('done')
+                tail=self.log.read_bytes().rsplit(b'\n',1)[-1]
+                if tail.startswith((b'CTextureRenderAtlas::CreateAtlasTexture()[0] atlas=',b'CTextureRenderAtlas::CreateAtlasTexture()[1] atlas=')):return
+            self.fail('bounded libc fixture did not expose fully formed atlas family tail')
+        grow_to_full_atlas_tail()
+        self.handle=acquire_data_root_evidence(self.log,{'pid':self.child.pid,'startTicks':start_ticks(self.child.pid),'uid':os.geteuid()})
+        self.assertFalse(self.log.read_bytes().endswith(b'\n'))
+        self.consume('browser');self.assertEqual(self.handle.state['prefix']['tailClass'],'atlas');record('rp2RealLibcSafeTail')
+        grow_to_full_atlas_tail()
+        previous=self.handle.previous;self.consume('normalization');self.assertTrue(self.handle.previous.startswith(previous));record('rp2RealLibcSafeTailExtend')
+        for row in scenarios:row['model']=_rp2_canonical_trace(POLICY_SOURCE/'tests/Broker.NativeProof/RuntimeEvidence',row['timeline'],row['name'],pathlib.Path(output).parent/'rp2-model')
+        bundle={'schema':'fsbar.barc-complete-prefix-correspondence/v3','helperSha256':hashlib.sha256(pathlib.Path(growing_log.__file__).read_bytes()).hexdigest(),'scenarios':scenarios}
         pathlib.Path(output).write_text(json.dumps(bundle,separators=(',',':'),sort_keys=True)+'\n')
 
 if __name__=='__main__':unittest.main()

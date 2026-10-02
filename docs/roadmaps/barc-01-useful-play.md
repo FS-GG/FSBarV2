@@ -34,6 +34,27 @@ old packets never become new-engine evidence. The stock tactical wire revision
 and factory/queue promises are unchanged, and useful-play acceptance remains 0/6.
 See the [qualification plan](https://github.com/FS-GG/.github/blob/main/docs/roadmaps/2026-10-02-bar-headless-infolog-qualification.md).
 
+## Complete-prefix source candidate — 2026-10-02
+
+RP2 now derives complete-prefix evidence and retains the exact unfinished raw tail.
+F# classifies the prefix and permits only the narrowly identified stock atlas tail;
+unknown, relevant, malformed or incomplete UTF-8 tails remain pending or refused.
+Policy completion returns a candidate. The helper must recheck the retained raw
+horizon and held file descriptor before the final size observation L and one-shot
+boundary consumption. Observed growth uses the same frozen five-second deadline,
+32 probes and three evaluations. A subsequent boundary starts a new invocation;
+post-L writes carry no validation authority.
+
+The local source gate passed a locked Release build with zero warnings or errors,
+10 Python/libc controls, two actual F# growth controls, 38 Quint scenarios, 500
+invariant samples of at most 16 steps, 14 predecessor traces, 14 actual framed
+helper scenarios with independent compiled full-state and ordered-effect replay,
+and 13 rejected semantic mutants. Earlier fixture and replay failures are retained.
+Protected source CI and independent artifact custody remain required. This does
+not amend the engine or installed failed packet. RP3 capacity, RP4 executable and
+engine/plugin custody, RP5 one changed Count1 attempt, and useful play **0/6** remain
+open under the linked qualification plan.
+
 ## Current frontier — 2026-10-01
 
 Selected product profile: unmodified Recoil2025.06.19 plus the ABI-matched HighBar plugin and bounded synced Lua queue observer. Delivered default source heads are HighBar `f08555372168cd911f438de0be5ec2898fd1cfb5` and FSBar `6b9139e83334da903ea6861adb57d97578af2239`; neither source merge establishes installation or gameplay acceptance. The existing custom FR1–FR6 experiment remains optional, inactive and open.
