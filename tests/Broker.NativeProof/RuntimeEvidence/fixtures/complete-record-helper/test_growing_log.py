@@ -113,7 +113,13 @@ def _rp2_canonical_trace(source,timeline,name,directory):
     run=subprocess.run(['quint','test',str(qnt),'--backend=typescript','--main','RP2_actual_test','--match','^actual$','--out-itf',str(directory/(name+'_{test}_{seq}.itf.json')),'--seed','424242','--max-samples','1'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=30)
     (directory/(name+'.log')).write_text(run.stdout)
     if run.returncode:raise AssertionError('actual full-state canonical correspondence: '+name+'\n'+run.stdout)
-    shutil.move(directory/(name+'_actual_0.itf.json'),trace)
+    generated=directory/(name+'_actual_0.itf.json')
+    itf=json.loads(generated.read_text())
+    # Apply the same volatile-metadata normalization as the owning predecessor
+    # gate. Preserve every generated variable and ordered state unchanged.
+    itf['#meta'].pop('description',None);itf['#meta'].pop('timestamp',None)
+    itf['#meta']['status']='ok'
+    trace.write_text(json.dumps(itf,separators=(',',':'),sort_keys=True)+'\n')
     return {'steps':steps,'trace':trace.name}
 
 class GrowingLogTests(unittest.TestCase):
