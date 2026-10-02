@@ -1,7 +1,7 @@
 """Held-FD adapter for one source-bound, growing Recoil infolog."""
 import base64,hashlib,json,os,re,selectors,stat,subprocess,time
 from pathlib import Path
-from private_io import Refused,SHA,canonical,components,hash_artifact,need,read_bytes
+from private_io import Refused,SHA,atomic_bytes_new,atomic_new,canonical,components,hash_artifact,need,read_bytes
 from runtime_identity import mark_failure,proc_bytes,start_ticks
 MAX_LOG=4*1024*1024
 MAX_POLICY_INPUT=6*1024*1024
@@ -57,7 +57,28 @@ def _closed_state(value,status,boundary,identity,revision,sample_bytes,sample_sh
 class GrowingLog:
     def __init__(self,path,process,fd,opened,writer):
         self.path=str(path);self.process=dict(process);self.fd=fd;self.device=opened.st_dev;self.inode=opened.st_ino
-        self.previous=b'';self.revision=0;self.state=None;self.revoked=False;self.writer=writer;self.closure_sha256=None;self.failure_checkpoint='policy-scope-join';self.last_policy_observation=None;self.settlement_transcript=[];self.settlement_effects=[]
+        self.previous=b'';self.revision=0;self.state=None;self.revoked=False;self.writer=writer;self.closure_sha256=None;self.failure_checkpoint='policy-scope-join';self.last_policy_observation=None;self.settlement_transcript=[];self.settlement_effects=[];self._reset_counters(None)
+    def _reset_counters(self,boundary):
+        self.counter_started=time.monotonic();self.counter_cause=None;self.counter_deadline=None
+        self.counters={'boundary':boundary,'probesBegun':0,'probesCompleted':0,'readOperations':0,'readCalls':0,'readCallsInOperation':0,'requestedReadBytes':0,'bytesReadInOperation':0,'evaluationsBegun':0,'evaluationsCompleted':0,'growthAfterEvaluation':0,'maximumObservedBytes':0,'sampleBytes':0,'completePrefixBytes':0,'tailBytes':0}
+    def _counter_observation(self,check):
+        elapsed=max(0,int((time.monotonic()-self.counter_started)*1000000))
+        return {'schema':'fsbar.barc-infolog-mechanical-observation/v1',**self.counters,'elapsedMicroseconds':elapsed,'settlementBudgetMicroseconds':None if self.counter_deadline is None else max(0,int((self.counter_deadline-self.counter_started)*1000000)),'terminalCheck':check,'terminalCause':self.counter_cause or ('settlement-deadline' if check=='infolog-record-settlement-deadline' else 'other'),'sampleSha256':hashlib.sha256(self.previous).hexdigest(),'nativeAcceptance':False}
+    def _retain_counter_observation(self,error,config):
+        check=getattr(error,'_barc_failure_observation',{}).get('check',self.failure_checkpoint)
+        observation=self._counter_observation(check)
+        error._barc_infolog_mechanical_observation=observation
+        # Separate mechanical evidence: never alters the typed failure projection
+        # or acceptance. Missing publication is explicitly visible on the error.
+        try:
+            need(self.counters['boundary'] in BOUNDARIES,'closed counter boundary')
+            name='infolog-mechanical-'+self.counters['boundary']+'.json'
+            root=components(config['roots']['attemptRoot'])
+            encoded=(json.dumps(observation,separators=(',',':'),allow_nan=False)+'\n').encode()
+            atomic_bytes_new(str(root/name),encoded,4096)
+            atomic_new(str(root/(name+'.receipt.json')),{'schema':'fsbar.barc-infolog-mechanical-receipt/v1','file':name,'bytes':len(encoded),'sha256':hashlib.sha256(encoded).hexdigest(),'sourceSetSha256':_source_set(config),'nativeAcceptance':False})
+            error._barc_infolog_mechanical_retained=True
+        except Exception:error._barc_infolog_mechanical_retained=False
     @classmethod
     def acquire(cls,path,process):
         check='infolog-path';fd=None
@@ -117,12 +138,15 @@ class GrowingLog:
             raise mark_failure(Refused('growing log record settlement deadline'),'infolog-record-settlement-deadline','deadline',None)
     def _read_exact(self,length,deadline=None):
         chunks=[];offset=0;calls=0
+        self.counters['readOperations']+=1;self.counters['readCallsInOperation']=0;self.counters['requestedReadBytes']=length;self.counters['bytesReadInOperation']=0
         while offset<length:
             if deadline is not None:self._deadline(deadline)
             if calls>=MAX_PREAD_CALLS:
+                self.counter_cause='exact-read-call-cap'
                 raise mark_failure(Refused('growing log record exact-read exhausted'),'infolog-record-settlement-exhausted','refused',None)
+            self.counters['readCalls']+=1;self.counters['readCallsInOperation']+=1
             block=os.pread(self.fd,min(65536,length-offset),offset);need(block,'growing log truncated');chunks.append(block);offset+=len(block)
-            calls+=1
+            calls+=1;self.counters['bytesReadInOperation']=offset
             if deadline is not None:self._deadline(deadline)
         return b''.join(chunks)
     def _sample(self,deadline):
@@ -147,6 +171,7 @@ class GrowingLog:
         need((opened.st_dev,opened.st_ino)==(self.device,self.inode),'growing log descriptor identity changed')
         checkpoint('file-custody')
         need(stat.S_ISREG(named.st_mode) and named.st_uid==os.geteuid() and stat.S_IMODE(named.st_mode)==0o600 and named.st_nlink==1,'growing log custody')
+        self.counters['maximumObservedBytes']=max(self.counters['maximumObservedBytes'],opened.st_size)
         checkpoint('size-cap');need(opened.st_size<=MAX_LOG,'growing log bound')
         writer=self._writer(self.process,path,opened,deadline)
         if expected is not None:
@@ -158,7 +183,7 @@ class GrowingLog:
         self._deadline(deadline)
         opened,_=self._custody(deadline=deadline)
         need(len(self.previous)<=opened.st_size,'growing log truncated')
-        length=opened.st_size;raw=self._read_exact(length,deadline)
+        length=opened.st_size;self.counters['maximumObservedBytes']=max(self.counters['maximumObservedBytes'],length);raw=self._read_exact(length,deadline)
         # This second retained-FD read closes the permanent overwrite window
         # after the first read.  The custody check also reopens no authority:
         # any failure makes this object sticky-revoked in _sample.
@@ -171,10 +196,14 @@ class GrowingLog:
     def _settle(self,deadline,probes):
         while probes<MAX_SETTLEMENT_PROBES:
             self._deadline(deadline)
+            self.counters['probesBegun']+=1
             raw,intact,writer=self._sample(deadline);probes+=1
+            self.counters['probesCompleted']+=1
             # Retain every fully checked byte, including an incomplete tail.
             # The next probe must extend this exact mechanical prefix.
             self.previous=raw
+            prefix=raw.rfind(b'\n')+1
+            self.counters.update(sampleBytes=len(raw),completePrefixBytes=prefix,tailBytes=len(raw)-prefix)
             complete=bool(raw) and raw.endswith(b'\n')
             event={'kind':'probe','event':'complete' if complete else 'incomplete','probe':probes,'remaining':MAX_SETTLEMENT_PROBES-probes}
             self.settlement_transcript.append({key:value for key,value in event.items() if key!='kind'})
@@ -187,6 +216,7 @@ class GrowingLog:
                 self._deadline(deadline)
                 time.sleep(min(SETTLEMENT_PAUSE_SECONDS,max(0,deadline-time.monotonic())))
                 self._deadline(deadline)
+        self.counter_cause='settlement-probe-cap'
         raise mark_failure(Refused('growing log record settlement exhausted'),'infolog-record-settlement-exhausted','refused',None)
     @staticmethod
     def _closure(path,digest,deadline):
@@ -298,13 +328,16 @@ class GrowingLog:
             if process is not None and process.stdout is not None and not process.stdout.closed:process.stdout.close()
             if process is not None and process.stderr is not None and not process.stderr.closed:process.stderr.close()
     def consume(self,boundary,config,deadline):
+        self._reset_counters(boundary)
         try:return self._consume_impl(boundary,config,deadline)
         except BaseException as error:
             self.revoked=True
-            raise mark_failure(error,self.failure_checkpoint)
+            error=mark_failure(error,self.failure_checkpoint)
+            self._retain_counter_observation(error,config)
+            raise error
     def _consume_impl(self,boundary,config,deadline):
         need(boundary in BOUNDARIES and isinstance(deadline,(int,float)),'closed growing log boundary/deadline')
-        policy_deadline=min(deadline,time.monotonic()+5)
+        policy_deadline=min(deadline,time.monotonic()+5);self.counter_deadline=policy_deadline
         policy=config['artifacts']['runtimeEvidencePolicy'];closure=config['artifacts']['runtimeEvidencePolicyClosure']
         self.failure_checkpoint='policy-artifact';hash_artifact(policy['path'],policy['sha256'],268435456)
         self.failure_checkpoint='policy-closure-precheck';closure_value=self._closure(closure['path'],closure['sha256'],policy_deadline)
@@ -325,7 +358,9 @@ class GrowingLog:
             encoded=json.dumps(request,separators=(',',':'),allow_nan=False).encode();need(len(encoded)<=MAX_POLICY_INPUT,'growing log policy input bound')
             remaining=policy_deadline-time.monotonic();need(remaining>0,'growing log policy deadline')
             self.failure_checkpoint='policy-transport';self.last_policy_observation=None
+            self.counters['evaluationsBegun']+=1
             output=self._run_policy(policy['path'],closure['path'],closure['sha256'],encoded,policy_deadline)
+            self.counters['evaluationsCompleted']+=1
             try:value=json.loads(output.decode('utf-8'),object_pairs_hook=_unique,parse_constant=lambda _:(_ for _ in ()).throw(Refused('nonfinite policy JSON')))
             except (UnicodeError,json.JSONDecodeError) as error:raise Refused('invalid growing log policy result') from error
             self.failure_checkpoint='policy-result-join'
@@ -345,7 +380,9 @@ class GrowingLog:
             hash_artifact(policy['path'],policy['sha256'],268435456)
             self._closure(closure['path'],closure['sha256'],policy_deadline)
             need(time.monotonic()<policy_deadline,'policy final closure deadline')
+            self.counters['maximumObservedBytes']=max(self.counters['maximumObservedBytes'],current.st_size)
             if current.st_size!=len(raw):
+                self.counters['growthAfterEvaluation']+=1
                 continue
             if last=='accepted':
                 self.settlement_effects.append({'kind':'terminal','outcome':'accepted','check':None,'state':self.state})
@@ -355,5 +392,7 @@ class GrowingLog:
                 raise mark_failure(Refused('growing log policy refused or unknown'),self.failure_checkpoint,'policy-nonaccepted',self.last_policy_observation)
             time.sleep(min(0.01,max(0,policy_deadline-time.monotonic())))
         self.failure_checkpoint='policy-sample-exhausted';self.revoked=True
-        if last=='accepted':raise mark_failure(Refused('growing log policy sample growth exhausted'),self.failure_checkpoint,'refused',None)
+        if last=='accepted':
+            self.counter_cause='policy-evaluation-growth-cap'
+            raise mark_failure(Refused('growing log policy sample growth exhausted'),self.failure_checkpoint,'refused',None)
         raise mark_failure(Refused(f'growing log policy {last or "unavailable"}'),self.failure_checkpoint,'policy-nonaccepted',self.last_policy_observation)
