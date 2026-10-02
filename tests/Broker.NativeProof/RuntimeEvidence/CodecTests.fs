@@ -94,6 +94,20 @@ module CodecTests =
         let errorOperation="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"error\"}\n"
         let mechanicalDiagnostic=diagnostic.Replace(observation,mechanicalObservation).Replace(observationHash,sha(bytes(mechanicalObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes errorOperation)).Replace(operationHash,sha(bytes errorOperation))
         if not((evaluate mechanicalDiagnostic|>Codec.complete).Contains("\"status\":\"observed-failure\"")) then failwith "later mechanical failure refused"
+        let refusedOperation="{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"refused\"}\n"
+        let finalChecks =
+            [ "infolog-final-scope"; "infolog-final-process"; "infolog-final-path"
+              "infolog-final-parent"; "infolog-final-named-identity"
+              "infolog-final-descriptor-identity"; "infolog-final-file-custody"
+              "infolog-final-size-cap"; "infolog-final-size-regression"
+              "infolog-final-prefix-read"; "infolog-final-prefix-drift" ]
+        for check in finalChecks do
+            let finalObservation=observation.Replace("\"check\":\"policy-result-join\"",$"\"check\":\"{check}\"").Replace("\"outcome\":\"policy-nonaccepted\"","\"outcome\":\"refused\"").Replace("\"policyObservation\":"+policyObservation,"\"policyObservation\":null")
+            let finalDiagnostic=diagnostic.Replace(observation,finalObservation).Replace(observationHash,sha(bytes(finalObservation+"\n"))).Replace(operationBase64,Convert.ToBase64String(bytes refusedOperation)).Replace(operationHash,sha(bytes refusedOperation))
+            let projected=evaluate finalDiagnostic|>Codec.complete
+            if not(projected.Contains("\"status\":\"observed-failure\"") && projected.Contains($"\"check\":\"{check}\"") && projected.Contains("\"nativeAcceptance\":false")) then failwithf "final custody check refused: %s" check
+        let rawLeak=mechanicalDiagnostic.Replace("\"check\":\"infolog-final-refresh\"","\"check\":\"PRIVATE_SENTINEL\"")
+        if (evaluate rawLeak|>Codec.complete).Contains("PRIVATE_SENTINEL") then failwith "unrecognized diagnostic detail escaped"
         let oversized=diagnostic+String(' ',8193)
         if not((evaluate oversized|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "oversized diagnostic decoded"
         let malformed=Array.append (bytes diagnostic) [|0xffuy|]
