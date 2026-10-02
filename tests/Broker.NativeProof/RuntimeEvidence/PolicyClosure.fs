@@ -11,7 +11,7 @@ open System.Text.Json
 
 module PolicyClosure =
     [<Literal>]
-    let Schema = "fsbar.barc-runtime-evidence-policy-closure/v2"
+    let Schema = "fsbar.barc-runtime-evidence-policy-closure/v3"
     [<Literal>]
     let MaxFiles = 1024
     [<Literal>]
@@ -56,7 +56,12 @@ module PolicyClosure =
 
     type FilePin = { Role:string option;Path:string;Bytes:int64;Sha256:string;Device:string;Inode:uint64;OwnerUid:int;Mode:int;Links:int }
     type DirectoryPin = { Path:string;OwnerUid:int;Mode:int;EntriesSha256:string }
-    type Verified = { ManifestPath:string;ManifestSha256:string;ExecutablePath:string;ApphostSha256:string;OwnerUid:int;Files:Map<string,FilePin>;RuntimeRoots:Set<string>;SourceIdentity:string }
+    type Verified = {
+        ManifestPath:string;ManifestSha256:string;ExecutablePath:string;ApphostSha256:string
+        ProductSourceSetSha256:string;OwnerUid:int;Files:Map<string,FilePin>
+        ManagedRoles:Map<string,string>;RuntimeRoles:Map<string,string>
+        RuntimeRoots:Set<string>;RequiredSearchLayout:Set<string>;SourceIdentity:string
+    }
 
     let private fail message = invalidOp message
     let private hashBytes bytes = SHA256.HashData(bytes:byte[]) |> Convert.ToHexStringLower
@@ -74,8 +79,12 @@ module PolicyClosure =
         output.ToArray()
     let private hashFile path =
         readBounded path (256*1024*1024) |> hashBytes
-    let private exact (e:JsonElement) names label =
-        if e.ValueKind<>JsonValueKind.Object || (e.EnumerateObject()|>Seq.map _.Name|>Set.ofSeq)<>Set.ofList names then fail("closed "+label)
+    let private exact (e:JsonElement) (names:string list) label =
+        if e.ValueKind<>JsonValueKind.Object then fail("closed "+label)
+        let observed=HashSet<string>(StringComparer.Ordinal)
+        for property in e.EnumerateObject() do
+            if not(observed.Add property.Name) then fail("duplicate "+label+" property")
+        if not(observed.SetEquals names) then fail("closed "+label)
     let private text (o:JsonElement) (name:string) =
         let e=o.GetProperty name
         if e.ValueKind<>JsonValueKind.String then fail("invalid "+name)
@@ -122,8 +131,12 @@ module PolicyClosure =
         exact e ["path";"ownerUid";"mode";"entriesSha256"] "search directory"
         { Path=full(text e "path") "search directory";OwnerUid=e.GetProperty("ownerUid").GetInt32();Mode=e.GetProperty("mode").GetInt32();EntriesSha256=hex 64 (text e "entriesSha256") "directory entries" }
     let private directoryEntries path =
-        let names=Directory.EnumerateFileSystemEntries(path) |> Seq.map Path.GetFileName |> Seq.sort |> Seq.toArray
-        if names.Length>4096 then fail "directory entry bound"
+        let names=ResizeArray<string>()
+        use entries=Directory.EnumerateFileSystemEntries(path).GetEnumerator()
+        while entries.MoveNext() do
+            if names.Count>=4096 then fail "directory entry bound"
+            names.Add(Path.GetFileName entries.Current)
+        names.Sort(StringComparer.Ordinal)
         hashBytes(Encoding.UTF8.GetBytes(String.Join("\n",names)))
     let private verifyDirectory custodyRoot requireSealed (pin:DirectoryPin) =
         if not(Directory.Exists pin.Path) then fail "directory unavailable"
@@ -131,33 +144,46 @@ module PolicyClosure =
         let observed=stat pin.Path
         if int observed.Uid<>pin.OwnerUid || int observed.Mode&&&0o777<>pin.Mode || directoryEntries pin.Path<>pin.EntriesSha256 then fail "directory custody/layout drift"
         if pin.Mode&&&0o022<>0 || requireSealed && pin.Mode&&&0o222<>0 then fail "writable search directory"
-    let private verifyFile custodyRoot (pin:FilePin) =
+    let private verifyFile custodyRoot principalReadonly (pin:FilePin) =
         if not(File.Exists pin.Path) then fail "file unavailable"
         noSymlinkComponents custodyRoot pin.Path
         let observed=stat pin.Path
         if int64 observed.Size<>pin.Bytes || device observed<>pin.Device || observed.Inode<>pin.Inode || int observed.Uid<>pin.OwnerUid || int observed.Mode&&&0o777<>pin.Mode || int observed.Links<>pin.Links || pin.Links<>1 then fail "file identity/custody drift"
         if pin.Mode&&&0o022<>0 then fail "group/world writable closure file"
+        if principalReadonly && pin.OwnerUid=int observed.Uid && pin.Mode&&&0o200<>0 then fail "invoking-principal-writable policy file"
         if hashFile pin.Path<>pin.Sha256 then fail "file digest drift"
     let private enumerateBounded roots =
         let found=HashSet<string>(StringComparer.Ordinal)
+        let visited=HashSet<string>(StringComparer.Ordinal)
         for root in roots do
-            for path in Directory.EnumerateFiles(root,"*",SearchOption.AllDirectories) do
-                if found.Count>=MaxFiles then fail "runtime census count bound"
-                found.Add(Path.GetFullPath path)|>ignore
+            let pending=Stack<string>()
+            pending.Push(Path.GetFullPath root)
+            while pending.Count>0 do
+                let directory=pending.Pop()
+                if visited.Add directory then
+                    if visited.Count>4096 then fail "directory traversal bound"
+                    use entries=Directory.EnumerateFileSystemEntries(directory).GetEnumerator()
+                    while entries.MoveNext() do
+                        let path=Path.GetFullPath entries.Current
+                        if Directory.Exists path then pending.Push path
+                        elif File.Exists path then
+                            if found.Count>=MaxFiles then fail "runtime census count bound"
+                            found.Add path|>ignore
         Set.ofSeq found
     let private roleMap pins =
         pins |> List.map(fun p->p.Role.Value,p) |> Map.ofList
     let private provenanceJoin sourceElement managed provenance =
-        exact sourceElement ["policyCommit";"policyTree";"productCommit";"productTree";"policySourceManifestSha256";"productSourceManifestSha256";"buildReceiptSha256";"pdbSha256";"sourceLinkSha256";"helperManifestSha256"] "source graph"
+        exact sourceElement ["policyCommit";"policyTree";"productCommit";"productTree";"productSourceSetSha256";"productRoleGraphSha256";"lockedBuildInputsSha256";"toolchainReceiptSha256";"policySourceManifestSha256";"productSourceManifestSha256";"buildReceiptSha256";"pdbSha256";"sourceLinkSha256";"helperManifestSha256"] "source graph"
         let policyCommit=hex 40 (text sourceElement "policyCommit") "policy commit"
         let policyTree=hex 40 (text sourceElement "policyTree") "policy tree"
         let productCommit=hex 40 (text sourceElement "productCommit") "product commit"
         let productTree=hex 40 (text sourceElement "productTree") "product tree"
+        let productSourceSet=hex 64 (text sourceElement "productSourceSetSha256") "product source set"
         let roles=roleMap provenance
-        let expectedRoles=Set.ofList ["pdb";"sourceLink";"buildReceipt";"helperManifest";"policySourceManifest";"productSourceManifest"]
+        let expectedRoles=Set.ofList ["pdb";"sourceLink";"buildReceipt";"helperManifest";"policySourceManifest";"productSourceManifest";"productRoleGraph";"lockedBuildInputs";"toolchainReceipt"]
         if Set.ofSeq roles.Keys<>expectedRoles then fail "closed provenance roles"
         let join field role = if text sourceElement field<>roles[role].Sha256 then fail("source/provenance join: "+field)
-        join "pdbSha256" "pdb";join "sourceLinkSha256" "sourceLink";join "buildReceiptSha256" "buildReceipt";join "helperManifestSha256" "helperManifest";join "policySourceManifestSha256" "policySourceManifest";join "productSourceManifestSha256" "productSourceManifest"
+        join "pdbSha256" "pdb";join "sourceLinkSha256" "sourceLink";join "buildReceiptSha256" "buildReceipt";join "helperManifestSha256" "helperManifest";join "policySourceManifestSha256" "policySourceManifest";join "productSourceManifestSha256" "productSourceManifest";join "productRoleGraphSha256" "productRoleGraph";join "lockedBuildInputsSha256" "lockedBuildInputs";join "toolchainReceiptSha256" "toolchainReceipt"
         let parseSource role expectedCommit expectedTree =
             use doc=JsonDocument.Parse(readBounded roles[role].Path (1024*1024))
             exact doc.RootElement ["schema";"role";"commit";"tree"] "source identity"
@@ -165,6 +191,42 @@ module PolicyClosure =
         parseSource "policySourceManifest" policyCommit policyTree
         parseSource "productSourceManifest" productCommit productTree
         if roles["policySourceManifest"].Path=roles["productSourceManifest"].Path then fail "aliased source roles"
+        use roleGraph=JsonDocument.Parse(readBounded roles["productRoleGraph"].Path (1024*1024))
+        exact roleGraph.RootElement ["schema";"roles"] "product role graph"
+        if text roleGraph.RootElement "schema"<>"fsbar.barc-product-source-role-graph/v1" then fail "product role graph schema"
+        let graphRoles=roleGraph.RootElement.GetProperty "roles"
+        exact graphRoles ["fsbarCommit";"highbarCommit"] "product source roles"
+        let fsbarCommit=hex 40 (text graphRoles "fsbarCommit") "fsbar product commit"
+        let highbarCommit=hex 40 (text graphRoles "highbarCommit") "highbar product commit"
+        if fsbarCommit<>productCommit then fail "product role/source identity drift"
+        let sourceSetBytes=Encoding.UTF8.GetBytes(sprintf "{\"fsbarCommit\":\"%s\",\"highbarCommit\":\"%s\"}" fsbarCommit highbarCommit)
+        if hashBytes sourceSetBytes<>productSourceSet then fail "product source set drift"
+        use buildInputs=JsonDocument.Parse(readBounded roles["lockedBuildInputs"].Path (1024*1024))
+        exact buildInputs.RootElement ["schema";"policyProjectSha256";"policyLockSha256";"policyTree"] "locked build inputs"
+        hex 64 (text buildInputs.RootElement "policyProjectSha256") "project digest" |> ignore
+        hex 64 (text buildInputs.RootElement "policyLockSha256") "lock digest" |> ignore
+        if text buildInputs.RootElement "schema"<>"fsbar.barc-locked-build-inputs/v1" || text buildInputs.RootElement "policyTree"<>policyTree then fail "locked build inputs drift"
+        use toolchain=JsonDocument.Parse(readBounded roles["toolchainReceipt"].Path (1024*1024))
+        exact toolchain.RootElement ["schema";"dotnetSdk";"targetFramework"] "toolchain receipt"
+        if text toolchain.RootElement "schema"<>"fsbar.barc-toolchain-receipt/v1" || text toolchain.RootElement "targetFramework"<>"net10.0" then fail "toolchain receipt drift"
+        let sdk=text toolchain.RootElement "dotnetSdk"
+        if sdk|>Seq.exists(fun c->not(Char.IsDigit c || c='.')) then fail "toolchain SDK identity"
+        use helper=JsonDocument.Parse(readBounded roles["helperManifest"].Path (1024*1024))
+        exact helper.RootElement ["configuredPacketIncluded";"files";"nativeEffectPerformed";"publicBase";"publicHead";"publicTree";"schema"] "helper source manifest"
+        if text helper.RootElement "schema"<>"fsgg.private.barc-selected-runtime-product-invocation-helper-source/v3" || helper.RootElement.GetProperty("configuredPacketIncluded").GetBoolean() || helper.RootElement.GetProperty("nativeEffectPerformed").GetBoolean() then fail "helper source manifest identity"
+        let helperHead=hex 40 (text helper.RootElement "publicHead") "helper head"
+        let helperTree=hex 40 (text helper.RootElement "publicTree") "helper tree"
+        hex 40 (text helper.RootElement "publicBase") "helper base" |> ignore
+        let helperFiles=helper.RootElement.GetProperty "files"
+        if helperFiles.ValueKind<>JsonValueKind.Array then fail "helper manifest files"
+        let helperPaths=HashSet<string>(StringComparer.Ordinal)
+        let mutable helperCount=0
+        for item in helperFiles.EnumerateArray() do
+            if helperCount>=1024 then fail "helper manifest file bound"
+            helperCount<-helperCount+1
+            exact item ["bytes";"path";"sha256"] "helper manifest file"
+            if not(helperPaths.Add(text item "path")) || item.GetProperty("bytes").GetInt64()<0L then fail "helper manifest file identity"
+            hex 64 (text item "sha256") "helper file digest" |> ignore
         let sourceLink=readBounded roles["sourceLink"].Path (1024*1024)
         use pdb=File.OpenRead roles["pdb"].Path
         use provider=MetadataReaderProvider.FromPortablePdbStream pdb
@@ -173,16 +235,18 @@ module PolicyClosure =
         let embedded=reader.CustomDebugInformation |> Seq.choose(fun handle->let item=reader.GetCustomDebugInformation handle in if reader.GetGuid(item.Kind)=sourceLinkGuid then Some(reader.GetBlobBytes item.Value) else None) |> Seq.toList
         if embedded<>[sourceLink] then fail "PDB SourceLink drift"
         use linkDoc=JsonDocument.Parse sourceLink
-        let serialized=linkDoc.RootElement.GetRawText()
-        if not(serialized.Contains(policyCommit,StringComparison.Ordinal)) then fail "SourceLink source commit drift"
+        exact linkDoc.RootElement ["documents"] "SourceLink"
+        let documents=linkDoc.RootElement.GetProperty "documents"
+        exact documents ["/_/*"] "SourceLink documents"
+        if text documents "/_/*" <> $"https://raw.githubusercontent.com/FS-GG/FSBarV2/{policyCommit}/*" then fail "SourceLink source commit drift"
         use receipt=JsonDocument.Parse(readBounded roles["buildReceipt"].Path (1024*1024))
-        exact receipt.RootElement ["schema";"policyCommit";"policyTree";"productCommit";"productTree";"managed";"pdbSha256";"sourceLinkSha256";"helperManifestSha256"] "build receipt"
-        if text receipt.RootElement "schema"<>"fsbar.barc-runtime-evidence-build-receipt/v1" || text receipt.RootElement "policyCommit"<>policyCommit || text receipt.RootElement "policyTree"<>policyTree || text receipt.RootElement "productCommit"<>productCommit || text receipt.RootElement "productTree"<>productTree || text receipt.RootElement "pdbSha256"<>roles["pdb"].Sha256 || text receipt.RootElement "sourceLinkSha256"<>roles["sourceLink"].Sha256 || text receipt.RootElement "helperManifestSha256"<>roles["helperManifest"].Sha256 then fail "build receipt source/provenance drift"
+        exact receipt.RootElement ["schema";"policyCommit";"policyTree";"productCommit";"productTree";"helperCommit";"helperTree";"productSourceSetSha256";"productRoleGraphSha256";"lockedBuildInputsSha256";"toolchainReceiptSha256";"managed";"pdbSha256";"sourceLinkSha256";"helperManifestSha256"] "build receipt"
+        if text receipt.RootElement "schema"<>"fsbar.barc-runtime-evidence-build-receipt/v2" || text receipt.RootElement "policyCommit"<>policyCommit || text receipt.RootElement "policyTree"<>policyTree || text receipt.RootElement "productCommit"<>productCommit || text receipt.RootElement "productTree"<>productTree || text receipt.RootElement "helperCommit"<>helperHead || text receipt.RootElement "helperTree"<>helperTree || text receipt.RootElement "productSourceSetSha256"<>productSourceSet || text receipt.RootElement "productRoleGraphSha256"<>roles["productRoleGraph"].Sha256 || text receipt.RootElement "lockedBuildInputsSha256"<>roles["lockedBuildInputs"].Sha256 || text receipt.RootElement "toolchainReceiptSha256"<>roles["toolchainReceipt"].Sha256 || text receipt.RootElement "pdbSha256"<>roles["pdb"].Sha256 || text receipt.RootElement "sourceLinkSha256"<>roles["sourceLink"].Sha256 || text receipt.RootElement "helperManifestSha256"<>roles["helperManifest"].Sha256 then fail "build receipt source/provenance drift"
         let outputs=receipt.RootElement.GetProperty "managed"
         exact outputs ["apphost";"managedDll";"depsJson";"runtimeConfigJson";"fsharpCore"] "build receipt managed outputs"
         let managedRoles=roleMap managed
         for role in outputs.EnumerateObject() do if role.Value.GetString()<>managedRoles[role.Name].Sha256 then fail "build output receipt drift"
-        policyCommit+":"+policyTree+":"+productCommit+":"+productTree
+        policyCommit+":"+policyTree+":"+productCommit+":"+productTree+":"+helperHead+":"+helperTree+":"+roles["lockedBuildInputs"].Sha256+":"+roles["toolchainReceipt"].Sha256,productSourceSet
 
     let loadAndVerify manifestPath expectedSha invocationId =
         if String.IsNullOrWhiteSpace invocationId || invocationId.Length>128 then fail "invalid invocation id"
@@ -216,10 +280,15 @@ module PolicyClosure =
         let runtimeCensus=enumerateBounded runtimeRoots
         let runtimeSet=runtime|>List.map _.Path|>Set.ofList
         if not(Set.isSubset runtimeCensus runtimeSet) then fail "runtime directory census drift"
-        let search=root.GetProperty("searchLayout").EnumerateArray() |> Seq.map directoryPin |> Seq.toList
-        if search.IsEmpty || search.Length>64 || (search|>List.map _.Path|>Set.ofList).Count<>search.Length then fail "search layout"
+        let searchRows=root.GetProperty "searchLayout"
+        if searchRows.ValueKind<>JsonValueKind.Array then fail "search layout"
+        let searchBuffer=ResizeArray<DirectoryPin>()
+        for item in searchRows.EnumerateArray() do
+            if searchBuffer.Count>=64 then fail "search layout bound"
+            searchBuffer.Add(directoryPin item)
+        let search=List.ofSeq searchBuffer
+        if search.IsEmpty || (search|>List.map _.Path|>Set.ofList).Count<>search.Length then fail "search layout"
         let searchMap=search|>List.map(fun d->d.Path,d)|>Map.ofList
-        for required in managedRoot::provenanceRoot::runtimeRoots do if not(searchMap.ContainsKey required) then fail "unsealed closure directory"
         let custody=root.GetProperty "custody"
         exact custody ["ownerUid";"executablePath";"fixedArgv"] "custody"
         let owner=custody.GetProperty("ownerUid").GetInt32()
@@ -234,19 +303,28 @@ module PolicyClosure =
         if (Set.ofSeq rolePaths.Values).Count<>5 || rolePaths|>Map.exists(fun _ path->not(runtimeSet.Contains path)) then fail "aliased/outside runtime roles"
         let names=Map ["hostfxr","libhostfxr.so";"hostpolicy","libhostpolicy.so";"coreLib","System.Private.CoreLib.dll";"coreClr","libcoreclr.so";"jit","libclrjit.so"]
         if rolePaths|>Map.exists(fun role path->Path.GetFileName(path)<>names[role]) then fail "selected runtime role mismatch"
+        let requiredSearch =
+            seq {
+                yield managedRoot;yield provenanceRoot
+                yield! runtimeRoots
+                yield! runtimeRoots|>Seq.map(fun path->Directory.GetParent(path).FullName)
+                yield! runtime|>Seq.map(fun pin->Directory.GetParent(pin.Path).FullName)
+            } |> Set.ofSeq
+        for required in requiredSearch do if not(searchMap.ContainsKey required) then fail("unsealed runtime search directory: "+required)
         let custodyStat=stat custodyRoot
         verifyDirectory custodyRoot false { Path=custodyRoot;OwnerUid=owner;Mode=int custodyStat.Mode&&&0o777;EntriesSha256=directoryEntries custodyRoot }
         for pin in search do verifyDirectory (if pin.Path.StartsWith(custodyRoot) then custodyRoot else "/") (pin.Path=managedRoot || pin.Path=provenanceRoot) pin
-        for pin in all do verifyFile (if pin.Path.StartsWith(custodyRoot) then custodyRoot else "/") pin
-        let sourceIdentity=provenanceJoin (root.GetProperty "source") managed provenance
-        { ManifestPath=path;ManifestSha256=digest;ExecutablePath=executable;ApphostSha256=managedRoles["apphost"].Sha256;OwnerUid=owner;Files=all|>List.map(fun p->p.Path,p)|>Map.ofList;RuntimeRoots=Set.ofList runtimeRoots;SourceIdentity=sourceIdentity }
+        for pin in managed@provenance do verifyFile custodyRoot true pin
+        for pin in runtime do verifyFile "/" false pin
+        let sourceIdentity,productSourceSet=provenanceJoin (root.GetProperty "source") managed provenance
+        { ManifestPath=path;ManifestSha256=digest;ExecutablePath=executable;ApphostSha256=managedRoles["apphost"].Sha256;ProductSourceSetSha256=productSourceSet;OwnerUid=owner;Files=all|>List.map(fun p->p.Path,p)|>Map.ofList;ManagedRoles=managedRoles|>Map.map(fun _ pin->pin.Path);RuntimeRoles=rolePaths;RuntimeRoots=Set.ofList runtimeRoots;RequiredSearchLayout=requiredSearch;SourceIdentity=sourceIdentity }
 
     let verifyCurrentProcess (verified:Verified) =
         let exe=File.ResolveLinkTarget("/proc/self/exe",true).FullName|>Path.GetFullPath
         if exe<>verified.ExecutablePath then fail "running executable drift"
         let maps=readBounded "/proc/self/maps" (4*1024*1024)
         if maps.Length>4*1024*1024 then fail "runtime maps byte bound"
-        let seen=HashSet<string>()
+        let seen=HashSet<string>(StringComparer.Ordinal)
         for line in Encoding.UTF8.GetString(maps).Split('\n',StringSplitOptions.RemoveEmptyEntries) do
             let fields=line.Split([|' '|],6,StringSplitOptions.RemoveEmptyEntries)
             if fields.Length=6 then
@@ -263,6 +341,15 @@ module PolicyClosure =
                             let mapDevice=fields[3].TrimStart('0').Replace(":0",":")
                             let expectedDevice=pin.Device.TrimStart('0').Replace(":0",":")
                             if mapDevice<>expectedDevice || UInt64.Parse(fields[4])<>pin.Inode then fail "mapped device/inode drift"
+        for role in ["hostfxr";"hostpolicy";"coreLib";"coreClr";"jit"] do
+            if not(seen.Contains verified.RuntimeRoles[role]) then fail("selected runtime role not mapped: "+role)
+        let loaded =
+            AppDomain.CurrentDomain.GetAssemblies()
+            |> Seq.choose(fun assembly->try if String.IsNullOrEmpty assembly.Location then None else Some(Path.GetFullPath assembly.Location) with :? NotSupportedException->None)
+            |> Set.ofSeq
+        for role in ["managedDll";"fsharpCore"] do
+            if not(loaded.Contains verified.ManagedRoles[role]) then fail("selected managed assembly not loaded: "+role)
+        if not(loaded.Contains verified.RuntimeRoles["coreLib"]) then fail "selected managed assembly not loaded: coreLib"
 
     let revalidate manifestPath expectedSha invocationId previous =
         let current=loadAndVerify manifestPath expectedSha invocationId

@@ -18,15 +18,21 @@ root history, and unavailable observations revoke the scope irreversibly.
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
 five-file managed census, exact provenance census, PDB-embedded SourceLink, source identity
-objects, build receipt and helper manifest. It also verifies the complete selected hostfxr
-and shared-framework directory census, five distinct runtime roles, loader search layout,
-and every observed filesystem-backed mapping with device, inode, ownership, mode and hash.
+objects, product role graph and source-set digest, locked build inputs, toolchain receipt,
+and decoded helper head/tree. The build receipt joins all of those identities to the five
+managed outputs. It also verifies the complete selected hostfxr and shared-framework
+directory census, five distinct runtime roles, the loaded managed assembly locations,
+host/framework version parents, native-library search directories, and every observed
+filesystem-backed mapping with device, inode, ownership, mode and hash. Every semantic
+JSON object rejects duplicate properties before projection.
 It emits a ready envelope, evaluates one request, rechecks the same closure, and emits a
 completed envelope bound to the same digest and invocation. Bounds are 1 MiB for the
-manifest, 1024 files, 1 GiB aggregate, 256 MiB per file, 4 MiB of proc maps, and 1024
-distinct file-backed mapping paths.
+manifest, 1024 files, 1 GiB aggregate, 256 MiB per file, 4096 directories or immediate
+directory entries per census, 4 MiB of proc maps, and 1024 distinct file-backed mapping
+paths. Enumeration caps are enforced while traversing, before sorting or materialization.
 
-The manifest and v2 growing-log identity carry both apphost and complete-closure digests.
+The v3 closure and v2 growing-log identity carry apphost, complete-closure, and configured
+product source-set joins.
 A closure change on a retained growing-log scope is sticky invalid. The final child step
 rereads and rehashes the manifest, every file, every directory census and actual mappings.
 The disposable fixture uses owner-private directories and read-only checkpoint modes. This
@@ -40,7 +46,9 @@ its held FD. The F# CLI receives bounded JSON through stdin and returns a closed
 and state without returning log bytes. It does not receive credentials in argv or output.
 The adapter pumps request and response pipes concurrently in nonblocking mode under one
 frozen deadline, incrementally caps response bytes, and retires the exact policy child on
-timeout, broken input, early exit, or malformed output.
+timeout, broken input, early exit, or malformed output. The deadline is checked between
+filesystem operations and after the final census; it is not a hard interrupt for an
+arbitrarily stalled filesystem call or a general descendant-tree guarantee.
 The transport accepts authority only when `accepted` is paired with a fully joined
 `consumed` state for the exact requested boundary, identity, revision, byte count, and
 digest. Pending, refused, and unknown statuses have closed phase mappings and cannot be
@@ -56,9 +64,9 @@ assembly, and Quint executable bytes. Action mapping is:
 | --- | --- |
 | `acquire` | `GrowingLogEvidence.acquire` |
 | `sampleInitial`, `benignAppend` | `GrowingLogEvidence.sample` |
-| `beginPolicy`, `readyPolicy`, `evaluatedPolicy`, `completePolicy` | typed `PolicyInvocation` transitions around the same production evaluation |
+| `beginPolicy`, `readyPolicy`, `evaluatedPolicy`, `completePolicy` | `PolicyComposition` transitions used by the executable; inner validation is speculative until the same-child final closure completes |
 | `validate:<boundary>` | `GrowingLogEvidence.validate` |
-| `consume:<boundary>` | `GrowingLogEvidence.consume` |
+| `consume:<boundary>` | external `GrowingLogEvidence.consume`, reachable only after `PolicyComposition.finishGuard` |
 | mutation/unavailable actions | refused or unknown sticky transitions |
 | `close` | `GrowingLogEvidence.close` |
 

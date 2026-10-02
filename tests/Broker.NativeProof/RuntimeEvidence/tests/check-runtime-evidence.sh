@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-4}"
+export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-1}"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
@@ -33,9 +33,10 @@ unavailableAfterConsumptionPreservesHistoryOnly|GrowingLogEvidence.unavailableAf
 pendingTailHasNoAuthority|GrowingLogEvidence.pendingTailHasNoAuthority.itf.json
 staleBoundaryCannotConsume|GrowingLogEvidence.staleBoundaryCannotConsume.itf.json
 closeRevokesCurrentAuthority|GrowingLogEvidence.closeRevokesCurrentAuthority.itf.json
+policyClosureDriftIsSticky|GrowingLogEvidence.policyClosureDriftIsSticky.itf.json
 EOF
 dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
-dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:4
+dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
 dotnet run --project "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-build
 
 POLICY_OUTPUT="$ROOT/bin/RuntimeEvidence/Release/net10.0"

@@ -20,9 +20,10 @@ module Program =
             let closure=PolicyClosure.loadAndVerify manifestPath closureSha invocation
             PolicyClosure.verifyCurrentProcess closure
             let identity={ InvocationId=invocation;ClosureSha256=closure.ManifestSha256;Pid=Environment.ProcessId;StartTicks=startTicks();Uid=uid() }
-            let started=PolicyInvocation.beginInvocation identity PolicyInvocation.empty |> PolicyInvocation.requireAccepted
-            let ready=PolicyInvocation.ready identity started |> PolicyInvocation.requireAccepted
-            Console.Out.WriteLine(PolicyInvocation.readyFrame identity ready)
+            let started=PolicyComposition.start identity
+            let ready=PolicyComposition.ready identity started
+            if ready.State.Phase<>"ready" then invalidOp "invocation readiness refused"
+            Console.Out.WriteLine(PolicyInvocation.readyFrame identity ready.State)
             Console.Out.Flush()
             use input=Console.OpenStandardInput()
             use buffer=new MemoryStream()
@@ -33,11 +34,15 @@ module Program =
                 total <- total+count
                 if total>6*1024*1024 then raise(InvalidDataException("input bound"))
                 buffer.Write(block,0,count);count<-input.Read(block,0,block.Length)
-            let result=Codec.evaluate closure.ApphostSha256 closure.ManifestSha256 (buffer.ToArray())
-            let evaluated=PolicyInvocation.evaluated identity ready |> PolicyInvocation.requireAccepted
+            let evaluation=Codec.evaluate closure.ApphostSha256 closure.ManifestSha256 closure.ProductSourceSetSha256 (buffer.ToArray())
+            let evaluated=PolicyComposition.evaluated identity ready
+            if evaluated.State.Phase<>"evaluated" then invalidOp "invocation evaluation refused"
             PolicyClosure.revalidate manifestPath closureSha invocation closure |> ignore
-            let completed=PolicyInvocation.complete identity true evaluated |> PolicyInvocation.requireAccepted
-            Console.Out.WriteLine(PolicyInvocation.completedFrame identity completed result)
+            let completed,result =
+                match PolicyComposition.finish identity true evaluation evaluated with
+                | CompositionAccepted(session,result) -> session,result
+                | CompositionRefused _ -> invalidOp "invocation completion refused"
+            Console.Out.WriteLine(PolicyInvocation.completedFrame identity completed.State result)
             Console.Out.Flush();0
         with _ ->
             Console.Error.WriteLine("UNAVAILABLE: bounded growing-log policy input required")

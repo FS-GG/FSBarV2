@@ -31,7 +31,8 @@ module GrowingLogEvidence {
   }
 
   action beginPolicy(invocation: str, closure: str): bool = all {
-    evidence.phase == "sampled", evidence.policyPhase == "none",
+    evidence.phase != "invalid", evidence.phase != "unknown", evidence.phase != "closed",
+    evidence.policyPhase == "none",
     invocation != "none", closure != "none",
     evidence' = { ...evidence, policyPhase: "started", policyInvocation: invocation, policyClosure: closure }
   }

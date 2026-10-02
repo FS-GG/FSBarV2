@@ -14,12 +14,14 @@ module CodecTests =
         let source=$"{{\"schema\":\"fsbar.barc-growing-log-policy/v2\",\"boundary\":\"browser\",\"expected\":{{\"runId\":\"run\",\"sourceSetSha256\":\"{String('a',64)}\",\"apphostSha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\",\"writeRoot\":\"/write\",\"dataRoot\":\"/data\"}},\"observation\":{{\"pid\":100,\"startTicks\":\"1\",\"uid\":1000,\"device\":\"1\",\"inode\":\"2\",\"path\":\"/private/infolog.txt\",\"revision\":1,\"bytes\":{log.Length},\"sha256\":\"{sha log}\",\"previousPrefixIntact\":true,\"writerFd\":4,\"writerFlags\":1,\"writerPosition\":{log.Length},\"available\":true,\"logBase64\":\"{encoded}\"}},\"prior\":null}}"
         source,log
     let private bytes (value:string)=Encoding.UTF8.GetBytes(value)
-    let private refused value = try Codec.evaluate (String('b',64)) (String('c',64)) (bytes value)|>ignore;false with :? ArgumentException -> true | :? Text.Json.JsonException -> true | :? FormatException -> true | :? InvalidOperationException -> true
+    let private evaluate value = Codec.evaluate (String('b',64)) (String('c',64)) (String('a',64)) (bytes value)
+    let private refused value = try evaluate value|>ignore;false with :? ArgumentException -> true | :? Text.Json.JsonException -> true | :? FormatException -> true | :? InvalidOperationException -> true
     let run () =
         let source,log=request()
         let length=log.Length
-        let result=Codec.evaluate (String('b',64)) (String('c',64)) (bytes source)
-        try Codec.evaluate (String('b',64)) (String('d',64)) (bytes source)|>ignore;failwith "active closure mismatch accepted" with :? ArgumentException -> ()
+        let result=evaluate source|>Codec.complete
+        try Codec.evaluate (String('b',64)) (String('d',64)) (String('a',64)) (bytes source)|>ignore;failwith "active closure mismatch accepted" with :? ArgumentException -> ()
+        try Codec.evaluate (String('b',64)) (String('c',64)) (String('d',64)) (bytes source)|>ignore;failwith "active source set mismatch accepted" with :? ArgumentException -> ()
         if not(result.Contains("\"status\":\"accepted\"")) || result.Contains("logBase64") then failwith "valid closed codec projection failed"
         if not(refused(source.Replace("{\"schema\":","{\"unexpected\":1,\"schema\":"))) then failwith "unknown field accepted"
         if not(refused(source.Replace("{\"schema\":","{\"schema\":\"duplicate\",\"schema\":"))) then failwith "duplicate field accepted"
@@ -34,13 +36,13 @@ module CodecTests =
         let changed=Array.copy log
         for index in 0..36 do changed[index] <- byte 'X'
         let missingIsolation=source.Replace(Convert.ToBase64String(log),Convert.ToBase64String(changed)).Replace(sha log,sha changed)
-        let pending=Codec.evaluate (String('b',64)) (String('c',64)) (bytes missingIsolation)
+        let pending=evaluate missingIsolation|>Codec.complete
         if not(pending.Contains("\"status\":\"pending\"")) || not(pending.Contains("\"reason\":\"isolation-record-absent\"")) then failwith "pending parser reason collapsed"
         use firstDocument=JsonDocument.Parse(result)
         let prior=firstDocument.RootElement.GetProperty("state").GetRawText()
         let grown=Array.append log (Encoding.UTF8.GetBytes("unrelated complete record\n"))
         let next=source.Replace("\"revision\":1","\"revision\":2").Replace($"\"bytes\":{length}",$"\"bytes\":{grown.Length}").Replace(sha log,sha grown).Replace(Convert.ToBase64String(log),Convert.ToBase64String(grown)).Replace("\"prior\":null",$"\"prior\":{prior}")
-        let nextResult=Codec.evaluate (String('b',64)) (String('c',64)) (bytes next)
+        let nextResult=evaluate next|>Codec.complete
         if not(nextResult.Contains("\"status\":\"accepted\"")) then failwith "coherent prior prefix refused"
         let changedPrefix=Array.copy grown
         changedPrefix[0] <- byte 'X'

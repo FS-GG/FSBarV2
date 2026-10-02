@@ -7,6 +7,8 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open System.Text.RegularExpressions
 
+type PolicyEvaluation = private { RequestedBoundary:Boundary; Evaluated:Transition }
+
 module Codec =
     let private exact (element: JsonElement) (names: string array) =
         if element.ValueKind <> JsonValueKind.Object then invalidArg "input" "object required"
@@ -74,7 +76,7 @@ module Codec =
         value.ToJsonString(JsonSerializerOptions(WriteIndented=false)) + "\n"
     let private stateOf = function Accepted state | Pending state | Refused state | Unknown state -> state
     let private statusOf = function Accepted _ -> "accepted" | Pending _ -> "pending" | Refused _ -> "refused" | Unknown _ -> "unknown"
-    let evaluate expectedApphostSha256 expectedClosureSha256 (input: byte array) =
+    let evaluate expectedApphostSha256 expectedClosureSha256 expectedSourceSetSha256 (input: byte array) =
         if isNull input || input.Length=0 || input.Length>6*1024*1024 then invalidArg "input" "encoded bound"
         use document=JsonDocument.Parse(input,JsonDocumentOptions(AllowTrailingCommas=false,CommentHandling=JsonCommentHandling.Disallow,MaxDepth=24))
         let root=document.RootElement
@@ -82,7 +84,7 @@ module Codec =
         if getString root "schema" <> "fsbar.barc-growing-log-policy/v2" then invalidArg "schema" "schema"
         let expected=root.GetProperty("expected")
         exact expected [|"runId";"sourceSetSha256";"apphostSha256";"closureSha256";"writeRoot";"dataRoot"|]
-        if getString expected "apphostSha256"<>expectedApphostSha256 || getString expected "closureSha256"<>expectedClosureSha256 then invalidArg "expected" "active closure identity mismatch"
+        if getString expected "apphostSha256"<>expectedApphostSha256 || getString expected "closureSha256"<>expectedClosureSha256 || getString expected "sourceSetSha256"<>expectedSourceSetSha256 then invalidArg "expected" "active closure/source identity mismatch"
         let observation=root.GetProperty("observation")
         exact observation [|"pid";"startTicks";"uid";"device";"inode";"path";"revision";"bytes";"sha256";"previousPrefixIntact";"writerFd";"writerFlags";"writerPosition";"available";"logBase64"|]
         let identityValue={ RunId=getString expected "runId";SourceSetSha256=getString expected "sourceSetSha256";ApphostSha256=getString expected "apphostSha256";ClosureSha256=getString expected "closureSha256";Pid=getInt observation "pid";StartTicks=getString observation "startTicks";Uid=getInt observation "uid";Device=getString observation "device";Inode=getString observation "inode";Path=getString observation "path" }
@@ -119,7 +121,8 @@ module Codec =
         let sampled=if statusOf acquired="accepted" then GrowingLogEvidence.sample sample afterAcquire else acquired
         let requestedBoundary=boundary(getString root "boundary")
         let validated=match sampled with Accepted state -> GrowingLogEvidence.validate requestedBoundary state | other -> other
-        let consumed=match validated with Accepted state -> GrowingLogEvidence.consume requestedBoundary state | other -> other
+        { RequestedBoundary=requestedBoundary;Evaluated=validated }
+    let complete (evaluation:PolicyEvaluation) =
+        let consumed=match evaluation.Evaluated with Accepted state -> GrowingLogEvidence.consume evaluation.RequestedBoundary state | other -> other
         let finalState=stateOf consumed
-        if statusOf consumed="accepted" && (finalState.Bytes <> int64 raw.Length || finalState.Sha256 <> actualSha) then invalidArg "result" "sample identity mismatch"
         resultNode (statusOf consumed) finalState
