@@ -20,6 +20,12 @@ The existing `.5b/.5f` source window has two independent corrections: HighBar mu
 
 Count1 correlation/final-read proof remains distinct from actual quantity and later game completion. The subsequent `.5f` six-journey boundary retains construction/economy/combat/reclaim, guard/repair, factory/rally/queue, selected modes, local/generated pointer and keyboard, and independent imported tactical policies. Unknown outcomes stay unknown; optional atomic replacement and `.7` publication remain separate.
 
+The complete-record runtime-evidence source is ready for protected delivery when its hosted
+source gate passes. That gate uses a sanitized mechanical growing-log fixture, the typed F#
+reducer, 27 canonical Quint scenarios, 14 ITFs, full concrete-state/effect correspondence,
+and duplicate/order/prior-state refusal controls. This is source-delivery readiness only;
+the stock product identity is unchanged and native useful-play acceptance remains **0/6**.
+
 ## Historical source checkpoint
 
 BARC-01.5a is implemented locally from FSBar `f1a18c52246b88e958344cb3bcc87f3c2035a62e` and HighBar `680b62480bfb60a19b3591b7250e03787e1f93d1`. The checkpoint advances only the additive live sibling and browser tactical schema; the frozen five-file HighBar bundle remains byte-identical. It defines `LIVE_CONTROL_PROTOCOL_TACTICAL_V1` / `barc-live-tactical-v1` revision 1, while V1 peers retain the `.4` subset and must refuse tactical bodies before arm. Producer and consumer commit/readback references remain pending until the parent joins the tested local commits. `.5b–f` and the overall `.5` outcome remain open.

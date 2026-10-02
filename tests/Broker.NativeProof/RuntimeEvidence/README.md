@@ -28,6 +28,12 @@ typed reducer, so byte, digest, identity, or effect-order drift is refused. Boun
 the 32-probe budget; retries preserve it. Deadline and exhaustion block current
 consumption while historical consumed state remains evidence only.
 
+Hosted `dotnet test` runs this gate through the test project's `VSTest` target. With no
+external helper configured, the gate copies the committed sanitized mechanical fixture to
+a temporary directory and creates its manifest from the checked-out `HEAD` and tree. It
+requires Quint 0.32.0, locked NuGet restore, all 27 named model scenarios, 14 ITFs, the
+compiled correspondence replay, and duplicate, reordered, and prior-state mutations.
+
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
 five-file managed census, exact provenance census, PDB-embedded SourceLink, source identity

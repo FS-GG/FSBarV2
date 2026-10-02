@@ -2,6 +2,7 @@
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-1}"
+test "$(dotnet --version)" = "10.0.401"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
@@ -14,6 +15,24 @@ p=pathlib.Path(sys.argv[1])
 if p.exists():shutil.rmtree(p)
 PY
 ' EXIT
+if [[ -z "${BAR_GROWING_LOG_HELPER:-}" ]]; then
+  BAR_GROWING_LOG_HELPER="$TMP/complete-record-helper"
+  mkdir -p "$BAR_GROWING_LOG_HELPER"
+  cp "$ROOT/fixtures/complete-record-helper/"*.py "$BAR_GROWING_LOG_HELPER/"
+  python3 - "$BAR_GROWING_LOG_HELPER" "$ROOT/../../.." <<'PY'
+import hashlib,json,pathlib,subprocess,sys
+helper=pathlib.Path(sys.argv[1]);source=pathlib.Path(sys.argv[2])
+head=subprocess.check_output(['git','-C',source,'rev-parse','HEAD'],text=True).strip()
+tree=subprocess.check_output(['git','-C',source,'rev-parse','HEAD^{tree}'],text=True).strip()
+base=subprocess.check_output(['git','-C',source,'rev-parse','HEAD^'],text=True).strip()
+files=[]
+for path in sorted(helper.glob('*.py')):
+    raw=path.read_bytes();files.append({'bytes':len(raw),'path':path.name,'sha256':hashlib.sha256(raw).hexdigest()})
+manifest={'schema':'fsgg.private.barc-selected-framework-census-work-bound-helper-source/v4','configuredPacketIncluded':False,'nativeEffectPerformed':False,'publicBase':base,'publicHead':head,'publicTree':tree,'files':files}
+(helper/'source-manifest.json').write_text(json.dumps(manifest,separators=(',',':'),sort_keys=True))
+PY
+fi
+export BAR_GROWING_LOG_HELPER
 while IFS='|' read -r scenario fixture; do
   quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test \
     --match "^${scenario}$" --out-itf "$TMP/trace_{test}_{seq}.itf.json" \
@@ -44,7 +63,6 @@ lastProbeCandidateThenExhausted|GrowingLogEvidence.lastProbeCandidateThenExhaust
 EOF
 dotnet restore "$ROOT/RuntimeEvidence.Tests.fsproj" --locked-mode
 dotnet build "$ROOT/RuntimeEvidence.Tests.fsproj" -c Release --no-restore -m:1
-: "${BAR_GROWING_LOG_HELPER:?BAR_GROWING_LOG_HELPER is required for complete-record correspondence}"
 test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
 TRANSCRIPT="$TMP/complete-record-correspondence.json"
 (cd "$BAR_GROWING_LOG_HELPER" && \

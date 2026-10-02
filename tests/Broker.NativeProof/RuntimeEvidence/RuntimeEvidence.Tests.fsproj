@@ -10,4 +10,7 @@
     <None Include="DataRootPolicy.fs" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="GrowingLogEvidence.fs" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
+  <Target Name="RunCompleteRecordSourceGate" AfterTargets="VSTest" Condition="'$(CI)' == 'true'">
+    <Exec Command="bash &quot;$(MSBuildProjectDirectory)/tests/check-runtime-evidence.sh&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
 </Project>
