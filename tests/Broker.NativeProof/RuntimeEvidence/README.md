@@ -33,6 +33,9 @@ external helper configured, the gate copies the committed sanitized mechanical f
 a temporary directory and creates its manifest from the checked-out `HEAD` and tree. It
 requires Quint 0.32.0, locked NuGet restore, all 27 named model scenarios, 14 ITFs, the
 compiled correspondence replay, and duplicate, reordered, and prior-state mutations.
+The `complete-record-source` workflow checks out the exact pull-request head or manually
+selected commit, installs Quint from its integrity-locked tool manifest, selects .NET SDK
+10.0.401, and enters this same `CI=true` target with read-only repository permissions.
 
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
