@@ -945,17 +945,27 @@ raise SystemExit(p.returncode)
         self.handle._run_policy=grow;failure=refused()
         self.assertEqual((failure._barc_infolog_mechanical_observation['evaluationsCompleted'],failure._barc_infolog_mechanical_observation['growthAfterEvaluation']),(3,3))
         self.assertEqual(failure._barc_infolog_mechanical_observation['terminalCause'],'policy-evaluation-growth-cap');record('rp2BenignGrowthCap')
-        reset();self.handle.close();self.handle=None;self.child.kill();self.child.wait();self.child=None
+        self.tearDown();self.setUp()
         self.spawn(atlas);refused();record('rp2NoCompleteRecords')
         if self.handle or self.child:self.tearDown();self.setUp()
         self.child=subprocess.Popen([sys.executable,str(pathlib.Path(__file__).with_name('buffered_writer.py')),str(self.log),base64.b64encode(self.text()).decode()],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,start_new_session=True)
         def ack(expected):
             self.assertTrue(__import__('select').select([self.child.stdout],[],[],2)[0]);self.assertEqual(self.child.stdout.readline().strip(),expected)
-        ack('ready');self.child.stdin.write('grow\n');self.child.stdin.flush();ack('done')
+        ack('ready')
+        def grow_to_full_atlas_tail():
+            # Prepare an actual libc flush cut with the complete public family
+            # header. Other cuts remain pending; this is fixture scheduling,
+            # never a production classifier or retry-budget exception.
+            for _ in range(16):
+                self.child.stdin.write('grow\n');self.child.stdin.flush();ack('done')
+                tail=self.log.read_bytes().rsplit(b'\n',1)[-1]
+                if tail.startswith((b'CTextureRenderAtlas::CreateAtlasTexture()[0] atlas=',b'CTextureRenderAtlas::CreateAtlasTexture()[1] atlas=')):return
+            self.fail('bounded libc fixture did not expose fully formed atlas family tail')
+        grow_to_full_atlas_tail()
         self.handle=acquire_data_root_evidence(self.log,{'pid':self.child.pid,'startTicks':start_ticks(self.child.pid),'uid':os.geteuid()})
         self.assertFalse(self.log.read_bytes().endswith(b'\n'))
         self.consume('browser');self.assertEqual(self.handle.state['prefix']['tailClass'],'atlas');record('rp2RealLibcSafeTail')
-        self.child.stdin.write('grow\n');self.child.stdin.flush();ack('done')
+        grow_to_full_atlas_tail()
         previous=self.handle.previous;self.consume('normalization');self.assertTrue(self.handle.previous.startswith(previous));record('rp2RealLibcSafeTailExtend')
         for row in scenarios:row['model']=_rp2_canonical_trace(POLICY_SOURCE/'tests/Broker.NativeProof/RuntimeEvidence',row['timeline'],row['name'],pathlib.Path(output).parent/'rp2-model')
         bundle={'schema':'fsbar.barc-complete-prefix-correspondence/v3','helperSha256':hashlib.sha256(pathlib.Path(growing_log.__file__).read_bytes()).hexdigest(),'scenarios':scenarios}
