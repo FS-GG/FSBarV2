@@ -174,9 +174,19 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         for name in ('RuntimeEvidence','RuntimeEvidence.dll','RuntimeEvidence.deps.json','RuntimeEvidence.runtimeconfig.json','FSharp.Core.dll'):
             shutil.copyfile(POLICY_BUILD/name,managed/name);os.chmod(managed/name,0o555 if name=='RuntimeEvidence' else 0o444)
         shutil.copyfile(POLICY_BUILD/'RuntimeEvidence.pdb',provenance/'RuntimeEvidence.pdb')
+        system_dotnet=pathlib.Path(os.environ.get('DOTNET_ROOT','/usr/share/dotnet')).resolve()
         version=subprocess.check_output(['dotnet','--list-runtimes'],text=True).splitlines()[-1].split()[1]
-        framework=pathlib.Path('/usr/share/dotnet/shared/Microsoft.NETCore.App')/version
-        fxr=max(pathlib.Path('/usr/share/dotnet/host/fxr').iterdir(),key=lambda p:tuple(map(int,p.name.split('.'))))
+        system_framework=system_dotnet/'shared/Microsoft.NETCore.App'/version
+        system_fxr=max((system_dotnet/'host/fxr').iterdir(),key=lambda p:tuple(map(int,p.name.split('.'))))
+        cls.dotnet_root=root/'dotnet';framework=cls.dotnet_root/'shared/Microsoft.NETCore.App'/version;fxr=cls.dotnet_root/'host/fxr'/system_fxr.name
+        framework.parent.mkdir(parents=True);fxr.parent.mkdir(parents=True)
+        shutil.copytree(system_framework,framework);shutil.copytree(system_fxr,fxr)
+        shutil.copyfile(system_dotnet/'dotnet',cls.dotnet_root/'dotnet')
+        for base,directories,files in os.walk(cls.dotnet_root):
+            for name in directories:os.chmod(pathlib.Path(base)/name,0o555)
+            for name in files:os.chmod(pathlib.Path(base)/name,0o444)
+        os.chmod(cls.dotnet_root/'dotnet',0o555);os.chmod(cls.dotnet_root,0o555)
+        if any(path.is_symlink() for path in cls.dotnet_root.rglob('*')):raise AssertionError('private runtime staging retained a link')
         def row(path,role=None):
             info=path.stat();value={'path':str(path),'bytes':info.st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'device':f'{os.major(info.st_dev):x}:{os.minor(info.st_dev):x}','inode':info.st_ino,'ownerUid':info.st_uid,'mode':stat.S_IMODE(info.st_mode),'links':info.st_nlink}
             if role:value={'role':role,**value}
@@ -231,7 +241,14 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory(prefix='bar-growing-log-');self.root=pathlib.Path(self.temp.name);os.chmod(self.root,0o700)
         self.write=self.root/'engine';self.data=self.root/'runtime-data';self.write.mkdir(mode=0o700);self.data.mkdir(mode=0o700);self.log=self.write/'infolog.txt';self.child=None;self.handle=None
+        real_popen=subprocess.Popen
+        def private_runtime_popen(argv,*args,**kwargs):
+            if argv and pathlib.Path(argv[0])==self.policy:
+                env=dict(kwargs.get('env') or {});env['DOTNET_ROOT']=str(self.dotnet_root);kwargs['env']=env
+            return real_popen(argv,*args,**kwargs)
+        self.popen_patch=mock.patch.object(growing_log.subprocess,'Popen',side_effect=private_runtime_popen);self.popen_patch.start()
     def tearDown(self):
+        self.popen_patch.stop()
         if self.handle:
             try:self.handle.close()
             except OSError:pass
@@ -654,6 +671,16 @@ raise SystemExit(p.returncode)
     def test_required_complete_record_correspondence_bundle(self):
         output=os.environ.get('BAR_SETTLEMENT_TRANSCRIPT')
         if not output:self.skipTest('combined correspondence output not requested')
+        selected=self.policy.parent/'RuntimeEvidence.dll'
+        os.chmod(selected,0o644)
+        try:
+            with self.assertRaisesRegex(Refused,'policy closure file custody'):GrowingLog._closure(str(self.closure),self.closure_sha,time.monotonic()+5)
+        finally:os.chmod(selected,0o444)
+        displaced=pathlib.Path(self.fixture.name)/'displaced-managed-dll';os.chmod(self.policy.parent,0o755);selected.rename(displaced);shutil.copyfile(displaced,selected);os.chmod(selected,0o444);os.chmod(self.policy.parent,0o555)
+        try:
+            with self.assertRaisesRegex(Refused,'policy closure file custody'):GrowingLog._closure(str(self.closure),self.closure_sha,time.monotonic()+5)
+        finally:
+            os.chmod(self.policy.parent,0o755);selected.unlink();displaced.rename(selected);os.chmod(self.policy.parent,0o555)
         scenarios=[]
         def reset(kind):
             if self.handle or self.child:self.tearDown();self.setUp()

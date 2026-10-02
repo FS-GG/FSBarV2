@@ -36,6 +36,10 @@ compiled correspondence replay, and duplicate, reordered, and prior-state mutati
 The `complete-record-source` workflow checks out the exact pull-request head or manually
 selected commit, installs Quint from its integrity-locked tool manifest, selects .NET SDK
 10.0.401, and enters this same `CI=true` target with read-only repository permissions.
+Model tests, simulations, and ITF generation select Quint's TypeScript backend explicitly,
+so the gate does not download an evaluator. The public correspondence fixture copies the
+selected host and framework into an owner-private, link-free runtime tree before pinning
+its physical identities; writable-mode and same-bytes replacement controls must still fail.
 
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact

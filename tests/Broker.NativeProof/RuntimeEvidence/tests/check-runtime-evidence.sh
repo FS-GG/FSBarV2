@@ -6,8 +6,8 @@ test "$(dotnet --version)" = "10.0.401"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"
-quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
-quint run "$ROOT/GrowingLogEvidence.qnt" --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
+quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test --match '^(healthyBoundaries|rewriteIsSticky|unavailableCannotGrant|unavailableAfterValidationRevokesCurrentAuthority|unavailableAfterConsumptionPreservesHistoryOnly|staleBoundaryCannotConsume|pendingTailHasNoAuthority|closeRevokesCurrentAuthority|truncateIsSticky|replacementIsSticky|wrongWriterIsSticky|wrongGenerationIsSticky|wrongSourceIsSticky|contradictorySuffixIsSticky|policyInvocationCompletesSameClosure|policyClosureDriftIsSticky|completeRecordWaitThenConsume|completeRecordWaitExhausted|completeRecordWaitDeadline|zeroBudgetCannotProbe|waitAfterConsumptionHasNoNewAuthority|pendingThenCompleteResample|sharedBudgetAcrossEvaluations|candidateCannotRenewBudget|terminalSettlementCannotConsume|retriesShareOneProbeBudget|lastProbeCandidateThenExhausted)$' --seed 424242 --max-samples 1
+quint run "$ROOT/GrowingLogEvidence.qnt" --backend=typescript --seed 424242 --max-samples 500 --max-steps 16 --invariant invariant --verbosity 1
 TMP=$(mktemp -d)
 trap 'python3 - "$TMP" <<'"'"'PY'"'"'
 import pathlib,shutil,sys
@@ -34,7 +34,7 @@ PY
 fi
 export BAR_GROWING_LOG_HELPER
 while IFS='|' read -r scenario fixture; do
-  quint test "$ROOT/GrowingLogEvidence_test.qnt" --main GrowingLogEvidence_test \
+  quint test "$ROOT/GrowingLogEvidence_test.qnt" --backend=typescript --main GrowingLogEvidence_test \
     --match "^${scenario}$" --out-itf "$TMP/trace_{test}_{seq}.itf.json" \
     --seed 424242 --max-samples 1
   python3 - "$TMP/trace_${scenario}_0.itf.json" "$ROOT/$fixture" <<'PY'
