@@ -15,6 +15,32 @@ Every appended revision needs fresh validation for BrowserAdmission, Normalizati
 Release. Prefix mutation, truncation, producer/log/source identity drift, contradictory
 root history, and unavailable observations revoke the scope irreversibly.
 
+The private adapter performs a bounded mechanical complete-record settlement before it
+submits a sample. Incomplete probes do not call this reducer or advance a revision. The
+canonical Quint settlement record models the 32-probe budget, deadline refusal, wait
+without authority, and pending-to-complete resampling while this F# reducer remains the
+only policy state transition.
+The combined gate requires a freshly generated seven-scenario helper transcript and binds
+its bytes and the helper implementation into replay evidence. Its single ordered stream
+records probes, actual policy transitions with complete before/after state, and the terminal
+result. The compiled replay reconstructs every state field from the captured request and
+typed reducer, so byte, digest, identity, or effect-order drift is refused. Boundary entry alone resets
+the 32-probe budget; retries preserve it. Deadline and exhaustion block current
+consumption while historical consumed state remains evidence only.
+
+Hosted `dotnet test` runs this gate through the test project's `VSTest` target. With no
+external helper configured, the gate copies the committed sanitized mechanical fixture to
+a temporary directory and creates its manifest from the checked-out `HEAD` and tree. It
+requires Quint 0.32.0, locked NuGet restore, all 27 named model scenarios, 14 ITFs, the
+compiled correspondence replay, and duplicate, reordered, and prior-state mutations.
+The `complete-record-source` workflow checks out the exact pull-request head or manually
+selected commit, installs Quint from its integrity-locked tool manifest, selects .NET SDK
+10.0.401, and enters this same `CI=true` target with read-only repository permissions.
+Model tests, simulations, and ITF generation select Quint's TypeScript backend explicitly,
+so the gate does not download an evaluator. The public correspondence fixture copies the
+selected host and framework into an owner-private, link-free runtime tree before pinning
+its physical identities; writable-mode and same-bytes replacement controls must still fail.
+
 Before it reads a request, the executable accepts only
 `--closure-manifest PATH --closure-sha256 HEX --invocation-id ID`. It verifies an exact
 five-file managed census, exact provenance census, PDB-embedded SourceLink, source identity

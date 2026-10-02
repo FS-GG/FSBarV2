@@ -1,0 +1,76 @@
+name: complete-record-source
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/complete-record-source.yml
+      - tests/Broker.NativeProof/RuntimeEvidence/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: complete-record-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  complete-record-source:
+    name: complete-record-source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Bind the checked-out candidate
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up the exact .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.401
+
+      - name: Set up the exact Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.8.0
+          cache: npm
+          cache-dependency-path: tests/Broker.NativeProof/RuntimeEvidence/tools/quint/package-lock.json
+
+      - name: Install the integrity-locked Quint CLI
+        shell: bash
+        run: npm ci --ignore-scripts --prefix tests/Broker.NativeProof/RuntimeEvidence/tools/quint
+
+      - name: Restore and build the typed evidence project
+        shell: bash
+        env:
+          CI: 'true'
+          DOTNET_PROCESSOR_COUNT: '1'
+        run: |
+          set -euo pipefail
+          project=tests/Broker.NativeProof/RuntimeEvidence/RuntimeEvidence.Tests.fsproj
+          dotnet restore "$project" --locked-mode
+          dotnet build "$project" --configuration Release --no-restore --maxcpucount:1
+
+      - name: Run the complete-record source gate
+        shell: bash
+        env:
+          CI: 'true'
+          DOTNET_PROCESSOR_COUNT: '1'
+        run: |
+          set -euo pipefail
+          export PATH="$PWD/tests/Broker.NativeProof/RuntimeEvidence/tools/quint/node_modules/.bin:$PATH"
+          dotnet test tests/Broker.NativeProof/RuntimeEvidence/RuntimeEvidence.Tests.fsproj \
+            --configuration Release --no-restore --no-build \
+            --logger 'console;verbosity=normal'
