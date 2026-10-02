@@ -154,21 +154,30 @@ module PolicyClosure =
         if hashFile pin.Path<>pin.Sha256 then fail "file digest drift"
     let private enumerateBounded roots =
         let found=HashSet<string>(StringComparer.Ordinal)
-        let visited=HashSet<string>(StringComparer.Ordinal)
+        let scheduled=HashSet<string>(StringComparer.Ordinal)
+        let pending=Stack<string>()
         for root in roots do
-            let pending=Stack<string>()
-            pending.Push(Path.GetFullPath root)
-            while pending.Count>0 do
-                let directory=pending.Pop()
-                if visited.Add directory then
-                    if visited.Count>4096 then fail "directory traversal bound"
-                    use entries=Directory.EnumerateFileSystemEntries(directory).GetEnumerator()
-                    while entries.MoveNext() do
-                        let path=Path.GetFullPath entries.Current
-                        if Directory.Exists path then pending.Push path
-                        elif File.Exists path then
-                            if found.Count>=MaxFiles then fail "runtime census count bound"
-                            found.Add path|>ignore
+            let path=Path.GetFullPath root
+            if not(scheduled.Contains path) then
+                if scheduled.Count>=4096 then fail "directory traversal bound"
+                scheduled.Add path|>ignore
+                pending.Push path
+        while pending.Count>0 do
+            let directory=pending.Pop()
+            let mutable entriesSeen=0
+            use entries=Directory.EnumerateFileSystemEntries(directory).GetEnumerator()
+            while entries.MoveNext() do
+                entriesSeen<-entriesSeen+1
+                if entriesSeen>4096 then fail "directory entry bound"
+                let path=Path.GetFullPath entries.Current
+                if Directory.Exists path then
+                    if not(scheduled.Contains path) then
+                        if scheduled.Count>=4096 then fail "directory traversal bound"
+                        scheduled.Add path|>ignore
+                        pending.Push path
+                elif File.Exists path then
+                    if found.Count>=MaxFiles then fail "runtime census count bound"
+                    found.Add path|>ignore
         Set.ofSeq found
     let private roleMap pins =
         pins |> List.map(fun p->p.Role.Value,p) |> Map.ofList
@@ -213,7 +222,7 @@ module PolicyClosure =
         if sdk|>Seq.exists(fun c->not(Char.IsDigit c || c='.')) then fail "toolchain SDK identity"
         use helper=JsonDocument.Parse(readBounded roles["helperManifest"].Path (1024*1024))
         exact helper.RootElement ["configuredPacketIncluded";"files";"nativeEffectPerformed";"publicBase";"publicHead";"publicTree";"schema"] "helper source manifest"
-        if text helper.RootElement "schema"<>"fsgg.private.barc-selected-runtime-product-invocation-helper-source/v3" || helper.RootElement.GetProperty("configuredPacketIncluded").GetBoolean() || helper.RootElement.GetProperty("nativeEffectPerformed").GetBoolean() then fail "helper source manifest identity"
+        if text helper.RootElement "schema"<>"fsgg.private.barc-selected-framework-census-work-bound-helper-source/v4" || helper.RootElement.GetProperty("configuredPacketIncluded").GetBoolean() || helper.RootElement.GetProperty("nativeEffectPerformed").GetBoolean() then fail "helper source manifest identity"
         let helperHead=hex 40 (text helper.RootElement "publicHead") "helper head"
         let helperTree=hex 40 (text helper.RootElement "publicTree") "helper tree"
         hex 40 (text helper.RootElement "publicBase") "helper base" |> ignore
@@ -303,11 +312,17 @@ module PolicyClosure =
         if (Set.ofSeq rolePaths.Values).Count<>5 || rolePaths|>Map.exists(fun _ path->not(runtimeSet.Contains path)) then fail "aliased/outside runtime roles"
         let names=Map ["hostfxr","libhostfxr.so";"hostpolicy","libhostpolicy.so";"coreLib","System.Private.CoreLib.dll";"coreClr","libcoreclr.so";"jit","libclrjit.so"]
         if rolePaths|>Map.exists(fun role path->Path.GetFileName(path)<>names[role]) then fail "selected runtime role mismatch"
+        let selectedFxrRoot=Directory.GetParent(rolePaths["hostfxr"]).FullName
+        let frameworkRoleRoots=["hostpolicy";"coreLib";"coreClr";"jit"]|>List.map(fun role->Directory.GetParent(rolePaths[role]).FullName)|>Set.ofList
+        if frameworkRoleRoots.Count<>1 then fail "incoherent selected framework role placement"
+        let selectedFrameworkRoot=Set.minElement frameworkRoleRoots
+        let mandatoryRuntimeRoots=Set [selectedFxrRoot;selectedFrameworkRoot]
+        if Set.ofList runtimeRoots<>mandatoryRuntimeRoots then fail "selected runtime census roots"
         let requiredSearch =
             seq {
                 yield managedRoot;yield provenanceRoot
-                yield! runtimeRoots
-                yield! runtimeRoots|>Seq.map(fun path->Directory.GetParent(path).FullName)
+                yield! mandatoryRuntimeRoots
+                yield! mandatoryRuntimeRoots|>Seq.map(fun path->Directory.GetParent(path).FullName)
                 yield! runtime|>Seq.map(fun pin->Directory.GetParent(pin.Path).FullName)
             } |> Set.ofSeq
         for required in requiredSearch do if not(searchMap.ContainsKey required) then fail("unsealed runtime search directory: "+required)
