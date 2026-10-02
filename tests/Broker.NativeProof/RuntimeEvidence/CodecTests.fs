@@ -48,3 +48,29 @@ module CodecTests =
         changedPrefix[0] <- byte 'X'
         let changedNext=next.Replace(sha grown,sha changedPrefix).Replace(Convert.ToBase64String(grown),Convert.ToBase64String(changedPrefix))
         if not(refused changedNext) then failwith "prior prefix digest mismatch accepted"
+        let policyObservation="{\"schema\":\"fsbar.barc-runtime-evidence-failure-observation/v1\",\"checkpoint\":\"request-evaluation\",\"kind\":\"refused\"}"
+        let observation=$"{{\"schema\":\"fsbar.barc-stock-failure-observation/v1\",\"configSha256\":\"{String('d',64)}\",\"sourceSetSha256\":\"{String('a',64)}\",\"policySha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\",\"scope\":\"post-handoff-pre-browser\",\"check\":\"policy-result-join\",\"outcome\":\"policy-nonaccepted\",\"policyObservation\":{policyObservation}}}"
+        let observationHash=sha(bytes(observation+"\n"))
+        let diagnostic=$"{{\"schema\":\"fsbar.barc-stock-failure-projection/v1\",\"expected\":{{\"configSha256\":\"{String('d',64)}\",\"sourceSetSha256\":\"{String('a',64)}\",\"policySha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\"}},\"observation\":{observation},\"observationSha256\":\"{observationHash}\",\"operationResult\":{{\"schema\":\"fsbar.barc-stock-operation-result/v1\",\"status\":\"failed\",\"category\":\"refused\"}},\"operationResultSha256\":\"{String('e',64)}\"}}"
+        let projected=evaluate diagnostic|>Codec.complete
+        if not(projected.Contains("\"status\":\"observed-failure\"")) || not(projected.Contains("\"nativeAcceptance\":false")) || projected.Contains("PRIVATE_SENTINEL") then failwith "valid failure diagnostic projection refused"
+        let invalidDiagnostics =
+            [ diagnostic.Replace("\"sourceSetSha256\":\""+String('a',64),"\"sourceSetSha256\":\""+String('f',64))
+              diagnostic.Replace(observationHash,String('0',64))
+              diagnostic.Replace("\"check\":\"policy-result-join\"","\"check\":\"browser-start\"")
+              diagnostic.Replace("\"checkpoint\":\"request-evaluation\"","\"checkpoint\":\"initial-closure\"")
+              diagnostic.Replace("\"kind\":\"refused\"","\"kind\":\"PRIVATE_SENTINEL\"")
+              diagnostic.Replace("\"outcome\":\"policy-nonaccepted\"","\"outcome\":[]")
+              diagnostic.Replace("\"status\":\"failed\"","\"status\":\"completed\"")
+              diagnostic.Replace("\"category\":\"refused\"","\"category\":null")
+              diagnostic.Replace("fsbar.barc-stock-failure-projection/v1","unknown-diagnostic/v1")
+              diagnostic.Replace("\"policyObservation\":"+policyObservation,"\"policyObservation\":{\"schema\":\"fsbar.barc-runtime-evidence-failure-observation/v1\",\"checkpoint\":\"request-evaluation\",\"checkpoint\":\"request-evaluation\",\"kind\":\"refused\"}")
+              diagnostic.Replace("{\"schema\":\"fsbar.barc-stock-failure-projection/v1\"","{\"extra\":true,\"schema\":\"fsbar.barc-stock-failure-projection/v1\"")
+              diagnostic.Replace("{\"schema\":\"fsbar.barc-stock-failure-projection/v1\"","{\"schema\":\"fsbar.barc-stock-failure-projection/v1\",\"schema\":\"fsbar.barc-stock-failure-projection/v1\"") ]
+        for invalid in invalidDiagnostics do
+            let unavailable=evaluate invalid|>Codec.complete
+            if not(unavailable.Contains("\"status\":\"diagnostic-unavailable\"")) || unavailable.Contains("PRIVATE_SENTINEL") || unavailable.Contains("observed-failure") then failwith "malformed diagnostic escaped closed projection"
+        let oversized=diagnostic+String(' ',8193)
+        if not((evaluate oversized|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "oversized diagnostic decoded"
+        let malformed=Array.append (bytes diagnostic) [|0xffuy|]
+        if not((Codec.evaluate (String('b',64)) (String('c',64)) (String('a',64)) malformed|>Codec.complete).Contains("\"status\":\"diagnostic-unavailable\"")) then failwith "malformed UTF-8 diagnostic escaped"

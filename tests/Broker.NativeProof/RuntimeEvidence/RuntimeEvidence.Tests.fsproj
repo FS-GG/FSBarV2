@@ -6,7 +6,7 @@
     <None Include="GrowingLogEvidence.*.itf.json" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="GrowingLogEvidence.qnt" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="GrowingLogEvidence_test.qnt" CopyToOutputDirectory="PreserveNewest"/>
-    <None Include="Codec.fs" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Codec.fs" CopyToOutputDirectory="PreserveNewest"/><None Include="FailureDiagnostic.fs" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="DataRootPolicy.fs" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="GrowingLogEvidence.fs" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
