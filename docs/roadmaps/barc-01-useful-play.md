@@ -335,3 +335,34 @@ packet and distinct prospective native grant. The consumed 27,549-file packet an
 2,997-file execution capsule remain preserved. RP3/RP4/RP5 and all native
 useful-play journeys remain open at **0/6**. Telemetry begin for
 `barc-stock-source-readiness-20261003` returned `not-configured`; usage is Unknown.
+
+## BARC-01.5f controlled producer/consumer correspondence — 2026-10-03
+
+[HighBar source #16](https://github.com/FS-GG/HighBarV3/pull/16) merged the
+coalesced owned-damage replacement capability at `b57f11f`; selected module
+readiness [FSBar source #28](https://github.com/FS-GG/FSBarV2/pull/28) merged at
+`d9aa36c`. The [typed correspondence tests](../../tests/Broker.Protocol.Tests/StockProducerCorrespondenceTests.fs)
+replay exact compiled producer `a5a6eab` bytes through `WireConvert`, `LiveControl`
+and `LiveBoundary`: baseline 34 retains unit 42 at health 100, projected 35
+preserves dispatch/economy, and complete replacement 36 materializes health 83.
+Missing, reordered or stale tactical metadata cannot release stock tactical
+readiness; matching typed controlled metadata supplies the same-basis join.
+
+The [controlled fixture contract](../../tests/Broker.Protocol.Tests/fixtures/controlled-owned-damage/README.md)
+retains producer digests and diagnosis provenance. Eight focused tests and all
+75 Protocol tests pass; omission and projection-removal mutants fail six and
+three focused tests respectively, and restored fixtures pass. The bounded CLR
+build uses official signed FSharp.Core 10.1.401 and has zero warnings/errors.
+That local qualification is reused after the readiness rebase because all eight
+qualified test/fixture blobs and their CLR inputs remain unchanged. The native
+complete-record workflow covers RuntimeEvidence, not this Protocol slice; no
+new native CI pass is claimed.
+
+This qualifies source correspondence only. The retained packet contains no raw
+StateDelta, so fixtures and separate metadata remain controlled evidence. No
+StateDelta formal-model coverage, loaded plugin/receiver adoption, publication
+or native grant follows. A rebuilt coherent packet and independent custody,
+capacity and prospective operation authority remain required; all useful-play
+journeys remain **0/6**. Admission telemetry attempt
+`bar-stock-correspondence-source-admission-20261003` returned `not-configured`;
+usage is Unknown.

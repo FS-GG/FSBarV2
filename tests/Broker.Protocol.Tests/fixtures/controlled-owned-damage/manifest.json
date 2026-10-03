@@ -1,0 +1,46 @@
+{
+  "schema": "barc-stock-owned-damage-controlled-fixture/1",
+  "featureId": "BARC-01",
+  "itemId": "BARC-01.5f",
+  "provenance": "controlledFixture",
+  "sourceBase": "e2a5a9cf6fdd187bcc82f701a755567db96c11c7",
+  "retainedNativePacketHasRawDelta": false,
+  "compiledProducer": "tests/unit/state_update_projection_test.cc using production StateUpdateOrder/BuildCoordinatorDeltaProjection/PublishSnapshotBeforeBasis and exact generated protobuf",
+  "managerWalkExecuted": false,
+  "nativeUsefulPlay": "0/6",
+  "operationGrant": null,
+  "metadata": "not provided; consumer must refuse same-basis tactical readiness until independently matched metadata arrives",
+  "trace": {
+    "baselineSequence": 34,
+    "deltaSequence": 35,
+    "replacementSequence": 36,
+    "ownedUnitId": 42,
+    "baselineHealth": 100,
+    "replacementHealth": 83,
+    "damageEvents": 128,
+    "mixedDispatchAndEconomy": true
+  },
+  "artifacts": [
+    {
+      "path": "owned-damage-baseline.pb",
+      "bytes": 51,
+      "sha256": "0c98256ce6409a7835629b7578877c71b5cff599e3a99526e3eb827ec7959db1"
+    },
+    {
+      "path": "owned-damage-legacy.pb",
+      "bytes": 1566,
+      "sha256": "8f411c6be6543292dccdd56abf595f7f27dac63aebe268aa8fb243a7c07c8915"
+    },
+    {
+      "path": "owned-damage-projected.pb",
+      "bytes": 29,
+      "sha256": "b91bdae8ca20cc95ff5574f846dcd1b0d0d6ec24047901b6a6c9e0b376e1cb93"
+    },
+    {
+      "path": "owned-damage-replacement.pb",
+      "bytes": 51,
+      "sha256": "1b35db4decf29413b1d953118743ab019b81ed6fe7c4a5920865fc9625a69fbd"
+    }
+  ],
+  "sourceHead": "a5a6eab3809e4defc66c6f1947df9764c98175aa"
+}
