@@ -13,11 +13,13 @@ module Program =
     [<EntryPoint>]
     let main argv =
         let mutable checkpoint="initial-closure"
+        let mutable initialStage="argv"
         try
             if argv.Length<>6 then invalidOp "closed policy argv"
             let invocation=argument "--invocation-id" argv
             let manifestPath=argument "--closure-manifest" argv
             let closureSha=argument "--closure-sha256" argv
+            initialStage<-"invocation"
             let closure=PolicyClosure.loadAndVerify manifestPath closureSha invocation
             checkpoint<-"current-process"
             PolicyClosure.verifyCurrentProcess closure
@@ -55,6 +57,14 @@ module Program =
             | Some(stage,kind) -> Console.Error.WriteLine(FailureDiagnostic.policyObservation stage kind);Console.Error.Flush()
             | None -> ()
             0
-        with _ ->
-            Console.Error.WriteLine(FailureDiagnostic.policyObservation checkpoint "exception")
+        with error ->
+            let observation =
+                if checkpoint<>"initial-closure" then FailureDiagnostic.policyObservation checkpoint "exception"
+                elif initialStage="argv" then
+                    let code=if error :? InvalidOperationException then "refused" else "unexpected-exception"
+                    FailureDiagnostic.initialClosureObservation "argv" code
+                else
+                    let stage,code=PolicyClosure.initialFailureDetail error
+                    FailureDiagnostic.initialClosureObservation stage code
+            Console.Error.WriteLine observation
             2

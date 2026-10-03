@@ -63,7 +63,17 @@ module PolicyClosure =
         RuntimeRoots:Set<string>;RequiredSearchLayout:Set<string>;SourceIdentity:string
     }
 
-    let private fail message = invalidOp message
+    let private refusalKey = "fsbar.closure-guard-refusal"
+    let private fail message =
+        let error=InvalidOperationException(message)
+        error.Data[refusalKey] <- true
+        raise error
+    let private diagnosticKey = "fsbar.initial-closure-detail"
+    let initialFailureDetail (error:exn) =
+        match error.Data[diagnosticKey] with
+        | :? (string * string) as detail -> detail
+        | _ -> "invocation","unexpected-exception"
+
     let private hashBytes bytes = SHA256.HashData(bytes:byte[]) |> Convert.ToHexStringLower
     let private readBounded path maximum =
         use stream=File.Open(path,FileMode.Open,FileAccess.Read,FileShare.Read)
@@ -257,24 +267,32 @@ module PolicyClosure =
         for role in outputs.EnumerateObject() do if role.Value.GetString()<>managedRoles[role.Name].Sha256 then fail "build output receipt drift"
         policyCommit+":"+policyTree+":"+productCommit+":"+productTree+":"+helperHead+":"+helperTree+":"+roles["lockedBuildInputs"].Sha256+":"+roles["toolchainReceipt"].Sha256,productSourceSet
 
-    let loadAndVerify manifestPath expectedSha invocationId =
+    let private loadAndVerifyCore stage manifestPath expectedSha invocationId =
+        stage "invocation"
         if String.IsNullOrWhiteSpace invocationId || invocationId.Length>128 then fail "invalid invocation id"
+        stage "manifest-path"
         let path=full manifestPath "manifest"
+        stage "manifest-read"
         let info=FileInfo path
         if not info.Exists || info.Length<=0L || info.Length>1024L*1024L then fail "manifest unavailable/bound"
         let raw=readBounded path (1024*1024)
+        stage "manifest-hash"
         let digest=hashBytes raw
         if digest<>hex 64 expectedSha "manifest digest" then fail "manifest digest drift"
+        stage "manifest-json"
         use document=JsonDocument.Parse(raw,JsonDocumentOptions(MaxDepth=32,CommentHandling=JsonCommentHandling.Disallow,AllowTrailingCommas=false))
         let root=document.RootElement
+        stage "manifest-schema"
         exact root ["schema";"custodyRoot";"managedRoot";"provenanceRoot";"runtimeRoots";"searchLayout";"managed";"provenance";"runtime";"runtimeRoles";"source";"custody"] "policy closure"
         if text root "schema"<>Schema then fail "policy closure schema"
+        stage "closure-roots"
         let custodyRoot=full(text root "custodyRoot") "custody root"
         let managedRoot=full(text root "managedRoot") "managed root"
         let provenanceRoot=full(text root "provenanceRoot") "provenance root"
         if managedRoot=provenanceRoot || not(managedRoot.StartsWith(custodyRoot+string Path.DirectorySeparatorChar)) || not(provenanceRoot.StartsWith(custodyRoot+string Path.DirectorySeparatorChar)) then fail "closure roots"
         let runtimeRoots=root.GetProperty("runtimeRoots").EnumerateArray() |> Seq.map(fun e->full(e.GetString()) "runtime root") |> Seq.toList
         if runtimeRoots.IsEmpty || runtimeRoots.Length>16 || (Set.ofList runtimeRoots).Count<>runtimeRoots.Length then fail "runtime roots"
+        stage "inventory"
         let managed=pins root "managed" true
         let provenance=pins root "provenance" true
         let runtime=pins root "runtime" false
@@ -282,13 +300,17 @@ module PolicyClosure =
         if all.Length>MaxFiles || all|>List.sumBy _.Bytes>MaxTotalBytes || (all|>List.map _.Path|>Set.ofList).Count<>all.Length then fail "closure aggregate/duplicate bound"
         let managedRoles=roleMap managed
         if managed.Length<>5 || Set.ofSeq managedRoles.Keys<>Set.ofList["apphost";"managedDll";"depsJson";"runtimeConfigJson";"fsharpCore"] then fail "closed managed roles"
+        stage "managed-census"
         let managedCensus=enumerateBounded [managedRoot]
         if managedCensus<>(managed|>List.map _.Path|>Set.ofList) then fail "managed census drift"
+        stage "provenance-census"
         let provenanceCensus=enumerateBounded [provenanceRoot]
         if provenanceCensus<>(provenance|>List.map _.Path|>Set.ofList) then fail "provenance census drift"
+        stage "runtime-census"
         let runtimeCensus=enumerateBounded runtimeRoots
         let runtimeSet=runtime|>List.map _.Path|>Set.ofList
         if not(Set.isSubset runtimeCensus runtimeSet) then fail "runtime directory census drift"
+        stage "search-layout"
         let searchRows=root.GetProperty "searchLayout"
         if searchRows.ValueKind<>JsonValueKind.Array then fail "search layout"
         let searchBuffer=ResizeArray<DirectoryPin>()
@@ -298,6 +320,7 @@ module PolicyClosure =
         let search=List.ofSeq searchBuffer
         if search.IsEmpty || (search|>List.map _.Path|>Set.ofList).Count<>search.Length then fail "search layout"
         let searchMap=search|>List.map(fun d->d.Path,d)|>Map.ofList
+        stage "custody"
         let custody=root.GetProperty "custody"
         exact custody ["ownerUid";"executablePath";"fixedArgv"] "custody"
         let owner=custody.GetProperty("ownerUid").GetInt32()
@@ -306,6 +329,7 @@ module PolicyClosure =
         let executable=full(text custody "executablePath") "executable"
         let argv=custody.GetProperty("fixedArgv").EnumerateArray()|>Seq.map _.GetString()|>Seq.toList
         if argv<>[executable;"--closure-manifest";"--closure-sha256";"--invocation-id"] || managedRoles["apphost"].Path<>executable then fail "fixed apphost argv"
+        stage "runtime-roles"
         let roles=root.GetProperty "runtimeRoles"
         exact roles ["hostfxr";"hostpolicy";"coreLib";"coreClr";"jit"] "runtime roles"
         let rolePaths=roles.EnumerateObject()|>Seq.map(fun p->p.Name,full(p.Value.GetString()) p.Name)|>Map.ofSeq
@@ -326,13 +350,30 @@ module PolicyClosure =
                 yield! runtime|>Seq.map(fun pin->Directory.GetParent(pin.Path).FullName)
             } |> Set.ofSeq
         for required in requiredSearch do if not(searchMap.ContainsKey required) then fail("unsealed runtime search directory: "+required)
+        stage "directory-custody"
         let custodyStat=stat custodyRoot
         verifyDirectory custodyRoot false { Path=custodyRoot;OwnerUid=owner;Mode=int custodyStat.Mode&&&0o777;EntriesSha256=directoryEntries custodyRoot }
         for pin in search do verifyDirectory (if pin.Path.StartsWith(custodyRoot) then custodyRoot else "/") (pin.Path=managedRoot || pin.Path=provenanceRoot) pin
+        stage "managed-custody"
         for pin in managed@provenance do verifyFile custodyRoot true pin
+        stage "runtime-custody"
         for pin in runtime do verifyFile "/" false pin
+        stage "provenance-join"
         let sourceIdentity,productSourceSet=provenanceJoin (root.GetProperty "source") managed provenance
         { ManifestPath=path;ManifestSha256=digest;ExecutablePath=executable;ApphostSha256=managedRoles["apphost"].Sha256;ProductSourceSetSha256=productSourceSet;OwnerUid=owner;Files=all|>List.map(fun p->p.Path,p)|>Map.ofList;ManagedRoles=managedRoles|>Map.map(fun _ pin->pin.Path);RuntimeRoles=rolePaths;RuntimeRoots=Set.ofList runtimeRoots;RequiredSearchLayout=requiredSearch;SourceIdentity=sourceIdentity }
+
+    let loadAndVerify manifestPath expectedSha invocationId =
+        let mutable stage="invocation"
+        try loadAndVerifyCore (fun value->stage<-value) manifestPath expectedSha invocationId
+        with error ->
+            let code =
+                match error with
+                | _ when error.Data[refusalKey] :? bool && unbox<bool> error.Data[refusalKey] -> "refused"
+                | :? JsonException -> "malformed"
+                | :? IOException | :? UnauthorizedAccessException -> "unavailable"
+                | _ -> "unexpected-exception"
+            error.Data[diagnosticKey] <- (stage,code)
+            reraise()
 
     let verifyCurrentProcess (verified:Verified) =
         let exe=File.ResolveLinkTarget("/proc/self/exe",true).FullName|>Path.GetFullPath

@@ -55,6 +55,30 @@ not amend the engine or installed failed packet. RP3 capacity, RP4 executable an
 engine/plugin custody, RP5 one changed Count1 attempt, and useful play **0/6** remain
 open under the linked qualification plan.
 
+## Initial closure diagnostic source candidate — 2026-10-03
+
+The single admitted owned-damage Count1 attempt refused after handoff and before
+browser startup. Its retained policy observation is `initial-closure:exception`;
+the exact failed closure check remains unknown. Actual engine/plugin mapping
+custody and settled owned cleanup establish their separate boundaries, while the
+selected smoke remains unaccepted and useful play remains **0/6**.
+
+The source candidate adds a bounded initial-closure diagnostic with closed
+subcheckpoint and code enums, including a distinct unexpected-exception code.
+It retains the original exception and every closure/custody/digest check. The
+capture parser and failure projection accept the new initial frame and retain
+legacy frames; noninitial diagnostics keep their existing bytes. No raw exception
+message, path, stack, credential or envelope is published. The local locked
+Release build and complete source gate pass, including genuine missing/hash/JSON/
+custody/argv failures, closed parser/projection controls, 38 Quint scenarios,
+500 invariant samples, complete-record correspondence and 13 rejected mutants.
+The initial local-clone build refused at the fixture provenance join; explicit
+exact-commit SourceLink supplied the required source proof for local verification.
+Hosted qualification at the canonical repository and protected delivery remain
+pending. Changed policy bytes require a reviewed
+protected build successor and a distinct future operation grant; the consumed
+attempt and sealed candidate remain immutable.
+
 ## Current frontier — 2026-10-01
 
 Selected product profile: unmodified Recoil2025.06.19 plus the ABI-matched HighBar plugin and bounded synced Lua queue observer. Delivered default source heads are HighBar `f08555372168cd911f438de0be5ec2898fd1cfb5` and FSBar `6b9139e83334da903ea6861adb57d97578af2239`; neither source merge establishes installation or gameplay acceptance. The existing custom FR1–FR6 experiment remains optional, inactive and open.

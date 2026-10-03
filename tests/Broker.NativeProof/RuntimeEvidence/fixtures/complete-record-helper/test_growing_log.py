@@ -488,6 +488,42 @@ sys.stderr.write('{"schema":"fsbar.barc-runtime-evidence-failure-observation/v1"
         finally:omitted_path.unlink(missing_ok=True)
         print(json.dumps(diagnostic,separators=(',',':'),sort_keys=True),flush=True)
         self.assertIn(diagnostic['policyDisposition'],('ready-completed','ready-request-refused'))
+    def test_initial_closure_closed_detail_failures(self):
+        def observe(path,digest,stage,code):
+            runner=object.__new__(GrowingLog);runner.last_policy_observation=None
+            with self.assertRaises(Refused) as caught:
+                runner._run_policy(str(self.policy),str(path),digest,b'{}',time.monotonic()+5)
+            fact=caught.exception._barc_failure_observation
+            self.assertEqual(fact['check'],'policy-closure-precheck')
+            self.assertEqual(fact['policyObservation'],{'schema':growing_log.INITIAL_CLOSURE_OBSERVATION_SCHEMA,'checkpoint':'initial-closure','kind':'exception','subcheckpoint':stage,'code':code})
+            self.assertNotIn('PRIVATE_SENTINEL',json.dumps(fact));self.assertNotIn(str(self.fixture.name),json.dumps(fact))
+        missing=pathlib.Path(self.fixture.name)/'PRIVATE_SENTINEL_missing'
+        observe(missing,'a'*64,'manifest-read','refused')
+        observe(self.closure,'a'*64,'manifest-hash','refused')
+        malformed=pathlib.Path(self.fixture.name)/'malformed.json'
+        malformed.write_bytes(b'{PRIVATE_SENTINEL')
+        try:observe(malformed,hashlib.sha256(malformed.read_bytes()).hexdigest(),'manifest-json','malformed')
+        finally:malformed.unlink()
+        # Mutate a real sealed managed directory only for this fixture, then restore it.
+        managed=self.policy.parent;old_mode=stat.S_IMODE(managed.stat().st_mode)
+        try:
+            os.chmod(managed,0o755)
+            observe(self.closure,self.closure_sha,'directory-custody','refused')
+        finally:os.chmod(managed,old_mode)
+        process=subprocess.run([str(self.policy),'PRIVATE_SENTINEL'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,env={'PATH':'/usr/bin:/bin'})
+        self.assertEqual(process.returncode,2);self.assertEqual(process.stdout,b'')
+        detail=growing_log._policy_observation(process.stderr)
+        self.assertEqual((detail['subcheckpoint'],detail['code']),('argv','refused'))
+        self.assertNotIn(b'PRIVATE_SENTINEL',process.stderr)
+    def test_initial_closure_parser_is_closed_and_preserves_legacy(self):
+        legacy={'schema':growing_log.POLICY_OBSERVATION_SCHEMA,'checkpoint':'initial-closure','kind':'exception'}
+        self.assertEqual(growing_log._policy_observation(json.dumps(legacy).encode()),legacy)
+        good={'schema':growing_log.INITIAL_CLOSURE_OBSERVATION_SCHEMA,'checkpoint':'initial-closure','kind':'exception','subcheckpoint':'manifest-read','code':'refused'}
+        self.assertEqual(growing_log._policy_observation(json.dumps(good).encode()),good)
+        for mutation in [dict(good,subcheckpoint='PRIVATE_SENTINEL'),dict(good,code='PRIVATE_SENTINEL'),dict(good,checkpoint='current-process'),dict(good,kind='refused'),dict(good,path='PRIVATE_SENTINEL'),dict(good,schema=growing_log.POLICY_OBSERVATION_SCHEMA)]:
+            self.assertIsNone(growing_log._policy_observation(json.dumps(mutation).encode()))
+        self.assertIsNone(growing_log._policy_observation(json.dumps(good).encode()+b'\n{}'))
+        self.assertIsNone(growing_log._policy_observation(b'X'*2049))
     @staticmethod
     def state_projection(value):
         if value is None:return None

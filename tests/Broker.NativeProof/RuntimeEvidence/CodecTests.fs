@@ -80,6 +80,19 @@ module CodecTests =
         let diagnostic=$"{{\"schema\":\"fsbar.barc-stock-failure-projection/v1\",\"expected\":{{\"configSha256\":\"{String('d',64)}\",\"sourceSetSha256\":\"{String('a',64)}\",\"policySha256\":\"{String('b',64)}\",\"closureSha256\":\"{String('c',64)}\"}},\"observation\":{observation},\"observationSha256\":\"{observationHash}\",\"operationResultBase64\":\"{operationBase64}\",\"operationResultSha256\":\"{operationHash}\"}}"
         let projected=evaluate diagnostic|>Codec.complete
         if not(projected.Contains("\"status\":\"observed-failure\"")) || not(projected.Contains("\"nativeAcceptance\":false")) || projected.Contains("PRIVATE_SENTINEL") then failwith "valid failure diagnostic projection refused"
+        let initialObservation detail =
+            observation.Replace("\"check\":\"policy-result-join\"","\"check\":\"policy-closure-precheck\"").Replace("\"outcome\":\"policy-nonaccepted\"","\"outcome\":\"refused\"").Replace(policyObservation,detail)
+        let initialDiagnostic detail =
+            let value=initialObservation detail
+            diagnostic.Replace(observation,value).Replace(observationHash,sha(bytes(value+"\n")))
+        for stage,code in ["manifest-read","refused";"manifest-hash","refused";"manifest-json","malformed";"directory-custody","refused";"manifest-hash","unexpected-exception"] do
+            let detail=FailureDiagnostic.initialClosureObservation stage code
+            let actual=evaluate(initialDiagnostic detail)|>Codec.complete
+            if not(actual.Contains("\"status\":\"observed-failure\"") && actual.Contains("\"subcheckpoint\":\""+stage+"\"") && actual.Contains("\"code\":\""+code+"\"")) then failwith "closed initial diagnostic lost in projection"
+        let initialDetail=FailureDiagnostic.initialClosureObservation "manifest-hash" "refused"
+        for invalid in [initialDetail.Replace("manifest-hash","PRIVATE_SENTINEL");initialDetail.Replace("\"code\":\"refused\"","\"code\":\"PRIVATE_SENTINEL\"");initialDetail.Replace("initial-closure","current-process");initialDetail.Replace("\"kind\":\"exception\"","\"kind\":\"refused\"");initialDetail.Replace("{","{\"path\":\"PRIVATE_SENTINEL\",",StringComparison.Ordinal)] do
+            let actual=evaluate(initialDiagnostic invalid)|>Codec.complete
+            if not(actual.Contains("\"status\":\"diagnostic-unavailable\"")) || actual.Contains("PRIVATE_SENTINEL") then failwith "initial detail escaped closed projection"
         let invalidDiagnostics =
             [ diagnostic.Replace("\"sourceSetSha256\":\""+String('a',64),"\"sourceSetSha256\":\""+String('f',64))
               diagnostic.Replace(observationHash,String('0',64))

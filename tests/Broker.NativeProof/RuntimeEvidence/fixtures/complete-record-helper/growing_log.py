@@ -15,6 +15,9 @@ CLOSURE_SCHEMA='fsbar.barc-runtime-evidence-policy-closure/v3'
 POLICY_OBSERVATION_SCHEMA='fsbar.barc-runtime-evidence-failure-observation/v1'
 POLICY_CHECKPOINTS={'initial-closure','current-process','invocation-ready','request-read','request-evaluation','final-closure','invocation-completion'}
 POLICY_KINDS={'exception','pending','refused','unknown'}
+INITIAL_CLOSURE_OBSERVATION_SCHEMA='fsbar.barc-runtime-evidence-failure-observation/v2'
+INITIAL_CLOSURE_STAGES={'argv','invocation','manifest-path','manifest-read','manifest-hash','manifest-json','manifest-schema','closure-roots','inventory','managed-census','provenance-census','runtime-census','search-layout','custody','runtime-roles','directory-custody','managed-custody','runtime-custody','provenance-join'}
+INITIAL_CLOSURE_CODES={'refused','malformed','unavailable','unexpected-exception'}
 POLICY_TO_MECHANICAL={'initial-closure':'policy-closure-precheck','current-process':'policy-artifact','invocation-ready':'policy-ready','request-read':'policy-transport','request-evaluation':'policy-result-join','final-closure':'policy-final-precheck','invocation-completion':'policy-completion'}
 
 def _unique(pairs):
@@ -31,7 +34,11 @@ def _policy_observation(raw):
         need(isinstance(raw,bytes) and len(raw)<=2048,'policy diagnostic bound')
         lines=raw.splitlines();need(len(lines)==1,'single policy diagnostic frame')
         value=json.loads(lines[0].decode('utf-8'),object_pairs_hook=_unique)
-        need(isinstance(value,dict) and set(value)=={'schema','checkpoint','kind'} and value['schema']==POLICY_OBSERVATION_SCHEMA and value['checkpoint'] in POLICY_CHECKPOINTS and value['kind'] in POLICY_KINDS,'closed policy diagnostic frame')
+        need(isinstance(value,dict),'closed policy diagnostic frame')
+        if value.get('schema')==POLICY_OBSERVATION_SCHEMA:
+            need(set(value)=={'schema','checkpoint','kind'} and value['checkpoint'] in POLICY_CHECKPOINTS and value['kind'] in POLICY_KINDS,'closed policy diagnostic frame')
+        else:
+            need(set(value)=={'schema','checkpoint','kind','subcheckpoint','code'} and value['schema']==INITIAL_CLOSURE_OBSERVATION_SCHEMA and value['checkpoint']=='initial-closure' and value['kind']=='exception' and value['subcheckpoint'] in INITIAL_CLOSURE_STAGES and value['code'] in INITIAL_CLOSURE_CODES,'closed initial closure diagnostic frame')
         return value
     except Exception:return None
 
