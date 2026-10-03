@@ -35,6 +35,11 @@ let gatewayDiagnosticTests = testList "gateway diagnostic classification" [
         Expect.equal (Gateway.feedbackDiagnostic LiveControl.Unknown LiveControl.UnknownStatus) (Some Gateway.UnknownForwarded) "unknown stage is classified"
         Expect.equal (Gateway.feedbackDiagnostic LiveControl.Unknown LiveControl.Expired) (Some Gateway.ExpiredForwarded) "expired takes precedence over unknown stage"
         Expect.equal (Gateway.feedbackDiagnostic LiveControl.NativeAdmission LiveControl.Accepted) None "unselected feedback does not invert into a diagnostic"
+    testCase "pre-arm pairing reasons are finite and callbacks cannot expose private material" <| fun _ ->
+        for value,name in [Gateway.MalformedAuth,"malformed-auth";Gateway.MissingAuth,"missing-auth";Gateway.AuthRefusal,"auth-refusal";Gateway.BootstrapUnavailable,"bootstrap-unavailable"] do
+            Expect.equal (Gateway.diagnosticNames value) (struct("pairing",name)) "pre-arm diagnostic has only a fixed reason"
+            Gateway.emitDiagnostic (fun _ -> raise(InvalidOperationException "credential PRIVATE_SENTINEL /private/path session")) value
+        Expect.equal (Gateway.diagnosticNames Gateway.SubmitAccepted) (struct("submit","accepted")) "existing diagnostics are unchanged"
     testCase "throwing diagnostic callbacks cannot escape" <| fun _ ->
         Gateway.emitDiagnostic (fun _ -> raise(InvalidOperationException "private detail")) Gateway.SubmitAccepted
     testCase "submit refusal classes are closed and never echo detail" <| fun _ ->

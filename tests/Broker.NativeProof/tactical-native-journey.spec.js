@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { closeSync, constants, existsSync, fsyncSync, openSync, readFileSync, writeSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { closeSync, constants, existsSync, fsyncSync, openSync, readFileSync, writeSync, lstatSync, fstatSync, linkSync, unlinkSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { basename, resolve } from "node:path";
+import { basename, dirname, resolve, parse, join } from "node:path";
 import { assertCanonicalLifecycle, assertObservedEffects, isExactStaleBasisRefusal, isFreshPhysicalReplacement, loadStockSmokeHandoff, loadTacticalHandoff, plannedChildCount, sanitizedLifecycle, waitForTerminalOrClose } from "./tactical-native-evidence.mjs";
 
 const enabled=process.env.BARC_RUN_TACTICAL_NATIVE==="1",stockEnabled=process.env.BARC_RUN_STOCK_NATIVE_SMOKE==="1";if(enabled&&stockEnabled)throw new Error("full-six and selected stock smoke routes are mutually exclusive");
@@ -28,6 +28,40 @@ function captureJournal(path,release,runId,source){
   return{append,complete(){append("complete",{selectedCase:"stock-smoke-count1"});fsyncSync(fd);closed=true},async hold(){await expect.poll(()=>existsSync(release),{timeout:30000,intervals:[25,50,100,250]}).toBe(true)},close(){closeSync(fd)}};
 }
 // Readiness controls execute this exact source block without loading native handoffs.
+const pairingState=()=>({observed:false,authSentCount:0,bootstrapDecodedCount:0,decodeFailureCount:0,clientCloseCount:0,closed:false,error:false,overflow:false});
+function notePairing(state,kind){
+  if(kind==="socket"){state.observed=true;return}
+  const field={auth:"authSentCount",bootstrap:"bootstrapDecodedCount",decode:"decodeFailureCount","clientdecode-bootstrap-close":"clientCloseCount"}[kind];
+  if(field){if(state[field]<64)state[field]++;else state.overflow=true}
+  else if(kind==="close")state.closed=true;else if(kind==="error")state.error=true;
+}
+function pairingSummary(state,paired=null){
+  const count=name=>state?.observed===true&&Number.isInteger(state[name])&&state[name]>=0&&state[name]<=64?state[name]:null;
+  const counts={authSentCount:count("authSentCount"),bootstrapDecodedCount:count("bootstrapDecodedCount"),decodeFailureCount:count("decodeFailureCount"),clientCloseCount:count("clientCloseCount")};
+  const known=state?.observed===true&&state.overflow===false&&Object.values(counts).every(x=>x!==null)&&typeof state.closed==="boolean"&&typeof state.error==="boolean";
+  return{schema:"fsbar.barc-pairing-diagnostic/v1",nativeAcceptance:false,state:known?"observed":"unknown",...counts,socketClosed:known?state.closed:null,socketError:known?state.error:null,clientCloseClass:counts.clientCloseCount>0?"clientdecode-bootstrap-close":null,paired:typeof paired==="boolean"?paired:null,counterOverflow:state?.overflow===true};
+}
+function installPairingCloseObserver(){
+  const original=WebSocket.prototype.close;
+  WebSocket.prototype.close=function(...args){
+    if(args[0]===1008&&args[1]==="invalid live frame")try{window.__barcPairingClose("clientdecode-bootstrap-close")?.catch?.(()=>{})}catch{}
+    return Reflect.apply(original,this,args);
+  };
+}
+function writePairingDiagnostic(j,state,paired){
+  const path=`${j.outputPath}.pairing-diagnostic.json`,parent=dirname(resolve(path)),parsed=parse(parent);let current=parsed.root,fd=null,temp=null;
+  try{
+    for(const part of parent.slice(parsed.root.length).split("/").filter(Boolean)){current=join(current,part);if(lstatSync(current).isSymbolicLink())throw new Error()}
+    const anchor=lstatSync(parent);if(!anchor.isDirectory()||anchor.uid!==process.geteuid()||(anchor.mode&0o777)!==0o700)throw new Error();
+    const data=Buffer.from(JSON.stringify(pairingSummary(state,paired))+"\n");if(data.byteLength>4096)throw new Error();
+    temp=join(parent,`.barc-pairing-${randomBytes(16).toString("hex")}`);fd=openSync(temp,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW|constants.O_CLOEXEC,0o600);
+    const pin=fstatSync(fd);if(!pin.isFile()||pin.uid!==process.geteuid()||(pin.mode&0o777)!==0o600||pin.nlink!==1)throw new Error();
+    for(let offset=0;offset<data.length;){const written=writeSync(fd,data,offset,data.length-offset);if(written<=0)throw new Error();offset+=written}fsyncSync(fd);closeSync(fd);fd=null;const finalAnchor=lstatSync(parent);if(anchor.dev!==finalAnchor.dev||anchor.ino!==finalAnchor.ino||finalAnchor.uid!==process.geteuid()||(finalAnchor.mode&0o777)!==0o700)throw new Error();
+    linkSync(temp,path);unlinkSync(temp);temp=null;const directory=openSync(parent,constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW);try{fsyncSync(directory)}finally{closeSync(directory)}
+  }catch{throw new Error("private pairing diagnostic refused")}
+  finally{if(fd!==null)closeSync(fd);if(temp!==null)try{unlinkSync(temp)}catch{}}
+}
+
 const readinessState=()=>({phase:"unrequested",moduleName:null,moduleSha256:null,armCount:0,armSha256:null,controllerCount:0,controllerStage:null,failureCode:null});
 const moduleHash=value=>createHash("sha256").update(value).digest("hex");
 function safeArmText(value,j){
@@ -59,16 +93,17 @@ async function loadSelectedGuest(page,live,j,guest,state){
   state.phase="module-ready";
 }
 // End readiness source block.
-async function capture(page,journal=null){const rows=[],connection={closed:false,error:false},readiness=readinessState();Object.defineProperties(rows,{connection:{value:connection},readiness:{value:readiness}});const retain=row=>{rows.push(row);journal?.append(row.kind,row.value)};page.on("websocket",socket=>{socket.on("framesent",event=>{try{const e=codec.canonicalObject(codec.v1.LiveClientEnvelope,Uint8Array.from(event.payload));if(e.body==="arm"){readiness.armCount++;const hash=Buffer.from(e.arm.module?.sha256??"","base64");readiness.armSha256=hash.length===32?hash.toString("hex"):null}if(e.body==="submit")retain({direction:"client",kind:"submit",value:e.submit})}catch{}});socket.on("framereceived",event=>{try{const e=codec.canonicalObject(codec.v1.LiveServerEnvelope,Uint8Array.from(event.payload));if(e.body==="controllerState"){readiness.controllerCount++;const stage=e.controllerState.stage;readiness.controllerStage=/^CONTROLLER_STAGE_[A-Z_]{1,40}$/.test(stage)?stage:"invalid"}if(["result","observation","controllerState"].includes(e.body))retain({direction:"server",kind:e.body,value:e[e.body]})}catch{}});socket.on("close",()=>{connection.closed=true});socket.on("socketerror",()=>{connection.error=true})});return rows}
+async function capture(page,journal=null){const rows=[],connection={closed:false,error:false},readiness=readinessState(),pairing=pairingState();Object.defineProperties(rows,{connection:{value:connection},readiness:{value:readiness},pairing:{value:pairing}});await page.exposeBinding("__barcPairingClose",(_,code)=>{if(code==="clientdecode-bootstrap-close")notePairing(pairing,code)});await page.addInitScript(installPairingCloseObserver);const retain=row=>{rows.push(row);journal?.append(row.kind,row.value)};page.on("websocket",socket=>{notePairing(pairing,"socket");socket.on("framesent",event=>{try{const e=codec.canonicalObject(codec.v1.LiveClientEnvelope,Uint8Array.from(event.payload));if(e.body==="authenticate")notePairing(pairing,"auth");if(e.body==="arm"){readiness.armCount++;const hash=Buffer.from(e.arm.module?.sha256??"","base64");readiness.armSha256=hash.length===32?hash.toString("hex"):null}if(e.body==="submit")retain({direction:"client",kind:"submit",value:e.submit})}catch{}});socket.on("framereceived",event=>{try{const e=codec.canonicalObject(codec.v1.LiveServerEnvelope,Uint8Array.from(event.payload));if(e.body==="bootstrap")notePairing(pairing,"bootstrap");if(e.body==="controllerState"){readiness.controllerCount++;const stage=e.controllerState.stage;readiness.controllerStage=/^CONTROLLER_STAGE_[A-Z_]{1,40}$/.test(stage)?stage:"invalid"}if(["result","observation","controllerState"].includes(e.body))retain({direction:"server",kind:e.body,value:e[e.body]})}catch{notePairing(pairing,"decode")}});socket.on("close",()=>{connection.closed=true;notePairing(pairing,"close")});socket.on("socketerror",()=>{connection.error=true;notePairing(pairing,"error")})});return rows}
 async function pair(page,j,guest="Manual guest",rows){
-  const live=page.locator(".barc-preview.barc-live"),state=rows.readiness;
+  const live=page.locator(".barc-preview.barc-live"),state=rows.readiness;let pairingFailed=false;
   try{
     await page.goto(j.receiverUrl);await live.getByLabel("Gateway").fill(j.gatewayUrl);await live.getByLabel("Session UUID").fill(j.expectedSessionId);await live.getByLabel("One-time credential").fill(j.credential);await live.getByRole("button",{name:"Pair"}).click();
     await expect(live.locator(".catalogue")).not.toContainText("unavailable");await expect(live.locator(".economy")).toContainText("Economy");
     await loadSelectedGuest(page,live,j,guest,state);
     state.phase="arm-clicked";await live.getByRole("button",{name:"Arm live"}).click();
     await expect.poll(()=>state.armSha256).toBe(state.moduleSha256);await expect(live.locator(".authority")).toContainText("arm native confirmed");state.phase="native-confirmed";return live;
-  }catch(error){state.failureCode??=state.phase==="arm-clicked"?"authority-not-confirmed":"pair-or-module-not-ready";await writeArmFailure(live,j,state);throw error}
+  }catch(error){pairingFailed=true;state.failureCode??=state.phase==="arm-clicked"?"authority-not-confirmed":"pair-or-module-not-ready";await writeArmFailure(live,j,state);throw error}
+  finally{let paired=null;try{paired=(await live.locator(".status").textContent({timeout:500}))==="current: live session"}catch{}try{writePairingDiagnostic(j,rows.pairing,paired)}catch(error){if(!pairingFailed)throw error}}
 }
 async function target(live,p){await live.getByLabel("Target X").fill(String(p.x));await live.getByLabel("Target Z").fill(String(p.z))}
 async function keyboardSelect(page,live,refs){const map=live.getByLabel(/Live tactical map/);await map.focus();for(let i=0;i<64&&!((await live.locator(".selection").textContent())??"").includes(key(refs[0]));i++)await page.keyboard.press("Tab");expect(await live.locator(".selection").textContent()).toContain(key(refs[0]));for(const ref of refs.slice(1)){for(let i=0;i<64&&!((await live.locator(".selection").textContent())??"").includes(key(ref));i++)await page.keyboard.press("Control+Tab");expect(await live.locator(".selection").textContent()).toContain(key(ref))}}

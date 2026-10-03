@@ -1,0 +1,103 @@
+name: prearm-source-controls
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/prearm-source-controls.yml
+      - Directory.Build.props
+      - .config/dotnet-tools.json
+      - eng/**
+      - src/Broker.Contracts/**
+      - src/Broker.Core/**
+      - src/Broker.Protocol/**
+      - src/Broker.Browser.Contracts/**
+      - src/Broker.Browser.Live/**
+      - src/Broker.Browser.Gateway/**
+      - src/Broker.Browser.Client/live-runtime.js
+      - tests/Broker.Browser.Live.Tests/**
+      - tests/Broker.NativeProof/tactical-native-journey.spec.js
+      - tests/Broker.NativeProof/tactical-native-readiness.test.mjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prearm-source-controls-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prearm-source-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      DOTNET_PROCESSOR_COUNT: '1'
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Bind the checked-out candidate
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up the exact .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.401
+
+      - name: Set up the exact Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.8.0
+
+      - name: Run the fourteen JavaScript source controls
+        shell: bash
+        run: node --test tests/Broker.NativeProof/tactical-native-readiness.test.mjs
+
+      - name: Restore and build the live boundary source
+        shell: bash
+        env:
+          # grpc-fsharp 0.2 targets net6.0; retain the LatestMajor policy in
+          # specs/001-tui-grpc-broker/readiness/feature-baseline.md.
+          DOTNET_ROLL_FORWARD: LatestMajor
+        run: |
+          set -euo pipefail
+          project=tests/Broker.Browser.Live.Tests/Broker.Browser.Live.Tests.fsproj
+          dotnet restore "$project" --disable-parallel
+          dotnet build "$project" --configuration Release --no-restore --maxcpucount:1
+
+      - name: Run exactly three synthetic compiled controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          results=$(mktemp -d)
+          trap 'rm -rf "$results"' EXIT
+          dotnet test tests/Broker.Browser.Live.Tests/Broker.Browser.Live.Tests.fsproj \
+            --configuration Release --no-restore --no-build \
+            --filter 'FullyQualifiedName~pre-arm pairing|FullyQualifiedName~native report, authenticated WebSocket, authority ACK, and ID0 command share exact identities' \
+            --results-directory "$results" --logger 'trx;LogFileName=controls.trx'
+          python3 - "$results/controls.trx" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+          root = ET.parse(sys.argv[1]).getroot()
+          expected = {
+              "gateway diagnostic classification.pre-arm pairing reasons are finite and callbacks cannot expose private material",
+              "production live boundary.pre-arm pairing emits closed reasons and preserves refusal without authority",
+              "production live boundary.native report, authenticated WebSocket, authority ACK, and ID0 command share exact identities",
+          }
+          results = root.findall("t:Results/t:UnitTestResult", ns)
+          if len(results) != 3 or {r.attrib["testName"] for r in results} != expected or any(r.attrib["outcome"] != "Passed" for r in results):
+              raise SystemExit("Expected exactly the three passing synthetic controls; zero, missing, skipped or extra tests refuse qualification")
+          print("PASS: exact three synthetic compiled source controls")
+          PY
