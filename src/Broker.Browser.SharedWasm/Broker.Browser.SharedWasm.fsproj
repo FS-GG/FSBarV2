@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <OutputPath>../../tests/Broker.Browser.SharedWasm.Tests/public/sub/app/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Adapter.fs" />
+    <PackageReference Update="FSharp.Core" Version="[10.1.302]" />
+    <PackageReference Include="FS.GG.Wasm.Browser" Version="[0.2.0]" />
+    <PackageReference Include="FS.GG.Wasm.Contracts" Version="[0.2.0]" />
+  </ItemGroup>
+</Project>

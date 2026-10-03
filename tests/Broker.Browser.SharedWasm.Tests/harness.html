@@ -1,0 +1,6 @@
+<!doctype html><html><button id="responsive">responsive</button><script type="module">
+import {GuestSupervisor} from "./src/Broker.Browser.SharedWasm/index.js";
+window.GuestSupervisor=GuestSupervisor; window.ticks=0; window.clicks=0;
+setInterval(()=>window.ticks++,10);
+document.querySelector('button').onclick=()=>window.clicks++;
+</script></html>
