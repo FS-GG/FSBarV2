@@ -52,6 +52,7 @@ module Gateway =
         | ReceiveTaskFailed | ReceiveTaskCompleted | ReceiveTaskCancelled
         | OutputTaskFailed | OutputTaskCompleted | OutputTaskCancelled
         | RenewalTaskFailed | RenewalTaskCompleted | RenewalTaskCancelled
+        | MalformedAuth | MissingAuth | AuthRefusal | BootstrapUnavailable
 
     val diagnosticNames : diagnostic:LiveDiagnostic -> struct(string * string)
     val internal emitDiagnostic : diagnostics:(LiveDiagnostic -> unit) -> diagnostic:LiveDiagnostic -> unit

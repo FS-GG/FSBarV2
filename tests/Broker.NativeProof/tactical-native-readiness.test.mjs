@@ -1,12 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, writeFile, mkdtemp, rm, stat } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import { basename, resolve } from "node:path";
+import { randomBytes, createHash } from "node:crypto";
+import { basename, resolve, dirname, parse, join } from "node:path";
 import { tmpdir } from "node:os";
 import vm from "node:vm";
+import { constants, lstatSync, fstatSync, openSync, writeSync, fsyncSync, closeSync, linkSync, unlinkSync, chmodSync, symlinkSync } from "node:fs";
 
 const spec=await readFile(new URL("./tactical-native-journey.spec.js",import.meta.url),"utf8");
+const pairingSource=spec.slice(spec.indexOf("const pairingState="),spec.indexOf("const readinessState="));
+const pairingContext={process,Buffer,constants,lstatSync,fstatSync,openSync,writeSync,fsyncSync,closeSync,linkSync,unlinkSync,randomBytes,dirname,resolve,parse,join};
+const pairing=vm.runInNewContext(`${pairingSource};({pairingState,notePairing,pairingSummary,writePairingDiagnostic,installPairingCloseObserver})`,pairingContext);
 const readiness=spec.slice(spec.indexOf("const readinessState="),spec.indexOf("// End readiness source block."));
 const client=await readFile(new URL("../../src/Broker.Browser.Client/live-runtime.js",import.meta.url),"utf8");
 const guestSource=client.slice(client.indexOf("  async function initializeGuest()"),client.indexOf("\n\n  function handleEnvelope"));
@@ -76,13 +80,16 @@ test("canonical pair cannot click Arm until the selected-module wait resolves",a
   const pair=spec.slice(spec.indexOf("async function pair("),spec.indexOf("async function target("));const ready=deferred(),events=[];
   const state={moduleSha256:hash,armSha256:hash};const expect=()=>({not:{toContainText:async()=>{}},toContainText:async()=>{}});expect.poll=()=>({toBe:async()=>{}});
   const live={getByLabel:()=>({fill:async()=>{}}),getByRole:(_,o)=>({click:async()=>{events.push(o.name)}}),locator:()=>({})};
-  const run=vm.runInNewContext(`${pair};pair`,{expect,loadSelectedGuest:()=>ready.promise,writeArmFailure:async()=>{throw new Error("unexpected failure")}});
+  const run=vm.runInNewContext(`${pair};pair`,{writePairingDiagnostic:()=>{},expect,loadSelectedGuest:()=>ready.promise,writeArmFailure:async()=>{throw new Error("unexpected failure")}});
   const pending=run({locator:()=>live,goto:async()=>{}},{},"Manual guest",{readiness:state});await turn();assert.deepEqual(events,["Pair"]);ready.resolve();await pending;assert.deepEqual(events,["Pair","Arm live"]);assert.equal(state.phase,"native-confirmed");
 });
 test("arm lifecycle records only module digest/count and controller stage outside accepted capture",async()=>{
   const captureSource=spec.slice(spec.indexOf("async function capture("),spec.indexOf("async function pair("));let onSocket;const callbacks={},journalRows=[];let envelope;
-  const api=vm.runInNewContext(`${readiness};${captureSource};({capture})`,{createHash,readFile,writeFile,basename,URL,Buffer,Uint8Array,codec:{v1:{},canonicalObject:()=>envelope}});
-  const rows=await api.capture({on:(_,fn)=>{onSocket=fn}},{append:(kind,value)=>journalRows.push({kind,value})});onSocket({on:(name,fn)=>{callbacks[name]=fn}});
+  const api=vm.runInNewContext(`${pairingSource};${readiness};${captureSource};({capture})`,{createHash,readFile,writeFile,basename,URL,Buffer,Uint8Array,codec:{v1:{},canonicalObject:()=>envelope}});
+  const rows=await api.capture({exposeBinding:async()=>{},addInitScript:async()=>{},on:(_,fn)=>{onSocket=fn}},{append:(kind,value)=>journalRows.push({kind,value})});onSocket({on:(name,fn)=>{callbacks[name]=fn}});
+  envelope={body:"authenticate",authenticate:{credential:"PRIVATE_AUTH",session:"PRIVATE_SESSION"}};callbacks.framesent({payload:[]});
+  envelope={body:"bootstrap",bootstrap:{credential:"PRIVATE_BOOTSTRAP"}};callbacks.framereceived({payload:[]});
+  assert.equal(rows.pairing.authSentCount,1);assert.equal(rows.pairing.bootstrapDecodedCount,1);assert.equal(rows.length,0);assert.equal(journalRows.length,0);assert.equal(JSON.stringify(rows.pairing).includes("PRIVATE"),false);
   envelope={body:"arm",arm:{module:{sha256:Buffer.from(hash,"hex").toString("base64")},controller:{sessionId:"do-not-retain"}}};callbacks.framesent({payload:[]});
   assert.equal(rows.readiness.armCount,1);assert.equal(rows.readiness.armSha256,hash);assert.equal(rows.length,0);assert.equal(journalRows.length,0);assert.equal(JSON.stringify(rows.readiness).includes("do-not-retain"),false);
   envelope={body:"controllerState",controllerState:{stage:"CONTROLLER_STAGE_REFUSED",reason:"untrusted-private-reason"}};callbacks.framereceived({payload:[]});assert.equal(rows.readiness.controllerCount,1);assert.equal(rows.readiness.controllerStage,"CONTROLLER_STAGE_REFUSED");assert.equal(JSON.stringify(rows.readiness).includes("untrusted-private-reason"),false);
@@ -94,8 +101,40 @@ test("canonical failed pair retains its safe refusal code and rethrows the origi
     const expect=()=>({not:{toContainText:async()=>{}},toContainText:async()=>{}});
     const live={getByLabel:()=>({fill:async()=>{}}),getByRole:(_,o)=>({click:async()=>{if(o.name==="Arm live")arms++}}),locator:()=>({textContent:async()=>"Live gameplay input is fenced."})};
     // Swap only the external readiness operation; canonical catch and actual artifact writer execute.
-    const context=vm.createContext({expect,createHash,readFile,writeFile,basename,URL});vm.runInContext(readiness,context);context.loadSelectedGuest=async()=>{throw failure};vm.runInContext(pair,context);
+    const context=vm.createContext({writePairingDiagnostic:()=>{throw new Error("private pairing diagnostic refused")},expect,createHash,readFile,writeFile,basename,URL});vm.runInContext(readiness,context);context.loadSelectedGuest=async()=>{throw failure};vm.runInContext(pair,context);
     const path=resolve(dir,"capture.arm-failure.json");await assert.rejects(context.pair({locator:()=>live,goto:async()=>{}},{armFailurePath:path},"Manual guest",{readiness:state}),e=>e===failure);assert.equal(arms,0);
     const value=JSON.parse(await readFile(path,"utf8"));assert.equal(value.readiness.failureCode,"module-download-unavailable");assert.equal(value.ui.diagnostic,"Live gameplay input is fenced.");assert.equal(value.nativeAcceptance,false);
   }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+
+test("pairing projection is finite, Unknown without observation, and discards private material",()=>{
+  assert.equal(pairing.pairingSummary(null).state,"unknown");
+  const state=pairing.pairingState();state.payload="PRIVATE_CREDENTIAL /private/path session";
+  pairing.notePairing(state,"socket");pairing.notePairing(state,"auth");pairing.notePairing(state,"bootstrap");
+  const positive=pairing.pairingSummary(state,true);assert.equal(positive.state,"observed");assert.equal(positive.authSentCount,1);assert.equal(positive.bootstrapDecodedCount,1);assert.equal(positive.nativeAcceptance,false);assert.equal(JSON.stringify(positive).includes("PRIVATE"),false);
+  for(let i=0;i<65;i++)pairing.notePairing(state,"decode");assert.equal(state.decodeFailureCount,64);assert.equal(pairing.pairingSummary(state).state,"unknown");
+  state.authSentCount=Infinity;assert.equal(pairing.pairingSummary(state).authSentCount,null);
+});
+test("exact client close observer forwards original once and contains diagnostic callback errors",()=>{
+  const calls=[],codes=[];class Socket{close(...args){calls.push({self:this,args});return 7}}
+  const context={WebSocket:Socket,window:{__barcPairingClose:code=>{codes.push(code);throw new Error("PRIVATE")}}};
+  vm.runInNewContext(`${pairingSource};installPairingCloseObserver()`,context);const socket=new Socket();
+  assert.equal(socket.close(1008,"invalid live frame"),7);assert.equal(calls.length,1);assert.equal(calls[0].self,socket);assert.deepEqual(calls[0].args,[1008,"invalid live frame"]);assert.deepEqual(codes,["clientdecode-bootstrap-close"]);
+  socket.close(1008,"generic private close");assert.equal(codes.length,1);assert.equal(calls.length,2);
+});
+test("pairing sidecar publishes exclusive private bounded bytes and refuses unsafe parents",async()=>{
+  const dir=await mkdtemp(resolve(tmpdir(),"bar-pairing-projection-"));try{
+    chmodSync(dir,0o700);const j={outputPath:resolve(dir,"capture")},state=pairing.pairingState();state.secret="PRIVATE";pairing.notePairing(state,"socket");
+    pairing.writePairingDiagnostic(j,state,null);const path=j.outputPath+".pairing-diagnostic.json",text=await readFile(path,"utf8"),pin=await stat(path);assert.equal(pin.mode&0o777,0o600);assert.equal(pin.nlink,1);assert.ok(Buffer.byteLength(text)<=4096);assert.equal(text.includes("PRIVATE"),false);
+    assert.throws(()=>pairing.writePairingDiagnostic(j,state,null),/private pairing diagnostic refused/);assert.equal(await readFile(path,"utf8"),text);
+    chmodSync(dir,0o755);assert.throws(()=>pairing.writePairingDiagnostic({outputPath:resolve(dir,"world")},state,null),/private pairing diagnostic refused/);chmodSync(dir,0o700);
+    const link=dir+"-link";symlinkSync(dir,link);try{assert.throws(()=>pairing.writePairingDiagnostic({outputPath:resolve(link,"linked")},state,null),/private pairing diagnostic refused/)}finally{unlinkSync(link)}
+  }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test("exact close observer contains asynchronous diagnostic rejection",async()=>{
+  let calls=0;class Socket{close(){calls++}}
+  vm.runInNewContext(`${pairingSource};installPairingCloseObserver()`,{WebSocket:Socket,window:{__barcPairingClose:()=>Promise.reject(new Error("PRIVATE"))}});
+  new Socket().close(1008,"invalid live frame");await turn();assert.equal(calls,1);
 });

@@ -68,9 +68,14 @@ module Gateway =
         | ReceiveTaskFailed | ReceiveTaskCompleted | ReceiveTaskCancelled
         | OutputTaskFailed | OutputTaskCompleted | OutputTaskCancelled
         | RenewalTaskFailed | RenewalTaskCompleted | RenewalTaskCancelled
+        | MalformedAuth | MissingAuth | AuthRefusal | BootstrapUnavailable
 
     let diagnosticNames diagnostic =
       match diagnostic with
+        | MalformedAuth -> struct("pairing","malformed-auth")
+        | MissingAuth -> struct("pairing","missing-auth")
+        | AuthRefusal -> struct("pairing","auth-refusal")
+        | BootstrapUnavailable -> struct("pairing","bootstrap-unavailable")
         | SubmitAccepted -> struct("submit","accepted")
         | SubmitRefused reason ->
             let name =
@@ -418,22 +423,35 @@ module Gateway =
             try
                 let! received=receiveOne socket config.maxFrameBytes authCts.Token
                 match received with
-                | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
+                | Error detail ->
+                    diagnostic MalformedAuth
+                    do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
                 | Ok bytes ->
                     let parsed=try Ok(LiveClientEnvelope.Parser.ParseFrom(bytes.ToArray())) with :? InvalidProtocolBufferException -> Error "malformed live authentication"
                     match parsed with
-                    | Error detail -> do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
-                    | Ok message when isNull message.Authenticate -> do! close socket WebSocketCloseStatus.PolicyViolation "live authentication required" config.closeTimeout
+                    | Error detail ->
+                        diagnostic MalformedAuth
+                        do! close socket WebSocketCloseStatus.InvalidPayloadData detail config.closeTimeout
+                    | Ok message when isNull message.Authenticate ->
+                        diagnostic MissingAuth
+                        do! close socket WebSocketCloseStatus.PolicyViolation "live authentication required" config.closeTimeout
                     | Ok message ->
                         match authenticateLive config origin message.Authenticate hub with
-                        | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
+                        | Error detail ->
+                            diagnostic AuthRefusal
+                            do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                         | Ok(sessionId,profile) ->
                             let state=BrokerState.liveControl hub
                             match LiveBoundary.provisionBootstrapForProfile profile sessionId config.perspectiveId state with
-                            | Error detail -> do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
+                            | Error detail ->
+                                diagnostic BootstrapUnavailable
+                                do! close socket WebSocketCloseStatus.PolicyViolation detail config.closeTimeout
                             | Ok bootstrap ->
                                 use connectionCts=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted)
-                                do! send config.maxFrameBytes socket bootstrap connectionCts.Token
+                                try do! send config.maxFrameBytes socket bootstrap connectionCts.Token
+                                with error ->
+                                    diagnostic BootstrapUnavailable
+                                    return raise error
                                 let mutable provisionalControllerId = bytesGuid bootstrap.Bootstrap.Controller.ControllerId
                                 let outputs=Channel.CreateBounded<LiveServerEnvelope>(int (LiveControl.maxRetainedResults state) + 16)
                                 let outputGate=obj()

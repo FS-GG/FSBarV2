@@ -45,6 +45,47 @@ let private reporter matchId =
 
 [<Tests>]
 let tests = testList "production live boundary" [
+    testTask "pre-arm pairing emits closed reasons and preserves refusal without authority" {
+        let grpcPort = freePort()
+        let! (handle: ServerHost.ServerHandle) =
+            ServerHost.start { ServerHost.defaultOptions with listenAddress = sprintf "127.0.0.1:%d" grpcPort }
+                (System.Version(1, 0)) ignore CancellationToken.None
+        let channel = GrpcChannel.ForAddress(sprintf "http://127.0.0.1:%d" grpcPort)
+        let coordinator = HighBarCoordinator.HighBarCoordinatorClient(channel)
+        let heartbeat = HeartbeatRequest.empty()
+        heartbeat.PluginId <- "pairing-control"
+        heartbeat.SchemaVersion <- "1.0.0"
+        let! _ = coordinator.HeartbeatAsync(heartbeat).ResponseAsync
+        let sessionId = Session.id (BrokerState.session handle.Hub).Value
+        let origin = "http://127.0.0.1:4181"
+        let browserPort = freePort()
+        let reasons = System.Collections.Concurrent.ConcurrentQueue<Gateway.LiveDiagnostic>()
+        let config = Gateway.defaultLiveConfig (sprintf "http://127.0.0.1:%d" browserPort) origin "fixture-private" sessionId
+        let! (gateway: Microsoft.Extensions.Hosting.IHost) = Gateway.startLiveAsyncWithDiagnostics handle.Hub config reasons.Enqueue CancellationToken.None
+        for bytes, expected in [
+            [| 255uy |], Gateway.MalformedAuth
+            (LiveClientEnvelope(Submit=SubmitLiveIntent())).ToByteArray(), Gateway.MissingAuth
+            (LiveClientEnvelope(Authenticate=ClientAuth(Game="bar",ProtocolVersion="1.0.0",Profile="barc-live-v1",Credential="wrong",Origin=origin,ExpectedSessionId=ByteString.CopyFrom(sessionId.ToByteArray())))).ToByteArray(), Gateway.AuthRefusal
+            (LiveClientEnvelope(Authenticate=ClientAuth(Game="bar",ProtocolVersion="1.0.0",Profile="barc-live-v1",Credential="fixture-private",Origin=origin,ExpectedSessionId=ByteString.CopyFrom(sessionId.ToByteArray())))).ToByteArray(), Gateway.BootstrapUnavailable ] do
+            let socket = new ClientWebSocket()
+            socket.Options.SetRequestHeader("Origin", origin)
+            let deadline = new CancellationTokenSource(TimeSpan.FromSeconds 5.)
+            do! socket.ConnectAsync(Uri(sprintf "ws://127.0.0.1:%d/barc-live" browserPort), deadline.Token)
+            do! socket.SendAsync(ReadOnlyMemory<byte>(bytes), WebSocketMessageType.Binary, true, deadline.Token).AsTask()
+            let buffer = Array.zeroCreate<byte> 256
+            let! (response: ValueWebSocketReceiveResult) = socket.ReceiveAsync(Memory<byte>(buffer), deadline.Token).AsTask()
+            Expect.equal response.MessageType WebSocketMessageType.Close "original refusal still closes before bootstrap"
+            let mutable actual = Unchecked.defaultof<Gateway.LiveDiagnostic>
+            Expect.isTrue (reasons.TryDequeue(&actual)) "one bounded classification is observed"
+            Expect.equal actual expected "the genuine compiled branch supplies its closed reason"
+            Expect.isNone (LiveControl.currentBinding (BrokerState.liveControl handle.Hub)) "failed pairing never provisions authority"
+            deadline.Dispose()
+            socket.Dispose()
+        do! gateway.StopAsync()
+        (gateway :> IDisposable).Dispose()
+        do! handle.DisposeAsync().AsTask()
+        channel.Dispose()
+    }
     testTask "gateway refuses unselected origin and wrong broker session before provisioning authority" {
         let grpcPort = freePort()
         let! (handle: ServerHost.ServerHandle) =
@@ -292,6 +333,7 @@ let tests = testList "production live boundary" [
         let! (observation: LiveServerEnvelope) = receive socket
         Expect.equal bootstrap.Bootstrap.LiveProfile "barc-live-tactical-v1" "production WebSocket negotiates tactical profile"
         Expect.equal bootstrap.Bootstrap.TacticalCatalogue.Definitions.Count 1 "complete native catalogue crosses production WebSocket"
+        Expect.isFalse (diagnostics |> Seq.exists (function Gateway.MalformedAuth | Gateway.MissingAuth | Gateway.AuthRefusal | Gateway.BootstrapUnavailable -> true | _ -> false)) "successful authentication and bootstrap emit no pre-arm refusal"
         Expect.isNotNull observation.Observation.Tactical "paired tactical observation crosses production WebSocket"
         Expect.equal observation.Observation.Tactical.Features.Count 342 "all negotiated features cross production gRPC and WebSocket"
         Expect.equal observation.Observation.Tactical.Features[341].Reference.Id 341UL "feature beyond index 256 retains its id"
@@ -611,6 +653,25 @@ let tests = testList "production live boundary" [
         do! send replacementSocket (LiveClientEnvelope(Authenticate=auth.Clone()))
         let! (_: LiveServerEnvelope) = receive replacementSocket
         let! (_: LiveServerEnvelope) = receive replacementSocket
+        let boundedPort = freePort()
+        let sendDiagnostics = System.Collections.Concurrent.ConcurrentQueue<Gateway.LiveDiagnostic>()
+        let boundedConfig = { Gateway.defaultLiveConfig (sprintf "http://127.0.0.1:%d" boundedPort) origin "secret-live" sessionId with maxFrameBytes = 128 }
+        Expect.isLessThanOrEqual ((LiveClientEnvelope(Authenticate=auth.Clone())).ToByteArray().Length) 128 "controlled authentication fits the receive bound"
+        Expect.isGreaterThan (bootstrap.ToByteArray().Length) 128 "genuine bootstrap exceeds only the controlled first-send bound"
+        let! (boundedGateway: Microsoft.Extensions.Hosting.IHost) = Gateway.startLiveAsyncWithDiagnostics handle.Hub boundedConfig sendDiagnostics.Enqueue CancellationToken.None
+        let boundedSocket = new ClientWebSocket()
+        boundedSocket.Options.SetRequestHeader("Origin",origin)
+        let boundedDeadline = new CancellationTokenSource(TimeSpan.FromSeconds 5.)
+        do! boundedSocket.ConnectAsync(Uri(sprintf "ws://127.0.0.1:%d/barc-live" boundedPort),boundedDeadline.Token)
+        do! send boundedSocket (LiveClientEnvelope(Authenticate=auth.Clone()))
+        let boundedBuffer = Array.zeroCreate<byte> 256
+        let! (boundedResponse: ValueWebSocketReceiveResult) = boundedSocket.ReceiveAsync(Memory<byte>(boundedBuffer),boundedDeadline.Token).AsTask()
+        Expect.equal boundedResponse.MessageType WebSocketMessageType.Close "oversized first bootstrap retains original close refusal"
+        Expect.equal (sendDiagnostics.ToArray()) [| Gateway.BootstrapUnavailable |] "first bootstrap send failure has only its closed stage code"
+        boundedDeadline.Dispose()
+        boundedSocket.Dispose()
+        do! boundedGateway.StopAsync()
+        (boundedGateway :> IDisposable).Dispose()
         BrokerState.closeSession Session.OperatorTerminated DateTimeOffset.UtcNow handle.Hub
         let replacementCloseTimeout = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)
         let replacementCloseBuffer = Array.zeroCreate<byte> 128
