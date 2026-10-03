@@ -45,7 +45,7 @@
     "unbounded-table.wasm": "b29d600e88a71d11d3ca7e230abc9783952a3470de8d639900475ce478bf3bb5"
   },
   "toolchain": {
-    "dotnet": "10.0.400",
+    "dotnet": "10.0.401",
     "fable": "5.18.0",
     "rust": "1.90.0",
     "guestTarget": "wasm32v1-none",
