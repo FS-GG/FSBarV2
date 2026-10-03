@@ -38,6 +38,15 @@ module FailureDiagnostic =
     let outcomes = Set [ "refused"; "os-unavailable"; "deadline"; "malformed"; "unexpected"; "policy-nonaccepted" ]
     let policyCheckpoints = Set [ "initial-closure"; "current-process"; "invocation-ready"; "request-read"; "request-evaluation"; "final-closure"; "invocation-completion" ]
     let policyKinds = Set [ "exception"; "pending"; "refused"; "unknown" ]
+    [<Literal>]
+    let InitialClosureObservationSchema = "fsbar.barc-runtime-evidence-failure-observation/v2"
+    let initialClosureStages =
+        Set [ "argv"; "invocation"; "manifest-path"; "manifest-read"; "manifest-hash"
+              "manifest-json"; "manifest-schema"; "closure-roots"; "inventory"
+              "managed-census"; "provenance-census"; "runtime-census"; "search-layout"
+              "custody"; "runtime-roles"; "directory-custody"; "managed-custody"
+              "runtime-custody"; "provenance-join" ]
+    let initialClosureCodes = Set [ "refused"; "malformed"; "unavailable"; "unexpected-exception" ]
     let private shaPattern = Regex("\\A[0-9a-f]{64}\\z",RegexOptions.CultureInvariant)
 
     let private refuse () = raise(InvalidOperationException("diagnostic unavailable"))
@@ -62,6 +71,18 @@ module FailureDiagnostic =
         node["schema"]<-JsonValue.Create PolicyObservationSchema
         node["checkpoint"]<-JsonValue.Create checkpoint
         node["kind"]<-JsonValue.Create kind
+        node.ToJsonString(JsonSerializerOptions(WriteIndented=false))
+
+    // These two strings come only from closed source stages and exception categories.
+    // Exception messages, stack traces and paths never enter the observation.
+    let initialClosureObservation (stage:string) (code:string) =
+        require(initialClosureStages.Contains stage && initialClosureCodes.Contains code)
+        let node=JsonObject()
+        node["schema"]<-JsonValue.Create InitialClosureObservationSchema
+        node["checkpoint"]<-JsonValue.Create "initial-closure"
+        node["kind"]<-JsonValue.Create "exception"
+        node["subcheckpoint"]<-JsonValue.Create stage
+        node["code"]<-JsonValue.Create code
         node.ToJsonString(JsonSerializerOptions(WriteIndented=false))
 
     let private compatible (check:string) (checkpoint:string) =
@@ -122,10 +143,15 @@ module FailureDiagnostic =
             let policyNode,policyKind =
                 if policyElement.ValueKind=JsonValueKind.Null then null,None
                 else
-                    exact policyElement ["schema";"checkpoint";"kind"]
-                    require(text "schema" policyElement=PolicyObservationSchema)
+                    let schema=text "schema" policyElement
                     let checkpoint=text "checkpoint" policyElement
                     let kind=text "kind" policyElement
+                    if schema=PolicyObservationSchema then
+                        exact policyElement ["schema";"checkpoint";"kind"]
+                    else
+                        exact policyElement ["schema";"checkpoint";"kind";"subcheckpoint";"code"]
+                        require(schema=InitialClosureObservationSchema && checkpoint="initial-closure" && kind="exception")
+                        require(initialClosureStages.Contains(text "subcheckpoint" policyElement) && initialClosureCodes.Contains(text "code" policyElement))
                     require(policyCheckpoints.Contains checkpoint && policyKinds.Contains kind && compatible check checkpoint)
                     JsonNode.Parse(policyElement.GetRawText()),Some kind
             let observationHash=digest "observationSha256" root

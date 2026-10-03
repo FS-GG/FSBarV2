@@ -37,7 +37,10 @@ test -f "$BAR_GROWING_LOG_HELPER/growing_log.py"
 (cd "$BAR_GROWING_LOG_HELPER" && \
   BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
   BAR_RUNTIME_EVIDENCE_SOURCE="$(cd "$ROOT/../../.." && pwd)" \
-  python3 -m unittest -v test_growing_log.GrowingLogTests.test_staged_runtime_policy_readiness_preflight)
+  python3 -m unittest -v \
+    test_growing_log.GrowingLogTests.test_staged_runtime_policy_readiness_preflight \
+    test_growing_log.GrowingLogTests.test_initial_closure_closed_detail_failures \
+    test_growing_log.GrowingLogTests.test_initial_closure_parser_is_closed_and_preserves_legacy)
 (cd "$BAR_GROWING_LOG_HELPER" && python3 -m unittest -v test_buffered_writer)
 (cd "$BAR_GROWING_LOG_HELPER" && \
   BAR_RUNTIME_EVIDENCE_BUILD="$ROOT/bin/RuntimeEvidence/Release/net10.0" \
