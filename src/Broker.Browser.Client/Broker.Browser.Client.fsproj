@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <GenerateProgramFile>false</GenerateProgramFile>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <DisableImplicitLibraryPacksFolder>true</DisableImplicitLibraryPacksFolder>
     <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
   </PropertyGroup>
   <ItemGroup>
