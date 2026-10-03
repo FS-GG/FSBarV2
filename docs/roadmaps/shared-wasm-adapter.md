@@ -1,5 +1,7 @@
 # BAR shared WASM adapter
 
+Programme authority: [Unified Development Roadmap, shared WASM foundation](https://github.com/FS-GG/.github/blob/main/docs/2026-09-07-154210-fs-gg-unified-development-roadmap.md#993-shared-wasm-execution-foundation).
+
 WASM-SHARED-01.5-B1 prepares a new isolated adapter against the published connected
 Contracts/Browser 0.2.0. Production Client, legacy facade, receiver archive and native
 packet adoption remain the later .5-B2 join with the native-capacity owner.
@@ -49,7 +51,10 @@ Neither overrides the table maximum. The old validator accepts a supplied
 refuses 2048 and other nondefault values. Causal tests retain that refusal and
 reject noninteger, zero or above-profile deadline limits before Worker creation.
 
-Local qualification passed clean public package restore, locked restore, .NET
+Local qualification completed at **2026-10-03 05:06:13 UTC**. The timestamp
+is the final successful browser log modification time converted to UTC; HTTP
+request timestamps within that log use Europe/Vienna local time (UTC+02:00).
+Qualification passed clean public package restore, locked restore, .NET
 build with zero warnings/errors, Fable 5.18.0 and **37/37 Chromium cases** (6.2 s).
 The evidence in `tests/Broker.Browser.SharedWasm.Tests/qualification.json` binds
 adapter source, reused product wire validator, both installed package archives,

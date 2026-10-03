@@ -69,5 +69,7 @@
     "Successful shared shutdown physically retires Worker; active=false accepted by integrator.",
     "Default table4096 profile covers actual production callers; historical nondefault table overrides explicitly unsupported."
   ],
-  "telemetry": "not-configured; measured usage unknown"
+  "telemetry": "not-configured; measured usage unknown",
+  "qualificationCompletedUtc": "2026-10-03T05:06:13Z",
+  "qualificationTimestampSource": "UTC conversion of final successful browser log filesystem modification time; HTTP request timestamps in that log are local Europe/Vienna (UTC+02:00)."
 }
