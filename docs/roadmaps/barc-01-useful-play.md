@@ -291,3 +291,47 @@ and receiver dependency correction. Protected delivery, a new fully reviewed
 source/build/configuration packet, actual loaded custody, actual successor
 capacity and a distinct bounded native grant remain required. RP3/RP4/RP5 and
 all useful-play journeys remain open at **0/6**.
+
+
+## BARC-01.5f selected module readiness — 2026-10-03
+
+The preserved protected `3d723bc` capture successor discovered and ran its selected
+stock test, then failed at the first Arm confirmation. The actual capture retained
+four current and 36 stale observations, with no controller state, submission or
+result. The locator-only snapshot cannot identify its first refusal branch. Its
+one-attempt grant is consumed, all four owned process groups settled, and an
+independent complete 27,549-file packet census remained unchanged. This is an
+Unknown operation outcome, not Count1 acceptance or useful-play completion.
+
+The canonical native test now awaits publication of the exact selected module
+before Arm. Bundled responses must complete successfully; the selected stock
+manual guest must match the existing handoff artifact SHA-256. Imported guests
+must match their existing independent hash before upload and publish their exact
+filename before Arm. The subsequent arm envelope must name the same module hash.
+This follows the existing receiver journey's module-publication wait and does
+not change the worker, preparation implementation, native authority or freshness.
+
+A failed pair writes a separate exclusive mode-0600 `*.arm-failure.json` artifact
+beside the owned capture/output. It retains bounded redacted module, status,
+authority and diagnostic text, readiness/refusal code, arm count/module digest
+and controller count/stage. It excludes pairing credentials, raw envelopes and
+controller identities; accepted capture records and parsing remain unchanged.
+The artifact cannot grant native acceptance.
+
+Ten focused JS controls execute the actual source functions with controlled
+fetch/body delays, download refusal, served/imported hash mismatch, imported
+publication, causal Arm ordering and private failure-file/lifecycle behavior.
+Removing the publication wait reproduces the original early-arm refusal. The
+combined readiness and existing native preparation suite passes 40 controls;
+exact Playwright `--list` discovers the selected test without a browser, engine or
+native effect. Routine eligibility and operation-boundary fixtures pass. Source
+controls qualify this readiness slice only.
+
+Actual retained stock damage also invalidated the live baseline. The reducer
+already materializes selected economy/withdrawal/idle events; unsupported
+nonempty deltas remain refused. The parallel producer replacement capability and
+its typed consumer correspondence must join before another reviewed immutable
+packet and distinct prospective native grant. The consumed 27,549-file packet and
+2,997-file execution capsule remain preserved. RP3/RP4/RP5 and all native
+useful-play journeys remain open at **0/6**. Telemetry begin for
+`barc-stock-source-readiness-20261003` returned `not-configured`; usage is Unknown.
