@@ -258,3 +258,36 @@ Protected source delivery and the fresh packet's independent source/build,
 configuration, current-process and actually loaded engine/plugin joins remain
 required. RP3 actual capacity, RP4 custody, RP5 bounded Count1 and useful-play
 journeys remain open at **0/6**.
+
+## RP4 bounded stock attempt and complete map census repair — 2026-10-03
+
+The independently reviewed protected `a7eb52a` packet received one prospective
+Count1 grant. Its sole attempt refused before browser launch or Count1 in
+17.234 seconds. The actual browser admission consumed 32 completed probes and
+one compiled-policy evaluation in 1,127,818 microseconds: its 159,096-byte log
+retained a stable 139-byte incomplete tail, so the shared probe cap exhausted
+before the five-second deadline. All owned host, engine and receiver processes
+settled; the complete 24,544-file packet and its immutable settings seed remained
+unchanged. The grant is consumed and the original attempt is preserved.
+
+The selected unmodified Recoil 2026.07.04 source writes newline-terminated records
+through a buffered file sink whose default flush threshold is ERROR. The observed
+console record continued beyond the file's incomplete tail. Three real libc FILE
+controls distinguish that buffered-prefix exposure from the official
+`LogFlushLevel = 0` configuration, which flushes every emitted record. A new
+immutable settings seed with that setting is prepared separately; neither a
+stable partial record nor a longer polling interval grants admission. The
+32-probe, three-evaluation, five-second, byte and exact-read limits stay fixed.
+
+Preparing positive loaded-custody receipts exposed a separate source defect:
+`proc_bytes` performed one unbuffered read, which may return before EOF on
+`/proc/<pid>/maps`. The repair reads bounded chunks through EOF and still refuses
+maximum-plus-one bytes. Five focused controls cover real complete process maps,
+short reads, exact-bound acceptance, over-bound refusal, empty input and invalid
+bounds. A private successor helper must persist the positive actual engine and
+plugin mapping census before browser effect; its actual-process controls are
+preparation evidence only. The source repair preserves the protected B1 adapter
+and receiver dependency correction. Protected delivery, a new fully reviewed
+source/build/configuration packet, actual loaded custody, actual successor
+capacity and a distinct bounded native grant remain required. RP3/RP4/RP5 and
+all useful-play journeys remain open at **0/6**.

@@ -17,9 +17,14 @@ def mark_failure(error,check,outcome=None,policy_observation=None):
 
 def proc_bytes(pid,name,maximum):
     # The only proc files read are nonsecret stat/maps/fdinfo, never environ/cmdline.
+    need(type(maximum) is int and maximum>0,'proc positive byte bound')
+    chunks=[];length=0
     with open(f'/proc/{pid}/{name}','rb',buffering=0) as stream:
-        value=stream.read(maximum+1)
-    need(len(value)<=maximum,'proc byte bound');return value
+        while length<=maximum:
+            block=stream.read(min(65536,maximum+1-length))
+            if not block:break
+            chunks.append(block);length+=len(block)
+    need(length<=maximum,'proc byte bound');return b''.join(chunks)
 
 def start_ticks(pid):
     value=proc_bytes(pid,'stat',16384).decode();return value.rsplit(') ',1)[1].split()[19]
