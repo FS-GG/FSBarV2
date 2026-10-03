@@ -125,8 +125,14 @@ test("exact client close observer forwards original once and contains diagnostic
 });
 test("pairing sidecar publishes exclusive private bounded bytes and refuses unsafe parents",async()=>{
   const dir=await mkdtemp(resolve(tmpdir(),"bar-pairing-projection-"));try{
-    chmodSync(dir,0o700);const j={outputPath:resolve(dir,"capture")},state=pairing.pairingState();state.secret="PRIVATE";pairing.notePairing(state,"socket");
-    pairing.writePairingDiagnostic(j,state,null);const path=j.outputPath+".pairing-diagnostic.json",text=await readFile(path,"utf8"),pin=await stat(path);assert.equal(pin.mode&0o777,0o600);assert.equal(pin.nlink,1);assert.ok(Buffer.byteLength(text)<=4096);assert.equal(text.includes("PRIVATE"),false);
+    chmodSync(dir,0o700);const capturePath=resolve(dir,"capture.jsonl"),releasePath=resolve(dir,"release");
+    const start=spec.indexOf("const h=stockHandoff,capturePath=");assert.ok(start>=0);
+    const end=spec.indexOf("\n    try{const rows=await capture(page,journal)",start);assert.ok(end>start);
+    const selectedStockSetup=spec.slice(start,end);let journals=0;
+    const context={stockHandoff:{paths:{capture:capturePath},runId:"controlled",source:{},connection:{receiverUrl:"http://example.invalid/",gatewayUrl:"ws://example.invalid/",allowedOrigin:"http://example.invalid",sessionId:"controlled",credential:"PRIVATE"},artifacts:{guest:{sha256:"0".repeat(64)}}},process:{env:{BARC_STOCK_SMOKE_CAPTURE:capturePath,BARC_STOCK_SMOKE_RELEASE:releasePath}},captureJournal:(path,release)=>{assert.equal(path,capturePath);assert.equal(release,releasePath);journals++;return{}}};
+    const j=vm.runInNewContext(`${selectedStockSetup};j`,context),state=pairing.pairingState();assert.equal(journals,1);state.secret="PRIVATE";pairing.notePairing(state,"socket");
+    pairing.writePairingDiagnostic(j,state,null);assert.equal(j.outputPath,capturePath);assert.equal(j.armFailurePath,capturePath+".arm-failure.json");const path=capturePath+".pairing-diagnostic.json",text=await readFile(path,"utf8"),pin=await stat(path);assert.equal(pin.mode&0o777,0o600);assert.equal(pin.nlink,1);assert.ok(Buffer.byteLength(text)<=4096);assert.equal(text.includes("PRIVATE"),false);
+    assert.throws(()=>vm.runInNewContext(selectedStockSetup,{...context,process:{env:{BARC_STOCK_SMOKE_CAPTURE:resolve(dir,"foreign"),BARC_STOCK_SMOKE_RELEASE:releasePath}}}),/authenticated capture path changed/);assert.equal(journals,1);
     assert.throws(()=>pairing.writePairingDiagnostic(j,state,null),/private pairing diagnostic refused/);assert.equal(await readFile(path,"utf8"),text);
     chmodSync(dir,0o755);assert.throws(()=>pairing.writePairingDiagnostic({outputPath:resolve(dir,"world")},state,null),/private pairing diagnostic refused/);chmodSync(dir,0o700);
     const link=dir+"-link";symlinkSync(dir,link);try{assert.throws(()=>pairing.writePairingDiagnostic({outputPath:resolve(link,"linked")},state,null),/private pairing diagnostic refused/)}finally{unlinkSync(link)}
