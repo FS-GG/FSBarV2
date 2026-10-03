@@ -66,6 +66,10 @@ jobs:
 
       - name: Restore and build the live boundary source
         shell: bash
+        env:
+          # grpc-fsharp 0.2 targets net6.0; retain the LatestMajor policy in
+          # specs/001-tui-grpc-broker/readiness/feature-baseline.md.
+          DOTNET_ROLL_FORWARD: LatestMajor
         run: |
           set -euo pipefail
           project=tests/Broker.Browser.Live.Tests/Broker.Browser.Live.Tests.fsproj
