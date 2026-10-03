@@ -231,3 +231,30 @@ local/generated input journeys or publish/install the product.
   unchanged. RP1 source delivery does not qualify useful play (still 0/6) or
   authorize native dispatch: RP2 complete-record contract qualification and RP3
   capacity evidence are both required before a joined successor and operation.
+
+## RP3/RP4 capacity and receiver build checkpoint — 2026-10-03
+
+The protected RP2 policy was built from `4e3ee2d4b77ab3f8875fcfb21cee20a374630707`
+with official locked dependencies and SDK 10.0.401. Actual framed F#/held-descriptor
+component measurements accepted BrowserAdmission, Normalization and Release at
+4 KiB/16 records, at the predecessor's 3,666,566-byte/33,531-record workload shape,
+and at simultaneous 10 MiB/65,536-record limits. The nine accepted boundaries took
+713.516–1,583.423 ms; the smallest observed margin under the unchanged five-second
+budget was 3,416.577 ms. The largest encoded request was 13,984,124 bytes, leaving
+2,793,092 bytes under the 16 MiB request cap. The full-size case performed three
+exact reads of 160 calls each; the read-call cap applies to each exact read.
+Each accepted boundary used one probe and one evaluation. Raw-limit-plus-one and
+record-limit-plus-one separately refused. These controlled workload measurements
+are component evidence; they do not establish actual successor log volume,
+buffered cleanup, native admission or useful play.
+
+Preparing the fresh receiver exposed its locked FSharp.Core 10.1.401 checksum
+from the SDK implicit pack. This repair selects the official package instead and
+changes only that same-version locked content hash, following the policy projects'
+existing correction. NuGet's canonical signed-package content hash is distinct
+from the original signed archive's raw SHA-256/SHA-512; those identities must be
+retained separately during artifact custody. No dependency version changes.
+Protected source delivery and the fresh packet's independent source/build,
+configuration, current-process and actually loaded engine/plugin joins remain
+required. RP3 actual capacity, RP4 custody, RP5 bounded Count1 and useful-play
+journeys remain open at **0/6**.
