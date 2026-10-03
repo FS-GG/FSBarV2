@@ -1,0 +1,73 @@
+{
+  "schema": "bar-shared-wasm-adapter-qualification/1",
+  "item": "WASM-SHARED-01.5-B1",
+  "baseline": "4e3ee2d4b77ab3f8875fcfb21cee20a374630707",
+  "scope": "local adapter preparation; production and receiver adoption pending B2",
+  "sourceSha256": {
+    "src/Broker.Browser.SharedWasm/Adapter.fs": "8909856655519cb005875c81decef04326fcdba1b20abba8c317070ea87b78b3",
+    "src/Broker.Browser.SharedWasm/index.js": "31eeb7dc39c9834465688fdc595d06081ed876704fb3648e637bbae557cd10c5",
+    "src/Broker.Browser.SharedWasm/Broker.Browser.SharedWasm.fsproj": "5e2ec546da75e7fda2ba3a37c787bedead6ab0b37f1d1e75c893f5a680d6bb9f",
+    "src/Broker.Browser.Wasm/barc-wire.js": "5a2e8fa06ff9656e5ad603772a75a0803ba2d45bfacf6df2a0ad5178264dd881"
+  },
+  "packageArchiveSha256": {
+    "fs.gg.wasm.browser": "40d11feebb07b01c0846b1b9716db10badc5dfbce1a450eb5319ab89b8f041e6",
+    "fs.gg.wasm.contracts": "b5bb9d0217dc31de9649b7c952db514bab5c99d32b30e6480da1f313d446fba4"
+  },
+  "nugetLockSha256": "058d6c4822e96fc0bcd78642cf1178c987f9e0d79df5ce53fc2a645cb16e6dab",
+  "npmLockSha256": "6900a21c442baf90847df353433a78537ad121ef95243c42ddaf56d9cde7eae7",
+  "workerAssetManifestSha256": "6d1240457609c65c317be963f97d799297dadfbab04655fc6a390772124b9aaa",
+  "workerAssetCount": 76,
+  "guestSha256": {
+    "bad-abi.wasm": "0c0feeb983b006376d719d1431bb1116eda52828bba6c038e94e2ff93c2cfd21",
+    "custom-preview.wasm": "fbacab85b5493c7c0ebb5c28e80f6f1643312ea39c2c429671d907517ba20635",
+    "empty-output.wasm": "22d8232d5fc1d9bf007e033e4be48e1586c944cd6283412e219cc077f50c2138",
+    "foreign-output.wasm": "15c4250320d61bcec828d844280b80cd87f617e2a1ad6d40d6e200c9ed30de08",
+    "hang-alloc.wasm": "14f76ea9b5fc6ca9af444319c19947071440d73d75d3b771505d6e2b9e41827e",
+    "hang-free.wasm": "fd88e7ff90768122d8c83a9a3273e303d9a94f7fc0b5e57d9017a9aeb15ae861",
+    "hang-init.wasm": "004102f5f446a6a86da4e555b0f7e74340d132140e0f645e887d3856a6977afc",
+    "hang-process.wasm": "299d02d579a0c6ebf31b06b6dd72caccdf602d08090d7f44af917467c7298c8c",
+    "hang-shutdown.wasm": "4c70fee23f942f3827990ba73117650eb075cefdb45ae54f27c32185e98fc179",
+    "invalid-export.wasm": "0a7e282ef0ac4948a83fb2d84e78bec596cbc465d896da3de9ffe18810c2dc26",
+    "invalid-import.wasm": "5503aedbefed323cb5fe99433ef479945e048af103478de2c4c39967cd0ed6fd",
+    "invalid-start.wasm": "de88a414074eade8411a0cca84d27eb5001315dd4cc232b4641d09e5ff6b44a0",
+    "malformed-output.wasm": "d537a7cc5ceae8707113fe3ac95115a3731c0a54414ddc33de9c8b4181b0614f",
+    "manual-preview.wasm": "c7d57cb60f9a37345a465d0e8d2ef216c16f7c786dabb0b62060d51902f3f640",
+    "oob-descriptor.wasm": "edfb67e99f62730aa34be2cfc19b2745d4812b1260a481209d76f8edc3f8f0d8",
+    "overlap-output.wasm": "658055682968c678374d2a4cf0c4d889d72922126dc1b76acb587b45afbc6267",
+    "oversized-output.wasm": "2c30414ebd478dcfddb0ea34b3e9f0da55501465434e778ab7ba18d84873069f",
+    "require-zero-descriptor.wasm": "103b7a9919a4e26b8e10a3bcf26ec613d994d046c3b2a8477d85ea6f8d6e4cb3",
+    "trap-alloc.wasm": "e04acdab173c09d5bc1cdc780d1edb9a124e4d8cacff6b90a9b240a2834668c8",
+    "trap-free.wasm": "94a0a7c991f8dde5b8b92d4e3f3a8774e415dcd37f2274d2133f15e05738513a",
+    "trap-init.wasm": "473c5cbe1142c0c43cb2a1361a88d977c3dacd9c9ef666803f1c29986318141e",
+    "trap-process.wasm": "fad722a0f72c25288474ff0a960057167231e831f864746f1ee655c8692a0e72",
+    "trap-shutdown.wasm": "97f152d6e58e408de86ea1aa11d54057ef2cacc113d035be80c300e9fcb6b180",
+    "unaligned-output.wasm": "2fbaa9c95d46008fbce37e35463f639be6a434fc45f727e952cacc5de2458f5b",
+    "unbounded-table.wasm": "b29d600e88a71d11d3ca7e230abc9783952a3470de8d639900475ce478bf3bb5"
+  },
+  "toolchain": {
+    "dotnet": "10.0.400",
+    "fable": "5.18.0",
+    "rust": "1.90.0",
+    "guestTarget": "wasm32v1-none",
+    "playwright": "1.63.0"
+  },
+  "checks": {
+    "publicCleanPackageRestore": "passed",
+    "publicLockedRestore": "passed",
+    "dotnetBuild": "passed",
+    "fableCompile": "passed",
+    "chromiumCasesPassed": 37,
+    "chromiumCasesFailed": 0,
+    "applicationPath": "/sub/app/"
+  },
+  "logSha256": {
+    "bar-wasm-b1-guests.log": "04807f138b0503bd8cd673c15f767d87a3317a748e078988bbad7bdcf1963499",
+    "bar-wasm-b1-build-final.log": "40d259d39911912f1ddab9dc06462502c820e30c7f74f64244b3aac0c1abdd64",
+    "bar-wasm-b1-browser-qualified.log": "50b17c07a5e3a9691e8bd379387575c33ed9bb0f82307726de9a0ef388d5ee61"
+  },
+  "compatibilityNotes": [
+    "Successful shared shutdown physically retires Worker; active=false accepted by integrator.",
+    "Default table4096 profile covers actual production callers; historical nondefault table overrides explicitly unsupported."
+  ],
+  "telemetry": "not-configured; measured usage unknown"
+}

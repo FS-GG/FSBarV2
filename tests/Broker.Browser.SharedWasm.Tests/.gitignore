@@ -1,0 +1,10 @@
+node_modules/
+public/
+obj/
+.nuget/
+.guests/
+test-results/
+
+.nuget-http/
+
+.codec/
