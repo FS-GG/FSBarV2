@@ -1,7 +1,7 @@
 """Held-FD adapter for one source-bound, growing Recoil infolog."""
 import base64,hashlib,json,os,re,selectors,stat,subprocess,time
 from pathlib import Path
-from private_io import Refused,SHA,atomic_bytes_new,atomic_new,canonical,components,hash_artifact,need,read_bytes
+from private_io import Refused,SHA,atomic_bytes_new,atomic_new,canonical,components,hash_artifact,need,read_bytes,read_immutable_closure
 from runtime_identity import mark_failure,proc_bytes,start_ticks
 MAX_LOG=10*1024*1024
 MAX_POLICY_INPUT=16*1024*1024
@@ -248,9 +248,9 @@ class GrowingLog:
         self.counter_cause='settlement-probe-cap'
         raise mark_failure(Refused('growing log record settlement exhausted'),'infolog-record-settlement-exhausted','refused',None)
     @staticmethod
-    def _closure(path,digest,deadline):
+    def _closure(path,digest,deadline,physical_pin=None):
         need(time.monotonic()<deadline,'policy closure deadline')
-        raw=read_bytes(path,1024*1024);need(hashlib.sha256(raw).hexdigest()==digest,'policy closure manifest digest/bound')
+        raw=read_bytes(path,1024*1024)if physical_pin is None else read_immutable_closure(path,digest,physical_pin,1024*1024);need(hashlib.sha256(raw).hexdigest()==digest,'policy closure manifest digest/bound')
         value=json.loads(raw.decode('utf-8'),object_pairs_hook=_unique)
         need(isinstance(value,dict) and set(value)=={'schema','custodyRoot','managedRoot','provenanceRoot','runtimeRoots','searchLayout','managed','provenance','runtime','runtimeRoles','source','custody'} and value.get('schema')==CLOSURE_SCHEMA,'policy closure schema')
         pins=[]
