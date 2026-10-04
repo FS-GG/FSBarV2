@@ -390,3 +390,25 @@ capacity and prospective operation authority remain required; all useful-play
 journeys remain **0/6**. Admission telemetry attempt
 `bar-stock-correspondence-source-admission-20261003` returned `not-configured`;
 usage is Unknown.
+
+## StockSelection compiler capture source — 2026-10-04
+
+The canonical [StockSelection producer](../../tests/Broker.NativeProof/Policy/build-stock-selection.mjs)
+accepts `--capture-dir <fresh-absolute-directory>` for prospective qualification.
+That route retains separate raw restore/Fable streams, actual nested arguments,
+working directory and closed child environment, Fable 5.18 `--verbose` evaluated
+source/reference hashes, the temporary output graph and literal runtime-import
+rewrite correspondence. Existing builds without capture keep their cleanup route.
+The capture records prior descriptors as historical and publishes a new descriptor
+only after successful compiler and runtime-byte guards. A captured compiler graph
+is observed after compilation and must join an independently frozen parent input
+census; it does not establish compiler/package authenticity by itself.
+
+Thirteen [production-call controls](../../tests/Broker.NativeProof/Policy/build-stock-selection.test.mjs)
+pass on the existing Node 24.8 interpreter with every SDK/compiler launch mocked.
+They cover raw streams, retained partial failures, timeout/signal refusal, stale
+previous descriptors, capture collisions, graph links, runtime mismatch, missing
+verbose receipts and authored input drift. No restore, compiler, browser, engine
+or game operation was executed. Authentic producer tools and fresh bounded build
+admission remain pending. This source slice changes neither runtime authority nor
+historical READY/map cause Unknown; useful native play remains **0/6**.
