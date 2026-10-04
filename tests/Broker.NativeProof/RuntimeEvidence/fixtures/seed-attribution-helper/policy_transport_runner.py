@@ -8,6 +8,7 @@ import os,json,pathlib,time,datetime,argparse,subprocess,selectors,ctypes,hashli
 HERE=pathlib.Path(__file__).resolve().parent;sys.path[:0]=[str(HERE),str(HERE/'helper')]
 import mechanics as m,outer_custody as outer
 from seed_policy import SeedGrowingLog,PolicyOnlyContext,policy_shim
+from growing_log import _policy_observation
 from runtime_identity import start_ticks
 from snapshot_publication import bytes_new,json_new
 ROOT='/tmp/bar-policy-transport-qualification-20261004';PYTHON='/usr/bin/python3.14'
@@ -65,6 +66,17 @@ def shim(args):
  p=profile();a=m.load(args.admission);source_binding(a,p)
  return policy_shim(args,sys.modules['policy_transport_runner'],p,a)
 
+def require_malformed_refusal(retained,settlement,encoded,evaluation):
+ need(evaluation==2 and encoded==b'{malformed','literal second malformed control')
+ need(retained['requestWrittenBytes']==len(encoded)and retained['requestSha256']==hashlib.sha256(encoded).hexdigest()and settlement['exitCode']==2 and not settlement['forced'],'malformed request must naturally refuse after exact full request')
+ ack=retained['stderr'];expected=pathlib.Path(ROOT)/'evidence'/('policy-'+str(evaluation)+'.failure.stderr.raw')
+ need(ack['path']==str(expected)and ack['fullWriteFsyncAcknowledged']is True and ack['bytes']<=2048,'exact acknowledged bounded malformed diagnostic')
+ m.checked_pin(ack);raw=expected.read_bytes()
+ need(len(raw)==ack['bytes']and hashlib.sha256(raw).hexdigest()==ack['sha256'],'retained malformed diagnostic byte join');m.checked_pin(ack)
+ observation=_policy_observation(raw)
+ need(observation=={'schema':'fsbar.barc-runtime-evidence-failure-observation/v1','checkpoint':'request-evaluation','kind':'exception'},'exact genuine malformed request-evaluation exception diagnostic')
+ return observation
+
 def run_cases(p,a_path,owner,deadline):
  import base64
  A=pathlib.Path(ROOT);f=A/'fixture';f.mkdir(mode=0o700)
@@ -91,7 +103,7 @@ def run_cases(p,a_path,owner,deadline):
    retained=m.load(A/'evidence'/('policy-'+str(ctx.evaluations)+'.failure.json'))
    need(retained['ready']is not None,'negative control ready-before-failure coverage required')
    if case=='withheld-input':need(retained['requestWrittenBytes']==0 and ctx.reaped[-1]['forced']and 'deadline'in str(error),'withheld-input deadline must force held settlement')
-   else:need(retained['requestWrittenBytes']==len(encoded)and ctx.reaped[-1]['exitCode']==2 and not ctx.reaped[-1]['forced'],'malformed request must naturally refuse after full request')
+   else:require_malformed_refusal(retained,ctx.reaped[-1],encoded,ctx.evaluations)
    need(not getattr(error,'_barc_secondary_settlement_failure',None)and not getattr(error,'_barc_secondary_publication_failure',None),'negative cleanup/publication complete')
    json_new(A/'evidence'/('control-'+case+'.json'),{'case':case,'expectedFailure':str(error),'firstFailure':retained,'observedSettlement':ctx.reaped[-1],'failureIsNotNaturalSuccess':True,'actorEligible':False})
    results.append({'case':case,'qualified':True,'expectedNegative':True})

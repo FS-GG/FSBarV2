@@ -17,7 +17,7 @@ FILES=('test_policy_transport_runner.py','test_qualify_prearm.py','test_native_e
 suite=unittest.TestSuite()
 for index,name in enumerate(FILES):
  spec=importlib.util.spec_from_file_location('portable_seed_controls_'+str(index),ROOT/name);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(module))
-expected=88
+expected=89
 if suite.countTestCases()!=expected:raise SystemExit('portable source control roster changed: '+str(suite.countTestCases()))
 result=unittest.TextTestRunner(verbosity=2).run(suite)
 if not result.wasSuccessful()or result.testsRun!=expected or result.skipped:raise SystemExit(1)

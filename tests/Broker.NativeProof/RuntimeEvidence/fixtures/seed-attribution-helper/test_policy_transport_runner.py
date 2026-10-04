@@ -1,5 +1,5 @@
 """Pure closed-composition/source-routing controls; no policy/CLR/native execution."""
-import unittest,time,pathlib,tempfile,os,ast
+import unittest,time,pathlib,tempfile,os,ast,json,hashlib
 from unittest.mock import patch,Mock
 import seed_policy as s
 import policy_transport_runner as r
@@ -15,6 +15,21 @@ class Composition(unittest.TestCase):
    with patch.object(r,'profile')as profile,patch.object(r.subprocess,'Popen')as process:
     with self.assertRaises(m.Refused):r.execute(grant)
     profile.assert_not_called();process.assert_not_called()
+ def test_malformed_requires_retained_exact_exception_diagnostic(self):
+  with tempfile.TemporaryDirectory()as d:
+   root=pathlib.Path(d);(root/'evidence').mkdir();file=root/'evidence/policy-2.failure.stderr.raw'
+   encoded=b'{malformed';observation={'schema':'fsbar.barc-runtime-evidence-failure-observation/v1','checkpoint':'request-evaluation','kind':'exception'}
+   def retained(value):
+    raw=(json.dumps(value)+'\n').encode();file.write_bytes(raw);file.chmod(0o600);pin=m.physical(file);pin['fullWriteFsyncAcknowledged']=True
+    return {'requestWrittenBytes':len(encoded),'requestSha256':hashlib.sha256(encoded).hexdigest(),'stderr':pin}
+   with patch.object(r,'ROOT',d):
+    settlement={'exitCode':2,'forced':False};self.assertEqual(r.require_malformed_refusal(retained(observation),settlement,encoded,2),observation)
+    for value in [{**observation,'checkpoint':'final-closure'},{**observation,'kind':'refused'},{**observation,'extra':'forged'},{'unknown':True}]:
+     with self.subTest(value=value),self.assertRaises(m.Refused):r.require_malformed_refusal(retained(value),settlement,encoded,2)
+    for code,force in [(0,False),(2,True),(-9,True)]:
+     with self.subTest(code=code,force=force),self.assertRaises(m.Refused):r.require_malformed_refusal(retained(observation),{'exitCode':code,'forced':force},encoded,2)
+    row=retained(observation);file.write_bytes(b'changed')
+    with self.assertRaises(m.Refused):r.require_malformed_refusal(row,settlement,encoded,2)
  def test_closed_binding(self):
   with patch.object(s,'_validate')as validation:
    for kind in [s.SeedPolicyContext,s.PolicyOnlyContext]:
