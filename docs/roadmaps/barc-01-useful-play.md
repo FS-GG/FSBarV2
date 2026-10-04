@@ -404,9 +404,13 @@ only after successful compiler and runtime-byte guards. A captured compiler grap
 is observed after compilation and must join an independently frozen parent input
 census; it does not establish compiler/package authenticity by itself.
 
-Thirteen [production-call controls](../../tests/Broker.NativeProof/Policy/build-stock-selection.test.mjs)
+Seventeen [production-call controls](../../tests/Broker.NativeProof/Policy/build-stock-selection.test.mjs)
 pass on the existing Node 24.8 interpreter with every SDK/compiler launch mocked.
-They cover raw streams, retained partial failures, timeout/signal refusal, stale
+The optional `--nuget-config <absolute-file>` argument passes the exact reviewed
+stock feed configuration to nested restore and hashes it before/after compilation.
+The original 1MiB nested output limit remains enforced. Controls cover explicit
+config arguments, drift, invalid paths and duplicate flags as well as raw streams,
+retained partial failures, timeout/signal refusal, stale
 previous descriptors, capture collisions, graph links, runtime mismatch, missing
 verbose receipts and authored input drift. No restore, compiler, browser, engine
 or game operation was executed. Authentic producer tools and fresh bounded build

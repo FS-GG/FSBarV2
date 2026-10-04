@@ -37,7 +37,7 @@ export function evaluatedInputs(raw,cwd){
  const pin=(path,role)=>{const absolute=resolve(cwd,path);const s=regular(absolute);return{role,compilerPath:path,absolutePath:absolute,bytes:s.size,sha256:hash(read(absolute)),observation:"after compiler; parent must join pre/post frozen input census"}};
  return{project:lines[0].slice(12),fableLibrary:lines[1].slice(15),targetFramework:lines[2].slice(18),outputType:lines[3].slice(13),options:entries.filter(x=>x.startsWith("-")),sources:sources.map(x=>pin(x,"source")),references:references.map(x=>pin(x,"reference")),rawSHA256:hash(raw),headerCharacterOffset:start};
 }
-export function buildStockSelection({captureDir=null,policyRoot=ownPolicyRoot,environment=process.env}={},run=spawnSync){
+export function buildStockSelection({captureDir=null,nugetConfig=null,policyRoot=ownPolicyRoot,environment=process.env}={},run=spawnSync){
  const proofRoot=dirname(policyRoot),repoRoot=resolve(proofRoot,"../.."),outputRoot=join(policyRoot,"generated"),capture=captureDir?freshCapture(captureDir):null;
  const temporary= capture?join(capture,"fable-output"):mkdtempSync(join(tmpdir(),"stock-selection-fable-"));
  if(capture)mkdirSync(temporary,{mode:0o700});
@@ -47,21 +47,23 @@ export function buildStockSelection({captureDir=null,policyRoot=ownPolicyRoot,en
  const descriptorPath=join(outputRoot,"stock-selection-policy.json"),originalDescriptor=existsSync(descriptorPath)?{sha256:hash(read(descriptorPath)),bytes:read(descriptorPath).length}:null;
  const phases=[];let outcome={schema:"fsbar.stock-selection-build-capture/v1",state:"FAILED",captureComplete:false,publishedNewDescriptor:false,originalDescriptor,temporaryRetained:Boolean(capture)},failure=null;
  function invoke(name,argv){
-  const started=new Date().toISOString(),result=run("dotnet",argv,{cwd:repoRoot,env:childEnv,maxBuffer:33554432,timeout:120000,encoding:null});
+  const started=new Date().toISOString(),result=run("dotnet",argv,{cwd:repoRoot,env:childEnv,maxBuffer:1048576,timeout:120000,encoding:null});
   const stdout=Buffer.from(result.stdout??""),stderr=Buffer.from(result.stderr??"");save(`${name}.stdout.raw`,stdout);save(`${name}.stderr.raw`,stderr);
   const receipt={name,executable:"dotnet",argv,cwd:repoRoot,environment:childEnv,startedUTC:started,finishedUTC:new Date().toISOString(),actualChildPID:result.pid??null,status:result.status,signal:result.signal??null,error:result.error?{code:result.error.code??null,message:result.error.message}:null,stdout:{bytes:stdout.length,sha256:hash(stdout)},stderr:{bytes:stderr.length,sha256:hash(stderr)}};phases.push(receipt);save(`${name}.json`,receipt);
-  need(!result.error&&result.status===0&&!result.signal,`${name} failed; raw streams retained in capture-dir`);need(stdout.length<=33554432&&stderr.length<=33554432,"child output bound");return{stdout,stderr};
+  need(!result.error&&result.status===0&&!result.signal,`${name} failed; raw streams retained in capture-dir`);need(stdout.length<=1048576&&stderr.length<=1048576,"child output bound");return{stdout,stderr};
  }
  try{
+  const configPin=()=>{if(!nugetConfig)return null;need(isAbsolute(nugetConfig),"nuget-config must be absolute");const absolute=resolve(nugetConfig);let parent=dirname(absolute);while(true){const st=lstatSync(parent);need(st.isDirectory()&&!st.isSymbolicLink(),"NuGet config ancestor symlink/type");if(parent===dirname(parent))break;parent=dirname(parent)}const st=regular(absolute);return{path:absolute,bytes:st.size,sha256:hash(read(absolute))}};const configBefore=configPin();if(configBefore)save("nuget-config-before.json",configBefore);
   const tools=JSON.parse(read(join(repoRoot,".config/dotnet-tools.json"))),version=tools.tools.fable.version;need(version==="5.18.0",`expected pinned Fable 5.18.0, found ${version}`);
   const inputPaths=["Policy/Directory.Build.props","Policy/StockSelection.fs","Policy/StockSelection.fsproj","Policy/StockSelection.packages.lock.json","Policy/build-stock-selection.mjs","package.json","package-lock.json"];
   const authored=()=>inputPaths.map(path=>{const absolute=join(proofRoot,path);regular(absolute);return{path:`tests/Broker.NativeProof/${path}`,sha256:hash(read(absolute))}});const before=authored();save("authored-before.json",before);
-  invoke("restore",["restore",join(policyRoot,"StockSelection.fsproj"),"--locked-mode"]);
+  invoke("restore",["restore",join(policyRoot,"StockSelection.fsproj"),"--locked-mode",...(configBefore?["--configfile",configBefore.path]:[])]);
   const result=invoke("fable",["fable",join(policyRoot,"StockSelection.fsproj"),"--outDir",temporary,"--noCache","--noRestore",...(capture?["--verbose"]:[])]);
   if(capture)save("evaluated-inputs.json",evaluatedInputs(result.stdout,repoRoot));
   const compiledPath=join(temporary,"StockSelection.js"),libraryRoot=join(proofRoot,"node_modules/@fable-org/fable-library-js");regular(compiledPath);const original=read(compiledPath);let compiled=original.toString("utf8");
   const imports=[...compiled.matchAll(/\.\/fable_modules\/fable-library-js\.5\.18\.0\/([^"']+)/g)].map(match=>match[1]);need(imports.length>0,"generated policy did not declare its Fable runtime imports");const importedModules=[];
   for(const imported of new Set(imports)){need(safeRelative(imported),"runtime import traversal/absolute path");const copiedPath=beneath(temporary,`fable_modules/fable-library-js.5.18.0/${imported}`),installedPath=beneath(libraryRoot,imported);regular(copiedPath);regular(installedPath);const copied=read(copiedPath),installed=read(installedPath);need(copied.equals(installed),`Fable runtime import differs from pinned npm package: ${imported}`);importedModules.push({path:imported,temporaryPath:copiedPath,installedPath,bytes:copied.length,sha256:hash(copied)})}
+  const configAfter=configPin();need(JSON.stringify(configBefore)===JSON.stringify(configAfter),"explicit NuGet config drift");if(configAfter)save("nuget-config-after.json",configAfter);
   const inputs=authored();need(JSON.stringify(inputs)===JSON.stringify(before),"authored compiler input drift");save("authored-after.json",inputs);if(capture)save("temporary-graph.json",rows(temporary));
   compiled=`${compiled.replaceAll("./fable_modules/fable-library-js.5.18.0/","@fable-org/fable-library-js/").trimEnd()}\n`;const generatedBytes=Buffer.from(compiled),generatedPath=join(outputRoot,"StockSelection.js");
   save("rewrite-correspondence.json",{schema:"fsbar.stock-selection-import-rewrite/v1",original:{path:compiledPath,sha256:hash(original)},rewritten:{path:generatedPath,sha256:hash(generatedBytes)},transform:"literal Fable library prefix replacement, trimEnd, one final LF",imports,importedModules});
@@ -75,7 +77,11 @@ export function buildStockSelection({captureDir=null,policyRoot=ownPolicyRoot,en
   else rmSync(temporary,{recursive:true,force:true});
  }
 }
-export function cli(args){need(args.length===0||(args.length===2&&args[0]==="--capture-dir"),"usage: build-stock-selection.mjs [--capture-dir <fresh-absolute-directory>]");return buildStockSelection({captureDir:args[1]??null})}
+export function cli(args){
+ const options={};need(args.length%2===0,"usage: build-stock-selection.mjs [--capture-dir <fresh-absolute-directory>] [--nuget-config <absolute-file>]");
+ for(let i=0;i<args.length;i+=2){const name=args[i]==="--capture-dir"?"captureDir":args[i]==="--nuget-config"?"nugetConfig":null;need(name&&!Object.hasOwn(options,name)&&typeof args[i+1]==="string"&&args[i+1]!=="","closed capture/config CLI options");options[name]=args[i+1]}
+ return buildStockSelection(options);
+}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{const descriptor=cli(process.argv.slice(2));process.stdout.write(`stock-selection-policy-generated ${descriptor.output.sha256}\n`)}catch(error){process.stderr.write(`${error.message}\n`);process.exitCode=1}
 }
