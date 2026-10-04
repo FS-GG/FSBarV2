@@ -551,13 +551,69 @@ let tests = testList "production live boundary" [
         Expect.equal nativeDispatch.Result.Status LiveResultStatus.Applied "the one terminal dispatch remains applied"
         Expect.equal nativeDispatch.Result.ParentId brokerResult.Result.ParentId "both native stages retain the reserved parent"
 
+        // Results and observations share the production output channel. Await a
+        // precise result without assuming it is the next WebSocket message.
+        let awaitParentResult (request: SubmitLiveIntent) stage = task {
+            use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 3.0)
+            let seen = ResizeArray<string>()
+            let describe () = String.concat ", " seen
+            let rec next remaining = task {
+                if remaining = 0 then
+                    return failtestf "awaiting %A exhausted eight envelopes; received [%s]" stage (describe())
+                else
+                    let bytes = Array.zeroCreate<byte> 65536
+                    let mutable count = 0
+                    let mutable complete = false
+                    while not complete do
+                        if count = bytes.Length then
+                            failtest "result wait exceeded the bounded WebSocket frame capacity"
+                        let! frame = socket.ReceiveAsync(Memory<byte>(bytes, count, bytes.Length-count), deadline.Token).AsTask()
+                        Expect.equal frame.MessageType WebSocketMessageType.Binary "result wait accepts only binary protocol frames"
+                        count <- count + frame.Count
+                        complete <- frame.EndOfMessage
+                    let envelope = LiveServerEnvelope.Parser.ParseFrom(bytes, 0, count)
+                    match envelope.BodyCase with
+                    | LiveServerEnvelope.BodyOneofCase.Result ->
+                        let result = envelope.Result
+                        seen.Add(sprintf "Result(%A)" result.Stage)
+                        Expect.equal result.ParentId request.ParentId (sprintf "exact pending parent; received [%s]" (describe()))
+                        Expect.equal result.InputId request.InputId "result preserves the exact pending input"
+                        Expect.equal result.Stage stage (sprintf "required result order; received [%s]" (describe()))
+                        Expect.equal result.Controller request.Controller "result preserves the complete controller identity"
+                        Expect.equal result.Module request.Module "result preserves the complete module identity"
+                        Expect.equal result.Basis request.Basis "result preserves the exact submitted basis"
+                        return envelope
+                    | LiveServerEnvelope.BodyOneofCase.Observation ->
+                        let observed = envelope.Observation
+                        Expect.isNotNull observed.Preview "interleaved observation includes its typed preview"
+                        Expect.isNotNull observed.Basis "interleaved observation includes its typed basis"
+                        seen.Add(sprintf "Observation(%d)" observed.Preview.Sequence)
+                        // No new metadata is published during these parents. Only
+                        // the already paired current observation can interleave.
+                        Expect.equal observed.Basis raceObservation.Observation.Basis "interleaved observation has the exact paired owning-generation basis"
+                        Expect.equal observed.Preview.SessionId controller.SessionId "interleaved observation belongs to this authenticated session"
+                        Expect.equal observed.Preview.Sequence observed.Basis.StateSequence "interleaved preview and basis have the same sequence"
+                        Expect.equal observed.Preview.Validity raceObservation.Observation.Preview.Validity "interleaved observation retains current validity without a new gap"
+                        Expect.sequenceEqual observed.Units raceObservation.Observation.Units "interleaved observation retains exact unit lifetimes"
+                        Expect.equal observed.Tactical raceObservation.Observation.Tactical "interleaved tactical evidence retains the exact paired basis"
+                        return! next (remaining-1)
+                    | unexpected ->
+                        return failtestf "awaiting %A received unexpected %A; preceding [%s]" stage unexpected (describe())
+            }
+            try
+                return! next 8
+            with :? OperationCanceledException ->
+                return failtestf "awaiting %A exceeded three seconds; received [%s]" stage (describe())
+        }
+
         let completeAdditionalParent dispatchSequence = task {
             let request=submit.Clone()
             request.ParentId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
             request.InputId<-ByteString.CopyFrom(Guid.NewGuid().ToByteArray())
             do! send socket (LiveClientEnvelope(Submit=request))
-            let! (broker: LiveServerEnvelope)=receive socket
+            let! (broker: LiveServerEnvelope)=awaitParentResult request LiveResultStage.BrokerAdmission
             Expect.equal broker.Result.Stage LiveResultStage.BrokerAdmission "the next parent is admitted on the same socket"
+            Expect.equal broker.Result.Status LiveResultStatus.Accepted "the next parent is accepted before awaiting its native child"
             let! more=commandCall.ResponseStream.MoveNext(CancellationToken.None)
             Expect.isTrue more "the next parent reaches the live native channel"
             let nextChild=commandCall.ResponseStream.Current
@@ -572,8 +628,9 @@ let tests = testList "production live boundary" [
             report.ChannelIncarnation<-nextChild.Binding.Value.CommandChannelIncarnation
             report.Result<-ValueSome admitted
             let! (_:CommandBatchResultReportAck)=coordinator.ReportCommandBatchResultAsync(report).ResponseAsync
-            let! (nativeAccepted:LiveServerEnvelope)=receive socket
+            let! (nativeAccepted:LiveServerEnvelope)=awaitParentResult request LiveResultStage.NativeAdmission
             Expect.equal nativeAccepted.Result.Stage LiveResultStage.NativeAdmission "native admission follows broker admission"
+            Expect.equal nativeAccepted.Result.Status LiveResultStatus.Accepted "the matching child receives accepted native admission"
             let applied=CommandDispatchEvent.empty()
             applied.BatchSeq<-nextChild.Batch.Value.BatchSeq
             applied.ClientCommandId<-nextChild.Batch.Value.ClientCommandId.Value
@@ -591,7 +648,7 @@ let tests = testList "production live boundary" [
             state.Frame<-applied.Frame
             state.Delta<-delta
             do! push.RequestStream.WriteAsync state
-            let! (terminal:LiveServerEnvelope)=receive socket
+            let! (terminal:LiveServerEnvelope)=awaitParentResult request LiveResultStage.NativeDispatch
             Expect.equal terminal.Result.Stage LiveResultStage.NativeDispatch "native dispatch remains terminal"
             Expect.equal terminal.Result.Status LiveResultStatus.Applied "the next parent completes exactly once"
         }
