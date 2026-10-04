@@ -25,7 +25,7 @@ def profile():
  validate_schema(p)
  need(p['requiredHostMappings']==required and len(required)==3,'literal pinned apphost/coreclr/clrjit')
  need(p['policy']['environment']=={'PATH':'/usr/bin:/bin'} and p['policy']['maximumSimultaneousChildren']==1 and p['policy']['maximumEvaluations']==3 and p['policy']['deadlineSeconds']==5 and p['policy']['inputBytes']==16777216 and p['policy']['outputBytes']==131072,'literal closed policy caps')
- need(set(p['sourceHelperPins'])=={'helper/runtime_identity.py','helper/stock_bootstrap.py','helper/dynamic_mapping.py','helper/snapshot_publication.py','helper/mapping_profile.py','helper/seed_policy.py','helper/growing_log.py','helper/loaded_custody.py','helper/settings_custody.py','qualify_prearm.py','native_evidence.py'},'closed successor source helpers')
+ need(set(p['sourceHelperPins'])=={'helper/runtime_identity.py','helper/stock_bootstrap.py','helper/dynamic_mapping.py','helper/snapshot_publication.py','helper/mapping_profile.py','helper/seed_policy.py','helper/growing_log.py','helper/loaded_custody.py','helper/settings_custody.py','qualify_prearm.py','native_evidence.py','policy_transport_runner.py'},'closed successor source helpers')
  for path,sha in p['sourceHelperPins'].items():need(m.digest(HERE/path)==sha,'exact profile helper byte pin')
  return p
 
@@ -71,7 +71,8 @@ def commands(p,invocation=None):
  ports=p['proposedPorts'];A=pathlib.Path(ROOT)
  result={'host':[p['nativeHost'],'--stock-tactical-live-host',f"127.0.0.1:{ports['grpc']}",f"http://127.0.0.1:{ports['gateway']}",f"http://127.0.0.1:{ports['unusedReceiverOrigin']}",str(A/'host'),p['source']['fsbarCommit']], 'engine':[p['engine'],'--isolation','--isolation-dir',p['dataRoot'],'--write-dir',str(A/'engine'),'--config',str(A/'engine/springsettings.cfg'),p['startscript']]}
  if invocation is not None:
-  need(re.fullmatch('[0-9a-f]{64}',invocation),'exact policy invocation');result['policy']=[p['policy']['apphost'],'--closure-manifest',p['policy']['closurePath'],'--closure-sha256',p['policy']['closureSha256'],'--invocation-id',invocation]
+  from seed_policy import policy_argv
+  result['policy']=policy_argv(p['policy'],invocation)
  return result
 
 def runtime_socket():
@@ -140,25 +141,25 @@ def record_tail(path,label):
 
 def launch(role,p,a_path,owner,deadline,registered,invocation=None,evaluation=None,cleanup_reserve=8,policy_context=None):
  need(role in ['host','engine','policy'],'literal launch role')
- need((role!='policy' and invocation is None and evaluation is None) or (role=='policy' and re.fullmatch('[0-9a-f]{64}',invocation or '') and evaluation in [1,2,3]),'literal invocation/evaluation')
- name=role if role!='policy'else 'policy-'+str(evaluation)
+ if role=='policy':
+  from seed_policy import SeedPolicyContext,launch_policy
+  need(type(policy_context)is SeedPolicyContext and policy_context.owner is owner and policy_context.children is registered and policy_context.profile is p and str(policy_context.admission)==str(a_path),'exact native policy caller')
+  return launch_policy(policy_context,invocation,deadline)
+ need(role in ['host','engine']and invocation is None and evaluation is None,'literal native actor launch')
+ name=role
  end=min(deadline-cleanup_reserve,clock()+5);rd,rw=os.pipe();ar,aw=os.pipe();child=None
  try:
   runtime_socket().directory_check()
   shim_argv=[PYTHON,'-I','-B',str(HERE/'startup_runner.py'),'--shim',role,'--admission',str(a_path),'--ready',str(rw),'--ack',str(ar)]
-  if role=='policy':shim_argv+=['--invocation',invocation]
-  child=subprocess.Popen(shim_argv,env=environment(p,role),pass_fds=(rw,ar),start_new_session=True,stdin=subprocess.PIPE if role=='policy'else None,stdout=subprocess.PIPE,stderr=subprocess.PIPE,umask=0o077)
+  child=subprocess.Popen(shim_argv,env=environment(p,role),pass_fds=(rw,ar),start_new_session=True,stdin=None,stdout=subprocess.PIPE,stderr=subprocess.PIPE,umask=0o077)
   registered[name]=child;owner.leaders.add(child.pid);os.close(rw);rw=-1;os.close(ar);ar=-1
   with selectors.DefaultSelector()as sel:
    sel.register(rd,selectors.EVENT_READ)
    while True:
-    if role=='policy':
-     from seed_policy import SeedPolicyContext
-     need(type(policy_context)is SeedPolicyContext,'concrete policy preexec supervision context');policy_context.pump(end)
-    if sel.select(m.remaining(end,.02 if role=='policy'else 5)):break
+    if sel.select(m.remaining(end,5)):break
    need(os.read(rd,64)==b'BAR-STARTUP-READY\n','actor preexec handshake')
   ident=m.identity(child.pid);need(ident['pgid']==ident['session']==child.pid and ident['ppid']==os.getpid(),'actual owned actor identity');owner.acquire(ident);need(os.sched_getaffinity(child.pid)=={m.load(a_path)['cpu']},'actor serial affinity')
-  m.write_new(pathlib.Path(ROOT)/'evidence'/(name+'.process.json'),dict(identity=ident,argv=commands(p,invocation)[role],environment=environment(p,role)));os.write(aw,b'GO\n');return child
+  m.write_new(pathlib.Path(ROOT)/'evidence'/(name+'.process.json'),dict(identity=ident,argv=commands(p)[role],environment=environment(p,role)));os.write(aw,b'GO\n');return child
  finally:
   for fd in [rd,rw,ar,aw]:
    if fd>=0:
@@ -312,7 +313,11 @@ def source_binding(a,p):
  need(a['sourceSHA256']==reviewed_source()and a['profileSHA256']==m.digest(HERE/'startup-profile.json'),'shim/worker exact source')
 
 def shim(args):
- p=profile();a=m.load(args.admission);source_binding(a,p);need(args.shim in ['host','engine','policy'],'literal roles');need((args.shim=='policy' and re.fullmatch('[0-9a-f]{64}',args.invocation or ''))or(args.shim!='policy' and args.invocation is None),'shim literal invocation');need(os.sched_getaffinity(0)=={a['cpu']},'shim affinity')
+ p=profile();a=m.load(args.admission);source_binding(a,p)
+ if args.shim=='policy':
+  from seed_policy import policy_shim
+  return policy_shim(args,sys.modules[__name__],p,a)
+ need(args.shim in ['host','engine','policy'],'literal roles');need((args.shim=='policy' and re.fullmatch('[0-9a-f]{64}',args.invocation or ''))or(args.shim!='policy' and args.invocation is None),'shim literal invocation');need(os.sched_getaffinity(0)=={a['cpu']},'shim affinity')
  parent=m.load(pathlib.Path(ROOT)/'evidence/worker-start.json');need(m.same(parent['worker'],m.identity(os.getppid()))and parent['admissionSHA256']==m.digest(args.admission),'owned source-bound parent')
  os.write(args.ready,b'BAR-STARTUP-READY\n');os.close(args.ready);need(os.read(args.ack,16)==b'GO\n','actual preexec observer release');os.close(args.ack);runtime_socket().directory_check();os.chdir(ROOT);c=commands(p,args.invocation)[args.shim];os.execve(c[0],c,environment(p,args.shim))
 
@@ -413,4 +418,6 @@ def main():
  if a.shim:return shim(a)
  if a.worker:return worker(a)
  return execute(pathlib.Path(a.admission))
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+ sys.modules['startup_runner']=sys.modules[__name__]
+ raise SystemExit(main())
