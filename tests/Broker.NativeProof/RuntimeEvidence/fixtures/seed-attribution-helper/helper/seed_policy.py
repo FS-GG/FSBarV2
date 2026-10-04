@@ -143,6 +143,14 @@ def _clr(observed):
 class SeedGrowingLog(GrowingLog):
  def bind(self,context):
   need(type(context)in [SeedPolicyContext,PolicyOnlyContext] and not hasattr(self,'context'),'closed concrete policy context');_validate(context);self.context=context;return self
+ def _closure(self,path,digest,deadline):
+  ctx=self.context;entry,a=_validate(ctx)
+  # Both closed production contexts obtain the original pin from their sealed profile.
+  roster=ctx.profile['physicalPins']if type(ctx)is PolicyOnlyContext else ctx.profile['policy']['physicalPins']
+  need(type(roster)is list,'selected canonical physical roster')
+  selected=[pin for pin in roster if pin['path']==path]
+  need(len(selected)==1 and selected[0]['sha256']==digest,'exact unique prior closure pin')
+  return GrowingLog._closure(path,digest,deadline,selected[0])
  def _run_policy(self,path,closure_path,closure_sha,encoded,deadline):
   ctx=self.context;p=ctx.profile['policy'];need((path,closure_path,closure_sha)==(p['apphost'],p['closurePath'],p['closureSha256']),'literal policy input mismatch');need(p['environment']=={'PATH':'/usr/bin:/bin'} and len(encoded)<=MAX_POLICY_INPUT,'literal policy environment/input cap')
   invocation=hashlib.sha256(os.urandom(32)).hexdigest();child=None;sel=None;diagnostic=bytearray();all_stdout=bytearray();output=bytearray();ready=None;offset=0;count=0;check='policy-child-start';stdin_open=True;input_registered=False

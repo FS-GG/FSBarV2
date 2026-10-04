@@ -96,3 +96,32 @@ def atomic_bytes_new(path,encoded,maximum):
         directory=os.open(path.parent,os.O_DIRECTORY|os.O_NOFOLLOW);os.fsync(directory);os.close(directory)
     finally:temporary.unlink()
     return digest(encoded)
+
+def read_immutable_closure(path,expected_sha256,physical_pin,maximum=1048576):
+    """Read the prior-bound canonical0400 closure under its immutable0500 root.
+    This entry accepts only the full already-selected physical pin; no mode relaxation.
+    """
+    need(type(maximum)is int and 0<maximum<=1048576,'immutable closure read bound')
+    fields={'path','sha256','bytes','device','inode','uid','mode','nlink'}
+    need(type(physical_pin)is dict and set(physical_pin)==fields and physical_pin['path']==path and physical_pin['sha256']==expected_sha256 and SHA.fullmatch(expected_sha256 or ''),'full prior canonical closure pin')
+    path=components(path);anchor=path.parent.lstat()
+    need(stat.S_ISDIR(anchor.st_mode)and anchor.st_uid==os.geteuid()and stat.S_IMODE(anchor.st_mode)==0o500,'immutable closure anchor')
+    before=path.lstat()
+    need(stat.S_ISREG(before.st_mode)and before.st_uid==os.geteuid()and stat.S_IMODE(before.st_mode)==0o400 and before.st_nlink==1 and 0<before.st_size<=maximum,'immutable closure custody')
+    def matches(info):
+        return all(physical_pin[k]==v for k,v in {'bytes':info.st_size,'device':info.st_dev,'inode':info.st_ino,'uid':info.st_uid,'mode':stat.S_IMODE(info.st_mode),'nlink':info.st_nlink}.items())
+    need(matches(before),'prior immutable closure physical identity')
+    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+    try:
+        first=os.fstat(fd);need(matches(first),'opened immutable closure identity')
+        chunks=[];length=0
+        while length<=maximum:
+            block=os.read(fd,min(65536,maximum+1-length))
+            if not block:break
+            chunks.append(block);length+=len(block)
+        last=os.fstat(fd);after=path.lstat();parent=path.parent.lstat()
+        attrs=('st_dev','st_ino','st_uid','st_mode','st_nlink','st_size','st_mtime_ns','st_ctime_ns')
+        need(length==before.st_size and length<=maximum and all(getattr(before,k)==getattr(first,k)==getattr(last,k)==getattr(after,k)for k in attrs),'immutable closure changed during read')
+        need(all(getattr(anchor,k)==getattr(parent,k)for k in ('st_dev','st_ino','st_uid','st_mode')),'immutable closure parent generation drift')
+        raw=b''.join(chunks);need(digest(raw)==expected_sha256,'immutable closure byte pin');return raw
+    finally:os.close(fd)

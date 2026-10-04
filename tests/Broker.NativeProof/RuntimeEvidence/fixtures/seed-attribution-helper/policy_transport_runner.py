@@ -11,7 +11,7 @@ from seed_policy import SeedGrowingLog,PolicyOnlyContext,policy_shim
 from growing_log import _policy_observation
 from runtime_identity import start_ticks
 from snapshot_publication import bytes_new,json_new
-ROOT='/tmp/bar-policy-transport-qualification-20261004';PYTHON='/usr/bin/python3.14'
+ROOT='/tmp/bar-policy-transport-qualification-20261005-v2';PYTHON='/usr/bin/python3.14'
 CASES=['stable-consume','malformed-request','withheld-input']
 LIMITS=dict(wholeSeconds=180,cleanupReserve=8,termSeconds=3,killSeconds=3,attemptBytes=134217728,attemptFiles=1024,mapsBytes=4194304,ownedIdentities=128,maximumEvaluations=3,boundarySeconds=5,outputBytes=131072)
 need=m.need
