@@ -460,3 +460,31 @@ operation. Predispatch final-read remains a fence; actual creation/finish and a
 separate later terminal native sample must prove exactly one product. Full six
 useful-play journeys, publication and installed adoption remain open. Native usage
 coverage remains unknown where the observer rejected canonical native identity.
+
+### BARC-01.5f pre-Arm producer source amendment (2026-10-04)
+
+The six preparation phases are source-qualified through the retained v5 managed
+build/attribution controls, v6 compiler/PE/PDB proof and v9 installed capsule
+qualification. Their earlier failed overall attempts remain failed. The qualified
+managed bodies remain unchanged; this successor changes the one-unit JS consumer
+and prepares a private read-only pre-Arm qualifier. Its controlled Python checks
+prove source predicates only. Changed JS controls and installed list discovery
+still require separate root admission; old discovery qualifies its original bytes.
+
+Qualification must retain an actual earlier finite nonempty seed queue, native
+factory creation/finish, unsupported-event invalidation and later complete
+replacement/empty repeat-off evidence. Browser readiness then freezes a fresh
+same-run/generation empty baseline containing those finished seed lifetimes and
+rechecks source/configuration/PID custody before its single Arm and Append Count1.
+This removes the prior nonempty-seed/browser timing contradiction. Missing real
+basis/lifetime joins, extra production/dispatch, drift or expiry refuse; no fixture
+boolean, extra seed, stale-basis retry or receipt rewrite supplies acceptance.
+
+The existing canonical nineteen-role PolicyClosure and full dependency/runtime
+census are unchanged. Final product/helper graph composition remains blocked on a
+qualified genuine successor provenance producer; old build receipts cannot be
+relabeled for this candidate. Root owns the finite startup, transition and later
+one-shot browser admissions, effect-specific authority checks and PR/integration.
+No native startup, browser, actor or production operation was admitted here.
+**actorEligible=false; unitProducedAccepted=false; useful play 0/6.** BARC-01.5f
+and the original six useful-play journeys remain open.
