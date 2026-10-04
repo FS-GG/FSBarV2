@@ -116,8 +116,11 @@ def worker(args):
  return 0 if result['transportQualified']else 3
 
 def execute(a_path):
+ info=a_path.lstat();need(stat.S_ISREG(info.st_mode)and stat.S_IMODE(info.st_mode)==0o600 and info.st_uid==os.geteuid()and info.st_nlink==1,'private single-link actual admission')
+ consumed=a_path.parent/(a_path.name+'.consumed');need(not os.path.lexists(consumed),'one-use grant already consumed')
  started=time.monotonic();deadline=started+180;p=profile();a=m.load(a_path)
  admission(a,p,m.identity(os.getppid()),datetime.datetime.now(datetime.timezone.utc),not os.path.lexists(ROOT),os.sched_getaffinity(0));os.sched_setaffinity(0,{a['cpu']});pre=originals(p,deadline-8)
+ json_new(consumed,{'sourceSHA256':a['sourceSHA256'],'profileSHA256':a['profileSHA256'],'operationRoot':ROOT,'operator':a['operator'],'noRetry':True})
  A=pathlib.Path(ROOT);A.mkdir(mode=0o700)
  for name in ['logs','evidence']:(A/name).mkdir(mode=0o700)
  json_new(A/'evidence/outer-start.json',dict(outer=m.identity(os.getpid()),admissionSHA256=m.digest(a_path),deadline=deadline,preOriginals=pre))

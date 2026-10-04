@@ -8,6 +8,13 @@ import mechanics as m
 from private_io import Refused
 class Composition(unittest.TestCase):
  def context(self):return s.PolicyOnlyContext({'policy':{'apphost':'/controlled/apphost','closurePath':'/controlled/closure','closureSha256':'c'*64,'environment':{'PATH':'/usr/bin:/bin'}}},'/controlled/a',Mock(),time.monotonic()+20)
+ def test_outer_one_use_and_private_grant_before_effects(self):
+  source=pathlib.Path(r.__file__).read_text();self.assertIn("stat.S_IMODE(info.st_mode)==0o600",source);self.assertIn("info.st_nlink==1",source);self.assertLess(source.index('json_new(consumed,'),source.index('A.mkdir(mode=0o700)'))
+  with tempfile.TemporaryDirectory()as d:
+   grant=pathlib.Path(d)/'grant';grant.write_text('{}');grant.chmod(0o600);(grant.parent/(grant.name+'.consumed')).write_text('{}')
+   with patch.object(r,'profile')as profile,patch.object(r.subprocess,'Popen')as process:
+    with self.assertRaises(m.Refused):r.execute(grant)
+    profile.assert_not_called();process.assert_not_called()
  def test_closed_binding(self):
   with patch.object(s,'_validate')as validation:
    for kind in [s.SeedPolicyContext,s.PolicyOnlyContext]:
