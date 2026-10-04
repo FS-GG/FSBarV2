@@ -1,0 +1,102 @@
+"""Bounded public-file checks: no .NET or game process."""
+import hashlib,json,os,pathlib,select,subprocess,sys,tempfile,time,unittest
+from unittest import mock
+import growing_log
+from growing_log import GrowingLog
+from private_io import Refused
+from runtime_identity import start_ticks
+class BufferedWriterTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory(prefix='bar-public-buffered-');self.root=pathlib.Path(self.tmp.name);self.path=self.root/'infolog.txt'
+        self.child=subprocess.Popen([sys.executable,str(pathlib.Path(__file__).with_name('buffered_writer.py')),str(self.path)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        self.ack('ready');self.handle=GrowingLog.acquire(self.path,{'pid':self.child.pid,'startTicks':start_ticks(self.child.pid),'uid':os.geteuid()})
+    def ack(self,expected):
+        self.assertTrue(select.select([self.child.stdout],[],[],2)[0],'writer ack deadline');self.assertEqual(self.child.stdout.readline().strip(),expected)
+    def command(self,command):
+        self.child.stdin.write(command+'\n');self.child.stdin.flush();self.ack('done')
+    def tearDown(self):
+        self.handle.close();self.child.stdin.write('close\n');self.child.stdin.flush();self.child.communicate(timeout=2);self.assertEqual(self.child.returncode,0);self.tmp.cleanup()
+    def test_full_buffered_partial_eof_exhausts_actual_32_probes(self):
+        original=self.handle._sample;sizes=[]
+        def sample(deadline):
+            if sizes:self.command('grow')
+            result=original(deadline);sizes.append(len(result[0]));return result
+        self.handle._sample=sample
+        with self.assertRaises(Refused) as caught:self.handle._settle(time.monotonic()+5,0)
+        observation=self.handle._counter_observation(caught.exception._barc_failure_observation['check'])
+        self.assertEqual(observation['terminalCause'],'settlement-probe-cap');self.assertEqual((observation['probesBegun'],observation['probesCompleted'],observation['evaluationsBegun']),(32,32,0))
+        self.assertEqual(len(set(sizes)),32);self.assertGreater(observation['tailBytes'],0)
+        self.assertEqual(observation['completePrefixBytes']+observation['tailBytes'],observation['sampleBytes']);self.assertEqual(observation['sampleSha256'],hashlib.sha256(self.handle.previous).hexdigest())
+        self.assertLess(observation['maximumObservedBytes'],growing_log.MAX_LOG);self.assertGreater(observation['readCalls'],64);self.assertLessEqual(observation['readCallsInOperation'],160)
+        self.assertNotIn('/public/',json.dumps(observation));self.assertNotIn(str(self.root),json.dumps(observation))
+    def test_actual_short_read_call_cap_is_distinct_from_probe_cap(self):
+        real=os.pread
+        def short(fd,count,offset):return real(fd,min(1,count),offset)
+        with mock.patch.object(growing_log.os,'pread',side_effect=short):
+            with self.assertRaises(Refused) as caught:self.handle._settle(time.monotonic()+5,0)
+        observation=self.handle._counter_observation(caught.exception._barc_failure_observation['check'])
+        self.assertEqual(observation['terminalCause'],'exact-read-call-cap');self.assertEqual((observation['probesBegun'],observation['probesCompleted'],observation['readCalls'],observation['readCallsInOperation']),(1,0,160,160));self.assertEqual(observation['terminalCheck'],'infolog-record-settlement-exhausted')
+    def test_failed_consume_retains_bounded_sidecar_and_digest_receipt(self):
+        config={'roots':{'attemptRoot':str(self.root)},'source':{'public':'synthetic'}}
+        self.handle._consume_impl=lambda *args:self.handle._settle(time.monotonic()+5,0)
+        with self.assertRaises(Refused) as caught:self.handle.consume('browser',config,time.monotonic()+5)
+        self.assertTrue(caught.exception._barc_infolog_mechanical_retained)
+        path=self.root/'infolog-mechanical-browser.json';raw=path.read_bytes();observation=json.loads(raw);receipt=json.loads(path.with_name(path.name+'.receipt.json').read_bytes())
+        self.assertEqual(receipt['sha256'],hashlib.sha256(raw).hexdigest());self.assertEqual(receipt['bytes'],len(raw));self.assertEqual(observation['terminalCause'],'settlement-probe-cap');self.assertEqual(observation['boundary'],'browser');self.assertLess(len(raw),4096);self.assertEqual(path.stat().st_mode&0o777,0o600)
+        self.assertEqual(caught.exception._barc_failure_observation,{'check':'infolog-record-settlement-exhausted','outcome':'refused','policyObservation':None});self.assertNotIn(str(self.root),raw.decode());self.assertNotIn('/public/',raw.decode())
+    def test_sidecar_collision_preserves_original_refusal_and_existing_bytes(self):
+        config={'roots':{'attemptRoot':str(self.root)},'source':{'public':'synthetic'}}
+        path=self.root/'infolog-mechanical-browser.json';path.write_bytes(b'PUBLIC_SENTINEL');os.chmod(path,0o600)
+        self.handle._consume_impl=lambda *args:self.handle._settle(time.monotonic()+5,0)
+        with self.assertRaises(Refused) as caught:self.handle.consume('browser',config,time.monotonic()+5)
+        self.assertFalse(caught.exception._barc_infolog_mechanical_retained)
+        self.assertEqual(path.read_bytes(),b'PUBLIC_SENTINEL')
+        self.assertEqual(caught.exception._barc_failure_observation['check'],'infolog-record-settlement-exhausted')
+        self.assertFalse(path.with_name(path.name+'.receipt.json').exists())
+    def test_flush_control_promotes_exact_untrimmed_record_sample(self):
+        self.command('flush');raw,_,_,probes=self.handle._settle(time.monotonic()+5,0)
+        self.assertTrue(raw.endswith(b'\n'));self.assertEqual(probes,1);self.assertEqual(self.handle.counters['tailBytes'],0);self.assertEqual(self.handle.previous,raw);self.assertEqual(self.handle.counters['evaluationsBegun'],0)
+    def test_raw_candidate_retains_actual_libc_unfinished_tail(self):
+        raw,_,_,probes=self.handle._settle(time.monotonic()+5,0,raw_mode=True)
+        self.assertEqual(probes,1);self.assertFalse(raw.endswith(b'\n'))
+        self.assertEqual(raw,self.handle.previous);self.assertGreater(self.handle.counters['tailBytes'],0)
+        self.assertEqual(self.handle.settlement_effects[-1]['event'],'raw')
+        self.assertIsNone(self.handle.state);self.assertEqual(self.handle.counters['evaluationsBegun'],0)
+    def test_final_size_L_observes_append_during_actual_prefix_reread(self):
+        raw,_,_,_=self.handle._settle(time.monotonic()+5,0,raw_mode=True)
+        original=self.handle._read_exact;fired=[]
+        def read(length,deadline=None):
+            value=original(length,deadline)
+            if not fired:fired.append(True);self.command('grow')
+            return value
+        self.handle._read_exact=read
+        current,_=self.handle._custody(raw,False,True,time.monotonic()+5)
+        self.assertGreater(current.st_size,len(raw));self.assertEqual(self.handle.final_observation['rawBytes'],current.st_size)
+        observed=self.handle.final_observation
+        self.assertLessEqual(observed['readStartMicroseconds'],observed['readEndMicroseconds']);self.assertLessEqual(observed['readEndMicroseconds'],observed['linearizedMicroseconds'])
+        next_raw,_,_,_=self.handle._settle(time.monotonic()+5,1,raw_mode=True)
+        self.assertTrue(next_raw.startswith(raw));self.assertEqual(len(next_raw),current.st_size)
+    def test_post_L_append_is_new_raw_custody_on_next_observation(self):
+        raw,_,_,_=self.handle._settle(time.monotonic()+5,0,raw_mode=True)
+        current,_=self.handle._custody(raw,False,True,time.monotonic()+5)
+        at=dict(self.handle.final_observation);self.assertEqual(current.st_size,len(raw))
+        self.command('grow')
+        self.assertEqual(self.handle.final_observation,at)
+        next_raw,_,_,_=self.handle._settle(time.monotonic()+5,1,raw_mode=True)
+        self.assertGreater(len(next_raw),len(raw));self.assertTrue(next_raw.startswith(raw))
+class LogBudgetTests(unittest.TestCase):
+    def test_actual_exact_read_supports_full_ten_mib(self):
+        expected=b'x'*(10*1024*1024-1)+b'\n'
+        with tempfile.TemporaryFile() as stream:
+            stream.write(expected);stream.flush()
+            handle=object.__new__(GrowingLog);handle.fd=stream.fileno();handle.previous=b'';handle._reset_counters(None)
+            actual=handle._read_exact(len(expected),time.monotonic()+5)
+            self.assertEqual(actual,expected)
+            self.assertEqual(handle.counters['readCallsInOperation'],160)
+    def test_full_ten_mib_base64_fits_encoded_transport_budget(self):
+        import base64
+        raw=b'x'*(10*1024*1024)
+        request=json.dumps({'observation':{'logBase64':base64.b64encode(raw).decode()},'metadata':'x'*65536},separators=(',',':')).encode()
+        self.assertEqual(growing_log.MAX_LOG,10*1024*1024)
+        self.assertLess(len(request),growing_log.MAX_POLICY_INPUT)
+if __name__=='__main__':unittest.main()
