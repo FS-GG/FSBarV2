@@ -154,6 +154,65 @@ module LiveHost =
                 trace.Flush();journalComplete<-true)
         let write (value: objnull) = writeKind "event" value
         if stock then writeKind "header" (box {|selectedCase="stock-smoke-count1"|})
+        // Optional bounded raw attribution journal. It grants no commands, Arm or gameplay.
+        // This source requires fresh managed qualification; old assemblies cannot emit it.
+        use nativeAttributionSubscription =
+            match Environment.GetEnvironmentVariable("BARC_ONE_UNIT_RAW_EVENTS") |> Option.ofObj with
+            | None -> { new IDisposable with member _.Dispose() = () }
+            | Some path ->
+                if not stock || not(Path.IsPathFullyQualified path) || File.Exists path then invalidOp "new private stock attribution path required"
+                let stream = openStockJournal path
+                let journal = new StreamWriter(stream)
+                let gate = obj()
+                let mutable sequence = 0UL
+                let mutable totalBytes = 0
+                let subscriptions = ResizeArray<IDisposable>()
+                let append generation stateSequence frame disposition kind (value: objnull) = lock gate (fun () ->
+                    sequence <- sequence + 1UL
+                    let row = JsonSerializer.Serialize {|schema="fsbar.barc-one-unit-raw-state-journal/v1";runId=runId;sequence=string sequence;writer=writer;source=source;acceptedGeneration=string generation;stateSequence=string stateSequence;nativeFrame=frame;disposition=disposition;kind=kind;value=value|}
+                    let bytes = System.Text.Encoding.UTF8.GetByteCount row + 1
+                    if sequence > 8192UL || bytes > 32768 || totalBytes > 4*1024*1024-bytes then
+                        lifetime.Cancel()
+                        invalidOp "native attribution journal bound exceeded"
+                    totalBytes <- totalBytes + bytes
+                    journal.WriteLine row
+                    journal.Flush())
+                let listenerObserver = { new IObserver<System.Diagnostics.DiagnosticListener> with
+                    member _.OnNext listener =
+                        if listener.Name = "FSBar.HighBar.AcceptedState" then
+                            let observer = { new IObserver<System.Collections.Generic.KeyValuePair<string,obj>> with
+                                member _.OnNext diagnostic =
+                                    if diagnostic.Key = "AcceptedState" then
+                                        let struct(generation, update, disposition) = unbox<struct(Guid * Highbar.V1.StateUpdate * string)> diagnostic.Value
+                                        match update.Payload with
+                                        | ValueSome(Highbar.V1.StateUpdate.Types.Payload.Snapshot snapshot) ->
+                                            let units = snapshot.OwnUnits |> Seq.map(fun u -> {|unitId=u.UnitId;definitionId=u.DefId;underConstruction=u.UnderConstruction;buildProgress=u.BuildProgress|}) |> Seq.toArray
+                                            append generation update.Seq update.Frame disposition "snapshot" (box {|units=units|})
+                                        | ValueSome(Highbar.V1.StateUpdate.Types.Payload.Delta delta) ->
+                                            for event in delta.Events do
+                                                match event.Kind with
+                                                | ValueSome(Highbar.V1.DeltaEvent.Types.Kind.UnitCreated created) ->
+                                                    append generation update.Seq update.Frame disposition "unit-created" (box {|unitId=created.UnitId;builderId=created.BuilderId|})
+                                                | ValueSome(Highbar.V1.DeltaEvent.Types.Kind.UnitFinished finished) ->
+                                                    append generation update.Seq update.Frame disposition "unit-finished" (box {|unitId=finished.UnitId|})
+                                                | ValueSome(Highbar.V1.DeltaEvent.Types.Kind.CommandDispatch dispatch) ->
+                                                    append generation update.Seq update.Frame disposition "command-dispatch" (box {|batchSequence=string dispatch.BatchSeq;correlationId=string dispatch.ClientCommandId;commandIndex=dispatch.CommandIndex;unitId=dispatch.TargetUnitId;status=string dispatch.Status;dispatchFrame=dispatch.Frame;commandChannelIncarnation=dispatch.ChannelIncarnation|})
+                                                | _ -> ()
+                                        | _ -> ()
+                                member _.OnError _ = lifetime.Cancel()
+                                member _.OnCompleted() = () }
+                            lock gate (fun () -> subscriptions.Add(listener.Subscribe observer))
+                    member _.OnError _ = lifetime.Cancel()
+                    member _.OnCompleted() = () }
+                let all = System.Diagnostics.DiagnosticListener.AllListeners.Subscribe listenerObserver
+                { new IDisposable with
+                    member _.Dispose() =
+                        all.Dispose()
+                        lock gate (fun () ->
+                            for subscription in subscriptions do subscription.Dispose()
+                            journal.Flush()
+                            stream.Flush(true)
+                            journal.Dispose()) }
         let! host = ServerHost.start { ServerHost.defaultOptions with listenAddress=grpcAddress } (Version(1,0)) ignore lifetime.Token
         try
             let lobby: Lobby.LobbyConfig =

@@ -8,6 +8,9 @@ open Highbar.V1
 
 module HighBarCoordinatorService =
 
+    // Read-only opt-in diagnostics; no new RPC or public service surface.
+    let private acceptedStateDiagnostics = new System.Diagnostics.DiagnosticListener("FSBar.HighBar.AcceptedState")
+
     type Config =
         { expectedSchemaVersion: string
           ownerRule: BrokerState.OwnerRule
@@ -360,6 +363,15 @@ module HighBarCoordinatorService =
                                             BrokerState.refreshLiveness now service.hub
                                         | WireConvert.KeepAliveOnly ->
                                             BrokerState.refreshLiveness now service.hub
+                                        // Keep generation fencing through the readonly cloned diagnostic.
+                                        if acceptedStateDiagnostics.IsEnabled("AcceptedState") then
+                                            let disposition =
+                                                match result with
+                                                | WireConvert.NewSnapshot _ -> "materialized"
+                                                | WireConvert.Invalidated _ -> "invalidated"
+                                                | WireConvert.Gap _ -> "gap"
+                                                | WireConvert.KeepAliveOnly -> "liveness-only"
+                                            acceptedStateDiagnostics.Write("AcceptedState", box (struct(owningGeneration, upd.Clone(), disposition)))
                                         true
                                     else false)
                             if accepted then

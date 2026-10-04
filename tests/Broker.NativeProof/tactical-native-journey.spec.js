@@ -6,10 +6,13 @@ import { pathToFileURL } from "node:url";
 import { basename, dirname, resolve, parse, join } from "node:path";
 import { assertCanonicalLifecycle, assertObservedEffects, isExactStaleBasisRefusal, isFreshPhysicalReplacement, loadStockSmokeHandoff, loadTacticalHandoff, plannedChildCount, sanitizedLifecycle, waitForTerminalOrClose } from "./tactical-native-evidence.mjs";
 
-const enabled=process.env.BARC_RUN_TACTICAL_NATIVE==="1",stockEnabled=process.env.BARC_RUN_STOCK_NATIVE_SMOKE==="1";if(enabled&&stockEnabled)throw new Error("full-six and selected stock smoke routes are mutually exclusive");
+import { parseClosedJson, parseStockTraceJsonl } from "./stock-native-trace.mjs";
+
+const enabled=process.env.BARC_RUN_TACTICAL_NATIVE==="1",stockEnabled=process.env.BARC_RUN_STOCK_NATIVE_SMOKE==="1",oneUnitEnabled=process.env.BARC_RUN_ONE_PRODUCED_UNIT==="1";if([enabled,stockEnabled,oneUnitEnabled].filter(Boolean).length>1)throw new Error("native proof routes are mutually exclusive");
 const handoff=enabled?await loadTacticalHandoff(process.env.BARC_TACTICAL_HANDOFF):null,stockHandoff=stockEnabled?await loadStockSmokeHandoff(process.env.BARC_STOCK_SMOKE_HANDOFF):null;
 let stage,codec;
-test.beforeAll(async()=>{if(!enabled&&!stockEnabled)return;stage=await mkdtemp(resolve(import.meta.dirname,"node_modules/.barc-tactical-codec-"));await cp(enabled?handoff.codecDirectory:stockHandoff.paths.codecDirectory,stage,{recursive:true});codec=await import(pathToFileURL(resolve(stage,"codec.js")).href)});
+const oneUnitHandoff=oneUnitEnabled?loadOneUnitHandoff(process.env.BARC_ONE_UNIT_HANDOFF,process.env.BARC_ONE_UNIT_HANDOFF_SHA256):null;
+test.beforeAll(async()=>{if(!enabled&&!stockEnabled&&!oneUnitEnabled)return;stage=await mkdtemp(resolve(import.meta.dirname,"node_modules/.barc-tactical-codec-"));await cp(enabled?handoff.codecDirectory:(oneUnitEnabled?oneUnitHandoff.paths.codecDirectory:stockHandoff.paths.codecDirectory),stage,{recursive:true});codec=await import(pathToFileURL(resolve(stage,"codec.js")).href)});
 test.afterAll(async()=>{if(stage)await rm(stage,{recursive:true,force:true})});
 
 const key=ref=>`${ref.id}:${ref.lifetime}`, sameRef=(a,b)=>String(a?.id??0)===b.id&&String(a?.lifetime??0)===b.lifetime;
@@ -22,10 +25,10 @@ const queue=(o,ref,domain)=>actor(o,ref)?.queue?.find(x=>x.domain===domain);
 const near=(a,b,t=64)=>a&&Math.hypot(a.x-b.x,a.z-b.z)<=t;
 
 const startTicks=()=>{const value=readFileSync(`/proc/${process.pid}/stat`,"utf8"),close=value.lastIndexOf(") "),fields=value.slice(close+2).trim().split(/ +/);if(close<0||fields.length<=19)throw new Error("browser writer start identity unavailable");return fields[19]};
-function captureJournal(path,release,runId,source){
+function captureJournal(path,release,runId,source,selectedCase="stock-smoke-count1"){
   if(!path||!release||existsSync(path)||existsSync(release))throw new Error("new stock capture/release paths required");const sourcePath=import.meta.filename,writer={pid:process.pid,startTicks:startTicks(),uid:process.geteuid(),executable:process.execPath,sourcePath,sourceSha256:createHash("sha256").update(readFileSync(sourcePath)).digest("hex")},fd=openSync(path,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_APPEND|constants.O_CLOEXEC,0o600);let sequence=0,closed=false;
-  const append=(kind,value)=>{if(closed)throw new Error("stock capture already completed");sequence++;writeSync(fd,`${JSON.stringify({schema:"fsbar.barc-stock-browser-capture/v1",runId,sequence:String(sequence),kind,writer,source,value})}\n`)};append("header",{selectedCase:"stock-smoke-count1"});
-  return{append,complete(){append("complete",{selectedCase:"stock-smoke-count1"});fsyncSync(fd);closed=true},async hold(){await expect.poll(()=>existsSync(release),{timeout:30000,intervals:[25,50,100,250]}).toBe(true)},close(){closeSync(fd)}};
+  const append=(kind,value)=>{if(closed)throw new Error("stock capture already completed");sequence++;writeSync(fd,`${JSON.stringify({schema:"fsbar.barc-stock-browser-capture/v1",runId,sequence:String(sequence),kind,writer,source,value})}\n`)};append("header",{selectedCase});
+  return{append,complete(){append("complete",{selectedCase});fsyncSync(fd);closed=true},async hold(){await expect.poll(()=>existsSync(release),{timeout:30000,intervals:[25,50,100,250]}).toBe(true)},close(){closeSync(fd)}};
 }
 // Readiness controls execute this exact source block without loading native handoffs.
 const pairingState=()=>({observed:false,authSentCount:0,bootstrapDecodedCount:0,decodeFailureCount:0,clientCloseCount:0,closed:false,error:false,overflow:false});
@@ -100,6 +103,7 @@ async function pair(page,j,guest="Manual guest",rows){
     await page.goto(j.receiverUrl);await live.getByLabel("Gateway").fill(j.gatewayUrl);await live.getByLabel("Session UUID").fill(j.expectedSessionId);await live.getByLabel("One-time credential").fill(j.credential);await live.getByRole("button",{name:"Pair"}).click();
     await expect(live.locator(".catalogue")).not.toContainText("unavailable");await expect(live.locator(".economy")).toContainText("Economy");
     await loadSelectedGuest(page,live,j,guest,state);
+    if(j.deferArm)return live;
     state.phase="arm-clicked";await live.getByRole("button",{name:"Arm live"}).click();
     await expect.poll(()=>state.armSha256).toBe(state.moduleSha256);await expect(live.locator(".authority")).toContainText("arm native confirmed");state.phase="native-confirmed";return live;
   }catch(error){pairingFailed=true;state.failureCode??=state.phase==="arm-clicked"?"authority-not-confirmed":"pair-or-module-not-ready";await writeArmFailure(live,j,state);throw error}
@@ -188,3 +192,84 @@ test.describe("selected stock Count1 smoke",()=>{
     }finally{journal.close()}
   });
 });
+
+
+// ONE_UNIT_SOURCE_BEGIN: dedicated proof, never a smoke or full-six alias.
+const oneUnitCase="selected stock one-unit";
+const insistOne=(condition,message)=>{if(!condition)throw new Error(`one-unit refused: ${message}`)};
+const closedOne=(value,keys,label)=>insistOne(value&&typeof value==="object"&&!Array.isArray(value)&&JSON.stringify(Object.keys(value).sort())===JSON.stringify([...keys].sort()),`${label} keys changed`);
+function loadOneUnitHandoff(path,sha256){
+  insistOne(typeof path==="string"&&path.startsWith("/")&&/^[a-f0-9]{64}$/.test(sha256??""),"pinned handoff required");
+  const st=lstatSync(path),bytes=readFileSync(path);insistOne(st.isFile()&&!st.isSymbolicLink()&&st.nlink===1&&(st.mode&0o777)===0o600&&bytes.length<=65536&&createHash("sha256").update(bytes).digest("hex")===sha256,"handoff physical/body pin changed");
+  const h=parseClosedJson(bytes.toString("utf8"));closedOne(h,["schema","runId","selectedCase","source","paths","connection","artifacts","actors","setup","attribution"],"handoff");
+  insistOne(h.schema==="fsbar.barc-one-produced-unit-handoff/v1"&&h.selectedCase===oneUnitCase,"closed selected case required");
+  closedOne(h.source,["fsbarCommit","highbarCommit"],"source");insistOne(Object.values(h.source).every(x=>/^[a-f0-9]{40}$/.test(x)),"exact source commits required");
+  closedOne(h.connection,["receiverUrl","gatewayUrl","allowedOrigin","sessionId","credential"],"connection");const receiver=new URL(h.connection.receiverUrl),gateway=new URL(h.connection.gatewayUrl),origin=new URL(h.connection.allowedOrigin);insistOne(receiver.protocol==="http:"&&origin.protocol==="http:"&&gateway.protocol==="ws:"&&[receiver,origin,gateway].every(u=>u.hostname==="127.0.0.1"&&!u.username&&!u.password&&!u.hash)&&receiver.origin===origin.origin&&/^[a-f0-9]{64}$/.test(h.connection.credential),"exact private loopback connection required");
+  closedOne(h.artifacts,["guest"],"artifacts");closedOne(h.artifacts.guest,["path","sha256"],"guest");insistOne(/^[a-f0-9]{64}$/.test(h.artifacts.guest.sha256),"actual produced guest digest required");
+  closedOne(h.paths,["codecDirectory","capture","release","nativeEvents","stockTrace","eventQualification"],"paths");
+  insistOne(Object.values(h.paths).every(p=>typeof p==="string"&&p.startsWith("/")),"absolute capsule paths required");
+  closedOne(h.attribution,["qualified","qualificationSha256","writer","acceptedGeneration","processIncarnation","stateChannelIncarnation"],"attribution");
+  insistOne(h.attribution.qualified===true&&/^[a-f0-9]{64}$/.test(h.attribution.qualificationSha256),"actual event-source qualification missing");
+  const qualification=readFileSync(h.paths.eventQualification);insistOne(qualification.length<=65536&&createHash("sha256").update(qualification).digest("hex")===h.attribution.qualificationSha256,"event-source qualification body changed");
+  const qualified=parseClosedJson(qualification.toString("utf8"));insistOne(qualified.schema==="bar.one-unit-attribution-source-qualification/v1"&&qualified.actualPassed===true&&qualified.acceptedGeneration===h.attribution.acceptedGeneration&&qualified.noAutonomousOrders===true&&qualified.runId===h.runId&&JSON.stringify(qualified.source)===JSON.stringify(h.source)&&JSON.stringify(qualified.writer)===JSON.stringify(h.attribution.writer)&&qualified.processIncarnation===h.attribution.processIncarnation&&qualified.stateChannelIncarnation===h.attribution.stateChannelIncarnation&&/^[a-f0-9]{64}$/.test(qualified.noAutonomousConfigurationEvidenceSha256??""),"genuine qualified run/source/writer/generation/no-autonomous configuration missing");
+  closedOne(h.actors,["factory"],"actors");closedOne(h.setup,["productDefinitionId","seedDefinitionId","maximumSeconds"],"setup");
+  insistOne(h.setup.maximumSeconds===180&&Number.isInteger(h.setup.productDefinitionId)&&h.setup.productDefinitionId>0&&Number.isInteger(h.setup.seedDefinitionId)&&h.setup.seedDefinitionId>0&&h.setup.seedDefinitionId!==h.setup.productDefinitionId,"finite distinct seed/product setup required");
+  // Missing capture-source or native feed refuses before browser pairing/Arm.
+  insistOne(existsSync(h.paths.nativeEvents),"genuine native event feed missing");return h;
+}
+function nativeOneEvents(h,rows,before){
+  const st=lstatSync(h.paths.nativeEvents);insistOne(st.isFile()&&!st.isSymbolicLink()&&st.nlink===1&&st.size<=4*1024*1024,"native event stream physical bound changed");
+  const text=readFileSync(h.paths.nativeEvents,"utf8"),lines=text.split("\n");lines.pop();insistOne(lines.length>0&&lines.length<=8192,"native event row bound changed");
+  const raw=lines.map((line,index)=>{insistOne(Buffer.byteLength(line)<=32768,"native event record oversized");const r=parseClosedJson(line);closedOne(r,["schema","runId","sequence","kind","writer","source","acceptedGeneration","stateSequence","nativeFrame","disposition","value"],"native raw row");insistOne(r.schema==="fsbar.barc-one-unit-raw-state-journal/v1"&&r.runId===h.runId&&r.sequence===String(index+1)&&JSON.stringify(r.writer)===JSON.stringify(h.attribution.writer)&&JSON.stringify(r.source)===JSON.stringify(h.source)&&r.acceptedGeneration===h.attribution.acceptedGeneration,"native raw origin/generation/sequence changed");insistOne(["snapshot","unit-created","unit-finished","command-dispatch"].includes(r.kind)&&["materialized","invalidated","gap","liveness-only"].includes(r.disposition)&&/^[0-9]+$/.test(r.stateSequence)&&Number.isSafeInteger(r.nativeFrame)&&r.nativeFrame>=0,"unknown native event or basis");return r});
+  // Freeze the pre-Arm baseline by its actual browser/native state position.
+  const snapshot=raw.find(r=>r.kind==="snapshot"&&r.disposition==="materialized"&&r.stateSequence===before.basis.stateSequence&&r.nativeFrame===Number(before.basis.nativeFrame));insistOne(snapshot,"actual same-basis baseline snapshot missing");
+  insistOne(snapshot.value.units.length>0&&snapshot.value.units.every(u=>u.underConstruction===false&&u.buildProgress===1),"native baseline contains unfinished units");
+  const result=raw.filter(r=>BigInt(r.sequence)>BigInt(snapshot.sequence));result.unshift({...snapshot,kind:"baseline"});
+  const stockStat=lstatSync(h.paths.stockTrace);insistOne(stockStat.isFile()&&!stockStat.isSymbolicLink()&&stockStat.nlink===1&&stockStat.size<=16*1024*1024,"stock reader physical bound changed");let stockText=readFileSync(h.paths.stockTrace,"utf8");stockText=stockText.slice(0,stockText.lastIndexOf("\n")+1);const stock=parseStockTraceJsonl(stockText);
+  for(const r of stock){if(r.reader.status!=="complete")continue;insistOne(r.runId===h.runId&&sameRef(r.context.actor,h.actors.factory)&&r.nativeBasis.processIncarnation===h.attribution.processIncarnation&&r.nativeBasis.stateChannelIncarnation===h.attribution.stateChannelIncarnation,"stock queue origin/basis changed");
+    const o=observations(rows).find(o=>o.basis.stateSequence===r.nativeBasis.stateSequence&&o.basis.processIncarnation===r.nativeBasis.processIncarnation&&o.basis.stateChannelIncarnation===r.nativeBasis.stateChannelIncarnation&&o.basis.matchId===r.nativeBasis.matchIncarnation&&Number(o.basis.nativeFrame)===r.nativeBasis.frame),q=queue(o,h.actors.factory,"QUEUE_DOMAIN_FACTORY_PRODUCTION");
+    if(r.context.domain!=="production"||q?.complete!==true||q.repeat!==false||String(q.revision)!==r.queue.revision||q.entries?.length!==r.queue.entries.length)continue;
+    result.push({...snapshot,kind:r.phase==="final-read"?"final-read":"queue-observation",sequence:r.sequence,stateSequence:r.nativeBasis.stateSequence,nativeFrame:r.readFrame,value:{actor:r.context.actor,nativeBasis:r.nativeBasis,catalogueId:r.context.catalogueId,catalogueRevision:r.context.catalogueRevision,queueRevision:r.queue.revision,complete:true,repeat:false,entries:r.queue.entries.map(e=>({definitionId:-e.id,codedOptions:e.codedOptions,tag:e.tag,float32params:e.float32params})),dispatch:r.dispatch}});
+  }return result;
+}
+export function assertOneProducedUnit(rows,before,native,h){
+  const submits=rows.filter(r=>r.kind==="submit").map(r=>r.value);insistOne(submits.length===1,"exactly one submission required, no retry");const s=submits[0],f=h.actors.factory;
+  insistOne(s.intent?.action==="factoryProduce"&&s.intent.actors?.length===1&&sameRef(s.intent.actors[0],f)&&s.intent.factoryProduce?.count===1&&s.intent.factoryProduce.queuePolicy==="TACTICAL_QUEUE_POLICY_APPEND"&&Number(s.intent.factoryProduce.definitionId)===h.setup.productDefinitionId,"one actor Append Count1 definition changed");
+  insistOne(plannedChildCount(s.intent)===1&&s.parentId&&s.inputId&&s.module?.sha256&&s.controller&&s.basis,"parent/input/module/controller/basis missing");insistOne(Buffer.from(s.module.sha256,"base64").toString("hex")===h.artifacts.guest.sha256,"submitted module differs from actual produced guest");
+  const result=rows.filter(r=>r.kind==="result").map(r=>r.value);insistOne(result.every(r=>r.parentId===s.parentId&&r.childCount===1&&(r.childIndex??0)===0&&sameRef(r.actor,f)&&r.inputId===s.inputId&&JSON.stringify(r.module)===JSON.stringify(s.module)&&JSON.stringify(r.controller)===JSON.stringify(s.controller)&&JSON.stringify(r.basis)===JSON.stringify(s.basis)),"foreign parent/input/module/controller/basis/child lifecycle");
+  for(const [stage,status]of[["LIVE_RESULT_STAGE_BROKER_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_ADMISSION","LIVE_RESULT_STATUS_ACCEPTED"],["LIVE_RESULT_STAGE_NATIVE_DISPATCH","LIVE_RESULT_STATUS_APPLIED"]])insistOne(result.filter(r=>r.stage===stage&&r.status===status).length===1,`unique ${stage} result missing`);
+  insistOne(result.length===3,"extra lifecycle result");const dispatch=result.find(r=>r.stage==="LIVE_RESULT_STAGE_NATIVE_DISPATCH");insistOne(Number.isInteger(dispatch.nativeFrame),"actual dispatch frame missing");
+  insistOne(before.basis.processIncarnation===h.attribution.processIncarnation&&before.basis.stateChannelIncarnation===h.attribution.stateChannelIncarnation&&before.basis.matchId===s.basis.matchId,"baseline/session incarnation changed");
+  const baseline=native[0];insistOne(baseline?.kind==="baseline"&&baseline.stateSequence===before.basis.stateSequence,"frozen native baseline missing");
+  const initial=queue(before,f,"QUEUE_DOMAIN_FACTORY_PRODUCTION");insistOne(initial?.complete&&initial.repeat===false&&initial.entries?.length===0,"empty complete repeat-off baseline missing");
+  const observed=observations(rows).filter(o=>BigInt(o.basis.stateSequence)>BigInt(s.basis.stateSequence)&&Number(o.basis.nativeFrame)>dispatch.nativeFrame&&o.basis.processIncarnation===s.basis.processIncarnation&&o.basis.stateChannelIncarnation===s.basis.stateChannelIncarnation&&o.basis.matchId===s.basis.matchId);
+  const known=new Set(before.units.map(u=>key(u.reference))),created=native.filter(r=>r.kind==="unit-created"&&r.nativeFrame>=dispatch.nativeFrame&&BigInt(r.stateSequence)>BigInt(s.basis.stateSequence)),finished=native.filter(r=>r.kind==="unit-finished"&&r.nativeFrame>=dispatch.nativeFrame&&BigInt(r.stateSequence)>BigInt(s.basis.stateSequence));
+  insistOne(created.every(r=>r.disposition==="invalidated")&&finished.every(r=>r.disposition==="invalidated"),"unit lifecycle delta did not retain unsupported-event invalidation");
+  const nativeDispatch=native.filter(r=>r.kind==="command-dispatch");insistOne(nativeDispatch.length===1&&String(nativeDispatch[0].value.batchSequence)===String(dispatch.batchSequence)&&String(nativeDispatch[0].value.correlationId)===String(dispatch.correlationId)&&String(nativeDispatch[0].value.unitId)===f.id&&nativeDispatch[0].value.commandChannelIncarnation===dispatch.commandChannelIncarnation&&nativeDispatch[0].value.status==="CommandDispatchApplied"&&nativeDispatch[0].value.dispatchFrame===dispatch.nativeFrame,"unique genuine dispatch event missing or extra native dispatch");
+  insistOne(created.length===1&&finished.length===1&&String(created[0].value.builderId)===f.id&&String(created[0].value.unitId)===String(finished[0].value.unitId)&&BigInt(finished[0].sequence)>BigInt(created[0].sequence)&&finished[0].nativeFrame>=created[0].nativeFrame,"unique genuine builder creation and finished events missing");
+  const queued=native.filter(r=>r.kind==="queue-observation"&&r.nativeFrame>=dispatch.nativeFrame&&sameRef(r.value.actor,f)&&r.value.complete===true&&r.value.repeat===false&&r.value.entries?.length===1&&Number(r.value.entries[0].definitionId)===h.setup.productDefinitionId&&r.value.entries[0].codedOptions===0&&r.value.entries[0].float32params?.length===0);
+  insistOne(queued.length>0,"exact native queue entry with options 0 missing");
+  const later=observed.filter(o=>Number(o.basis.nativeFrame)>finished[0].nativeFrame&&queue(o,f,"QUEUE_DOMAIN_FACTORY_PRODUCTION")?.complete===true&&queue(o,f,"QUEUE_DOMAIN_FACTORY_PRODUCTION")?.repeat===false&&queue(o,f,"QUEUE_DOMAIN_FACTORY_PRODUCTION")?.entries?.length===0);
+  insistOne(later.length>=2&&BigInt(later.at(-1).basis.stateSequence)>BigInt(later.at(-2).basis.stateSequence),"two later empty repeat-off snapshots missing");
+  for(const o of later){insistOne(native.some(r=>r.kind==="snapshot"&&r.disposition==="materialized"&&r.stateSequence===o.basis.stateSequence&&r.nativeFrame===Number(o.basis.nativeFrame)&&BigInt(r.sequence)>BigInt(finished[0].sequence)),"later browser state lacks complete native replacement after invalidation");const fresh=o.units.filter(u=>!known.has(key(u.reference)));insistOne(fresh.length===1&&String(fresh[0].reference.id)===String(created[0].value.unitId)&&Number(unit(o,fresh[0].reference)?.definitionId)===h.setup.productDefinitionId,"exactly one new product lifetime missing or extra production");}
+  const final=native.filter(r=>r.kind==="final-read"&&r.nativeFrame<=dispatch.nativeFrame&&sameRef(r.value.actor,f)&&r.value.complete===true&&r.value.repeat===false&&r.value.entries?.length===0);
+  insistOne(final.length===1,"one genuine predispatch final native fence missing");const d=final[0].value.dispatch;insistOne(d?.matched===true&&String(d.batchSequence)===String(dispatch.batchSequence)&&String(d.correlationId)===String(dispatch.correlationId)&&d.moduleSha256===h.artifacts.guest.sha256&&String(d.moduleGeneration)===String(s.module.generation)&&d.brokerSessionId===s.controller.sessionId&&d.commandChannelIncarnation===dispatch.commandChannelIncarnation&&d.commandIndex===nativeDispatch[0].value.commandIndex&&String(d.expectedQueueRevision)===String(s.intent.actorTacticalBindings?.find(b=>sameRef(b.actor,f))?.queueRevisions?.find(q=>q.domain==="QUEUE_DOMAIN_FACTORY_PRODUCTION")?.revision)&&final[0].value.nativeBasis.stateSequence===s.basis.stateSequence&&final[0].value.nativeBasis.token===s.basis.token&&final[0].value.nativeBasis.matchIncarnation===s.basis.matchId&&final[0].value.catalogueId===s.intent.factoryProduce.catalogueId&&String(final[0].value.catalogueRevision)===String(s.intent.factoryProduce.catalogueRevision)&&String(d.authorityEpoch)===String(s.controller.authorityEpoch),"final native dispatch/module/authority/catalogue/queue-basis join missing");
+  const terminal=native.filter(r=>r.kind==="queue-observation"&&r.nativeFrame>=Number(later.at(-1).basis.nativeFrame)&&sameRef(r.value.actor,f)&&r.value.complete===true&&r.value.repeat===false&&r.value.entries?.length===0);insistOne(terminal.length>0,"later terminal native queue read missing");return{schema:"fsbar.barc-one-produced-unit-evidence/v1",runId:h.runId,parentId:s.parentId,product:later.at(-1).units.find(u=>!known.has(key(u.reference))).reference,builder:f,createdSequence:created[0].sequence,finishedSequence:finished[0].sequence,finalReadSequence:final[0].sequence,terminalReadSequence:terminal.at(-1).sequence,unitProduced:true,fullSix:false,nativeUsefulPlay:"0/6"};
+}
+test.describe(oneUnitCase,()=>{
+  test.skip(!oneUnitEnabled,"requires root-admitted checked one-unit capsule and genuine native attribution feed");
+  test("one Append Count1 completes exactly one factory-attributed unit",async({page})=>{
+    test.setTimeout(180000);const h=oneUnitHandoff,j={receiverUrl:h.connection.receiverUrl,gatewayUrl:h.connection.gatewayUrl,allowedOrigin:h.connection.allowedOrigin,expectedSessionId:h.connection.sessionId,credential:h.connection.credential,bundledGuestSha256:h.artifacts.guest.sha256,outputPath:h.paths.capture,armFailurePath:`${h.paths.capture}.arm-failure.json`,deferArm:true},journal=captureJournal(h.paths.capture,h.paths.release,h.runId,h.source,oneUnitCase);
+    try{const rows=await capture(page,journal),live=await pair(page,j,"Manual guest",rows),f=h.actors.factory;await select(page,live,"pointer",[f]);
+      const seeded=queue(latest(rows),f,"QUEUE_DOMAIN_FACTORY_PRODUCTION");insistOne(seeded?.complete===true&&seeded.repeat===false&&seeded.entries?.length>0&&Number(seeded.entries[0].definitionId)===h.setup.seedDefinitionId,"nonempty distinct seed readiness missing");
+      await expect.poll(()=>{const q=queue(latest(rows),f,"QUEUE_DOMAIN_FACTORY_PRODUCTION");return q?.complete===true&&q.repeat===false&&q.entries?.length===0},{timeout:60000}).toBe(true);
+      const before=structuredClone(latest(rows));insistOne(rows.filter(r=>r.kind==="submit").length===0,"autonomous/baseline submit");
+      nativeOneEvents(h,rows,before); // The pinned actual source qualification must separately prove autonomous decisions disabled.
+      journal.append("one-unit-baseline",before);rows.readiness.phase="arm-clicked";await live.getByRole("button",{name:"Arm live"}).click();await expect.poll(()=>rows.readiness.armSha256).toBe(rows.readiness.moduleSha256);await expect(live.locator(".authority")).toContainText("arm native confirmed");insistOne(rows.readiness.armCount===1,"exactly one Arm required");
+      await live.getByLabel("Action").selectOption("factoryProduce");await live.getByLabel("Definition").selectOption(String(h.setup.productDefinitionId));await live.getByLabel("Count").fill("1");await live.getByLabel("Queue policy").selectOption("TACTICAL_QUEUE_POLICY_APPEND");await physicalSubmit(page,live,"pointer");await expect.poll(()=>rows.filter(r=>r.kind==="submit").length,{timeout:5000}).toBe(1);const submit=rows.find(r=>r.kind==="submit").value;await settleSubmit(rows,submit,"applied");
+      // No stale-basis replacement: this route submits once or refuses.
+      let proof;await expect.poll(()=>{try{proof=assertOneProducedUnit(rows,before,nativeOneEvents(h,rows,before),h);return true}catch{return false}},{timeout:90000,intervals:[25,50,100,250]}).toBe(true);journal.append("one-unit-proof",proof);journal.complete();await journal.hold();
+    }finally{journal.close()}
+  });
+});
+// ONE_UNIT_SOURCE_END

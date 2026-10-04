@@ -416,3 +416,47 @@ verbose receipts and authored input drift. No restore, compiler, browser, engine
 or game operation was executed. Authentic producer tools and fresh bounded build
 admission remain pending. This source slice changes neither runtime authority nor
 historical READY/map cause Unknown; useful native play remains **0/6**.
+
+
+## One-produced-unit source qualification — 2026-10-04
+
+The [accepted-state diagnostic](../../src/Broker.Protocol/HighBarCoordinatorService.fs)
+retains a cloned update only inside the accepted owning-generation fence. The
+[optional raw journal](../../tests/Broker.NativeProof/LiveHost.fs) records complete
+snapshots, actual creation builder identity, finish events and correlated native
+dispatch with bounded run/source/writer/generation provenance. Unsupported create
+and finish deltas still invalidate the browser baseline until a complete native
+replacement arrives. No new RPC, public contract or native command is introduced.
+
+The fresh locked Release build passed naturally with the exact SDK/runtime and
+signed dependency closure. Six [compiled loopback controls](../../tests/Broker.NativeProof/AttributionControls.fs)
+passed through the actual gRPC service and reducer, including stale-generation
+refusal and replacement recovery. Full compiler-input, PE and portable-PDB proof
+binds the changed compiled bodies to frozen source digest
+`adedbff5fe71daab722b6f145e69a10e3e882a2954fdbb5c2c689a5c7b2a4ac7`;
+it does not attribute them to the earlier base commit. Separately, actual installed
+API 0.2.1 preparation passed genuine imports and exactly one Playwright CLI
+list-mode discovery through the unchanged no-process-descendants profile. Binding
+change, late input drift, missing capture, extra input and symlink controls refused.
+No browser, actor or game ran. Failed predecessor attempts remain failed; their
+independently passed phases are reused by exact physical custody. The final capsule
+source seal is `f67fae3aa72ea99db0463c41d4512d4b7b0ebb17c04b4160493d4fa530e3f397`.
+
+This is **source-qualified preparation**, with local routine source delivery still
+pending parent PR admission and native merge readback. The compiled product bytes
+are unchanged during integration; the new roadmap text requires no compile replay.
+`actorEligible=false`, `unitProducedAccepted=false`, and useful native play **0/6**
+remain explicit. The [one-unit oracle](../../tests/Broker.NativeProof/tactical-native-journey.spec.js)
+requires a genuinely qualified native event source and no-autonomous configuration
+for the exact run/source/writer/process/channel/generation before Arm. Controlled
+loopback events and passive fixture comments cannot grant that qualification.
+
+The next source preparation joins the fresh host/receiver to the existing policy's
+nineteen named managed, provenance and runtime roles, exact placement/search layout
+and physical custody; it also binds the selected external-control plugin and
+passive fixture/configuration to actual loaded identities. Root separately admits
+a bounded attribution/startup prerequisite and any later one-shot Append Count1
+operation. Predispatch final-read remains a fence; actual creation/finish and a
+separate later terminal native sample must prove exactly one product. Full six
+useful-play journeys, publication and installed adoption remain open. Native usage
+coverage remains unknown where the observer rejected canonical native identity.
