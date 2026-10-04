@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="LiveHost.fs" />
+    <Compile Include="AttributionControls.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

@@ -231,6 +231,7 @@ module Program =
         try
             (if argv.Length > 0 && argv[0] = "--live-host" then LiveHost.run "barc-live-v1" argv[1..]
              elif argv.Length > 0 && argv[0] = "--tactical-live-host" then LiveHost.run "barc-live-tactical-v1" argv[1..]
+             elif argv = [| "--attribution-controls" |] then AttributionControls.run ()
              elif argv.Length > 0 && argv[0] = "--stock-tactical-live-host" then LiveHost.run "barc-live-tactical-stock-v1" argv[1..]
              else run listenAddress) |> fun task -> task.GetAwaiter().GetResult()
         with ex ->

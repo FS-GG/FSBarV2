@@ -17,6 +17,9 @@ on:
       - tests/Broker.Browser.Live.Tests/**
       - tests/Broker.NativeProof/tactical-native-journey.spec.js
       - tests/Broker.NativeProof/tactical-native-readiness.test.mjs
+      - tests/Broker.NativeProof/one-unit-prearm.test.mjs
+      - tests/Broker.NativeProof/Policy/build-stock-selection.mjs
+      - tests/Broker.NativeProof/Policy/build-stock-selection.test.mjs
   workflow_dispatch:
 
 permissions:
@@ -63,6 +66,10 @@ jobs:
       - name: Run the fourteen JavaScript source controls
         shell: bash
         run: node --test tests/Broker.NativeProof/tactical-native-readiness.test.mjs
+
+      - name: Run the one-unit and compiler-capture source controls
+        shell: bash
+        run: node --test tests/Broker.NativeProof/one-unit-prearm.test.mjs tests/Broker.NativeProof/Policy/build-stock-selection.test.mjs
 
       - name: Restore and build the live boundary source
         shell: bash

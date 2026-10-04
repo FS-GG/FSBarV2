@@ -36,6 +36,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
+      - name: Run the portable seed helper source controls
+        shell: bash
+        run: python3 -I -B tests/Broker.NativeProof/RuntimeEvidence/fixtures/seed-attribution-helper/run-source-controls.py
+
       - name: Set up the exact .NET SDK
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:

@@ -390,3 +390,101 @@ capacity and prospective operation authority remain required; all useful-play
 journeys remain **0/6**. Admission telemetry attempt
 `bar-stock-correspondence-source-admission-20261003` returned `not-configured`;
 usage is Unknown.
+
+## StockSelection compiler capture source — 2026-10-04
+
+The canonical [StockSelection producer](../../tests/Broker.NativeProof/Policy/build-stock-selection.mjs)
+accepts `--capture-dir <fresh-absolute-directory>` for prospective qualification.
+That route retains separate raw restore/Fable streams, actual nested arguments,
+working directory and closed child environment, Fable 5.18 `--verbose` evaluated
+source/reference hashes, the temporary output graph and literal runtime-import
+rewrite correspondence. Existing builds without capture keep their cleanup route.
+The capture records prior descriptors as historical and publishes a new descriptor
+only after successful compiler and runtime-byte guards. A captured compiler graph
+is observed after compilation and must join an independently frozen parent input
+census; it does not establish compiler/package authenticity by itself.
+
+Seventeen [production-call controls](../../tests/Broker.NativeProof/Policy/build-stock-selection.test.mjs)
+pass on the existing Node 24.8 interpreter with every SDK/compiler launch mocked.
+The optional `--nuget-config <absolute-file>` argument passes the exact reviewed
+stock feed configuration to nested restore and hashes it before/after compilation.
+The original 1MiB nested output limit remains enforced. Controls cover explicit
+config arguments, drift, invalid paths and duplicate flags as well as raw streams,
+retained partial failures, timeout/signal refusal, stale
+previous descriptors, capture collisions, graph links, runtime mismatch, missing
+verbose receipts and authored input drift. No restore, compiler, browser, engine
+or game operation was executed. Authentic producer tools and fresh bounded build
+admission remain pending. This source slice changes neither runtime authority nor
+historical READY/map cause Unknown; useful native play remains **0/6**.
+
+
+## One-produced-unit source qualification — 2026-10-04
+
+The [accepted-state diagnostic](../../src/Broker.Protocol/HighBarCoordinatorService.fs)
+retains a cloned update only inside the accepted owning-generation fence. The
+[optional raw journal](../../tests/Broker.NativeProof/LiveHost.fs) records complete
+snapshots, actual creation builder identity, finish events and correlated native
+dispatch with bounded run/source/writer/generation provenance. Unsupported create
+and finish deltas still invalidate the browser baseline until a complete native
+replacement arrives. No new RPC, public contract or native command is introduced.
+
+The fresh locked Release build passed naturally with the exact SDK/runtime and
+signed dependency closure. Six [compiled loopback controls](../../tests/Broker.NativeProof/AttributionControls.fs)
+passed through the actual gRPC service and reducer, including stale-generation
+refusal and replacement recovery. Full compiler-input, PE and portable-PDB proof
+binds the changed compiled bodies to frozen source digest
+`adedbff5fe71daab722b6f145e69a10e3e882a2954fdbb5c2c689a5c7b2a4ac7`;
+it does not attribute them to the earlier base commit. Separately, actual installed
+API 0.2.1 preparation passed genuine imports and exactly one Playwright CLI
+list-mode discovery through the unchanged no-process-descendants profile. Binding
+change, late input drift, missing capture, extra input and symlink controls refused.
+No browser, actor or game ran. Failed predecessor attempts remain failed; their
+independently passed phases are reused by exact physical custody. The final capsule
+source seal is `f67fae3aa72ea99db0463c41d4512d4b7b0ebb17c04b4160493d4fa530e3f397`.
+
+This is **source-qualified preparation**, with local routine source delivery still
+pending parent PR admission and native merge readback. The compiled product bytes
+are unchanged during integration; the new roadmap text requires no compile replay.
+`actorEligible=false`, `unitProducedAccepted=false`, and useful native play **0/6**
+remain explicit. The [one-unit oracle](../../tests/Broker.NativeProof/tactical-native-journey.spec.js)
+requires a genuinely qualified native event source and no-autonomous configuration
+for the exact run/source/writer/process/channel/generation before Arm. Controlled
+loopback events and passive fixture comments cannot grant that qualification.
+
+The next source preparation joins the fresh host/receiver to the existing policy's
+nineteen named managed, provenance and runtime roles, exact placement/search layout
+and physical custody; it also binds the selected external-control plugin and
+passive fixture/configuration to actual loaded identities. Root separately admits
+a bounded attribution/startup prerequisite and any later one-shot Append Count1
+operation. Predispatch final-read remains a fence; actual creation/finish and a
+separate later terminal native sample must prove exactly one product. Full six
+useful-play journeys, publication and installed adoption remain open. Native usage
+coverage remains unknown where the observer rejected canonical native identity.
+
+### BARC-01.5f pre-Arm producer source amendment (2026-10-04)
+
+The six preparation phases are source-qualified through the retained v5 managed
+build/attribution controls, v6 compiler/PE/PDB proof and v9 installed capsule
+qualification. Their earlier failed overall attempts remain failed. The qualified
+managed bodies remain unchanged; this successor changes the one-unit JS consumer
+and prepares a private read-only pre-Arm qualifier. Its controlled Python checks
+prove source predicates only. Changed JS controls and installed list discovery
+still require separate root admission; old discovery qualifies its original bytes.
+
+Qualification must retain an actual earlier finite nonempty seed queue, native
+factory creation/finish, unsupported-event invalidation and later complete
+replacement/empty repeat-off evidence. Browser readiness then freezes a fresh
+same-run/generation empty baseline containing those finished seed lifetimes and
+rechecks source/configuration/PID custody before its single Arm and Append Count1.
+This removes the prior nonempty-seed/browser timing contradiction. Missing real
+basis/lifetime joins, extra production/dispatch, drift or expiry refuse; no fixture
+boolean, extra seed, stale-basis retry or receipt rewrite supplies acceptance.
+
+The existing canonical nineteen-role PolicyClosure and full dependency/runtime
+census are unchanged. Final product/helper graph composition remains blocked on a
+qualified genuine successor provenance producer; old build receipts cannot be
+relabeled for this candidate. Root owns the finite startup, transition and later
+one-shot browser admissions, effect-specific authority checks and PR/integration.
+No native startup, browser, actor or production operation was admitted here.
+**actorEligible=false; unitProducedAccepted=false; useful play 0/6.** BARC-01.5f
+and the original six useful-play journeys remain open.
