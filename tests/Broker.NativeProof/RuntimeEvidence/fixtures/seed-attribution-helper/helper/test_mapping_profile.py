@@ -44,10 +44,11 @@ class Mapping(unittest.TestCase):
  def validate(self,p,digest):
   with patch.object(m,'semantic_digest',side_effect=digest):return m.validate_schema(p)
  def test_independent_golden_delta(self):
-  self.assertEqual(m.semantic_digest(self.delta),'7851f21c579ca183d7c5a7641dcc114213ffa7d67e18187b2b93da5fceea1741');self.assertEqual(len(self.projection),458);self.assertEqual(len(self.base),145);self.assertEqual(sum(x['kind']=='clrPE'for x in self.projection),313)
- def test_consumed_v1_data_paths_refuse(self):
+  self.assertEqual(m.semantic_digest(self.delta),'5ea5acb80b52c5ec81a1b4cc999c1f8ca5c316ce0302218263ea9918b85b3310');self.assertEqual(len(self.projection),458);self.assertEqual(len(self.base),145);self.assertEqual(sum(x['kind']=='clrPE'for x in self.projection),313)
+ def test_consumed_v1_and_v2_data_paths_refuse(self):
   p,digest=self.fixture();old='/home/developer/.local/share/fs-gg-private/bar-native-seed-data-preparation-20261005-v1/packet/runtime-data'
-  q=copy.deepcopy(p);q['dataRoot']=old;self.denied(self.validate,q,digest)
+  for consumed in (old,old.replace('-v1/','-v2/')):
+   q=copy.deepcopy(p);q['dataRoot']=consumed;self.denied(self.validate,q,digest)
   q=copy.deepcopy(p);entry=next(x for x in q['mappingDelta']['added']if x['role']=='highBarPlugin')
   for field in ('declaredPath','canonicalPath','baseAllowedKey'):entry['row'][field]=entry['row'][field].replace(m.DATA,old)
   self.denied(self.validate,q,digest)
@@ -90,6 +91,7 @@ class Mapping(unittest.TestCase):
   p,digest=self.fixture()
   for field in('nativeHost','dataRoot','engine'):
    q=copy.deepcopy(p);q[field]='/unselected';self.denied(self.validate,q,digest)
+  q=copy.deepcopy(p);q['nativeHost']='/home/developer/.local/share/fs-gg-private/bar-native-seed-input-preparation-20261005-v1/native-host/Broker.NativeProof';self.denied(self.validate,q,digest)
   q=copy.deepcopy(p);q['policy']['apphost']='/old/policy';self.denied(self.validate,q,digest)
   q=copy.deepcopy(p);row=next(x for x in q['executableMappingIdentities']['rows']if x['declaredPath']==m.POLICY);row['pin']['inode']+=1;self.denied(self.validate,q,digest)
  def test_missing_preparation_refuses(self):
