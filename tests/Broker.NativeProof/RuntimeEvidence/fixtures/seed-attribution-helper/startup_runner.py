@@ -7,7 +7,7 @@ import mechanics as m,outer_custody as outer
 from runtime_socket import RuntimeSocket
 from stock_bootstrap import authenticate_ready,authenticate_metadata,authenticate_setup,persist_authenticated_snapshots
 from runtime_identity import proc_bytes,start_ticks,verify_executable_map_lines,verify_host_dynamic_map_lines
-ROOT='/tmp/bar-stock-seed-attribution-20261004';PYTHON='/usr/bin/python3.14'
+ROOT='/tmp/bar-stock-seed-attribution-20261005-v1';PYTHON='/usr/bin/python3.14'
 need=m.need;clock=m.clock
 RUNTIME_SOCKET=None
 
