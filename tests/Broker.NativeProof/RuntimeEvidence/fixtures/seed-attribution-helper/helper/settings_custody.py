@@ -1,14 +1,47 @@
 """Root-selected immutable settings seed and attempt-scoped engine output."""
-import hashlib,os,stat
+import hashlib,json,os,stat
 from pathlib import Path
-from private_io import Refused,atomic_bytes_new,atomic_new,canonical,components,hash_artifact,need,read_bytes,read_json
+from private_io import SHA,Refused,atomic_bytes_new,atomic_new,canonical,components,hash_artifact,need,read_bytes,read_json
 MAX_SETTINGS=65536
 MAX_INVENTORY=16*1024*1024
 MAX_FILES=65536
 
+def external_inventory(config,root,root_before):
+    pin=config['packetInventory'];fields={'path','sha256','bytes','device','inode','uid','mode','nlink'}
+    need(type(pin)is dict and set(pin)==fields,'closed external inventory pin')
+    need(type(pin['sha256'])is str and SHA.fullmatch(pin['sha256']) and pin['sha256']==config['packetSha256'],'external inventory digest join')
+    need(all(type(pin[k])is int for k in fields-{'path','sha256'}),'external inventory physical pin types')
+    path=components(pin['path']);need(not path.is_relative_to(root),'external inventory outside packet root')
+    anchor=path.parent.lstat();before=path.lstat()
+    need(stat.S_ISDIR(anchor.st_mode) and anchor.st_uid==os.geteuid() and stat.S_IMODE(anchor.st_mode)==0o700,'private external inventory anchor')
+    need(stat.S_ISREG(before.st_mode) and before.st_uid==os.geteuid() and stat.S_IMODE(before.st_mode)in(0o400,0o600) and before.st_nlink==1 and 0<before.st_size<=MAX_INVENTORY,'external inventory custody/bound')
+    def matches(info):
+        return all(pin[k]==v for k,v in {'bytes':info.st_size,'device':info.st_dev,'inode':info.st_ino,'uid':info.st_uid,'mode':stat.S_IMODE(info.st_mode),'nlink':info.st_nlink}.items())
+    need(matches(before),'external inventory physical identity')
+    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+    try:
+        opened=os.fstat(fd);need(matches(opened) and stat.S_ISREG(opened.st_mode),'opened external inventory identity')
+        chunks=[];length=0
+        while length<=MAX_INVENTORY:
+            block=os.read(fd,min(65536,MAX_INVENTORY+1-length))
+            if not block:break
+            chunks.append(block);length+=len(block)
+        after=os.fstat(fd);current=components(str(path)).lstat();parent=path.parent.lstat();root_after=components(str(root)).lstat()
+        attrs=('st_dev','st_ino','st_size','st_uid','st_mode','st_nlink','st_mtime_ns','st_ctime_ns')
+        need(length==before.st_size and length<=MAX_INVENTORY and all(getattr(before,k)==getattr(opened,k)==getattr(after,k)==getattr(current,k)for k in attrs),'external inventory changed during read')
+        need(all(getattr(anchor,k)==getattr(parent,k)for k in ('st_dev','st_ino','st_uid','st_mode')) and all(getattr(root_before,k)==getattr(root_after,k)for k in ('st_dev','st_ino','st_uid','st_mode')),'external inventory directory/root generation drift')
+    finally:os.close(fd)
+    raw=b''.join(chunks);need(hashlib.sha256(raw).hexdigest()==pin['sha256'],'external inventory bytes mismatch')
+    def unique(pairs):
+        value={}
+        for key,item in pairs:need(key not in value,'duplicate external inventory JSON key');value[key]=item
+        return value
+    return json.loads(raw.decode('utf-8'),object_pairs_hook=unique,parse_constant=lambda _: (_ for _ in ()).throw(Refused('nonfinite external inventory JSON')))
+
 def inventory(config):
-    root=components(config['roots']['packetRoot']);need(root.stat().st_uid==os.geteuid() and stat.S_IMODE(root.stat().st_mode)==0o700,'private packet root')
-    value=read_json(str(root/'packet-inventory.json'),config['packetSha256'],MAX_INVENTORY)
+    root=components(config['roots']['packetRoot']);info=root.lstat();required_mode=0o500 if 'packetInventory'in config else 0o700
+    need(stat.S_ISDIR(info.st_mode) and info.st_uid==os.geteuid() and stat.S_IMODE(info.st_mode)==required_mode,'private packet root')
+    value=external_inventory(config,root,info) if 'packetInventory'in config else read_json(str(root/'packet-inventory.json'),config['packetSha256'],MAX_INVENTORY)
     need(value['root']==str(root) and isinstance(value['files'],list) and len(value['files'])<=MAX_FILES,'bounded packet census')
     need(value['fileCount']==len(value['files']),'packet census count')
     names=set()
@@ -46,7 +79,7 @@ def verify_packet_unchanged(config):
         for name in dirs:need(not (Path(base)/name).is_symlink(),'packet symlink directory')
         for name in files:
             p=Path(base)/name;need(not p.is_symlink(),'packet symlink file');rel=str(p.relative_to(root))
-            if rel=='packet-inventory.json':continue
+            if 'packetInventory'not in config and rel=='packet-inventory.json':continue
             need(len(actual)<MAX_FILES,'bounded packet file census');actual.add(rel);need(rel in expected,'unadmitted packet file')
             row=expected[rel];before=hash_artifact(str(p),row['sha256']);need(before.st_nlink==1 and before.st_uid==row['ownerUid'] and before.st_ino==row['inode'] and f'{os.major(before.st_dev)}:{os.minor(before.st_dev)}'==row['device'] and before.st_size==row['bytes'] and stat.S_IMODE(before.st_mode)==int(row['mode'],8),'packet custody changed')
     need(actual==set(expected),'packet file census changed');return len(actual)
