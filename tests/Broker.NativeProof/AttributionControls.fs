@@ -4,6 +4,8 @@ open System
 open System.Collections.Concurrent
 open System.Diagnostics
 open System.Net
+open System.IO
+open System.Text.Json
 open System.Net.Sockets
 open System.Threading
 open Grpc.Net.Client
@@ -53,7 +55,7 @@ module AttributionControls =
         update.Delta <- delta
         update
 
-    let run () = task {
+    let private runCore (journalPath: string option) = task {
         use lifetime = new CancellationTokenSource(TimeSpan.FromSeconds 25.)
         let rows = ConcurrentQueue<struct(Guid * StateUpdate * string)>()
         let subscriptions = ConcurrentBag<IDisposable>()
@@ -77,7 +79,25 @@ module AttributionControls =
         let port = (portSelection.LocalEndpoint :?> IPEndPoint).Port
         portSelection.Stop()
         let audit = ConcurrentQueue<Audit.AuditEvent>()
-        let! host = ServerHost.start { ServerHost.defaultOptions with listenAddress=sprintf "127.0.0.1:%d" port } (Version(1,0)) audit.Enqueue lifetime.Token
+        use detachJournal =
+            match journalPath with
+            | Some path ->
+                require (Path.IsPathFullyQualified path && not(File.Exists path)) "new absolute detach control journal required"
+                new StreamWriter(LiveHost.openStockJournal path)
+            | None -> new StreamWriter(Stream.Null)
+        let detachRows = ConcurrentQueue<string>()
+        let detachGate = obj()
+        let captureDetach kind (value: objnull) = lock detachGate (fun () ->
+            // Exercise the production audit projection and production held-FD writer.
+            let row=JsonSerializer.Serialize {|kind=kind;value=value|}
+            require (System.Text.Encoding.UTF8.GetByteCount(row)+1<=1024 && detachRows.Count<8) "detach control journal bound"
+            detachRows.Enqueue row
+            detachJournal.WriteLine row
+            detachJournal.Flush())
+        let observeAudit event =
+            audit.Enqueue event
+            LiveHost.observeStockAudit true captureDetach event
+        let! host = ServerHost.start { ServerHost.defaultOptions with listenAddress=sprintf "127.0.0.1:%d" port } (Version(1,0)) observeAudit lifetime.Token
         let waitFor name condition = task {
             let stop = DateTimeOffset.UtcNow.AddSeconds 8.
             while not(condition()) do
@@ -141,6 +161,18 @@ module AttributionControls =
 
             // Let the existing owning-generation watchdog detach this controlled stream.
             do! waitFor "old generation detach" (fun () -> BrokerState.session host.Hub |> Option.isNone)
+            if journalPath.IsSome then
+                do! waitFor "detach journal without later snapshot" (fun () -> detachRows.Count=1)
+                require (rows.Count=4) "detach control required an extra state update"
+                use detached=JsonDocument.Parse(detachRows.ToArray().[0])
+                let root=detached.RootElement
+                require (root.GetProperty("kind").GetString()="detach" && root.GetProperty("value").GetProperty("detail").GetString()="coordinator-detached") "bounded detach projection missing"
+                require (root.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq = set["kind";"value"]) "detach projection leaked audit fields"
+                require (root.GetProperty("value").EnumerateObject() |> Seq.map _.Name |> Set.ofSeq = set["detail"]) "detach detail leaked identifiers/reason"
+                let path=journalPath.Value
+                require (File.ReadAllLines(path)=detachRows.ToArray()) "held-FD detach journal not flushed"
+                require (File.GetUnixFileMode(path)=(UnixFileMode.UserRead ||| UnixFileMode.UserWrite)) "detach journal mode changed"
+                printfn "ATTRIBUTION_CONTROL_PASS detach-after-last-snapshot-journaled"
             let! _ = heartbeat "attribution-new"
             use newPush = producer.PushStateAsync(cancellationToken=lifetime.Token)
             do! newPush.RequestStream.WriteAsync(snapshot 1UL 100u)
@@ -155,10 +187,19 @@ module AttributionControls =
             let tick = BrokerState.session host.Hub |> Option.bind(fun session -> (Session.toReading DateTimeOffset.UtcNow session).telemetry) |> Option.map _.tick
             require (tick=Some 100L) "stale stream contaminated replacement"
             printfn "ATTRIBUTION_CONTROL_PASS stale-generation-refused"
-            printfn "ATTRIBUTION_CONTROLS_COMPLETE passed=6 controlledProducer=true gameLaunched=false"
+            if journalPath.IsSome then
+                let beforeDetach=detachRows.Count
+                do! oldPush.RequestStream.CompleteAsync()
+                do! System.Threading.Tasks.Task.Delay(100,lifetime.Token)
+                require (detachRows.Count=beforeDetach && (BrokerState.session host.Hub |> Option.isSome)) "stale stream cleanup emitted detach or closed replacement"
+                printfn "ATTRIBUTION_CONTROL_PASS stale-generation-detach-refused"
+            printfn "ATTRIBUTION_CONTROLS_COMPLETE passed=%d controlledProducer=true gameLaunched=false" (if journalPath.IsSome then 8 else 6)
             return 0
         finally
             lifetime.Cancel()
             (host :> IAsyncDisposable).DisposeAsync().AsTask().GetAwaiter().GetResult()
             for subscription in subscriptions do subscription.Dispose()
     }
+
+    let run () = runCore None
+    let runDetachControls path = runCore (Some path)
