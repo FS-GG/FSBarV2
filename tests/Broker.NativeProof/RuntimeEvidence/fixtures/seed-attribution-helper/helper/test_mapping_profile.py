@@ -44,7 +44,13 @@ class Mapping(unittest.TestCase):
  def validate(self,p,digest):
   with patch.object(m,'semantic_digest',side_effect=digest):return m.validate_schema(p)
  def test_independent_golden_delta(self):
-  self.assertEqual(m.semantic_digest(self.delta),'e90554a5a7ead26b9db6eb3d250dd732bba1677842051406cf4d192437971060');self.assertEqual(len(self.projection),458);self.assertEqual(len(self.base),145);self.assertEqual(sum(x['kind']=='clrPE'for x in self.projection),313)
+  self.assertEqual(m.semantic_digest(self.delta),'7851f21c579ca183d7c5a7641dcc114213ffa7d67e18187b2b93da5fceea1741');self.assertEqual(len(self.projection),458);self.assertEqual(len(self.base),145);self.assertEqual(sum(x['kind']=='clrPE'for x in self.projection),313)
+ def test_consumed_v1_data_paths_refuse(self):
+  p,digest=self.fixture();old='/home/developer/.local/share/fs-gg-private/bar-native-seed-data-preparation-20261005-v1/packet/runtime-data'
+  q=copy.deepcopy(p);q['dataRoot']=old;self.denied(self.validate,q,digest)
+  q=copy.deepcopy(p);entry=next(x for x in q['mappingDelta']['added']if x['role']=='highBarPlugin')
+  for field in ('declaredPath','canonicalPath','baseAllowedKey'):entry['row'][field]=entry['row'][field].replace(m.DATA,old)
+  self.denied(self.validate,q,digest)
  def test_complete_projection_and_retained_engine_authority(self):
   p,digest=self.fixture();self.assertEqual(len(self.validate(p,digest)),458);p['authorityPins']=[];self.denied(self.validate,p,digest)
  def test_missing_extra_duplicate_reordered_delta(self):
