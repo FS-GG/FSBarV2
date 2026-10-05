@@ -85,6 +85,21 @@ class Controlled(unittest.TestCase):
     tactical=[x['value']['tactical']for x in rows if x['kind']=='live-metadata'];tactical[1]['actors'][1]['actor']['lifetime']='99'
    c['inputs']['host']=self.pin(b''.join(json.dumps(x,separators=(',',':')).encode()+b'\n'for x in rows),True)
    with self.assertRaises(q.Refused):self.derive(c)
+ def test_host_invalidation_after_terminal_snapshot_refuses(self):
+  # A terminal snapshot does not erase a later generation failure in the sealed extent.
+  for kind in ['gap','detach','identity-conflict']:
+   with self.subTest(kind=kind):
+    c=self.fixture();rows=[json.loads(x)for x in pathlib.Path(c['inputs']['host']['path']).read_bytes().splitlines()]
+    row=copy.deepcopy(rows[-1]);row.update(sequence=str(len(rows)+1),kind=kind,value={'detail':'controlled terminal failure'})
+    rows.append(row);c['inputs']['host']=self.pin(b''.join(json.dumps(x,separators=(',',':')).encode()+b'\n'for x in rows),True)
+    with self.assertRaisesRegex(q.Refused,'host-generation-refusal'):self.derive(c)
+ def test_stale_generation_failure_after_terminal_snapshot_refuses(self):
+  for detail in ['state sequence gap','coordinator detached','identity changed','process incarnation changed']:
+   with self.subTest(detail=detail):
+    c=self.fixture();rows=[json.loads(x)for x in pathlib.Path(c['inputs']['host']['path']).read_bytes().splitlines()]
+    row=copy.deepcopy(rows[-1]);row.update(sequence=str(len(rows)+1),kind='stale',value={'receivedSequence':'10','detail':detail})
+    rows.append(row);c['inputs']['host']=self.pin(b''.join(json.dumps(x,separators=(',',':')).encode()+b'\n'for x in rows),True)
+    with self.assertRaisesRegex(q.Refused,'host-generation-refusal'):self.derive(c)
  def test_no_fabricated_boolean_contract(self):
   with self.assertRaises(q.Refused):q.derive({'actualPassed':True,'noAutonomousOrders':True},time.monotonic()+1)
   c=self.fixture();pin=c['inputs']['raw'];body=pathlib.Path(pin['path']).read_bytes();pathlib.Path(pin['path']).write_bytes(body+b'{')

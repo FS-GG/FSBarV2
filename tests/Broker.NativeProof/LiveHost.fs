@@ -48,6 +48,14 @@ module LiveHost =
             try File.Delete path with _ -> ()
             reraise()
 
+    // Only the owning-generation detach audit reaches this callback. Retain a
+    // closed refusal code; plugin IDs and free-form reasons stay outside evidence.
+    let observeStockAudit stock (writeKind: string -> objnull -> unit) (event: Audit.AuditEvent) =
+        match event with
+        | Audit.AuditEvent.CoordinatorDetached _ when stock ->
+            writeKind "detach" (box {| detail="coordinator-detached" |})
+        | _ -> ()
+
     let private requiredEnvironment name =
         Environment.GetEnvironmentVariable name
         |> Option.ofObj
@@ -213,7 +221,7 @@ module LiveHost =
                             journal.Flush()
                             stream.Flush(true)
                             journal.Dispose()) }
-        let! host = ServerHost.start { ServerHost.defaultOptions with listenAddress=grpcAddress } (Version(1,0)) ignore lifetime.Token
+        let! host = ServerHost.start { ServerHost.defaultOptions with listenAddress=grpcAddress } (Version(1,0)) (observeStockAudit stock writeKind) lifetime.Token
         try
             let lobby: Lobby.LobbyConfig =
                 { mapName="Avalanche 3.4";gameMode="Skirmish";participants=[{slotIndex=1;kind=ParticipantSlot.ProxyAi;team=0;boundClient=None}];display=Lobby.Headless }

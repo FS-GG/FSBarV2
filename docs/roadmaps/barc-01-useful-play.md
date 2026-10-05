@@ -533,3 +533,39 @@ Current-UID sampled coverage, SourceLink remote content Unknown and missing
 post-last-snapshot disconnect coverage remain explicit; no fresh live/browser
 eligibility follows. Native seed and requested-unit acceptance remain unknown,
 actor eligibility false and the six useful-play journeys **0/6**.
+
+
+### Owning coordinator detach source qualification (2026-10-05)
+
+The [stock host](../../tests/Broker.NativeProof/LiveHost.fs) now retains the
+owning coordinator's detach even when no later state update arrives. Its existing
+private append-only journal records `kind=detach` with the closed code
+`coordinator-detached`; plugin identifiers and free-form audit reasons are omitted.
+The coordinator's existing generation fence prevents stale stream cleanup from
+closing a replacement session. Non-stock hosts keep their existing audit behavior.
+
+A fresh Release build passed with zero warnings and errors. Eight actual
+[controlled gRPC cases](../../tests/Broker.NativeProof/AttributionControls.fs)
+passed, including detach after the final snapshot without another update and
+stale-generation cleanup after replacement. The 117 portable seed controls include
+refusal of recorded generation invalidation after the terminal snapshot. These
+controlled producers launch no game and grant no actor or command authority.
+
+The original build operation remains `qualified=false`: its final pure proof
+rejected a canonical SDK reference reached through a selected directory alias.
+A separate read-only supplement joined all 307 canonical SDK references to their
+original selected physical pins, verified the exact alias custody, and accepted
+seven actual compiler-input and PE/PDB source joins. It replayed no restore,
+compiler or gRPC control and changed no original result. The accepted compiler
+proof SHA-256 is
+`53969cffe7eee076eb902f1b74067684cbf36630ed7bf0ab737f112630c0dca2`.
+
+This closes the controlled source disconnect coverage gap. Actual native seed
+journal coverage, fresh host/data/settings/mapping custody and a distinct native
+admission remain pending. Prospective programme capacity is eight owned task CLR
+plus two reviewed infrastructure CLR; exact command expectations and refusal of
+unknown processes remain independent. No native copy, seed, browser Arm or
+requested production is admitted by this source qualification.
+**Actor eligibility remains false; requested-unit acceptance is unproved;
+useful play remains 0/6.** SourceLink remote content and telemetry usage remain
+unknown. Publication and installed adoption are separate.
