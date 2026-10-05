@@ -44,10 +44,10 @@ class Mapping(unittest.TestCase):
  def validate(self,p,digest):
   with patch.object(m,'semantic_digest',side_effect=digest):return m.validate_schema(p)
  def test_independent_golden_delta(self):
-  self.assertEqual(m.semantic_digest(self.delta),'5ea5acb80b52c5ec81a1b4cc999c1f8ca5c316ce0302218263ea9918b85b3310');self.assertEqual(len(self.projection),458);self.assertEqual(len(self.base),145);self.assertEqual(sum(x['kind']=='clrPE'for x in self.projection),313)
- def test_consumed_v1_and_v2_data_paths_refuse(self):
+  self.assertEqual(m.semantic_digest(self.delta),'86090cd171d9e9dddabf1b8dfec6d8a81b1245069b20e05bd4b3356c415ef85b');self.assertEqual(len(self.projection),458);self.assertEqual(len(self.base),145);self.assertEqual(sum(x['kind']=='clrPE'for x in self.projection),313)
+ def test_consumed_v1_v2_v3_data_paths_refuse(self):
   p,digest=self.fixture();old='/home/developer/.local/share/fs-gg-private/bar-native-seed-data-preparation-20261005-v1/packet/runtime-data'
-  for consumed in (old,old.replace('-v1/','-v2/')):
+  for consumed in (old,old.replace('-v1/','-v2/'),old.replace('-v1/','-v3-clr10/')):
    q=copy.deepcopy(p);q['dataRoot']=consumed;self.denied(self.validate,q,digest)
   q=copy.deepcopy(p);entry=next(x for x in q['mappingDelta']['added']if x['role']=='highBarPlugin')
   for field in ('declaredPath','canonicalPath','baseAllowedKey'):entry['row'][field]=entry['row'][field].replace(m.DATA,old)
