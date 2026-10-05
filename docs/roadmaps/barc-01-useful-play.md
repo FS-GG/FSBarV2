@@ -609,3 +609,17 @@ A fresh sealed copy source and separate admission remain required; this mapping
 change supplies no census exception or runtime authority. Final source rereads,
 complete destination custody and immutable directory finalization remain
 unproved. Native useful play remains 0/6.
+
+### Fourth copy cancellation and pending generation fence (2026-10-05)
+
+Root cancelled the owned fourth copy after a source audit found a missing
+immediate refusal when the same pending PID changed generation between two
+incomplete classification sweeps. The consumed v4 attempt remains failed, with
+no completion receipt. Its source and partial output remain preserved.
+
+The next finite mapping selects fresh v5 and rejects all four consumed roots;
+117 portable controls passed. The private census successor fences pending PID
+generation changes immediately and retains both the original unresolved
+generation and later hard-failure evidence. Its separately reviewed seal and
+exact admission remain prerequisites for another copy. This source correction
+grants no runtime authority; native useful play remains 0/6.
