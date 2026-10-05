@@ -22,19 +22,78 @@ def admitted_pins(p):
     pins={}
     for name in ['originalDataPins','hostPins','clrPins','elfPins','pythonPins','authorityPins']:
         for pin in p[name]:
-            prior=pins.get(pin['path']);need(prior is None or prior['sha256']==pin['sha256'],'mapping original pin ambiguity');pins[pin['path']]=pin
+            prior=pins.get(pin['path']);need(prior is None or prior==pin,'mapping original pin ambiguity');pins[pin['path']]=pin
     return pins
 
-SUCCESSOR_BASE_ALLOWED_SHA=None # Must be selected as an exact source literal after fresh placement.
-SUCCESSOR_MAPPING_DELTA_SHA=None
+HISTORICAL_PROFILE_SHA='b2d3dd34b88a838a073fa64aa514681c01f1dfee0bd4388fea8441a87bc93dcf'
+BASELINE_SHA='11224181c3b33d6894a35cc7e32f655b2087442e4ba4958ef7700dc2c333cad0'
+HISTORICAL_ROWS_SHA='8b5d4e2c59978b2e5f0d3d6457a3276935de52859279a0047102017ebd11324c'
+RESULT_ROWS_SHA='82cf6fef0c42fd06f4455030af39bb56aee210f7518531a9361ea435fdeb7022'
+SUCCESSOR_BASE_ALLOWED_SHA='9d9a26a4c655f07c15072ddd715917e5ae7dbb77ec701e5ddb450ef8ab5f16f8'
+SUCCESSOR_MAPPING_DELTA_SHA='e90554a5a7ead26b9db6eb3d250dd732bba1677842051406cf4d192437971060'
+RETAINED_PHYSICAL_ROWS_SHA='33f0adb4e40baf2da15d1794e46311b66ecb1bbb2c80cf517ce98d2f83d0d07a'
+BASE='/home/developer/.local/share/fs-gg-private'
+HISTORICAL_DATA=BASE+'/bar-stock-policy968-private-input-successor-20261003/packet/runtime-data'
+DATA=BASE+'/bar-native-seed-data-preparation-20261005-v1/packet/runtime-data'
+HOST=BASE+'/bar-native-seed-input-preparation-20261005-v1/native-host/Broker.NativeProof'
+POLICY=BASE+'/bar-native-seed-policy-adoption-root-operation-20261005-v1/placement/managed/RuntimeEvidence'
+OLD_HOST='/tmp/bar-stock-fb00-managed-artifact-preparation-synthetic-pdb-successor-20261004/native-host/Broker.NativeProof'
+AI={'officialCInterface':'AI/Interfaces/C/0.1/libAIInterface.so','highBarPlugin':'AI/Skirmish/highBar/stable/libSkirmishAI.so','stockOpponentNullAI':'AI/Skirmish/NullAI/0.1/libSkirmishAI.so'}
+SEMANTIC_FIELDS={'declaredPath','canonicalPath','kind','baseAllowedKey','sha256','bytes'}
+def semantic_digest(value):
+    return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=True,allow_nan=False).encode()).hexdigest()
+def semantic_row(row):
+    return {**{k:row[k]for k in ['declaredPath','canonicalPath','kind','baseAllowedKey']},'sha256':row['pin']['sha256'],'bytes':row['pin']['bytes']}
+def unique(pairs):
+    result={}
+    for k,v in pairs:need(k not in result,'duplicate mapping JSON key');result[k]=v
+    return result
+def nonfinite(value):raise ValueError('nonfinite mapping JSON value')
+def load_profile(path):
+    # Read one exact bounded private regular file; duplicate/nonfinite JSON refuses.
+    p=Path(path);before=p.lstat();need(stat.S_ISREG(before.st_mode)and before.st_nlink==1 and before.st_uid==os.geteuid()and stat.S_IMODE(before.st_mode)==0o600 and before.st_size<=16777216,'closed mapping profile custody')
+    fd=os.open(p,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
+    try:
+        opened=os.fstat(fd);body=b''
+        while len(body)<=16777216:
+            chunk=os.read(fd,min(65536,16777217-len(body)))
+            if not chunk:break
+            body+=chunk
+        after=os.fstat(fd)
+    finally:os.close(fd)
+    fields=['st_dev','st_ino','st_mode','st_uid','st_nlink','st_size','st_mtime_ns','st_ctime_ns'];current=p.lstat()
+    need(len(body)==before.st_size and all(getattr(before,k)==getattr(opened,k)==getattr(after,k)==getattr(current,k)for k in fields),'stable complete mapping profile')
+    return json.loads(body,object_pairs_hook=unique,parse_constant=nonfinite)
+def semantic_delta(baseline):
+    need(set(baseline)=={'schema','historicalProfileSha256','baseAllowed','rows'}and baseline['schema']=='bar.native-seed-semantic-mapping-baseline/v1'and baseline['historicalProfileSha256']==HISTORICAL_PROFILE_SHA and semantic_digest(baseline)==BASELINE_SHA,'exact historical semantic baseline')
+    rows=baseline['rows'];need(type(rows)is list and len(rows)==457 and rows==sorted(rows,key=lambda r:r['declaredPath'])and all(set(r)==SEMANTIC_FIELDS for r in rows)and semantic_digest(rows)==HISTORICAL_ROWS_SHA and semantic_digest(baseline['baseAllowed'])==HISTORICAL_BASE_ALLOWED_SHA,'complete ordered historical mapping rows')
+    by={r['declaredPath']:r for r in rows};need(len(by)==457,'unique baseline rows')
+    roles={'host':OLD_HOST,**{k:HISTORICAL_DATA+'/'+v for k,v in AI.items()}}
+    removed=[{'role':role,'row':by[path]}for role,path in sorted(roles.items())]
+    new_roles={k:{**by[HISTORICAL_DATA+'/'+suffix],'declaredPath':DATA+'/'+suffix,'canonicalPath':DATA+'/'+suffix,'baseAllowedKey':DATA+'/'+suffix}for k,suffix in AI.items()}
+    for role,path,sha in [('host',HOST,'0f11cb2012771c17a3f191ac912633586ee5f35a1969e2f8bfaa6d54ff7aec28'),('policy',POLICY,'0dc6787b588acf19b07f1cd80aab98cbd9c250dbba2b5e00c382706bcfefbd84')]:new_roles[role]=dict(declaredPath=path,canonicalPath=path,kind='existingExecutable',baseAllowedKey=path,sha256=sha,bytes=78256)
+    added=[{'role':role,'row':row}for role,row in sorted(new_roles.items())];engine={'role':'engine','row':by[HISTORICAL_DATA+'/spring-headless']}
+    result=sorted([r for r in rows if r['declaredPath']not in roles.values()]+list(new_roles.values()),key=lambda r:r['declaredPath']);base={r['baseAllowedKey']:r['sha256']for r in result if r['kind']=='existingExecutable'}
+    delta=dict(schema='bar.native-seed-semantic-mapping-delta/v2',historicalProfileSha256=HISTORICAL_PROFILE_SHA,historicalBaseAllowedSha256=HISTORICAL_BASE_ALLOWED_SHA,historicalRowsSha256=HISTORICAL_ROWS_SHA,retainedClrPinsSha256=CLR_PINS_SHA,removed=removed,added=added,retainedEngine=engine,retainedRows=453,resultRowCount=458,resultExistingExecutableCount=145,resultClrPECount=313,resultRowsSha256=semantic_digest(result),resultBaseAllowedSha256=semantic_digest(base))
+    need(delta['resultRowsSha256']==RESULT_ROWS_SHA and delta['resultBaseAllowedSha256']==SUCCESSOR_BASE_ALLOWED_SHA and semantic_digest(delta)==SUCCESSOR_MAPPING_DELTA_SHA,'independent closed semantic golden join')
+    return delta,result,base
 
 def validate_schema(p):
-    need(p.get('preparationReady') is True and SUCCESSOR_BASE_ALLOWED_SHA is not None and SUCCESSOR_MAPPING_DELTA_SHA is not None,'fresh finite mapping delta not yet selected')
-    need(hashlib.sha256(json.dumps(p['mappingDelta'],sort_keys=True,separators=(',',':')).encode()).hexdigest()==SUCCESSOR_MAPPING_DELTA_SHA,'literal successor delta')
-
+    need(p.get('preparationReady') is True,'actual mapping preparation remains required')
+    delta,projection,base=semantic_delta(p['mappingBaseline']);need(p['mappingDelta']==delta,'exact closed semantic delta')
+    physical=p['executableMappingIdentities']['rows'];need(len(physical)==458 and sorted(map(semantic_row,physical),key=lambda r:r['declaredPath'])==projection,'complete actual physical→semantic projection')
+    removed={x['row']['declaredPath']for x in delta['removed']};added={x['row']['declaredPath']for x in delta['added']}
+    unchanged=sorted((r for r in physical if r['declaredPath']not in added),key=lambda r:r['declaredPath']);need(len(unchanged)==453 and semantic_digest(unchanged)==RETAINED_PHYSICAL_ROWS_SHA,'original retained physical row/ancestor custody')
+    need(p['nativeHost']==HOST and p['policy']['apphost']==POLICY and p['dataRoot']==DATA and p['engine']==HISTORICAL_DATA+'/spring-headless','exact selected native paths')
+    need(p['requiredHostMappings']==[HOST]+[x for x in p['allowedExecutableMappings']if Path(x).name in('libcoreclr.so','libclrjit.so')],'exact three required host maps')
+    need(set(p['requiredEngineMappings'])=={'engine',*AI},'closed four native engine roles')
+    for role,path in {'engine':p['engine'],**{k:DATA+'/'+v for k,v in AI.items()}}.items():
+        entry=p['requiredEngineMappings'][role];selected=delta['retainedEngine']['row']if role=='engine'else next(x['row']for x in delta['added']if x['role']==role)
+        need(entry=={'path':path,'role':role,'sha256':selected['sha256']},'source-bound required engine role')
+    need(any(x['path']==p['engine']for x in p['authorityPins']),'retained original engine explicitly admitted outside fresh data')
     table=p['executableMappingIdentities'];need(set(table)=={'schema','baseAllowed','clrPinCount','rows'} and table['schema']==SCHEMA and table['clrPinCount']==len(p['clrPins'])==335,'closed mapping identity table')
-    digest=lambda value:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-    need(digest(table['baseAllowed'])==SUCCESSOR_BASE_ALLOWED_SHA and digest(p['clrPins'])==CLR_PINS_SHA,'mapping immutable inherited table and CLR pin set')
+    digest=semantic_digest
+    need(table['baseAllowed']==base and digest(table['baseAllowed'])==SUCCESSOR_BASE_ALLOWED_SHA and digest(p['clrPins'])==CLR_PINS_SHA,'mapping immutable inherited table and CLR pin set')
     rows=table['rows'];need(type(rows) is list and len(rows)<=len(table['baseAllowed'])+335,'finite mapping identity rows')
     pins=admitted_pins(p);declared=set();allowed={};clr={pin['path'] for pin in p['clrPins']}
     for row in rows:
