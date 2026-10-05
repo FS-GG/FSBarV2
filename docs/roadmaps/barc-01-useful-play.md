@@ -623,3 +623,32 @@ generation changes immediately and retains both the original unresolved
 generation and later hard-failure evidence. Its separately reviewed seal and
 exact admission remain prerequisites for another copy. This source correction
 grants no runtime authority; native useful play remains 0/6.
+
+### External inventory for the accepted seed data (2026-10-05)
+
+The separately admitted fifth data copy completed all 17,756 files and
+2,111,386,119 bytes with natural exit zero and clean retirement. Its original
+receipt contains the complete physical data pins, but it did not produce
+`packet-inventory.json`. The accepted data and all consumed failures remain
+unchanged.
+
+The seed settings helper now accepts an optional explicit `packetInventory`
+physical pin for a separately attributed external projection. Its digest must
+equal `packetSha256`, and its declared root must equal the existing packet root.
+The bounded read checks the original, opened, completed and current file
+identities, private directory custody and physical root stability. External
+mode requires the accepted packet root to retain its immutable mode `0500`;
+legacy mode keeps its original private root mode `0700`. External
+mode checks every packet file; an unlisted `packet-inventory.json` is refused.
+The existing in-packet inventory route keeps its original behavior.
+
+All 143 portable controls passed, including replacement during open/read,
+parent or packet-root replacement, hash and root drift, aliases, missing
+external input, complete post-use data preservation and legacy settings copy.
+The source-only projection derives from the accepted copy pins; it is not an
+output of that original copy operation. Root must separately pin its authority
+and refresh the policy helper manifest after protected source delivery.
+
+Actual native map/game checksums, loaded configuration/VFS/AI custody and seed
+attribution still require distinct exact admission. Native useful play remains
+0/6.
