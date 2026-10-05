@@ -569,3 +569,22 @@ requested production is admitted by this source qualification.
 **Actor eligibility remains false; requested-unit acceptance is unproved;
 useful play remains 0/6.** SourceLink remote content and telemetry usage remain
 unknown. Publication and installed adoption are separate.
+
+### Seed input source reconciliation after BAR39 (2026-10-05)
+
+The [finite mapping profile](../../tests/Broker.NativeProof/RuntimeEvidence/fixtures/seed-attribution-helper/helper/mapping_profile.py)
+now selects the retained detach host compiled from
+`2e332259c5db590be63bb628e6c4de4b3c8e2291` and the prospective
+`bar-native-seed-data-preparation-20261005-v3-clr10` data destination.
+The startup source role names that compiled candidate. All 44 retained host
+files (8,827,674 bytes) match the original compiler operation's hashes and physical
+pins. The 453 inherited mapping rows and original CLR pin set remain unchanged.
+All 117 portable controls passed, including refusal of both consumed data
+destinations and the earlier host. This changes source bindings only.
+
+The prospective data root remains unprepared. A successful separately admitted
+data copy must supply complete actual custody before a successor seed profile
+can become ready; native startup requires its own exact admission. A future
+operation-root change requires an explicit mapping successor. Neither this source
+change nor retained host custody admits native execution. Actor eligibility
+remains false and useful play remains 0/6; telemetry coverage is unknown.
