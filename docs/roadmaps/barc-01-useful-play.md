@@ -588,3 +588,24 @@ can become ready; native startup requires its own exact admission. A future
 operation-root change requires an explicit mapping successor. Neither this source
 change nor retained host custody admits native execution. Actor eligibility
 remains false and useful play remains 0/6; telemetry coverage is unknown.
+
+### Consumed third data-copy attempt and fresh destination (2026-10-05)
+
+The separately admitted `v3-clr10` data-copy attempt failed after 119.65 seconds
+when the bounded process census could not read an unrelated process executable.
+That process was still observed in the same generation with running state; its
+CLR classification remained unknown. The owned Python copy process was retired
+with no remaining owned group or cleanup uncertainty. The last complete samples
+recorded zero owned CLR and two total CLR; the incomplete refusal sample cannot
+establish capacity at that instant.
+
+The retained partial census contains 15,721 of 17,756 files and 1,800,521,469 of
+2,111,386,119 bytes. No complete data-copy receipt exists. All three consumed
+roots and their failures remain preserved. The finite mapping successor selects
+the fresh `bar-native-seed-data-preparation-20261005-v4` destination and rejects
+all three consumed destinations. Its 117 portable controls passed.
+
+A fresh sealed copy source and separate admission remain required; this mapping
+change supplies no census exception or runtime authority. Final source rereads,
+complete destination custody and immutable directory finalization remain
+unproved. Native useful play remains 0/6.
