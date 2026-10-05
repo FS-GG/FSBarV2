@@ -480,11 +480,56 @@ This removes the prior nonempty-seed/browser timing contradiction. Missing real
 basis/lifetime joins, extra production/dispatch, drift or expiry refuse; no fixture
 boolean, extra seed, stale-basis retry or receipt rewrite supplies acceptance.
 
-The existing canonical nineteen-role PolicyClosure and full dependency/runtime
-census are unchanged. Final product/helper graph composition remains blocked on a
-qualified genuine successor provenance producer; old build receipts cannot be
-relabeled for this candidate. Root owns the finite startup, transition and later
-one-shot browser admissions, effect-specific authority checks and PR/integration.
-No native startup, browser, actor or production operation was admitted here.
-**actorEligible=false; unitProducedAccepted=false; useful play 0/6.** BARC-01.5f
-and the original six useful-play journeys remain open.
+The canonical nineteen-role PolicyClosure and full dependency/runtime census
+remain required. The accepted preparation below closes the policy composition
+and no-game transport prerequisites. It does not qualify the native host/engine
+seed route or authorize browser Arm and requested production. Root owns those
+separate admissions and integration. **actorEligible=false;
+unitProducedAccepted=false; useful play 0/6.** BARC-01.5f remains open.
+
+### Authoritative policy placement and retained transport closure (2026-10-05)
+
+The narrow RuntimeEvidence build retained two actual project compiler captures;
+its independently accepted portable-PDB proof binds two PE/PDB pairs and nineteen
+source documents. Original compiler outputs and earlier failed overall results
+remain immutable. No host, Fable or Cargo compilation was replayed for the Python
+helper successors. The selected helper source `1b125ec` is delivered by
+[FSBar #35](https://github.com/FS-GG/FSBarV2/pull/35), merged at `95907da` with tree
+`1592bc099728a1bf4164797b9f77722ed6b49af6`.
+
+Root accepted the fresh canonical placement in 4.221 seconds, with all nineteen
+roles, exact compiler/source-equivalence and physical custody joins. Its closure
+SHA-256 is `ad15c1f1b9d7152c852b481687a97adc662a629b0e8a96d2345f97de768f503b`.
+The immutable closure retains mode0400 beneath mode0500; the dedicated reader
+checks its complete prior physical pin rather than relaxing the private reader.
+Source placement alone grants no native operation.
+
+The actual shared policy-only transport observed three sequential held policy
+generations: successful controlled-prefix consumption with natural exit0,
+malformed input with natural exit2 and retained request-evaluation diagnostic,
+and withheld input with bounded forced exit−9. All three were reaped. This used
+the real shared pre-exec handshake, ready/request/completed protocol and final
+closure checks. The controlled writer is not an engine or native seed producer.
+
+The original 9.189-second root operation remains `qualified=false`: its final
+checker compared volatile process state alongside stable identity. Root accepted
+a separate 1.304-second pure retained-custody supplement after the narrow predicate
+repair. It pins the original bytes and joins exact PID/start/UID/session/parent/group,
+preserving recognized state observations separately. The supplement executed no
+policy and rewrote no old verdict. Its accepted RESULT SHA-256 is
+`ad39fb91954879d7c29f6425da2273c44d735d8411a9f20bdc3868f9b46f4f9a`;
+its retained review SHA-256 is
+`49c5003e9af9f09eb0b5f22e1b727030cca1410b2d03860b669c54bead55627f`.
+
+Next is the separately admitted seed-only attribution prerequisite through
+[the native startup caller](../../tests/Broker.NativeProof/RuntimeEvidence/fixtures/seed-attribution-helper/startup_runner.py).
+Its fresh host/data/settings/startscript, fixture package and finite mapping
+profile still need concrete physical bindings. No-game acceptance does not cover
+native actor pumping, engine maps/socket, loaded configuration, lifecycle/queue
+observations or seed attribution. Whole180 seconds including8-second cleanup,
+one CPU, max2task+2infrastructure CLR and the five-second policy boundary remain
+unchanged. Seed-only qualification precedes a distinct same-run one-unit grant.
+Current-UID sampled coverage, SourceLink remote content Unknown and missing
+post-last-snapshot disconnect coverage remain explicit; no fresh live/browser
+eligibility follows. Native seed and requested-unit acceptance remain unknown,
+actor eligibility false and the six useful-play journeys **0/6**.
