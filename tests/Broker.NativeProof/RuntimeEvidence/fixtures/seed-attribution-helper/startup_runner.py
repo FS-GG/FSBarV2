@@ -15,7 +15,7 @@ def profile():
  from mapping_profile import load_profile
  need((HERE/'startup-profile.json').is_file()and not(HERE/'startup-profile.json').is_symlink(),'closed JSON input')
  p=load_profile(HERE/'startup-profile.json');need(p['schema']=='bar.seed-attribution-profile/v2' and p['preparationReady'] is True and p['attemptRoot']==ROOT and p['roles']==['host','engine'],'closed startup profile')
- need(p['source']=={'fsbarCommit':'361f5060aea0e340fb8a33da96a91fd234e7fc39','highbarCommit':'b57f11f290dc3239d894b0285ae272b6b21bc25d'} and p['engineSource']=='de69361239d8c8b1012dba3f5aa3122954ea4da3','literal source roles')
+ need(p['source']=={'fsbarCommit':'2e332259c5db590be63bb628e6c4de4b3c8e2291','highbarCommit':'b57f11f290dc3239d894b0285ae272b6b21bc25d'} and p['engineSource']=='de69361239d8c8b1012dba3f5aa3122954ea4da3','literal source roles')
  need(p['limits']==dict(wholeSeconds=180,hostReadinessSeconds=60,cleanupReserve=8,termSeconds=3,killSeconds=3,streamBytes=33554432,attemptBytes=134217728,attemptFiles=1024,mapsBytes=4194304,ownedIdentities=128),'literal diagnostic caps')
  need(p['runtimeEnvironment']['DOTNET_EnableDiagnostics']=='0' and p['diagnosticConfigRootSourceDecision']=='Root approved SOURCE profile only; runtime diagnostic admission must bind this exact environment','explicit preparation-independent runtime configuration')
  need(p['runtimeObjects']==dict(directory=ROOT+'/engine/run',socket=ROOT+'/engine/run/highbar-0.sock',role='engine',aiId=0,mode=448)and p['engineRuntimeEnvironment']=={'XDG_RUNTIME_DIR':ROOT+'/engine/run'},'literal reviewed runtime object/environment')
