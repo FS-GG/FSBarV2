@@ -9,6 +9,7 @@ import struct
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 root = pathlib.Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('bar_image_source', root / 'build-image.py')
@@ -33,6 +34,10 @@ class ImageSourceTests(unittest.TestCase):
     def test_nonfinite_deadline_is_refused(self):
         changed = copy.deepcopy(pins); changed['budgets']['downloadSeconds'] = 0
         with self.assertRaises(ValueError): module.check_inputs(changed)
+    def test_missing_make_refuses_before_source_or_compiler_launch(self):
+        with mock.patch.object(module.shutil, 'which', side_effect=lambda command: None if command == 'make' else '/fixture/' + command), mock.patch.object(module, 'source') as acquire:
+            with self.assertRaisesRegex(ValueError, 'missing bootstrap tool.*make'): module.toolchain(pins)
+            acquire.assert_not_called()
     def test_real_gitlink_placeholder_and_nonempty_refusal(self):
         with tempfile.TemporaryDirectory() as directory:
             root = pathlib.Path(directory); repo = root / 'parent'; checkout = root / 'checkout'

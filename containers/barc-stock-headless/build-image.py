@@ -26,6 +26,7 @@ def check_inputs(pins):
     require(bool(re.fullmatch(r'20[0-9]{6}T[0-9]{6}Z', boot['ubuntuSnapshot'])), 'fixed signed snapshot required')
     require(boot['vcpkgCommit'] == tool['vcpkgBaseline'] and bool(COMMIT.fullmatch(boot['vcpkgTree'])), 'exact canonical vcpkg commit/tree required')
     require(bool(re.fullmatch(r'[0-9a-f]{128}', boot['vcpkgToolGlibcSha512'])), 'vcpkg tool hash missing')
+    require(boot.get('buildType') == 'release', 'stock plugin dependencies require release-only build selection')
     for row in pins['sources'].values():
         require(row['url'].startswith('https://github.com/'), 'source must use the declared HTTPS repository')
         require(bool(COMMIT.fullmatch(row['commit'])) and bool(COMMIT.fullmatch(row['tree'])), 'exact source commit/tree required')
@@ -168,6 +169,9 @@ def sdp_population(path, files_max, bytes_max):
 
 def toolchain(pins):
     check_inputs(pins)
+    # Refuse missing native prerequisites before a costly dependency compile.
+    for command in ('git','curl','cmake','ninja','make','perl','pkg-config','g++-13','gcc-13','timeout','readelf','7z','tar','zip','unzip','autoconf','automake','libtoolize'):
+        require(shutil.which(command) is not None, 'missing bootstrap tool before dependency build: ' + command)
     boot = pins['toolchain']['bootstrap']; target = pathlib.Path('/opt/vcpkg')
     source({'url': boot['vcpkgRepository'], 'commit': boot['vcpkgCommit'], 'tree': boot['vcpkgTree']}, target, pins['budgets']['gitFetchSeconds'])
     metadata = (target / 'scripts/vcpkg-tool-metadata.txt').read_text()
@@ -182,9 +186,16 @@ def toolchain(pins):
     # The first three are the existing HighBar manifest; GTest is required by
     # its stock source controls. Resolve all sources from the same baseline.
     (manifest_root / 'vcpkg.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    triplets = manifest_root / 'triplets'; triplets.mkdir()
+    triplet = triplets / 'x64-linux.cmake'
+    canonical_triplet = target / 'triplets/x64-linux.cmake'
+    require(canonical_triplet.is_file(), 'canonical x64-linux triplet missing')
+    triplet.write_text('include("/opt/vcpkg/triplets/x64-linux.cmake")\n'
+                       'set(VCPKG_BUILD_TYPE release)\n'
+                       'list(APPEND VCPKG_HASH_ADDITIONAL_FILES "/opt/vcpkg/triplets/x64-linux.cmake")\n')
     env = dict(os.environ, VCPKG_MAX_CONCURRENCY='1', VCPKG_DISABLE_METRICS='1')
     run([str(target / 'vcpkg'), 'install', '--triplet=x64-linux', '--x-manifest-root=' + str(manifest_root),
-         '--x-install-root=/opt/vcpkg/installed', '--disable-metrics'], 3600, env=env)
+         '--x-install-root=/opt/vcpkg/installed', '--overlay-triplets=' + str(triplets), '--disable-metrics'], 3600, env=env)
     packages = subprocess.check_output(['dpkg-query','-W','-f=${Package} ${Version} ${Architecture}\n'], text=True)
     (manifest_root / 'ubuntu-packages.txt').write_text(packages)
     status = target / 'installed/vcpkg/status'
@@ -193,7 +204,7 @@ def toolchain(pins):
     # Record actual package identities and tool bytes as OUTPUTS, not fake
     # prequalified inputs. The platform also records the resulting image ID.
     files = [manifest_root / name for name in ('vcpkg.json','ubuntu-packages.txt','vcpkg-status.txt')]
-    files += [target / 'vcpkg', pathlib.Path('/usr/bin/g++-13'), pathlib.Path('/usr/bin/cmake')]
+    files += [triplet, canonical_triplet, target / 'vcpkg', pathlib.Path('/usr/bin/g++-13'), pathlib.Path('/usr/bin/cmake')]
     for relative in ('tools/protobuf/protoc','tools/grpc/grpc_cpp_plugin'):
         files.append(target / 'installed/x64-linux' / relative)
     lines = []
