@@ -1,0 +1,28 @@
+# Official Ubuntu 24.04 amd64 manifest; builder identity is an OUTPUT.
+FROM docker.io/library/ubuntu@sha256:f610ab94648195aa356059f5b41d6085c9d4d903c072430cdd1af7bdb646106b AS toolchain
+USER 0:0
+ENV DEBIAN_FRONTEND=noninteractive CC=gcc-13 CXX=g++-13
+COPY containers/barc-stock-headless/ /recipe/
+# Preserve Ubuntu archive signature validation; never use trusted=yes.
+RUN sed -i '/^Suites:/a Snapshot: 20261001T000000Z' /etc/apt/sources.list.d/ubuntu.sources && \
+    timeout --kill-after=5s 1200s apt-get update --snapshot 20261001T000000Z && \
+    timeout --kill-after=5s 1200s apt-get install --snapshot 20261001T000000Z -y --no-install-recommends \
+      ca-certificates git curl python3 cmake=3.28.3-1build7 g++-13 ninja-build \
+      pkg-config binutils p7zip-full zip unzip tar autoconf automake libtool \
+      libgl1-mesa-dev libglu1-mesa-dev libsdl2-dev libdevil-dev libopenal-dev \
+      libogg-dev libvorbis-dev libxcursor-dev libx11-dev libxrandr-dev \
+      libfreetype-dev libfontconfig1-dev libcurl4-openssl-dev zlib1g-dev libssl-dev && \
+    timeout --kill-after=5s 3600s python3 /recipe/build-image.py --mode toolchain
+ENV PATH=/opt/vcpkg/installed/x64-linux/tools/protobuf:/opt/vcpkg/installed/x64-linux/tools/grpc:${PATH}
+ENV CMAKE_PREFIX_PATH=/opt/vcpkg/installed/x64-linux PKG_CONFIG_PATH=/opt/vcpkg/installed/x64-linux/lib/pkgconfig
+FROM toolchain AS development
+RUN timeout --kill-after=5s 3600s python3 /recipe/build-image.py --mode development
+WORKDIR /work
+CMD ["bash"]
+# Default final target: the complete selected runtime is acquired at image build.
+FROM development AS headless-integration
+RUN timeout --kill-after=5s 3600s python3 /recipe/build-image.py --mode headless-integration
+COPY containers/barc-stock-headless/entrypoint.sh /opt/barc/entrypoint.sh
+USER 10001:10001
+WORKDIR /work
+ENTRYPOINT ["bash", "/opt/barc/entrypoint.sh"]

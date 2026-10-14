@@ -1,0 +1,80 @@
+{
+  "engine": {
+    "release": "2026.07.04",
+    "url": "https://github.com/beyond-all-reason/RecoilEngine/releases/download/2026.07.04/recoil_2026.07.04_amd64-linux.7z",
+    "archiveSha256": "9824c2c38124e4b90a9b5f7c4e7200c3ea6503c0bd4bff0e0ff46212ec29dcab",
+    "headlessSha256": "651d6dca67ad99fde1a593d57eede0dfee167e200558988f154ad2bac1cfce21"
+  },
+  "sources": {
+    "recoil": {
+      "url": "https://github.com/beyond-all-reason/RecoilEngine.git",
+      "commit": "de69361239d8c8b1012dba3f5aa3122954ea4da3",
+      "tree": "081bfe95b4e76e3212afa5805ab5a82e474c0b47"
+    },
+    "highbar": {
+      "url": "https://github.com/FS-GG/HighBarV3.git",
+      "commit": "b57f11f290dc3239d894b0285ae272b6b21bc25d",
+      "tree": "7095b68768c962665718b0b9481bbbc8bbfd5fca"
+    },
+    "fsbar": {
+      "url": "https://github.com/FS-GG/FSBarV2.git",
+      "commit": "0f113726dd632467464e5bd3125061069b5af456",
+      "tree": "7feb453a77c3c4b56332ae9362bd8a77739bed62"
+    }
+  },
+  "map": {
+    "name": "Avalanche 3.4",
+    "file": "avalanche_3.4.sd7",
+    "url": "https://github.com/beyond-all-reason/Maps/releases/download/2.0/avalanche_3.4.sd7",
+    "sha256": "3873260c6b5e533490598488eab3ff0b6587c778aee60cbb71186938dfaee426"
+  },
+  "game": {
+    "name": "Beyond All Reason test-29926-0571aa8",
+    "sourceCommit": "0571aa8ed85d53a80ca9396126212d98ebc3cf01",
+    "rapidRepositoryMaster": "https://repos.beyondallreason.dev/repos.gz",
+    "sdp": "7fd33d9ceb79c052065b8d3c2f6f2687.sdp",
+    "sdpSha256": "58ca71d252e89e844361293e3b6b0aa2fb29fd217094b83e2a8f51ed1541f250"
+  },
+  "stockContractSha256": "ac0c94390a1b5da600e49e2d00d9a36d4782964a33603ddbc2c4bafbd3db8c28",
+  "toolchain": {
+    "sysroot": "/usr",
+    "cmakeVersion": "3.28.3",
+    "gccVersion": "13.3.0",
+    "protobufVersion": "33.4",
+    "grpcVersion": "1.76.0",
+    "vcpkgBaseline": "256acc64012b23a13041d8705805e1f23b43a024",
+    "parentOsCandidate": "docker.io/library/ubuntu@sha256:f610ab94648195aa356059f5b41d6085c9d4d903c072430cdd1af7bdb646106b",
+    "parentOsScope": "official Ubuntu24.04 linux/amd64 manifest metadata pin; raw layers/config and resulting builder remain qualification outputs",
+    "bootstrap": {
+      "ubuntuSnapshot": "20261001T000000Z",
+      "vcpkgRepository": "https://github.com/microsoft/vcpkg.git",
+      "vcpkgCommit": "256acc64012b23a13041d8705805e1f23b43a024",
+      "vcpkgTree": "e382dac5b60903d5051dff6ff899248a4c3a92e7",
+      "vcpkgToolRelease": "2026-04-08",
+      "vcpkgToolGlibcSha512": "c5a43929713980dc873fe1e1162d213880c4026cbae5c030544b3108964a85f5f8ec24b0eea0cd689e5caadee34c79dadf4982178f8c78b0fe857d267b4ce294",
+      "ports": {
+        "grpc": "1.76.0#1",
+        "protobuf": "6.33.4#1",
+        "abseil": "20260107.1#2",
+        "gtest": "1.17.0#2",
+        "c-ares": "1.34.6#1",
+        "re2": "2025-11-05#0"
+      }
+    }
+  },
+  "budgets": {
+    "imageBuildSeconds": 3600,
+    "downloadSeconds": 1800,
+    "compileSeconds": 1800,
+    "gitFetchSeconds": 600,
+    "assetDownloadMaxBytes": 536870912,
+    "engineExpandedMaxBytes": 2147483648,
+    "engineEntriesMax": 4096,
+    "gameFilesMax": 32768,
+    "gameCompressedMaxBytes": 4294967296,
+    "gameExpandedMaxBytes": 8589934592,
+    "runtimeSeconds": 120,
+    "runtimeMemoryBytes": 536870912,
+    "runtimePids": 128
+  }
+}
