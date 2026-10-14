@@ -3,10 +3,18 @@ FROM docker.io/library/ubuntu@sha256:f610ab94648195aa356059f5b41d6085c9d4d903c07
 USER 0:0
 ENV DEBIAN_FRONTEND=noninteractive CC=gcc-13 CXX=g++-13
 COPY containers/barc-stock-headless/ /recipe/
-# Preserve Ubuntu archive signature validation; never use trusted=yes.
-RUN sed -i '/^Suites:/a Snapshot: 20261001T000000Z' /etc/apt/sources.list.d/ubuntu.sources && \
-    timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root update --snapshot 20261001T000000Z && \
-    timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root install --snapshot 20261001T000000Z -y --no-install-recommends \
+# Bootstrap only the hash-pinned Ubuntu CA package; the minimal base has no CA
+# bundle. HTTP transport is content-authenticated by the signed snapshot pin.
+RUN timeout --kill-after=5s 120s /usr/lib/apt/apt-helper -o APT::Sandbox::User=root download-file \
+      http://archive.ubuntu.com/ubuntu/pool/main/c/ca-certificates/ca-certificates_20240203_all.deb \
+      /tmp/ca-certificates.deb SHA256:641de77d8f142cfd62a1a6f964ba67b20754d3337c480efb529d086075a06c9a && \
+    dpkg-deb --extract /tmp/ca-certificates.deb /tmp/ca-bootstrap && \
+    mkdir -p /etc/ssl/certs && cat /tmp/ca-bootstrap/usr/share/ca-certificates/mozilla/*.crt > /etc/ssl/certs/ca-certificates.crt && \
+    printf '%s\n' 'Types: deb' 'URIs: https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/' \
+      'Suites: noble noble-updates noble-backports noble-security' 'Components: main restricted universe multiverse' \
+      'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg' 'Check-Valid-Until: no' > /etc/apt/sources.list.d/ubuntu.sources && \
+    timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root -o APT::Update::Error-Mode=any update && \
+    timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root install -y --no-install-recommends \
       ca-certificates git curl python3 cmake=3.28.3-1build7 g++-13 ninja-build \
       pkg-config binutils p7zip-full zip unzip tar autoconf automake libtool \
       libgl1-mesa-dev libglu1-mesa-dev libsdl2-dev libdevil-dev libopenal-dev \
