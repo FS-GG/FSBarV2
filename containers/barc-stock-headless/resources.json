@@ -59,6 +59,15 @@
         "gtest": "1.17.0#2",
         "c-ares": "1.34.6#1",
         "re2": "2025-11-05#0"
+      },
+      "caCertificateBootstrap": {
+        "package": "ca-certificates",
+        "version": "20240203",
+        "url": "http://archive.ubuntu.com/ubuntu/pool/main/c/ca-certificates/ca-certificates_20240203_all.deb",
+        "bytes": 159378,
+        "sha256": "641de77d8f142cfd62a1a6f964ba67b20754d3337c480efb529d086075a06c9a",
+        "authenticatedIndexSha256": "2a6a199e1031a5c279cb346646d594993f35b1c03dd4a82aaa0323980dd92451",
+        "authentication": "fixedsnapshot noble/main/amd64 Packages.xz bound by UbuntuArchive2018 good InRelease signature; pin supplies bootstrapCA only"
       }
     }
   },
