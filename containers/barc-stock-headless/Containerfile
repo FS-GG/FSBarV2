@@ -16,10 +16,11 @@ RUN timeout --kill-after=5s 120s /usr/lib/apt/apt-helper -o APT::Sandbox::User=r
     timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root -o APT::Update::Error-Mode=any update && \
     timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root install -y --no-install-recommends \
       ca-certificates git curl python3 cmake=3.28.3-1build7 g++-13 ninja-build \
-      pkg-config binutils p7zip-full zip unzip tar autoconf automake libtool \
+      pkg-config binutils p7zip-full zip unzip tar make perl autoconf automake libtool linux-libc-dev \
       libgl1-mesa-dev libglu1-mesa-dev libsdl2-dev libdevil-dev libopenal-dev \
       libogg-dev libvorbis-dev libxcursor-dev libx11-dev libxrandr-dev \
-      libfreetype-dev libfontconfig1-dev libcurl4-openssl-dev zlib1g-dev libssl-dev && \
+      libfreetype-dev libfontconfig1-dev libcurl4-openssl-dev zlib1g-dev libssl-dev \
+      libunwind-dev=1.6.2-3build1.1 liblzma-dev=5.6.1+really5.4.5-1ubuntu0.3 && \
     timeout --kill-after=5s 3600s python3 /recipe/build-image.py --mode toolchain
 ENV PATH=/opt/vcpkg/installed/x64-linux/tools/protobuf:/opt/vcpkg/installed/x64-linux/tools/grpc:${PATH}
 ENV CMAKE_PREFIX_PATH=/opt/vcpkg/installed/x64-linux PKG_CONFIG_PATH=/opt/vcpkg/installed/x64-linux/lib/pkgconfig
