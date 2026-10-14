@@ -172,6 +172,10 @@ def toolchain(pins):
     # Refuse missing native prerequisites before a costly dependency compile.
     for command in ('git','curl','cmake','ninja','make','perl','pkg-config','g++-13','gcc-13','timeout','readelf','7z','tar','zip','unzip','autoconf','automake','libtoolize'):
         require(shutil.which(command) is not None, 'missing bootstrap tool before dependency build: ' + command)
+    # Selected Recoil requires Libunwind >=1.4 and links its static LZMA closure.
+    # Check the system prerequisites before spending time on vcpkg compilation.
+    run(['pkg-config', '--atleast-version=1.4.0', 'libunwind'], 30)
+    run(['pkg-config', '--exists', 'liblzma'], 30)
     boot = pins['toolchain']['bootstrap']; target = pathlib.Path('/opt/vcpkg')
     source({'url': boot['vcpkgRepository'], 'commit': boot['vcpkgCommit'], 'tree': boot['vcpkgTree']}, target, pins['budgets']['gitFetchSeconds'])
     metadata = (target / 'scripts/vcpkg-tool-metadata.txt').read_text()

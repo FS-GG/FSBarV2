@@ -17,6 +17,10 @@ module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
 pins = json.loads((root / 'resources.json').read_text())
 
 class ImageSourceTests(unittest.TestCase):
+    def test_missing_unwind_is_refused_before_source_acquisition(self):
+        with mock.patch.object(module.shutil, 'which', return_value='/fixture/tool'), mock.patch.object(module, 'run', side_effect=subprocess.CalledProcessError(1, ['pkg-config'])), mock.patch.object(module, 'source') as acquire:
+            with self.assertRaises(subprocess.CalledProcessError): module.toolchain(pins)
+            acquire.assert_not_called()
     def test_moving_parent_tag_is_refused(self):
         changed = copy.deepcopy(pins); changed['toolchain']['parentOsCandidate'] = 'ubuntu:latest'
         with self.assertRaises(ValueError): module.check_inputs(changed)
