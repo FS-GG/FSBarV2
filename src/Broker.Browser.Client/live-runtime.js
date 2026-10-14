@@ -206,7 +206,7 @@ export function createLiveRuntime(root, options, emit) {
   if (!(root instanceof Element)) throw new Error("BARC live mount root must be an Element");
   const assetBase = new URL(options.assetBaseUrl); if (!assetBase.href.endsWith("/")) throw new Error("assetBaseUrl must end with /");
   const requestedProfile = options.profile ?? LEGACY_PROFILE, tacticalProfile = isTacticalProfile(requestedProfile), stockTacticalProfile = requestedProfile === STOCK_TACTICAL_PROFILE;
-  const supervisor = new GuestSupervisor({ workerUrl: new URL("src/Broker.Browser.Wasm/guest-worker.js", assetBase), limits: { phaseTimeoutMilliseconds: 250 } });
+  const supervisor = new GuestSupervisor({ assetBase: new URL("src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/", assetBase), limits: { phaseTimeoutMilliseconds: 250 } });
   let socket = null, disposed = false, pairedSession = null, bootstrap = null, observation = null, moduleBytes = null, moduleName = "No guest loaded", moduleIdentity = null;
   let selected = [], target = { x: 0, z: 0 }, attackTarget = null, friendlyTarget = null, featureTarget = null, movePolicy = "MOVE_POLICY_REPLACE", controllerStage = "CONTROLLER_STAGE_UNSPECIFIED";
   let connectionGeneration = 0, lifecycleEpoch = 0, composing = false, pointerId = null, pointerUnit = null, pointerCycle = null, selectionCursor = -1, protocolRefused = false;

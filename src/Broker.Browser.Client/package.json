@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "compile": "dotnet fable Broker.Browser.Client.fsproj --outDir output --noCache",
+    "compile": "bash ../../tests/Broker.Browser.SharedWasm.Tests/build.sh --deploy ../Broker.Browser.SharedWasm && dotnet fable Broker.Browser.Client.fsproj --outDir output --noCache",
     "build": "npm run compile && vite build",
     "dev": "npm run compile && vite --host 127.0.0.1"
   },

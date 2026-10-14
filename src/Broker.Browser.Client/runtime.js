@@ -178,7 +178,7 @@ function createPreviewRuntime(root, options, emit) {
   if (!(root instanceof Element)) throw new Error("BARC preview mount root must be an Element");
   const assetBase = new URL(options.assetBaseUrl);
   if (!assetBase.href.endsWith("/")) throw new Error("assetBaseUrl must end with /");
-  const supervisor = new GuestSupervisor({ workerUrl: new URL("src/Broker.Browser.Wasm/guest-worker.js", assetBase) });
+  const supervisor = new GuestSupervisor({ assetBase: new URL("src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/", assetBase) });
   let socket = null;
   let disposed = false;
   let bootstrap = null;

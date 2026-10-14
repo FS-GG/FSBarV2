@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
   echo "usage: $0 <joined-fsbar-root> <output.tar.gz>" >&2
@@ -19,6 +20,7 @@ required_directories=(
   src/Broker.Browser.Contracts/generated
   src/Broker.Browser.Wasm
 )
+python3 "$repo_root/scripts/check-barc-shared-closure.py" "$source_root"
 for relative in "${required_directories[@]}"; do
   [[ -d "$source_root/$relative" ]] || {
     echo "joined BARC source is incomplete: missing $relative" >&2
@@ -61,6 +63,11 @@ copy_tree() {
 for relative in "${required_directories[@]}"; do
   copy_tree "$relative"
 done
+mkdir -p "$payload/src/Broker.Browser.SharedWasm"
+install -m 0644 "$source_root/src/Broker.Browser.SharedWasm/index.js" "$payload/src/Broker.Browser.SharedWasm/index.js"
+for relative in fable _content; do
+  cp -r "$source_root/src/Broker.Browser.SharedWasm/$relative" "$payload/src/Broker.Browser.SharedWasm/"
+done
 install -m 0644 "$guest_root/manual-preview.wasm" "$payload/guests/manual-preview.wasm"
 install -m 0644 "$guest_root/custom-preview.wasm" "$payload/guests/custom-preview.wasm"
 
@@ -72,10 +79,12 @@ fi
 (
   cd "$payload"
   find src/Broker.Browser.Client src/Broker.Browser.Contracts/generated \
-       src/Broker.Browser.Wasm guests -type f -print0 \
+       src/Broker.Browser.Wasm src/Broker.Browser.SharedWasm guests -type f -print0 \
     | LC_ALL=C sort -z \
     | xargs -0 sha256sum > BARC-PREVIEW.SHA256
 )
+
+python3 "$repo_root/scripts/check-barc-shared-closure.py" "$payload" --manifest
 
 mkdir -p "$(dirname "$output")"
 tar -C "$payload" --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \

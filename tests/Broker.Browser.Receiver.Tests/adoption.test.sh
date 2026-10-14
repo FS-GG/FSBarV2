@@ -2,6 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$repo_root/tests/Broker.Browser.Receiver.Tests/shared-fixture.sh"
 clean_receiver="${1:?path to a freshly generated public receiver required}"
 candidate_archive="${2:-}"
 work="$(mktemp -d "${TMPDIR:-/tmp}/barc-receiver-adoption-test.XXXXXX")"
@@ -31,6 +32,7 @@ if [[ -z "$candidate_archive" ]]; then
   printf '%s\n' 'self.onmessage = () => {};' > "$source/src/Broker.Browser.Wasm/guest-worker.js"
   printf '\x00\x61\x73\x6d\x01\x00\x00\x00\x00\x00' > "$source/tests/Broker.Browser.Wasm.Tests/generated/manual-preview.wasm"
   printf '\x00\x61\x73\x6d\x01\x00\x00\x00\x00\x00' > "$source/tests/Broker.Browser.Wasm.Tests/generated/custom-preview.wasm"
+  shared_fixture "$source"
   candidate_archive="$work/barc-preview.tar.gz"
   "$repo_root/scripts/package-barc-preview.sh" "$source" "$candidate_archive" >/dev/null
 else
