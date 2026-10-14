@@ -52,15 +52,23 @@ required=(
   src/Broker.Browser.Client/dist/assets/barc-preview.css
   src/Broker.Browser.Wasm/guest-worker.js
 )
+# Legacy archives keep their existing layout; shared archives prove the whole graph.
+if [[ -d "$stage/src/Broker.Browser.SharedWasm" ]]; then
+  python3 "$repo_root/scripts/check-barc-shared-closure.py" "$stage" --manifest
+  required[2]=src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/module-worker.mjs
+fi
 if [[ -f "$stage/src/BARC-LIVE-PINS.json" ]]; then
   jq -e '
-    (.schema == "fsbar.barc-live-receiver-pins/v1" or .schema == "fsbar.barc-live-receiver-pins/v2") and
+    (.schema == "fsbar.barc-live-receiver-pins/v1" or .schema == "fsbar.barc-live-receiver-pins/v2" or .schema == "fsbar.barc-live-receiver-pins/v3" or .schema == "fsbar.barc-live-receiver-pins/v4") and
     ([.files[] | select(.role == "manualGuest")] | length == 1) and
     ([.files[] | select(.role == "customGuest")] | length == 1)
   ' "$stage/src/BARC-LIVE-PINS.json" >/dev/null || {
     echo "archive contains invalid live receiver pins" >&2
     exit 2
   }
+  if [[ "$(jq -r '.schema' "$stage/src/BARC-LIVE-PINS.json")" == fsbar.barc-live-receiver-pins/v4 ]]; then
+    python3 "$repo_root/scripts/check-barc-shared-closure.py" "$stage" --pins "$stage/src/BARC-LIVE-PINS.json" --manifest
+  fi
   mapfile -t live_guests < <(
     jq -r '.files[] | select(.role == "manualGuest" or .role == "customGuest") | .archivePath' \
       "$stage/src/BARC-LIVE-PINS.json"

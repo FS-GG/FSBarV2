@@ -164,6 +164,38 @@ if "$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins 
   exit 1
 fi
 
+# Explicit shared successor: legacy stock pins above retain their own qualification.
+source "$repo_root/tests/Broker.Browser.Receiver.Tests/shared-fixture.sh"
+shared_fixture "$source"
+git -C "$source" add src/Broker.Browser.SharedWasm src/Broker.Browser.Wasm
+git -C "$source" -c user.name='Receiver fixture' -c user.email='fixture@example.invalid' commit -qm 'shared receiver fixture'
+shared_pins="$work/shared-pins.json"
+python3 - "$source" "$stock_pins" "$shared_pins" <<'PY'
+import hashlib, json, pathlib, subprocess, sys
+root = pathlib.Path(sys.argv[1]); pins = json.loads(pathlib.Path(sys.argv[2]).read_text())
+pins.update(schema='fsbar.barc-live-receiver-pins/v4', runtime='shared-wasm-0.2.0')
+pins['source']['commit'] = subprocess.check_output(['git','-C',str(root),'rev-parse','HEAD'],text=True).strip()
+pins['files'] = [entry for entry in pins['files'] if entry['role'] != 'worker' and not entry['archivePath'].startswith('src/Broker.Browser.Wasm/')]
+paths = list((root/'src/Broker.Browser.SharedWasm').rglob('*'))
+paths += [root/'src/Broker.Browser.Wasm'/name for name in ('index.js','barc-wire.js','wasm-profile.js','guest-worker.js','guest-supervisor.js')]
+for path in sorted(paths):
+    if path.is_file():
+        relative = path.relative_to(root).as_posix()
+        role = 'worker' if relative.endswith('/module-worker.mjs') else 'dependency'
+        pins['files'].append(dict(role=role,sourcePath=relative,archivePath=relative,sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+pathlib.Path(sys.argv[3]).write_text(json.dumps(pins)+'\n')
+PY
+"$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$shared_pins" --output "$work/shared.tar.gz" >/dev/null
+"$repo_root/scripts/qualify-barc-receiver-live-prep.sh" --product-root "$source" --pins "$shared_pins" --archive "$work/shared.tar.gz" --evidence "$work/shared-evidence" >/dev/null
+jq 'del(.files[] | select(.archivePath | endswith("/Owned.js")))' "$shared_pins" > "$work/incomplete-shared-pins.json"
+if "$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$work/incomplete-shared-pins.json" --output "$work/incomplete-shared.tar.gz" >/dev/null 2>&1; then
+  echo "shared packager accepted an unpinned transitive policy asset" >&2; exit 1
+fi
+jq '(.files[] | select(.archivePath | endswith("/Owned.js")) | .sha256) = ("0" * 64)' "$shared_pins" > "$work/changed-shared-pins.json"
+if "$repo_root/scripts/package-barc-live-receiver.sh" --source "$source" --pins "$work/changed-shared-pins.json" --output "$work/changed-shared.tar.gz" >/dev/null 2>&1; then
+  echo "shared packager accepted changed transitive policy bytes" >&2; exit 1
+fi
+
 grep -F 'searchParams.get("barc-profile")' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 grep -F 'profile === "barc-live-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null
 grep -F 'profile === "barc-live-tactical-v1"' "$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js" >/dev/null

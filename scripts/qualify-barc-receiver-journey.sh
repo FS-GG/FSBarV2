@@ -46,6 +46,10 @@ for relative in src/Broker.Browser.Wasm src/Broker.Browser.Contracts; do
   mkdir -p "$evidence/companion-assets/$(dirname "$relative")"
   tar -C "$archive_root" -cf - "$relative" | tar -C "$evidence/companion-assets" -xf -
 done
+if [[ -d "$archive_root/src/Broker.Browser.SharedWasm" ]]; then
+  python3 "$product_root/scripts/check-barc-shared-closure.py" "$archive_root" --manifest
+  tar -C "$archive_root" -cf - src/Broker.Browser.SharedWasm | tar -C "$evidence/companion-assets" -xf -
+fi
 install -m 0644 "$archive_root/guests/manual-preview.wasm" "$evidence/companion-assets/guests/manual-preview.wasm"
 install -m 0644 "$archive_root/guests/custom-preview.wasm" "$evidence/companion-assets/guests/custom-preview.wasm"
 

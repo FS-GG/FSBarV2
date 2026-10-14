@@ -14,6 +14,7 @@ let server, port, lastAuth, lastSocket;
 
 const routes = [
   ["/client/", "src/Broker.Browser.Client/dist/"],
+  ["/src/Broker.Browser.SharedWasm/", "src/Broker.Browser.SharedWasm/"],
   ["/src/Broker.Browser.Wasm/", "src/Broker.Browser.Wasm/"],
   ["/guests/", "tests/Broker.Browser.Wasm.Tests/generated/"]
 ];
@@ -25,7 +26,7 @@ test.beforeAll(async () => {
       const route = routes.find(([prefix]) => request.url.startsWith(prefix));
       if (!route) { response.statusCode = 404; response.end(); return; }
       const path = resolve(root, route[1], request.url.slice(route[0].length));
-      response.setHeader("content-type", extname(path) === ".js" ? "text/javascript" : extname(path) === ".css" ? "text/css" : "application/wasm");
+      response.setHeader("content-type", [".js", ".mjs"].includes(extname(path)) ? "text/javascript" : extname(path) === ".css" ? "text/css" : "application/wasm");
       response.end(await readFile(path));
     } catch { response.statusCode = 404; response.end(); }
   });
@@ -66,6 +67,7 @@ test("visible pairing, real guest, and pointer/keyboard inputs stay read-only", 
   await expect(page.locator(".module")).toContainText("staged");
   await page.getByRole("button", { name: "Rearm" }).click();
   await expect(page.locator(".module")).toContainText("armed at guest generation");
+  expect(page.workers().map(worker => new URL(worker.url()).pathname)).toEqual(["/src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/module-worker.mjs"]);
 
   const own = page.locator('[data-unit-id="77"]');
   await own.click();

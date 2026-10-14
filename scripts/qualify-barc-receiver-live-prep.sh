@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
   echo "usage: $0 --product-root <joined-fsbar> --archive <live-receiver.tar.gz> --pins <barc-live-pins.json> --evidence <new-directory>" >&2
@@ -38,7 +39,10 @@ jq -e '
     (has("queueEvidenceScheme") | not)) or
    (.schema == "fsbar.barc-live-receiver-pins/v3" and .profile == "barc-live-tactical-stock-v1" and
     .protocolVersion == 2 and .tacticalRevision == 2 and .guestAbiVersion == 1 and
-    .queueEvidenceScheme == 2)) and
+    .queueEvidenceScheme == 2) or
+   (.schema == "fsbar.barc-live-receiver-pins/v4" and .profile == "barc-live-tactical-stock-v1" and
+    .protocolVersion == 2 and .tacticalRevision == 2 and .guestAbiVersion == 1 and
+    .queueEvidenceScheme == 2 and .runtime == "shared-wasm-0.2.0")) and
   (.source.commit | test("^[0-9a-f]{40}$")) and
   (.files | type == "array" and length >= 7) and
   ([.files[] | select(.role != "dependency") | .role] | sort == ["clientCss","clientJs","codec","contract","customGuest","manualGuest","worker"]) and
@@ -54,15 +58,26 @@ jq -e '
     (.archivePath | startswith("src/") or startswith("guests/"))) and
   (.files[] | select(.role == "clientJs") | .archivePath) == "src/Broker.Browser.Client/dist/assets/barc-preview.js" and
   (.files[] | select(.role == "clientCss") | .archivePath) == "src/Broker.Browser.Client/dist/assets/barc-preview.css" and
-  (.files[] | select(.role == "worker") | .archivePath) == "src/Broker.Browser.Wasm/guest-worker.js" and
+  (.files[] | select(.role == "worker") | .archivePath) ==
+    (if .schema == "fsbar.barc-live-receiver-pins/v4" then
+       "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/module-worker.mjs"
+     else "src/Broker.Browser.Wasm/guest-worker.js" end) and
   (.files[] | select(.role == "codec") | .archivePath) == "src/Broker.Browser.Contracts/generated/codec.js" and
   (.files[] | select(.role == "contract") | .archivePath) == "src/Broker.Browser.Contracts/generated/barc_browser.js" and
-  (. as $pins | all([
+  (. as $pins | all((if .schema == "fsbar.barc-live-receiver-pins/v4" then [
+    "src/Broker.Browser.Wasm/barc-wire.js",
+    "src/Broker.Browser.Wasm/index.js",
+    "src/Broker.Browser.SharedWasm/index.js",
+    "src/Broker.Browser.SharedWasm/fable/Adapter.js",
+    "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/worker-client.mjs",
+    "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/policy/Host.js",
+    "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/policy/WorkerEntry.js"
+  ] else [
     "src/Broker.Browser.Wasm/barc-wire.js",
     "src/Broker.Browser.Wasm/wasm-profile.js",
     "src/Broker.Browser.Wasm/guest-supervisor.js",
     "src/Broker.Browser.Wasm/index.js"
-  ][]; . as $path | any($pins.files[];
+  ] end)[]; . as $path | any($pins.files[];
     .role == "dependency" and .sourcePath == $path and .archivePath == $path))) and
   all(.files[] | select(.role == "manualGuest" or .role == "customGuest"); .archivePath | test("^guests/[^/]+\\.wasm$"))
 ' "$pins" >/dev/null || { echo "invalid or incomplete live receiver pins" >&2; exit 2; }
@@ -125,6 +140,11 @@ while IFS=$'\t' read -r source_path archive_path expected_sha; do
     echo "qualification archive hash mismatch: $archive_path" >&2; exit 2;
   }
 done < <(jq -r '.files[] | [.sourcePath,.archivePath,.sha256] | @tsv' "$pins")
+
+if [[ "$(jq -r '.schema' "$pins")" == fsbar.barc-live-receiver-pins/v4 ]]; then
+  python3 "$repo_root/scripts/check-barc-shared-closure.py" "$product_root" --pins "$pins"
+  python3 "$repo_root/scripts/check-barc-shared-closure.py" "$evidence" --pins "$pins"
+fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 adapter="$repo_root/examples/barc-fable-game/adapter/Client/barc-receiver.js"

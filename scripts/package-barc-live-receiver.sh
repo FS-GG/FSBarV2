@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
   echo "usage: $0 --source <joined-fsbar-root> --pins <barc-live-pins.json> --output <archive.tar.gz>" >&2
@@ -36,7 +37,10 @@ jq -e '
     (has("queueEvidenceScheme") | not)) or
    (.schema == "fsbar.barc-live-receiver-pins/v3" and .profile == "barc-live-tactical-stock-v1" and
     .protocolVersion == 2 and .tacticalRevision == 2 and .guestAbiVersion == 1 and
-    .queueEvidenceScheme == 2)) and
+    .queueEvidenceScheme == 2) or
+   (.schema == "fsbar.barc-live-receiver-pins/v4" and .profile == "barc-live-tactical-stock-v1" and
+    .protocolVersion == 2 and .tacticalRevision == 2 and .guestAbiVersion == 1 and
+    .queueEvidenceScheme == 2 and .runtime == "shared-wasm-0.2.0")) and
   (.source.commit | test("^[0-9a-f]{40}$")) and
   (.files | type == "array" and length >= 7) and
   ([.files[] | select(.role != "dependency") | .role] | sort == ["clientCss","clientJs","codec","contract","customGuest","manualGuest","worker"]) and
@@ -52,15 +56,26 @@ jq -e '
     (.archivePath | startswith("src/") or startswith("guests/"))) and
   (.files[] | select(.role == "clientJs") | .archivePath) == "src/Broker.Browser.Client/dist/assets/barc-preview.js" and
   (.files[] | select(.role == "clientCss") | .archivePath) == "src/Broker.Browser.Client/dist/assets/barc-preview.css" and
-  (.files[] | select(.role == "worker") | .archivePath) == "src/Broker.Browser.Wasm/guest-worker.js" and
+  (.files[] | select(.role == "worker") | .archivePath) ==
+    (if .schema == "fsbar.barc-live-receiver-pins/v4" then
+       "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/module-worker.mjs"
+     else "src/Broker.Browser.Wasm/guest-worker.js" end) and
   (.files[] | select(.role == "codec") | .archivePath) == "src/Broker.Browser.Contracts/generated/codec.js" and
   (.files[] | select(.role == "contract") | .archivePath) == "src/Broker.Browser.Contracts/generated/barc_browser.js" and
-  (. as $pins | all([
+  (. as $pins | all((if .schema == "fsbar.barc-live-receiver-pins/v4" then [
+    "src/Broker.Browser.Wasm/barc-wire.js",
+    "src/Broker.Browser.Wasm/index.js",
+    "src/Broker.Browser.SharedWasm/index.js",
+    "src/Broker.Browser.SharedWasm/fable/Adapter.js",
+    "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/worker-client.mjs",
+    "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/policy/Host.js",
+    "src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/policy/WorkerEntry.js"
+  ] else [
     "src/Broker.Browser.Wasm/barc-wire.js",
     "src/Broker.Browser.Wasm/wasm-profile.js",
     "src/Broker.Browser.Wasm/guest-supervisor.js",
     "src/Broker.Browser.Wasm/index.js"
-  ][]; . as $path | any($pins.files[];
+  ] end)[]; . as $path | any($pins.files[];
     .role == "dependency" and .sourcePath == $path and .archivePath == $path))) and
   all(.files[] | select(.role == "manualGuest" or .role == "customGuest"); .archivePath | test("^guests/[^/]+\\.wasm$"))
 ' "$pins" >/dev/null || { echo "invalid or incomplete live receiver pins" >&2; exit 2; }
@@ -93,6 +108,10 @@ while IFS=$'\t' read -r role source_path archive_path expected_sha; do
   fi
 done < <(jq -r '.files[] | [.role,.sourcePath,.archivePath,.sha256] | @tsv' "$pins")
 
+if [[ "$(jq -r '.schema' "$pins")" == fsbar.barc-live-receiver-pins/v4 ]]; then
+  python3 "$repo_root/scripts/check-barc-shared-closure.py" "$source_root" --pins "$pins"
+fi
+
 stage="$(mktemp -d "${TMPDIR:-/tmp}/barc-live-receiver-package.XXXXXX")"
 cleanup() { rm -rf -- "$stage"; }
 trap cleanup EXIT
@@ -118,11 +137,13 @@ done < <(jq -r '.files[] | [.archivePath,.sha256] | @tsv' "$pins")
 
 (
   cd "$payload"
-  find src/Broker.Browser.Client src/Broker.Browser.Contracts/generated src/Broker.Browser.Wasm \
-       src/BARC-LIVE-PINS.json guests -type f -print0 \
+  find src guests -type f -print0 \
     | LC_ALL=C sort -z | xargs -0 sha256sum > BARC-PREVIEW.SHA256
 )
 
+if [[ "$(jq -r '.schema' "$pins")" == fsbar.barc-live-receiver-pins/v4 ]]; then
+  python3 "$repo_root/scripts/check-barc-shared-closure.py" "$payload" --pins "$pins" --manifest
+fi
 mkdir -p "$(dirname "$output")"
 tar -C "$payload" --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
   -czf "$output" BARC-PREVIEW.SHA256 guests src

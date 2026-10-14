@@ -138,6 +138,16 @@ if [[ "$scaffold_only" == false ]]; then
     src/Broker.Browser.Client/dist/assets/barc-preview.css \
     src/Broker.Browser.Wasm/guest-worker.js
   )
+  worker_path=src/Broker.Browser.Wasm/guest-worker.js
+  shared_root="$evidence/receiver/Client/public/barc-preview/src/Broker.Browser.SharedWasm"
+  if [[ -d "$shared_root" ]]; then
+    python3 "$repo_root/scripts/check-barc-shared-closure.py" "$evidence/receiver/Client/public/barc-preview" --manifest
+    worker_path=src/Broker.Browser.SharedWasm/_content/FS.GG.Wasm.Browser/module-worker.mjs
+    asset_paths[2]="$worker_path"
+    while IFS= read -r asset; do asset_paths+=("$asset"); done < <(
+      find "$shared_root" -type f -printf 'src/Broker.Browser.SharedWasm/%P\n' | LC_ALL=C sort
+    )
+  fi
   live_pins="$evidence/receiver/Client/public/barc-preview/src/BARC-LIVE-PINS.json"
   if [[ -f "$live_pins" ]]; then
     receiver_profile="$(jq -r '.profile' "$live_pins")"
@@ -167,7 +177,7 @@ if [[ "$scaffold_only" == false ]]; then
   manifest="$evidence/receiver/Client/public/barc-preview/BARC-PREVIEW.SHA256"
   client_js_sha="$(awk '$2 == "src/Broker.Browser.Client/dist/assets/barc-preview.js" { print $1 }' "$manifest")"
   client_css_sha="$(awk '$2 == "src/Broker.Browser.Client/dist/assets/barc-preview.css" { print $1 }' "$manifest")"
-  worker_sha="$(awk '$2 == "src/Broker.Browser.Wasm/guest-worker.js" { print $1 }' "$manifest")"
+  worker_sha="$(awk -v path="$worker_path" '$2 == path { print $1 }' "$manifest")"
   manual_sha="$(awk -v path="$manual_path" '$2 == path { print $1 }' "$manifest")"
   custom_sha="$(awk -v path="$custom_path" '$2 == path { print $1 }' "$manifest")"
 fi

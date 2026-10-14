@@ -5,7 +5,8 @@
   "oneOf": [
     { "$ref": "#/$defs/liveV1" },
     { "$ref": "#/$defs/tacticalV2" },
-    { "$ref": "#/$defs/stockTacticalV3" }
+    { "$ref": "#/$defs/stockTacticalV3" },
+    { "$ref": "#/$defs/sharedStockTacticalV4" }
   ],
   "$defs": {
     "source": {
@@ -63,6 +64,54 @@
         "guestAbiVersion": { "const": 1 },
         "source": { "$ref": "#/$defs/source" },
         "files": { "type": "array", "minItems": 11, "items": { "$ref": "#/$defs/file" } }
+      }
+    },
+    "sharedStockTacticalV4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "profile",
+        "protocolVersion",
+        "tacticalRevision",
+        "queueEvidenceScheme",
+        "guestAbiVersion",
+        "source",
+        "files",
+        "runtime"
+      ],
+      "properties": {
+        "schema": {
+          "const": "fsbar.barc-live-receiver-pins/v4"
+        },
+        "profile": {
+          "const": "barc-live-tactical-stock-v1"
+        },
+        "protocolVersion": {
+          "const": 2
+        },
+        "tacticalRevision": {
+          "const": 2
+        },
+        "queueEvidenceScheme": {
+          "const": 2
+        },
+        "guestAbiVersion": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "files": {
+          "type": "array",
+          "minItems": 11,
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        },
+        "runtime": {
+          "const": "shared-wasm-0.2.0"
+        }
       }
     }
   }
