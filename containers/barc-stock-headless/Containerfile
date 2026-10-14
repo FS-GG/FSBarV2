@@ -5,8 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive CC=gcc-13 CXX=g++-13
 COPY containers/barc-stock-headless/ /recipe/
 # Preserve Ubuntu archive signature validation; never use trusted=yes.
 RUN sed -i '/^Suites:/a Snapshot: 20261001T000000Z' /etc/apt/sources.list.d/ubuntu.sources && \
-    timeout --kill-after=5s 1200s apt-get update --snapshot 20261001T000000Z && \
-    timeout --kill-after=5s 1200s apt-get install --snapshot 20261001T000000Z -y --no-install-recommends \
+    timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root update --snapshot 20261001T000000Z && \
+    timeout --kill-after=5s 1200s apt-get -o APT::Sandbox::User=root install --snapshot 20261001T000000Z -y --no-install-recommends \
       ca-certificates git curl python3 cmake=3.28.3-1build7 g++-13 ninja-build \
       pkg-config binutils p7zip-full zip unzip tar autoconf automake libtool \
       libgl1-mesa-dev libglu1-mesa-dev libsdl2-dev libdevil-dev libopenal-dev \
