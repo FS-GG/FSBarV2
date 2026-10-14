@@ -6,6 +6,7 @@ import importlib.util
 import json
 import pathlib
 import struct
+import subprocess
 import tempfile
 import unittest
 
@@ -32,6 +33,26 @@ class ImageSourceTests(unittest.TestCase):
     def test_nonfinite_deadline_is_refused(self):
         changed = copy.deepcopy(pins); changed['budgets']['downloadSeconds'] = 0
         with self.assertRaises(ValueError): module.check_inputs(changed)
+    def test_real_gitlink_placeholder_and_nonempty_refusal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory); repo = root / 'parent'; checkout = root / 'checkout'
+            subprocess.run(['git','init','-q',str(repo)], check=True)
+            subprocess.run(['git','-C',str(repo),'config','user.name','fixture'], check=True)
+            subprocess.run(['git','-C',str(repo),'config','user.email','fixture@example.invalid'], check=True)
+            subprocess.run(['git','-C',str(repo),'update-index','--add','--cacheinfo',
+                            '160000,1111111111111111111111111111111111111111,AI/Skirmish/BARb'], check=True)
+            subprocess.run(['git','-C',str(repo),'commit','-qm','fixture'], check=True)
+            subprocess.run(['git','clone','--quiet','--no-hardlinks',str(repo),str(checkout)], check=True)
+            slot = checkout / 'AI/Skirmish/BARb'
+            self.assertTrue(slot.is_dir())
+            module.prepare_highbar_slot(checkout, slot)
+            self.assertFalse(slot.exists())
+            slot.mkdir(); payload = slot / 'existing'; payload.write_bytes(b'preserve')
+            with self.assertRaisesRegex(ValueError, 'populated'): module.prepare_highbar_slot(checkout, slot)
+            self.assertEqual(payload.read_bytes(), b'preserve')
+            payload.unlink(); slot.rmdir(); slot.symlink_to(repo, target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, 'linked'): module.prepare_highbar_slot(checkout, slot)
+            with self.assertRaisesRegex(ValueError, 'slot differs'): module.prepare_highbar_slot(checkout, repo)
     def test_archive_paths_links_population_and_size(self):
         module.check_listing([{'Path':'spring-headless','Size':'5'}], 2, 10)
         for rows in ([{'Path':'../escape','Size':'5'}], [{'Path':'/escape','Size':'5'}],

@@ -69,6 +69,24 @@ def source(row, target, seconds):
         actual = subprocess.check_output(['git', '-C', str(target), 'rev-parse', expression], text=True).strip()
         require(actual == expected, 'fetched source identity differs')
 
+def prepare_highbar_slot(recoil, highbar):
+    relative = 'AI/Skirmish/BARb'
+    require(highbar == recoil / relative, 'HighBar source slot differs')
+    row = subprocess.check_output(['git','-C',str(recoil),'ls-files','--stage','--',relative], text=True).strip().split('\t')
+    require(len(row) == 2 and row[1] == relative, 'HighBar slot is not one tracked gitlink')
+    fields = row[0].split()
+    require(len(fields) == 3 and fields[0] == '160000' and fields[2] == '0' and bool(COMMIT.fullmatch(fields[1])), 'HighBar slot gitlink metadata differs')
+    tracked = subprocess.check_output(['git','-C',str(recoil),'ls-tree','HEAD','--',relative], text=True).strip().split('\t')
+    require(len(tracked) == 2 and tracked[1] == relative and tracked[0].split() == ['160000','commit',fields[1]], 'HighBar gitlink index differs from authenticated HEAD')
+    require(not highbar.is_symlink(), 'HighBar slot is linked')
+    if highbar.exists():
+        require(highbar.is_dir(), 'HighBar slot is not a directory')
+        with os.scandir(highbar) as entries:
+            require(next(entries, None) is None, 'HighBar slot is populated; refusing replacement')
+        # Git checkout materializes an empty gitlink directory. Removing only
+        # that placeholder keeps the tracked Recoil tree and foreign data intact.
+        highbar.rmdir()
+
 def check_listing(records, max_files, max_bytes):
     seen = set(); total = 0
     for record in records:
@@ -212,6 +230,7 @@ def build(pins):
         path = line.split(maxsplit=1)[1]
         if path != 'AI/Skirmish/BARb':
             run(['git', '-C', str(recoil), 'submodule', 'update', '--init', '--recursive', '--', path], budget['gitFetchSeconds'])
+    prepare_highbar_slot(recoil, highbar)
     source(pins['sources']['highbar'], highbar, budget['gitFetchSeconds'])
     source(pins['sources']['fsbar'], fsbar, budget['gitFetchSeconds'])
     require(sha(highbar / 'contracts/barc-stock-queue-v1/contract.json', 1024 * 1024) == pins['stockContractSha256'], 'stock ABI/wire contract differs')
