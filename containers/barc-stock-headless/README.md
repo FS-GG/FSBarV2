@@ -1,0 +1,46 @@
+# Pinned BAR headless runtime image
+
+The default `headless-integration` image acquires the full official Recoil engine payload, the selected BAR game dependency graph, Avalanche3.4 and a HighBar plugin built against matching engine headers during image creation. It needs no pre-existing host engine/game installation. The `development` stage remains available for source/protocol work. The default image is the full runtime selected by the user; its entrypoint launches only spring-headless.
+
+This source preparation has not built or run an image. Image creation and native gameplay acceptance are separate outcomes. Existing stopped runtimes, consumed attempts, settings/data and unknown operations remain unchanged.
+
+## Exact inputs
+
+[resources.json](resources.json) records the acquisition routes and byte/source pins from the existing owners:
+
+| Input | Exact selection | Owning evidence |
+|---|---|---|
+| Recoil binary | Official2026.07.04 amd64 Linux archive SHA2569824c2c3…; extracted headless651d6dca… | FSBar `docs/roadmaps/barc-01-useful-play.md`, selected stock engine update |
+| Recoil headers | Commit de693612… and tree081bfe95…; recursive submodules use that tree's gitlinks | HighBar `scripts/build-barc-stock-plugin.sh` |
+| HighBar plugin/source | Protected master b57f11f2…, tree7095b687…; stock contract ac0c9439… | Current HighBar source and existing stock plugin build |
+| FSBar source/fixture | Main0f113726…, tree7feb453a… | Current owning source; fixture retained as source, not silently activated |
+| Map | Official Maps2.0 release `avalanche_3.4.sd7`, SHA2563873260c… | HighBar `docs/roadmaps/barc-01-native-asset-proof.md:87` |
+| Game | `Beyond All Reason test-29926-0571aa8`, source0571aa8e…, Rapid package7fd33d9c….sdp, SHA25658ca71d2… | Same owning proof:88–90 |
+
+The old `hydrate-bar-assets.sh` downloads an unhashed moving byar-chobby.sdz. This recipe uses the owned exact Rapid game selection instead. The selected downloader comes from the hash-verified official engine archive. Its pinned source09a1f37c… confirms filesystem-writepath, rapid-download, validate-sdp and rapid-validate. The exact .sdp is authenticated by SHA256; its complete pool is acquired and validated by the upstream downloader. SDP record count/declared expanded size and actual downloaded population are bounded. Rapid pool validation is its existing MD5/CRC contract, not a stronger signed content provenance claim.
+
+The existing HighBar build script generates the plugin with HIGHBAR_STOCK_RECOIL=ON and three compiled source controls. Generated protobuf/gRPC C++ uses the qualified local protoc/plugin, avoiding moving remote Buf plugins. The complete official engine payload and game graph are retained. No engine/game startup or useful-play proof runs during image creation. Exact-header compilation and source controls do not establish actual loaded ABI compatibility or gameplay.
+
+## Repository-owned toolchain bootstrap
+
+The `toolchain` stage starts from the official Ubuntu24.04 amd64 manifest f610ab94… and installs through Ubuntu's signed `20261001T000000Z` snapshot. The existing Ubuntu archive keyring and Signed-By checks remain active; no moving snapshot, trusted=yes or pre-existing toolchain image is accepted. CMake is pinned3.28.3-1build7; the produced CMake3.28.3 and GCC13.3.0 are verified before plugin compilation. The signed snapshot fixes the remaining apt package resolution; its actual complete package versions are recorded as build output, rather than invented from unobserved indexes.
+
+The builder fetches the existing HighBar vcpkg baseline256acc640… and verifies its exact commit/treee382dac5…. Its own bootstrap metadata pins the2026-04-08 glibc executable SHA512c5a43929…; the resulting downloaded executable must match before installation. The manifest retains HighBar's grpc/protobuf/abseil dependencies and adds GTest for the existing compiled stock controls. Baseline-selected gRPC1.76.0#1, Protobuf6.33.4#1, Abseil20260107.1#2 and GTest1.17.0#2 use the source archive hashes/patches owned by that immutable vcpkg tree. Protoc33.4 and gRPC1.76.0 are checked before generation. Vcpkg may acquire its own baseline-pinned supporting tools and dependency ports; their installed status is retained. This is a fresh source build, not reuse of historical GCC16/protobuf36 qualification.
+
+`HighBar/scripts/build-barc-stock-plugin.sh` permits BARC_SYSROOT; `/usr` supplies Ubuntu SDL2/DevIL/OpenAL paths. The vcpkg prefix is supplied through the existing CMake environment search path while preserving every script engine commit/tree, contract and source-control check. No retained old sysroot byte identity is a required source input. Actual loader ABI compatibility against the official engine remains an output requiring qualification. Recoil requests DevIL1.8.0, while its own FindDevIL module has no version support and Noble supplies1.7.8; that honest API/header compatibility gap needs the first real stock build, not a false1.8 claim. The same vcpkg baseline owns DevIL1.8.0#13 if a source-owned sysroot correction proves necessary.
+
+The builder records `/opt/barc/toolchain/ubuntu-packages.txt`, `vcpkg-status.txt`, generated manifest, tool-byte SHA256SUMS and MANIFEST.SHA256. Subsequent stages verify those produced bytes. The maintained platform runner separately retains the actual resulting immutable image ID and logs. These records are qualification OUTPUTS; they neither require a previously qualified image nor establish a successful build in advance. Official parent metadata is verified, but raw layer/config verification and the full resulting toolchain/build/ELF closure remain first-build obligations.
+
+## Build and runtime boundaries
+
+`python3 containers/barc-stock-headless/build-image.py --mode preflight` performs inert data-only pin/shape checks before any image pull. After existing machine admission, use the repository root as the container context and this Containerfile. No toolchain build arguments are needed. Its default final stage acquires the full selected engine/game/map runtime. `--target development` is available for source/plugin work. Image creation does not run spring-headless or invent a native acceptance attempt.
+
+Use the maintained execution runner and its platform profile for process custody, logs, whole-build deadline and cleanup. Each recipe stage has a3600second cap, apt operations1200seconds and plugin/game acquisition1800seconds; an admitted outer whole-build deadline may end the build earlier. One compile job is selected. The actual proposed platform profile records4CPU/12GiB memory and a3600+120second build/cleanup boundary; storage80GiB is a sampled logical ceiling, not an asserted hard quota. These are proposed limits and no measured adequacy is claimed.
+
+Each binary/map acquisition is limited512MiB/300seconds. Engine expansion is2GiB/4096entries, listing metadata2MiB, path depth16. Git operations have600second deadlines inside their stage. Game census limits32768files/512directories/depth8/4GiB compressed and8GiB declared expansion. A final census does not bound peak downloader storage; the runner monitors scoped disk usage and preserves first failures. Runtime proposes one fresh UID10001 directory,1CPU/512MiB/128PIDs/120seconds. The actual platform supplies/enforces supported limits and measures signal propagation, teardown and evidence collection before native qualification; no hypothetical disk quota is an additional permanent bootstrap gate.
+
+Run as UID10001 with read-only root, all capabilities dropped, no-new-privileges and private network/PID namespaces. No GUI, privileged mode, host networking or existing host runtime/data mount is needed. The platform runner supplies a genuinely new writable `/work`, readonly `/input/startscript.txt`, its exact SHA256 and any specifically admitted owned UDS transport. No runtime or credential data is baked into the image.
+
+The entrypoint refuses a nonempty/linked runtime, verifies the startscript, confines token cleanup to the new directory and reuses the maintained HighBar `_launch.sh`. Sourcing it preserves a direct engine child that the entrypoint waits for and forwards termination to. Engine logs, PID, replays and settings remain in `/work` for the runner's independent terminal evidence/cleanup collection. Source setup copies small configuration/plugin data; immutable map/game resources are read through SPRING_DATADIR. No old engine packet is replaced, resumed or retried.
+
+The complete source-defined stock observer/passive gameplay fixture and native coordinator/broker journeys have their existing owner/admission joins. This image retains FSBar fixture source but does not invent modinfo, a startscript, actual game/map checksums, actor grants, platform trust or native acceptance. Full runtime acquisition does not close Count1, six useful-play journeys, receiver adoption or publication.
