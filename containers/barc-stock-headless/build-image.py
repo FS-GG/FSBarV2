@@ -10,6 +10,8 @@ import pathlib
 import re
 import shutil
 import subprocess
+import contextlib
+import stat
 
 ROOT = pathlib.Path(__file__).resolve().parent
 SHA = re.compile(r'[0-9a-f]{64}')
@@ -38,14 +40,186 @@ def check_inputs(pins):
     require(pins['game']['name'] == 'Beyond All Reason test-29926-0571aa8', 'moving/unselected game name refused')
     require(pins['game']['sdp'] == '7fd33d9ceb79c052065b8d3c2f6f2687.sdp', 'game package identity differs')
 
-def sha(path, maximum):
-    require(path.is_file() and not path.is_symlink(), 'missing/linked input: ' + str(path))
-    require(path.stat().st_size <= maximum, 'input exceeds byte budget: ' + str(path))
-    result = hashlib.sha256()
-    with path.open('rb') as stream:
-        while block := stream.read(1024 * 1024):
+def file_identity(info):
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+@contextlib.contextmanager
+def regular_input(path, maximum):
+    # NONBLOCK prevents a raced FIFO from blocking open before the fstat check.
+    require(not path.is_symlink(), 'linked input refused')
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, 'rb') as stream:
+        before = os.fstat(stream.fileno())
+        require(stat.S_ISREG(before.st_mode) and before.st_size <= maximum, 'input is nonregular or exceeds byte budget')
+        require(file_identity(path.lstat()) == file_identity(before), 'input replaced before read')
+        yield stream, before.st_size
+        require(file_identity(os.fstat(stream.fileno())) == file_identity(before)
+                and file_identity(path.lstat()) == file_identity(before), 'input grew or was replaced during read')
+
+def file_digest(path, maximum):
+    result = hashlib.sha256(); count = 0
+    with regular_input(path, maximum) as (stream, size):
+        while count < size:
+            block = stream.read(min(1024 * 1024, size - count))
+            require(bool(block), 'input truncated during read')
+            count += len(block)
+            require(count <= maximum, 'input read exceeds byte budget')
             result.update(block)
-    return result.hexdigest()
+        require(count == size, 'input size changed during read')
+    return result.hexdigest(), count
+
+def sha(path, maximum):
+    return file_digest(path, maximum)[0]
+
+def elf_metadata(path):
+    """Read bounded ELF64 metadata as data; never invoke a loader or the file."""
+    with regular_input(path, 256 * 1024 * 1024) as (stream, size):
+        require(size >= 64, 'truncated ELF file')
+        metadata_bytes = 0
+        def read(offset, count):
+            nonlocal metadata_bytes
+            require(0 <= offset <= size and 0 <= count <= 1024 * 1024 and offset + count <= size,
+                    'truncated or excessive ELF metadata')
+            require(metadata_bytes + count <= 2 * 1024 * 1024, 'ELF cumulative metadata read budget exceeded')
+            stream.seek(offset); value = stream.read(count)
+            metadata_bytes += len(value)
+            require(len(value) == count, 'ELF changed during metadata read')
+            return value
+        header = struct.unpack('<16sHHIQQQIHHHHHH', read(0, 64))
+        require(header[0][:7] == b'\x7fELF\x02\x01\x01' and header[0][7] in (0, 3) and header[1] in (2, 3)
+                and header[2:4] == (62, 1) and header[8] == 64,
+                'only executable/shared ELF64 little-endian x86-64 is supported')
+        require(header[5] >= 64 and header[9] == 56 and 0 < header[10] <= 256, 'unsupported ELF program-header population')
+        segments = [struct.unpack('<IIQQQQQQ', read(header[5] + index * 56, 56))
+                    for index in range(header[10])]
+        for segment in segments:
+            require(segment[2] + segment[5] <= size and segment[5] <= segment[6], 'invalid ELF segment bounds')
+        dynamic = [s for s in segments if s[0] == 2]
+        interpreters = [s for s in segments if s[0] == 3]
+        require(len(dynamic) == 1 and len(interpreters) <= 1, 'one dynamic segment and at most one interpreter required')
+        interpreter = None
+        if interpreters:
+            value = read(interpreters[0][2], interpreters[0][5])
+            require(value == b'/lib64/ld-linux-x86-64.so.2\0', 'unsupported ELF interpreter')
+            interpreter = value[:-1].decode('ascii')
+        segment = dynamic[0]
+        containing = [s for s in segments if s[0] == 1 and s[2] <= segment[2]
+                      and segment[2] + segment[5] <= s[2] + s[5]
+                      and segment[3] - s[3] == segment[2] - s[2]]
+        require(len(containing) == 1, 'dynamic metadata is not in one corresponding load segment')
+        require(0 < segment[5] <= 4096 * 16 and segment[5] % 16 == 0, 'invalid dynamic metadata population')
+        tags = {}; terminated = False
+        for offset in range(segment[2], segment[2] + segment[5], 16):
+            tag, value = struct.unpack('<qQ', read(offset, 16))
+            if tag == 0:
+                terminated = True; break
+            tags.setdefault(tag, []).append(value)
+        require(terminated, 'unterminated ELF dynamic table')
+        # Audit/filter objects introduce another dependency mechanism. NODEFLIB
+        # changes the selected default-directory contract and is not supported.
+        require(not any(tag in tags for tag in (0x7fffffff, 0x7ffffffd, 0x6ffffefb, 0x6ffffefc)),
+                'unsupported ELF audit/filter dependency')
+        require(not any(value & 0x800 for value in tags.get(0x6ffffffb, [])), 'ELF NODEFLIB is unsupported')
+        for tag in (5, 10, 14, 15, 29):
+            require(len(tags.get(tag, [])) <= 1, 'duplicate singleton ELF metadata')
+        require(5 in tags and 10 in tags and 0 < tags[10][0] <= 1024 * 1024, 'bounded ELF string table required')
+        address, count = tags[5][0], tags[10][0]
+        loads = [s for s in segments if s[0] == 1 and s[3] <= address and address + count <= s[3] + s[5]]
+        require(len(loads) == 1, 'ambiguous or unmapped ELF string table')
+        strings = read(loads[0][2] + address - loads[0][3], count)
+        def string(index):
+            require(index < len(strings), 'ELF string offset outside table')
+            end = strings.find(b'\0', index)
+            require(index < end <= index + 4096, 'unterminated or excessive ELF string')
+            return strings[index:end].decode('ascii')
+        needed = [string(index) for index in tags.get(1, [])]
+        require(len(needed) <= 128 and len(set(needed)) == len(needed), 'duplicate/excessive ELF dependencies')
+        soname = string(tags[14][0]) if 14 in tags else None
+        for name in needed + ([soname] if soname else []):
+            require(bool(re.fullmatch(r'[A-Za-z0-9_+.-]+', name)) and name not in ('.', '..'), 'unsupported ELF library name')
+        require(not (15 in tags and 29 in tags), 'combined RPATH/RUNPATH is ambiguous')
+        paths = [string(tags[tag][0]) for tag in (15, 29) if tag in tags]
+        return {'class': 'ELF64', 'machine': 'x86-64', 'type': header[1], 'needed': needed,
+                'soname': soname, 'interpreter': interpreter, 'searchPath': paths[0] if paths else None,
+                'searchPathKind': 'RPATH' if 15 in tags else ('RUNPATH' if 29 in tags else None)}
+
+def static_elf_correspondence(image_root, engine, plugin):
+    """Closed image-local candidate correspondence, not dynamic-loader resolution."""
+    image_root = image_root.resolve(strict=True)
+    aliases = {}
+    def confined(path):
+        resolved = path.resolve(strict=True)
+        require(resolved.is_relative_to(image_root) and resolved.is_file(), 'ELF candidate escapes image or is nonregular')
+        require(path.is_relative_to(image_root), 'ELF input path escapes image')
+        selected = '/' + path.relative_to(image_root).as_posix()
+        destination = '/' + resolved.relative_to(image_root).as_posix()
+        require(selected not in aliases or aliases[selected] == destination, 'ELF dependency alias changed between lookups')
+        aliases[selected] = destination
+        return resolved
+    roots = {'engine': confined(engine), 'plugin': confined(plugin)}
+    pending = list(roots.values()); records = {}; total = 0
+    defaults = [image_root / path for path in ('lib/x86_64-linux-gnu', 'usr/lib/x86_64-linux-gnu', 'lib64', 'usr/lib64')]
+    while pending:
+        path = pending.pop(0)
+        key = '/' + path.relative_to(image_root).as_posix()
+        if key in records: continue
+        require(len(records) < 256, 'ELF dependency closure population exceeded')
+        before, accepted_bytes = file_digest(path, min(256 * 1024 * 1024, 512 * 1024 * 1024 - total))
+        total += accepted_bytes
+        require(total <= 512 * 1024 * 1024, 'ELF dependency closure byte budget exceeded')
+        metadata = elf_metadata(path)
+        directories = [path.parent, *defaults]
+        if metadata['searchPath'] is not None:
+            entries = metadata['searchPath'].split(':')
+            require(len(entries) <= 16, 'ELF search-path population exceeded')
+            for entry in entries:
+                require(entry and (entry == '$ORIGIN' or entry.startswith('$ORIGIN/')),
+                        'only explicit ORIGIN-relative ELF search paths supported')
+                suffix = entry[len('$ORIGIN'):].lstrip('/')
+                require('$' not in suffix and '..' not in pathlib.PurePosixPath(suffix).parts,
+                        'unsupported ELF search-path expansion')
+                directory = (path.parent / suffix).resolve(strict=True)
+                require(directory.is_relative_to(image_root) and directory.is_dir(), 'ELF search directory escapes image')
+                directories.append(directory)
+        edges = []
+        for needed in metadata['needed']:
+            candidates = {confined(directory / needed) for directory in directories
+                          if (directory / needed).exists() or (directory / needed).is_symlink()}
+            require(len(candidates) == 1, 'missing or ambiguous ELF dependency: ' + needed)
+            candidate = candidates.pop()
+            edges.append({'needed': needed, 'path': '/' + candidate.relative_to(image_root).as_posix()})
+            pending.append(candidate)
+        if metadata['interpreter']:
+            candidate = confined(image_root / metadata['interpreter'].lstrip('/'))
+            edges.append({'interpreter': metadata['interpreter'], 'path': '/' + candidate.relative_to(image_root).as_posix()})
+            pending.append(candidate)
+        require(sha(path, 256 * 1024 * 1024) == before, 'ELF changed during correspondence')
+        records[key] = {'sha256': before, 'bytes': accepted_bytes, 'metadata': metadata, 'dependencies': edges}
+    # A final sweep binds dependencies and both roots to one unchanged inventory.
+    for key, record in records.items():
+        require(sha(image_root / key.lstrip('/'), 256 * 1024 * 1024) == record['sha256'], 'ELF closure changed during collection')
+        for edge in record['dependencies']:
+            soname = records[edge['path']]['metadata']['soname']
+            require('needed' not in edge or soname is None or soname == edge['needed'], 'ELF dependency SONAME differs')
+    for selected, resolved in aliases.items():
+        require((image_root / selected.lstrip('/')).resolve(strict=True) == image_root / resolved.lstrip('/'),
+                'ELF dependency alias changed during collection')
+    return {'schema': 'bar-static-elf-correspondence/1', 'roots': {role: '/' + path.relative_to(image_root).as_posix() for role, path in roots.items()},
+            'files': records, 'aliases': aliases, 'loadedAbiAccepted': False,
+            'scope': 'ELF64 x86-64 image-local DT_NEEDED/interpreter candidate correspondence; not loader order, symbols, versions, dlopen or loaded ABI proof'}
+
+def retain_static_elf(output, image_root=pathlib.Path('/'), expected=None):
+    require(isinstance(expected, dict) and set(expected) == {'engine', 'plugin'}
+            and all(isinstance(value, str) and SHA.fullmatch(value) for value in expected.values()),
+            'exact expected engine/plugin digests required')
+    correspondence = static_elf_correspondence(image_root, output / 'engine/spring-headless', output / 'plugin/libSkirmishAI.so')
+    for role, digest in expected.items():
+        require(correspondence['files'][correspondence['roots'][role]]['sha256'] == digest,
+                'ELF root differs from selected digest: ' + role)
+    correspondence['expectedRoots'] = expected
+    with (output / 'STATIC-ELF.json').open('x') as stream:
+        json.dump(correspondence, stream, sort_keys=True, indent=2)
+        stream.write('\n')
 
 def run(command, seconds, *, env=None, cwd=None):
     subprocess.run(['timeout', '--kill-after=5s', str(seconds) + 's', *command], env=env, cwd=cwd, check=True)
@@ -285,6 +459,12 @@ def integrate(pins):
     engine_listing(archive, pins); (output / 'engine').mkdir()
     run(['7z', 'x', '-y', '-o' + str(output / 'engine'), str(archive)], 300)
     require(sha(output / 'engine/spring-headless', budget['engineExpandedMaxBytes']) == pins['engine']['headlessSha256'], 'headless binary differs')
+    # Validate and retain the produced engine/plugin dependency inventory before
+    # launching the downloader. No inspected ELF is executed by this check.
+    plugin_manifest = (output / 'PLUGIN.SHA256').read_text()
+    require(bool(re.fullmatch(r'[0-9a-f]{64}  /opt/barc/plugin/libSkirmishAI\.so\n', plugin_manifest)),
+            'plugin digest manifest differs')
+    retain_static_elf(output, expected={'engine': pins['engine']['headlessSha256'], 'plugin': plugin_manifest[:64]})
     # Retain the complete official engine payload; runtime entry is headless only.
     data = output / 'data'; (data / 'maps').mkdir(parents=True)
     acquire_file(pins['map']['url'], pins['map']['sha256'], data / 'maps' / pins['map']['file'], 300, budget['assetDownloadMaxBytes'])
