@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import os
 import struct
 import subprocess
 import tempfile
@@ -107,13 +108,48 @@ class StaticElfTests(unittest.TestCase):
     def test_alias_retarget_during_collection_refuses(self):
         alias = self.image/'lib64/liba.so'; alias.symlink_to(self.liba)
         replacement = elf_fixture(self.image/'spare/liba.so', soname='liba.so', needed=['libb.so'])
-        original = module.sha; calls = []
+        original = module.file_digest; calls = []
         def change(path, maximum):
             result = original(path, maximum); calls.append(path)
             if path == self.libb and calls.count(path) == 2:
                 alias.unlink(); alias.symlink_to(replacement)
             return result
-        with mock.patch.object(module, 'sha', side_effect=change), self.assertRaisesRegex(ValueError, 'alias changed'): self.collect()
+        with mock.patch.object(module, 'file_digest', side_effect=change), self.assertRaisesRegex(ValueError, 'alias changed'): self.collect()
+    def test_alias_retarget_between_repeated_lookups_refuses(self):
+        target = self.image/'spare/liba.so'
+        target.parent.mkdir(); self.liba.rename(target); self.liba.symlink_to(target)
+        replacement = elf_fixture(self.image/'other/liba.so', soname='liba.so', needed=['libb.so'])
+        original = module.elf_metadata
+        def change(path):
+            if path == self.plugin:
+                self.liba.unlink(); self.liba.symlink_to(replacement)
+            return original(path)
+        with mock.patch.object(module, 'elf_metadata', side_effect=change), self.assertRaisesRegex(ValueError, 'between lookups'): self.collect()
+    def test_growing_hash_input_is_bounded_during_actual_read(self):
+        path = self.image/'growing'; path.write_bytes(b'abcd'); original = module.os.fdopen; requested = []
+        class Reader:
+            def __init__(self, stream): self.stream = stream
+            def __enter__(self): return self
+            def __exit__(self, *args): self.stream.close()
+            def fileno(self): return self.stream.fileno()
+            def read(self, count):
+                requested.append(count)
+                with path.open('ab') as writer: writer.write(b'x'*100)
+                return self.stream.read(count)
+        with mock.patch.object(module.os, 'fdopen', side_effect=lambda *args: Reader(original(*args))):
+            with self.assertRaisesRegex(ValueError, 'grew or was replaced'): module.file_digest(path, 8)
+        self.assertEqual(requested, [4])
+    def test_replaced_file_after_open_is_refused(self):
+        path = self.image/'replaced'; path.write_bytes(b'old'); original = module.os.fdopen
+        def replace(*args):
+            stream = original(*args); path.unlink(); path.write_bytes(b'new'); return stream
+        with mock.patch.object(module.os, 'fdopen', side_effect=replace), self.assertRaisesRegex(ValueError, 'replaced before read'):
+            module.file_digest(path, 8)
+    def test_nonregular_and_linked_hash_inputs_refuse_without_blocking(self):
+        path = self.image/'fifo'; os.mkfifo(path)
+        with self.assertRaisesRegex(ValueError, 'nonregular'): module.file_digest(path, 8)
+        path.unlink(); path.symlink_to(self.libb)
+        with self.assertRaises((ValueError, OSError)): module.file_digest(path, 8192)
     def test_cycles_terminate_without_omitting_edges(self):
         elf_fixture(self.libb, soname='libb.so', needed=['liba.so'])
         result = self.collect()
@@ -128,13 +164,13 @@ class StaticElfTests(unittest.TestCase):
                 elf_fixture(self.liba, soname='liba.so', needed=['libb.so'], search=value)
                 with self.assertRaises(ValueError): self.collect()
     def test_changed_closure_refuses_final_sweep(self):
-        original = module.sha; calls = []
+        original = module.file_digest; calls = []
         def change(path, maximum):
             result = original(path, maximum); calls.append(path)
             if path == self.libb and calls.count(path) == 2:
                 data = bytearray(self.engine.read_bytes()); data[-1] ^= 1; self.engine.write_bytes(data)
             return result
-        with mock.patch.object(module, 'sha', side_effect=change), self.assertRaisesRegex(ValueError, 'closure changed'): self.collect()
+        with mock.patch.object(module, 'file_digest', side_effect=change), self.assertRaisesRegex(ValueError, 'closure changed'): self.collect()
     def test_malformed_metadata_and_unsupported_dynamic_features(self):
         original = self.libb.read_bytes()
         mutations = [(4, b'\x01'), (5, b'\x02'), (18, b'\xb7\x00'), (54, b'\x00\x00'),

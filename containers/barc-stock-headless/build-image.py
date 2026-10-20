@@ -10,6 +10,8 @@ import pathlib
 import re
 import shutil
 import subprocess
+import contextlib
+import stat
 
 ROOT = pathlib.Path(__file__).resolve().parent
 SHA = re.compile(r'[0-9a-f]{64}')
@@ -38,25 +40,49 @@ def check_inputs(pins):
     require(pins['game']['name'] == 'Beyond All Reason test-29926-0571aa8', 'moving/unselected game name refused')
     require(pins['game']['sdp'] == '7fd33d9ceb79c052065b8d3c2f6f2687.sdp', 'game package identity differs')
 
-def sha(path, maximum):
-    require(path.is_file() and not path.is_symlink(), 'missing/linked input: ' + str(path))
-    require(path.stat().st_size <= maximum, 'input exceeds byte budget: ' + str(path))
-    result = hashlib.sha256()
-    with path.open('rb') as stream:
-        while block := stream.read(1024 * 1024):
+def file_identity(info):
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+@contextlib.contextmanager
+def regular_input(path, maximum):
+    # NONBLOCK prevents a raced FIFO from blocking open before the fstat check.
+    require(not path.is_symlink(), 'linked input refused')
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, 'rb') as stream:
+        before = os.fstat(stream.fileno())
+        require(stat.S_ISREG(before.st_mode) and before.st_size <= maximum, 'input is nonregular or exceeds byte budget')
+        require(file_identity(path.lstat()) == file_identity(before), 'input replaced before read')
+        yield stream, before.st_size
+        require(file_identity(os.fstat(stream.fileno())) == file_identity(before)
+                and file_identity(path.lstat()) == file_identity(before), 'input grew or was replaced during read')
+
+def file_digest(path, maximum):
+    result = hashlib.sha256(); count = 0
+    with regular_input(path, maximum) as (stream, size):
+        while count < size:
+            block = stream.read(min(1024 * 1024, size - count))
+            require(bool(block), 'input truncated during read')
+            count += len(block)
+            require(count <= maximum, 'input read exceeds byte budget')
             result.update(block)
-    return result.hexdigest()
+        require(count == size, 'input size changed during read')
+    return result.hexdigest(), count
+
+def sha(path, maximum):
+    return file_digest(path, maximum)[0]
 
 def elf_metadata(path):
     """Read bounded ELF64 metadata as data; never invoke a loader or the file."""
-    require(path.is_file() and not path.is_symlink(), 'ELF input must be a regular unlinked file')
-    size = path.stat().st_size
-    require(64 <= size <= 256 * 1024 * 1024, 'ELF file byte budget exceeded')
-    with path.open('rb') as stream:
+    with regular_input(path, 256 * 1024 * 1024) as (stream, size):
+        require(size >= 64, 'truncated ELF file')
+        metadata_bytes = 0
         def read(offset, count):
+            nonlocal metadata_bytes
             require(0 <= offset <= size and 0 <= count <= 1024 * 1024 and offset + count <= size,
                     'truncated or excessive ELF metadata')
+            require(metadata_bytes + count <= 2 * 1024 * 1024, 'ELF cumulative metadata read budget exceeded')
             stream.seek(offset); value = stream.read(count)
+            metadata_bytes += len(value)
             require(len(value) == count, 'ELF changed during metadata read')
             return value
         header = struct.unpack('<16sHHIQQQIHHHHHH', read(0, 64))
@@ -125,7 +151,10 @@ def static_elf_correspondence(image_root, engine, plugin):
         resolved = path.resolve(strict=True)
         require(resolved.is_relative_to(image_root) and resolved.is_file(), 'ELF candidate escapes image or is nonregular')
         require(path.is_relative_to(image_root), 'ELF input path escapes image')
-        aliases['/' + path.relative_to(image_root).as_posix()] = '/' + resolved.relative_to(image_root).as_posix()
+        selected = '/' + path.relative_to(image_root).as_posix()
+        destination = '/' + resolved.relative_to(image_root).as_posix()
+        require(selected not in aliases or aliases[selected] == destination, 'ELF dependency alias changed between lookups')
+        aliases[selected] = destination
         return resolved
     roots = {'engine': confined(engine), 'plugin': confined(plugin)}
     pending = list(roots.values()); records = {}; total = 0
@@ -135,9 +164,10 @@ def static_elf_correspondence(image_root, engine, plugin):
         key = '/' + path.relative_to(image_root).as_posix()
         if key in records: continue
         require(len(records) < 256, 'ELF dependency closure population exceeded')
-        total += path.stat().st_size
+        before, accepted_bytes = file_digest(path, min(256 * 1024 * 1024, 512 * 1024 * 1024 - total))
+        total += accepted_bytes
         require(total <= 512 * 1024 * 1024, 'ELF dependency closure byte budget exceeded')
-        before = sha(path, 256 * 1024 * 1024); metadata = elf_metadata(path)
+        metadata = elf_metadata(path)
         directories = [path.parent, *defaults]
         if metadata['searchPath'] is not None:
             entries = metadata['searchPath'].split(':')
@@ -164,7 +194,7 @@ def static_elf_correspondence(image_root, engine, plugin):
             edges.append({'interpreter': metadata['interpreter'], 'path': '/' + candidate.relative_to(image_root).as_posix()})
             pending.append(candidate)
         require(sha(path, 256 * 1024 * 1024) == before, 'ELF changed during correspondence')
-        records[key] = {'sha256': before, 'bytes': path.stat().st_size, 'metadata': metadata, 'dependencies': edges}
+        records[key] = {'sha256': before, 'bytes': accepted_bytes, 'metadata': metadata, 'dependencies': edges}
     # A final sweep binds dependencies and both roots to one unchanged inventory.
     for key, record in records.items():
         require(sha(image_root / key.lstrip('/'), 256 * 1024 * 1024) == record['sha256'], 'ELF closure changed during collection')
