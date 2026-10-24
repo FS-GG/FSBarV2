@@ -73,26 +73,37 @@ product build.
 `scripts/bar_knowledge_keeper.py` keeps verified snapshots of a live knowledge store
 (FS-GG/.github#4843). It replaces the unrecoverable October 2 keeper with new source.
 
-- **Cycle:** every 1,800 seconds, it fingerprints the four allowlisted knowledge
-  tables in one read transaction.
-- **Snapshots:** a changed fingerprint becomes a new snapshot. The snapshot holds only
-  those tables plus rebuilt full-text indexes, so a source-search index in the live
-  store stays excluded. An unchanged fingerprint creates nothing. Before it is published,
-  each snapshot must pass integrity, foreign-key, FTS5 and fingerprint checks.
-- **Retention:** the current snapshot and at most three older ones. Older snapshots are
-  staged, then removed through allowlisted, descriptor-relative deletion.
-- **Recovery:** the next cycle discards interrupted unpublished snapshots and finishes
-  staged deletions.
-- **Health:** `health.json` records retained versions, pending and staged entries, and
-  alerts. Alerts fire on allocated growth of at least 256 MiB that is also at least 25%
-  above baseline, and on a database-to-source ratio above 1.5 times its baseline.
+- **Cycle:** every 1,800 seconds, it fingerprints the four allowlisted knowledge tables in
+  one read transaction.
+- **Snapshots:** a changed fingerprint becomes a new snapshot of those tables only, plus
+  rebuilt full-text indexes, so a source-search index in the live store stays excluded. An
+  unchanged fingerprint creates nothing. Each snapshot passes integrity, foreign-key, FTS5,
+  exact table and fingerprint checks before publication, and its file, metadata and directory
+  are fsynced.
+- **Re-verification:** every cycle re-verifies all retained snapshots. A corrupt or unreadable
+  one is moved to `quarantine/` and alerted, and the current version is re-created.
+- **Retention:** the current snapshot and at most three older ones, ordered by a monotonic
+  sequence rather than the wall clock. Older snapshots are staged, then removed through
+  allowlisted, descriptor-relative deletion.
+- **Recovery:** the next cycle discards interrupted unpublished snapshots and finishes staged
+  deletions, and reports this as an alert. An unreadable `health.json` resets the baseline with
+  an alert instead of crash-looping, and a failed cycle records `lastError`.
+- **Health:** `health` lists pending, staged and quarantined entries live, and is unhealthy on
+  any alert, failure or stale cycle. Alerts fire on allocated growth of at least 256 MiB that is
+  also at least 25% above baseline, and on a database-to-source ratio above 1.5 times its baseline.
+- **Acknowledge:** `acknowledge --reason …` rebaselines after review, clears reviewed quarantine
+  entries and keeps the reason in `baselineHistory`.
+- **Status copy:** `--status-dir DIR` also writes a counts-only, world-readable `health.json`.
+  `health --status-file` reads it without access to the private state.
 
 ```bash
 python3 scripts/bar_knowledge.py restore --database /srv/keeper/live/bar.sqlite
-python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state run --live /srv/keeper/live/bar.sqlite
-python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state health   # exit 0 only when healthy
+python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state --status-dir /srv/keeper-status run --live /srv/keeper/live/bar.sqlite
+python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state health                          # private, live counts
+python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state health --status-file /srv/keeper-status/health.json
+python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state acknowledge --live /srv/keeper/live/bar.sqlite --reason "reviewed"
 python3 tests/Contract/bar_knowledge_keeper_test.py
 ```
 
-Installation, supervision and the store location belong to the host operator. They are
-not part of this repository source.
+Installation, supervision, upgrades and the store location belong to the host operator. They
+are not part of this repository source. CI runs these tests in `bar-knowledge-tests`.

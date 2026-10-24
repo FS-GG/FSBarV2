@@ -122,6 +122,99 @@ class Keeper(unittest.TestCase):
         (self.root / "health.json").write_text(json.dumps(record))
         self.assertFalse(KEEPER.health(self.root, 3900)["healthy"])
 
+    def test_health_reports_live_leftovers_and_failed_cycles(self):
+        KEEPER.cycle(self.live, self.root)
+        leftover = self.root / "pending" / ("d" * 64)
+        leftover.mkdir()
+        (leftover / "bar.sqlite").write_bytes(b"partial")
+        live = KEEPER.health(self.root, 3900)
+        self.assertEqual(live["pending"], 1)
+        self.assertFalse(live["healthy"])
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertEqual(health["recoveredThisCycle"], {"pending": 1, "trash": 0})
+        self.assertTrue(any("recovered interrupted cycle" in alert for alert in health["alerts"]))
+        KEEPER.record_failure(self.root, ValueError("injected"))
+        failed = KEEPER.health(self.root, 3900)
+        self.assertEqual(failed["lastError"], "injected")
+        self.assertFalse(failed["healthy"])
+
+    def test_crash_mid_snapshot_leaves_no_published_partial(self):
+        KEEPER.cycle(self.live, self.root)
+        self.change("crash")
+        original = KEEPER.write_durable
+        def crash(path, data, mode=0o600):
+            if path.name == "snapshot.json":
+                raise OSError("injected crash before publication")
+            return original(path, data, mode)
+        KEEPER.write_durable = crash
+        try:
+            with self.assertRaises(OSError):
+                KEEPER.cycle(self.live, self.root)
+        finally:
+            KEEPER.write_durable = original
+        self.assertEqual(len(self.snapshot_names()), 1)
+        self.assertEqual(len(os.listdir(self.root / "pending")), 1)
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertEqual((health["pending"], health["retainedVersions"]), (0, 2))
+
+    def test_unreadable_health_and_snapshot_state_self_heal(self):
+        first = KEEPER.cycle(self.live, self.root)
+        (self.root / "health.json").write_text("")
+        (self.root / "snapshots" / first["currentFingerprint"] / "snapshot.json").write_text("")
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertIn("previous health.json unreadable; baseline reset", health["alerts"])
+        self.assertTrue(any(alert.startswith("quarantined snapshot") for alert in health["alerts"]))
+        self.assertEqual(health["createdSnapshot"], first["currentFingerprint"])
+        self.assertEqual(health["quarantined"], 1)
+        self.assertFalse(KEEPER.health(self.root, 3900)["healthy"])
+
+    def test_corrupt_retained_snapshot_is_reverified_quarantined_and_recreated(self):
+        first = KEEPER.cycle(self.live, self.root)
+        database = self.root / "snapshots" / first["currentFingerprint"] / "bar.sqlite"
+        database.write_bytes(b"garbage" * 1000)
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertTrue(any("quarantined snapshot" in alert for alert in health["alerts"]))
+        self.assertEqual(health["createdSnapshot"], first["currentFingerprint"])
+        KEEPER.verify(self.root / "snapshots" / first["currentFingerprint"] / "bar.sqlite", first["currentFingerprint"])
+
+    def test_acknowledge_rebaselines_and_clears_quarantine_with_reason(self):
+        first = KEEPER.cycle(self.live, self.root)
+        (self.root / "snapshots" / first["currentFingerprint"] / "bar.sqlite").write_bytes(b"x")
+        KEEPER.cycle(self.live, self.root)
+        with self.assertRaises(ValueError):
+            KEEPER.acknowledge(self.live, self.root, " ")
+        record = KEEPER.acknowledge(self.live, self.root, "reviewed injected corruption")
+        self.assertEqual((record["alerts"], record["quarantined"]), ([], 0))
+        self.assertEqual(record["baselineHistory"][-1]["reason"], "reviewed injected corruption")
+        self.assertEqual(os.listdir(self.root / "quarantine"), [])
+        self.assertEqual(KEEPER.cycle(self.live, self.root)["alerts"], [])
+
+    def test_counts_only_status_copy_is_world_readable(self):
+        status = Path(self.directory.name) / "status"
+        status.mkdir()
+        KEEPER.cycle(self.live, self.root, status)
+        copy = status / "health.json"
+        self.assertEqual(copy.stat().st_mode & 0o777, 0o644)
+        record = json.loads(copy.read_text())
+        self.assertEqual(set(record), set(KEEPER.STATUS_FIELDS))
+        self.assertNotIn("currentFingerprint", record)
+        self.assertTrue(KEEPER.health(self.root, 3900, copy)["healthy"])
+
+    def test_retention_order_uses_sequence_not_wall_clock(self):
+        fingerprints = [KEEPER.cycle(self.live, self.root)["currentFingerprint"]]
+        for number in range(4):
+            self.change(f"seq-{number}")
+            fingerprints.append(KEEPER.cycle(self.live, self.root)["currentFingerprint"])
+        records, _ = KEEPER.snapshots(KEEPER.layout(self.root))
+        self.assertEqual([record["sequence"] for record in records], [2, 3, 4, 5])
+        newest = self.root / "snapshots" / fingerprints[-1] / "snapshot.json"
+        record = json.loads(newest.read_text())
+        record["createdNs"] = 1  # a backwards wall-clock step must not make the newest look oldest
+        newest.write_text(json.dumps(record))
+        self.change("seq-final")
+        KEEPER.cycle(self.live, self.root)
+        self.assertIn(fingerprints[-1], self.snapshot_names())
+
 
 if __name__ == "__main__":
     unittest.main()

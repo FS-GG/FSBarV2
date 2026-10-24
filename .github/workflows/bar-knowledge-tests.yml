@@ -1,0 +1,40 @@
+name: bar-knowledge-tests
+
+# Runs the knowledge archive and keeper contract tests on hosted runners. Pure Python with
+# temporary directories; no secrets, network services or store access.
+on:
+  pull_request:
+    paths:
+      - scripts/bar_knowledge.py
+      - scripts/bar_knowledge_keeper.py
+      - tests/Contract/bar_knowledge_*_test.py
+      - docs/knowledge/bar/**
+      - .github/workflows/bar-knowledge-tests.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/bar_knowledge.py
+      - scripts/bar_knowledge_keeper.py
+      - tests/Contract/bar_knowledge_*_test.py
+      - docs/knowledge/bar/**
+      - .github/workflows/bar-knowledge-tests.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bar-knowledge-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Archive round trip and keeper contract tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -I -W error::ResourceWarning tests/Contract/bar_knowledge_roundtrip_test.py
+          python3 -I -W error::ResourceWarning tests/Contract/bar_knowledge_keeper_test.py -v
