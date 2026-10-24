@@ -67,3 +67,32 @@ The focused restore checks compare every retained row and original document byte
 restore and re-export, exercise search and superseded history, refuse corrupted/missing knowledge,
 and prove existing stores are not overwritten. They require no game, native engine, account or
 product build.
+
+## Keep verified backups of a live store
+
+`scripts/bar_knowledge_keeper.py` keeps verified snapshots of a live knowledge store
+(FS-GG/.github#4843). It replaces the unrecoverable October 2 keeper with new source.
+
+- **Cycle:** every 1,800 seconds, it fingerprints the four allowlisted knowledge
+  tables in one read transaction.
+- **Snapshots:** a changed fingerprint becomes a new snapshot. The snapshot holds only
+  those tables plus rebuilt full-text indexes, so a source-search index in the live
+  store stays excluded. An unchanged fingerprint creates nothing. Before it is published,
+  each snapshot must pass integrity, foreign-key, FTS5 and fingerprint checks.
+- **Retention:** the current snapshot and at most three older ones. Older snapshots are
+  staged, then removed through allowlisted, descriptor-relative deletion.
+- **Recovery:** the next cycle discards interrupted unpublished snapshots and finishes
+  staged deletions.
+- **Health:** `health.json` records retained versions, pending and staged entries, and
+  alerts. Alerts fire on allocated growth of at least 256 MiB that is also at least 25%
+  above baseline, and on a database-to-source ratio above 1.5 times its baseline.
+
+```bash
+python3 scripts/bar_knowledge.py restore --database /srv/keeper/live/bar.sqlite
+python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state run --live /srv/keeper/live/bar.sqlite
+python3 scripts/bar_knowledge_keeper.py --root /srv/keeper/state health   # exit 0 only when healthy
+python3 tests/Contract/bar_knowledge_keeper_test.py
+```
+
+Installation, supervision and the store location belong to the host operator. They are
+not part of this repository source.
