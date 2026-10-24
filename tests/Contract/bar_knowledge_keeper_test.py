@@ -215,6 +215,78 @@ class Keeper(unittest.TestCase):
         KEEPER.cycle(self.live, self.root)
         self.assertIn(fingerprints[-1], self.snapshot_names())
 
+    def test_crash_after_tmp_metadata_exists_recovers_and_publishes(self):
+        KEEPER.cycle(self.live, self.root)
+        self.change("tmp-crash")
+        original = KEEPER.os.replace
+        def crash(source, target):
+            if str(target).endswith("snapshot.json"):
+                raise OSError("injected crash between tmp creation and replace")
+            return original(source, target)
+        KEEPER.os.replace = crash
+        try:
+            with self.assertRaises(OSError):
+                KEEPER.cycle(self.live, self.root)
+        finally:
+            KEEPER.os.replace = original
+        leftover = os.listdir(self.root / "pending")
+        self.assertEqual(len(leftover), 1)
+        self.assertIn(".snapshot.json.tmp", os.listdir(self.root / "pending" / leftover[0]))
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertEqual((health["pending"], health["retainedVersions"]), (0, 2))
+        self.assertIsNotNone(health["createdSnapshot"])
+
+    def test_malformed_but_valid_json_state_is_recoverable(self):
+        first = KEEPER.cycle(self.live, self.root)
+        meta = self.root / "snapshots" / first["currentFingerprint"] / "snapshot.json"
+        record = json.loads(meta.read_text())
+        del record["createdNs"]
+        meta.write_text(json.dumps(record))
+        health_record = json.loads((self.root / "health.json").read_text())
+        health_record["lastSequence"] = "seven"
+        health_record["baseline"] = {}
+        (self.root / "health.json").write_text(json.dumps(health_record))
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertTrue(any(alert.startswith("quarantined snapshot") for alert in health["alerts"]))
+        self.assertIn("previous baseline missing or malformed; baseline reset", health["alerts"])
+        self.assertIn("previous lastSequence malformed; recomputed from snapshots", health["alerts"])
+        self.assertEqual(health["createdSnapshot"], first["currentFingerprint"])
+
+    def test_failure_on_unreadable_health_does_not_reset_baseline_silently(self):
+        KEEPER.cycle(self.live, self.root)
+        (self.root / "health.json").write_text("")
+        KEEPER.record_failure(self.root, ValueError("injected"))
+        health = KEEPER.cycle(self.live, self.root)
+        self.assertIn("previous baseline missing or malformed; baseline reset", health["alerts"])
+
+    def test_transient_verify_error_retries_before_quarantine(self):
+        KEEPER.cycle(self.live, self.root)
+        original, calls = KEEPER.verify, []
+        def flaky(database, expected):
+            calls.append(expected)
+            if len(calls) == 1:
+                raise OSError(24, "Too many open files")
+            return original(database, expected)
+        KEEPER.verify = flaky
+        try:
+            health = KEEPER.cycle(self.live, self.root)
+        finally:
+            KEEPER.verify = original
+        self.assertEqual((health["quarantined"], health["alerts"]), (0, []))
+        self.assertGreaterEqual(len(calls), 2)
+
+    def test_status_copy_redacts_paths_and_hash_prefixes(self):
+        status = Path(self.directory.name) / "status"
+        status.mkdir()
+        first = KEEPER.cycle(self.live, self.root, status)
+        (self.root / "snapshots" / first["currentFingerprint"] / "bar.sqlite").write_bytes(b"x")
+        KEEPER.cycle(self.live, self.root, status)
+        KEEPER.record_failure(self.root, OSError(f"cannot open {self.root}/snapshots/{first['currentFingerprint']}"), status)
+        text = (status / "health.json").read_text()
+        self.assertNotIn(str(self.root), text)
+        self.assertNotIn(first["currentFingerprint"][:12], text)
+        self.assertIn("<redacted>", text)
+
 
 if __name__ == "__main__":
     unittest.main()

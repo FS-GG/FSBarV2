@@ -94,7 +94,16 @@ product build.
 - **Acknowledge:** `acknowledge --reason …` rebaselines after review, clears reviewed quarantine
   entries and keeps the reason in `baselineHistory`.
 - **Status copy:** `--status-dir DIR` also writes a counts-only, world-readable `health.json`.
+  Paths, entry names and hash prefixes in `alerts`/`lastError` are redacted there.
   `health --status-file` reads it without access to the private state.
+- **Crash tolerance:** a kill at any rename, replace or fsync of a cycle recovers on the next cycle,
+  including the window where the snapshot's temporary metadata file exists
+  (`tests/Contract/bar_knowledge_keeper_crash_sweep.py`). Malformed but valid JSON state is quarantined or reset
+  with an alert, and a transient verify error is retried once before quarantine. Above 64 MiB of
+  retained snapshots, each cycle verifies the current one plus one older one in turn, not all.
+- **Installer limits:** host install and upgrade scripts live outside this repository. They are checked by review,
+  `bash -n` and a live readback, not by an automated test. A failed start mid-upgrade is not rolled back
+  automatically, and after a rollback the same upgrade refuses to rerun until its marker directories are cleared.
 
 ```bash
 python3 scripts/bar_knowledge.py restore --database /srv/keeper/live/bar.sqlite

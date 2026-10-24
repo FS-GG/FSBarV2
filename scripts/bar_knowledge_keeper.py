@@ -34,12 +34,15 @@ SOURCE_RATIO = 1.5
 SNAPSHOT_NAME = re.compile("[0-9a-f]{64}")
 SNAPSHOT_FILES = {"bar.sqlite", "snapshot.json"}
 LEAF_FILES = SNAPSHOT_FILES | {"bar.sqlite-wal", "bar.sqlite-shm", "bar.sqlite-journal"}
+# write_durable's own temporary name: a crash between creating it and os.replace leaves it in pending/.
+TMP_LEAF_FILES = {".snapshot.json.tmp"}
+FULL_RECHECK_BYTES = 64 * 1024 * 1024
 FTS_SHADOW = ("_data", "_idx", "_content", "_docsize", "_config")
 SNAPSHOT_TABLES = set(KNOWLEDGE.TABLES) | {"knowledge_fts", "chapter_fts"} | \
     {f"{fts}{suffix}" for fts in ("knowledge_fts", "chapter_fts") for suffix in FTS_SHADOW}
 STATUS_FIELDS = ("schema", "cycleUtc", "intervalSeconds", "retainedVersions", "olderVersions", "pending", "staged",
                  "quarantined", "alerts", "lastError", "lastFailureUtc", "liveAllocatedBytes", "backupAllocatedBytes")
-ERRORS = (ValueError, OSError, sqlite3.Error, KeyError, json.JSONDecodeError)
+ERRORS = (ValueError, OSError, sqlite3.Error, KeyError, TypeError, json.JSONDecodeError)
 fail = KNOWLEDGE.fail
 
 
@@ -182,33 +185,58 @@ def quarantine(paths, name, reason):
     return f"quarantined snapshot {name[:12]}: {reason}"
 
 
-def snapshots(paths, recheck=False):
-    """Return the retained, readable snapshot records and alerts for any quarantined ones."""
+def well_formed(record, name):
+    integer = lambda value: isinstance(value, int) and not isinstance(value, bool) and value >= 0
+    return (isinstance(record, dict) and record.get("fingerprint") == name and record.get("verified") is True
+            and integer(record.get("createdNs")) and integer(record.get("allocatedBytes"))
+            and integer(record.get("sequence", 0)))
+
+
+def verify_with_retry(database, expected):
+    # A transient error (EMFILE, a short I/O hiccup) must not quarantine a good snapshot: retry once.
+    try:
+        verify(database, expected)
+    except (OSError, sqlite3.OperationalError):
+        time.sleep(1)
+        verify(database, expected)
+
+
+def snapshots(paths, recheck=None):
+    """Return the retained, readable snapshot records and alerts for any quarantined ones.
+
+    recheck is None (no verification) or the name of the snapshot that must be verified; the
+    others are verified too while the retained set stays small, otherwise one per cycle in turn."""
     records, alerts = [], []
-    for entry in entries(paths["snapshots"]):
+    listing = entries(paths["snapshots"])
+    for entry in listing:
         if entry.is_symlink() or not entry.is_dir(follow_symlinks=False) or not SNAPSHOT_NAME.fullmatch(entry.name):
             fail(f"unexpected snapshot entry refused: {entry.name}")
+    small = sum(allocated(Path(entry.path) / "bar.sqlite") for entry in listing
+                if (Path(entry.path) / "bar.sqlite").is_file()) <= FULL_RECHECK_BYTES
+    rotating = sorted(entry.name for entry in listing)
+    rotating = rotating[(time.time_ns() // (INTERVAL * 10**9)) % len(rotating)] if rotating else None
+    for entry in listing:
         record = read_json(Path(entry.path) / "snapshot.json")
-        if not isinstance(record, dict) or record.get("fingerprint") != entry.name or record.get("verified") is not True:
-            alerts.append(quarantine(paths, entry.name, "unreadable or unverified snapshot.json"))
+        if not well_formed(record, entry.name):
+            alerts.append(quarantine(paths, entry.name, "unreadable, malformed or unverified snapshot.json"))
             continue
-        if recheck:
+        if recheck is not None and (small or entry.name in (recheck, rotating)):
             try:
-                verify(Path(entry.path) / "bar.sqlite", entry.name)
+                verify_with_retry(Path(entry.path) / "bar.sqlite", entry.name)
             except (ValueError, OSError, sqlite3.Error) as error:
-                alerts.append(quarantine(paths, entry.name, str(error)))
+                alerts.append(quarantine(paths, entry.name, f"{type(error).__name__}: {error}"[:200]))
                 continue
         records.append(record)
     # Snapshots from before sequence numbers order by creation time, ahead of sequenced ones.
     return sorted(records, key=lambda record: (record.get("sequence", 0), record["createdNs"])), alerts
 
 
-def remove_snapshot_dir(path):
+def remove_snapshot_dir(path, allowed=LEAF_FILES):
     # Allowlisted, descriptor-relative removal: only the known leaf files of one directory.
     fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         for name in os.listdir(fd):
-            if name not in LEAF_FILES:
+            if name not in allowed:
                 fail(f"unexpected file in snapshot refused: {name}")
             if os.stat(name, dir_fd=fd, follow_symlinks=False).st_nlink != 1 or os.path.islink(os.path.join(path, name)):
                 fail(f"linked snapshot file refused: {name}")
@@ -228,7 +256,7 @@ def recover(paths):
         for entry in found:
             if entry.is_symlink() or not entry.is_dir(follow_symlinks=False) or not SNAPSHOT_NAME.fullmatch(entry.name):
                 fail(f"unexpected {name} entry refused: {entry.name}")
-            remove_snapshot_dir(Path(entry.path))
+            remove_snapshot_dir(Path(entry.path), LEAF_FILES | TMP_LEAF_FILES)
     return observed
 
 
@@ -242,11 +270,20 @@ def prune(paths, current):
         remove_snapshot_dir(staged)
 
 
+REDACT = re.compile(r"(/[^\s:'\"]+)|\b[0-9a-f]{8,}\b")
+
+
+def redact(text):
+    return REDACT.sub("<redacted>", text) if isinstance(text, str) else text
+
+
 def write_health(root, record, status_dir):
     write_durable(root / "health.json", (json.dumps(record, indent=2) + "\n").encode())
     if status_dir:
-        # Counts-only copy for unprivileged readback; no store content or paths.
+        # Counts-only copy for unprivileged readback: paths, entry names and hash prefixes are redacted.
         status = {key: record.get(key) for key in STATUS_FIELDS}
+        status["alerts"] = [redact(alert) for alert in status.get("alerts") or []]
+        status["lastError"] = redact(status.get("lastError"))
         write_durable(status_dir / "health.json", (json.dumps(status, indent=2) + "\n").encode(), 0o644)
 
 
@@ -264,6 +301,17 @@ def cycle(live, root, status_dir=None):
         if (root / "health.json").exists() and not isinstance(previous, dict):
             alerts.append("previous health.json unreadable; baseline reset")
         previous = previous if isinstance(previous, dict) else {}
+        number = lambda value: isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+        baseline_ok = isinstance(previous.get("baseline"), dict) and all(
+            number(previous["baseline"].get(key)) for key in ("liveAllocatedBytes", "sourceRatio"))
+        if previous and not baseline_ok:
+            alerts.append("previous baseline missing or malformed; baseline reset")
+            previous.pop("baseline", None)
+        if not isinstance(previous.get("lastSequence", 0), int) or isinstance(previous.get("lastSequence"), bool):
+            alerts.append("previous lastSequence malformed; recomputed from snapshots")
+            previous["lastSequence"] = 0
+        if not isinstance(previous.get("baselineHistory", []), list):
+            previous["baselineHistory"] = []
         connection = KNOWLEDGE.readonly(live)
         try:
             connection.execute("BEGIN")
@@ -271,7 +319,7 @@ def cycle(live, root, status_dir=None):
             payload = source_bytes(connection)
         finally:
             connection.close()
-        records, quarantined = snapshots(paths, recheck=True)
+        records, quarantined = snapshots(paths, recheck=current)
         alerts += quarantined
         created = None
         last_sequence = max([record.get("sequence", 0) for record in records] + [previous.get("lastSequence", 0)])
