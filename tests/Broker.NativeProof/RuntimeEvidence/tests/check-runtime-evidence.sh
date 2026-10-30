@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 export DOTNET_PROCESSOR_COUNT="${DOTNET_PROCESSOR_COUNT:-1}"
-test "$(dotnet --version)" = "10.0.401"
+test "$(dotnet --version)" = "10.0.403"
 test "$(quint --version)" = "0.32.0"
 quint typecheck "$ROOT/GrowingLogEvidence.qnt"
 quint typecheck "$ROOT/GrowingLogEvidence_test.qnt"

@@ -32,7 +32,7 @@ requires Quint 0.32.0, locked NuGet restore, all 38 named model scenarios, 14 pr
 compiled correspondence replay, and duplicate, reordered, and prior-state mutations.
 The `complete-record-source` workflow checks out the exact pull-request head or manually
 selected commit, installs Quint from its integrity-locked tool manifest, selects .NET SDK
-10.0.401, and enters this same `CI=true` target with read-only repository permissions.
+10.0.403, and enters this same `CI=true` target with read-only repository permissions.
 Model tests, simulations, and ITF generation select Quint's TypeScript backend explicitly,
 so the gate does not download an evaluator. The public correspondence fixture copies the
 selected host and framework into an owner-private, link-free runtime tree before pinning
