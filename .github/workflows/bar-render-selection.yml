@@ -1,0 +1,76 @@
+name: bar-render-selection
+
+# GAME-RENDER-ADOPT-01.8 (FS-GG/.github#5180). Runs scripts/verify-bar-render.sh: the pinned FS.GG.Game sources,
+# the BAR game-state and renderer-selection checks under .NET and under Fable/Node (identical output), the Fable
+# compile of the browser host, and the Chromium journeys. No secrets, no network service and no native engine.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/bar-render-selection.yml
+      - Directory.Build.props
+      - .config/dotnet-tools.json
+      - eng/game-render/**
+      - scripts/check-game-render-pin.py
+      - scripts/verify-bar-render.sh
+      - src/Broker.Browser.Render/**
+      - src/Broker.Browser.Render.Host/**
+      - tests/Broker.Browser.Render.Tests/**
+      - fixtures/barc-browser/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bar-render-selection-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bar-render-selection:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Bind the checked-out candidate
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up the exact .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.403
+
+      - name: Set up the exact Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.8.0
+
+      - name: Verify the pinned sources against the upstream commit
+        shell: bash
+        run: python3 scripts/check-game-render-pin.py --against-upstream
+
+      - name: Install the pinned Chromium
+        shell: bash
+        working-directory: tests/Broker.Browser.Render.Tests
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+
+      - name: Run the BAR renderer-selection gates
+        shell: bash
+        run: scripts/verify-bar-render.sh
