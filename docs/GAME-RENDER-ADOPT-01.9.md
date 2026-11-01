@@ -67,22 +67,28 @@ A recording that carries no bootstrap is still checked against the ceiling (`Bar
 
 ## Upstream gaps found
 
-1. **`RetainedSvgSurface` does not meet the kit's interaction contract.** With it as the default, the kit's `interaction`
+1. **`RetainedSvgSurface` does not meet the kit's interaction contract** ([FS-GG/FS.GG.Game#767](https://github.com/FS-GG/FS.GG.Game/issues/767)). With it as the default, the kit's `interaction`
    section fails 9 SVG requirements (no `data-renderer` on the root or mirror, so no input-host census, mirror or tab
    order) and the two cross-backend selection checks. A game cannot combine a retained default with interactive canvas
    adapters and pass the kit. FS.GG.Game should tag the retained surface like `SvgSurface.mountInteractive` does, or the
    kit should say how a retained default declares interaction.
-2. **`LateFailureRoute` cannot be bound by a host that does not use `RendererDriver`.** `Bind` is not in the `.fsi`, so
+2. **`LateFailureRoute` cannot be bound by a host that does not use `RendererDriver`** ([FS-GG/FS.GG.Game#768](https://github.com/FS-GG/FS.GG.Game/issues/768)). `Bind` is not in the `.fsi`, so
    `BrowserRenderers.declare` and `BrowserRenderers.start` suit only a program that dispatches through the driver. BAR runs
    `RendererHost` from an Elmish `Cmd.ofEffect` (the host `Run` is not reentrant) and so builds the Pixi surface itself
    (about ten lines) to set `PixiOptions.OnFailure`. A public bind, or a driver that exposes effect running to an Elmish
    program, would avoid that copy.
-3. **The Fable view of `FS.GG.UI.Scene` has the types but not the `Scene` module constructors** (unchanged from 01.8).
-4. **A consumer re-pins the JavaScript packages.** The package ships the exact npm closures under `js-bindings/` and the
+3. **The Fable view of `FS.GG.UI.Scene` has the types but not the `Scene` module constructors** (unchanged from 01.8). BAR-side: `BarScene` builds `SceneNode` values by hand (`node`, `group`, `filledRectangle`, `circle`) so one file compiles for .NET and Fable. It is not an FS.GG.Game defect; the constructors belong with FS.GG.Rendering, and BAR drops its copies when they reach the Fable view.
+4. **A consumer re-pins the JavaScript packages** ([FS-GG/FS.GG.Game#769](https://github.com/FS-GG/FS.GG.Game/issues/769)). The package ships the exact npm closures under `js-bindings/` and the
    bindings import `pixi.js` and `@babylonjs/core/*`, but a consumer writes its own import map and pins (`pixi.js` 8.22.0,
    `@babylonjs/core` 9.33.1). A packaged import-map helper would remove it.
 
 ## Held remainder
+
+- **Zero coordinates are refused.** proto3 omits default values, so a unit or feature at `x = 0` or `z = 0` arrives without
+  that member and decodes as "position.x is missing". This is in parity with `assertPosition` in
+  `src/Broker.Browser.Client/runtime.js`, which refuses the same observation, so the decoder is unchanged here. The fix
+  must change both readers together, with a shared fixture for a position on each axis and at the origin. FSBarV2 has issues
+  disabled, so the follow-up is raised through the organization intake against FS-GG/.github#5181.
 
 - Live play: the transport that feeds `mountLive` waits for the native chain (Coordination#1032 and #4842). Its numbers are
   recorded in the 01.2 harness.

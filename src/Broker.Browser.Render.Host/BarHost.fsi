@@ -9,9 +9,12 @@ open Browser.Types
 module BarHost =
 
     /// What a page can do with a mounted host. `select` takes a backend wire token ("svg", "pixi", "babylon") and
-    /// returns whether the token named a declared backend; an unregistered backend is refused through the model,
-    /// so read `observe` for the outcome. `observe` returns a plain object: `selected`, `status`, `available`,
-    /// `refusal`, `sequence`, `validity`, `units`, `features`, `presented`, `remaining`, `rejected`.
+    /// returns whether the token named a declared backend; all three are registered, so a switch that fails (for
+    /// example no WebGL) falls back to SVG through the model: read `observe` for the outcome. `observe` returns a plain
+    /// object: `selected` (the backend), `status`, `available`, `refusal`, `sequence`, `validity`, `units`, `features`,
+    /// `selectedUnit` (the selected unit's id, or an empty string), `guestPreviewable` (whether the guest preview can
+    /// take the state), `bootstrapSession` (the bound session, or an empty string), `presented`, `remaining` and
+    /// `rejected`. `bootstrapJson` binds a live feed to its bootstrap; `observeJson` is checked against it.
     [<AllowNullLiteral>]
     type Handle =
         abstract select: token: string -> bool

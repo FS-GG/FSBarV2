@@ -48,8 +48,8 @@ module BarScene =
               Height = 2.0 * half }
             fill
 
-    // A unit is drawn as a circle (own and visual) or a square (radar). The geometry is shared by the Scene, the
-    // retained scene and the selectable objects, so a unit is selectable exactly where it is drawn.
+    // A unit is drawn as a circle (own and visual) or a square (radar). The geometry is shared by the Scene and
+    // the selectable objects, so a unit is selectable exactly where it is drawn.
     let private radius (kind: BarObservationKind) =
         match kind with
         | BarObservationKind.Radar -> 7.0
@@ -93,8 +93,8 @@ module BarScene =
         |> List.sortBy (fun f -> byId f.Id)
         |> List.map (fun f -> square (toViewport f.Position) 5.0 featureColour)
 
-    // The ring a canvas backend draws behind the selected unit: the canvases show the selection through the Scene,
-    // while the retained SVG surface shows it itself.
+    // The ring drawn behind the selected unit. The selection is game state shown through the Scene, so the SVG, Pixi
+    // and Babylon surfaces all draw it; the accessible mirror shows it too (`aria-pressed`).
     let private ring (state: BarGameState) : Scene list =
         match state.Selected with
         | Some id ->
