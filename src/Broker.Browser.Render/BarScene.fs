@@ -154,32 +154,6 @@ module BarScene =
 
         sprintf "%s unit %s%s%s" (kindName unit.Kind) unit.Id team health
 
-    let private object' (id: string) (selectable: bool) (label: string) (nodes: Scene) : SemanticSceneObject =
-        { Id = id
-          Selectable = selectable
-          AccessibleLabel = label
-          Content = nodes }
-
-    let private unitObject (unit: BarUnit) : SemanticSceneObject =
-        object' unit.Id true (describeUnit unit) (unitScene unit)
-
-    let retained (state: BarGameState) : RetainedScene =
-        let objects =
-            [ object' "backdrop" false "Map" (filledRectangle fullRectangle backdrop)
-              object' "features" false "Map features" (group (featureScenes state)) ]
-            @ (paintOrder state |> List.map unitObject)
-            @ (match state.Validity with
-               | BarValidity.Current -> []
-               | BarValidity.Stale -> [ object' "veil" false "Feed is stale" (filledRectangle fullRectangle veil) ])
-
-        { RootId = "bar"
-          Revision = 1
-          Camera = { PanX = 0.0; PanY = 0.0; Zoom = 1.0 }
-          Layers =
-            [ { Id = "map"
-                Visible = true
-                Objects = objects } ] }
-
     let objects (state: BarGameState) : SelectableObject list =
         paintOrder state
         |> List.map (fun u ->

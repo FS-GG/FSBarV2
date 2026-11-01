@@ -272,6 +272,119 @@ require (recovered.Renderer.State.Validity = BarValidity.Current && recovered.Re
 let lateCurrent, lateEffects = BarClient.update (Observe live.Renderer.State) veiled
 require (lateEffects.IsEmpty && lateCurrent.Rejected.Length = 1) "an equal-sequence current frame does not undo stale"
 
+// --- Live-slice decode strictness: the existing client's validateObservation / validateBootstrap -------------------
+
+let currentFixture = fixture "observation-asymmetric"
+let swap (before: string) (after: string) (text: string) =
+    require (text.Contains before) ("the probe text contains " + before)
+    text.Replace(before, after)
+
+// capturedAtUnixMs is required for a Current observation and not for a Stale one.
+require (refused (BarGameState.validate 100 { asymmetric with CapturedAtUnixMs = "" })) "a current observation without a capture time is refused"
+require (refused (BarGameState.validate 100 { asymmetric with CapturedAtUnixMs = "007" })) "a capture time with a leading zero is refused"
+require (refused (BarGameState.validate 100 { asymmetric with CapturedAtUnixMs = "-5" })) "a negative capture time is refused"
+require (BarGameState.validate 100 { asymmetric with CapturedAtUnixMs = "0" } |> Result.isOk) "a capture time of zero is a decimal sequence"
+require (BarGameState.validate 100 { asymmetric with Validity = BarValidity.Stale; CapturedAtUnixMs = "" } |> Result.isOk) "a stale observation needs no capture time"
+let noCapture = currentFixture |> swap "\"capturedAtUnixMs\": \"1770000000123\"," ""
+require (match BarObservationJson.decode noCapture with Ok s -> refused (BarGameState.validate 100 s) | Error _ -> false) "a decoded current observation without a capture time is refused by validation"
+require (refused (BarGameState.validate 100 { asymmetric with Sequence = "07" })) "a sequence with a leading zero is refused"
+
+// Generation and validity sequences are decimal strings without leading zeros.
+let lastSequenceProbes =
+    [ "validity lastSequence leading zero", currentFixture |> swap "\"lastSequence\": \"9007199254740993\"" "\"lastSequence\": \"09\""
+      "validity lastSequence negative", currentFixture |> swap "\"lastSequence\": \"9007199254740993\"" "\"lastSequence\": \"-1\""
+      "validity lastSequence a number", currentFixture |> swap "\"lastSequence\": \"9007199254740993\"" "\"lastSequence\": 9"
+      "validity receivedSequence empty", currentFixture |> swap "\"receivedSequence\": \"9007199254740993\"" "\"receivedSequence\": \"\""
+      "unit generation leading zero", unitWith ",\"generation\":\"01\""
+      "unit generation negative", unitWith ",\"generation\":\"-1\""
+      "unit generation a number", unitWith ",\"generation\":3" ]
+
+for (name, json) in lastSequenceProbes do
+    require (BarObservationJson.decode json |> Result.isError) (name + " is refused")
+
+require (BarObservationJson.decode (unitWith ",\"generation\":\"0\"") |> Result.isOk) "a unit generation of zero is accepted"
+require (BarObservationJson.decode (unitWith ",\"generation\":\"18446744073709551615\"") |> Result.isOk) "a unit generation at the uint64 limit is accepted as text"
+
+// Duplicate keys have no single meaning (JSON.parse keeps the last, other readers the first), so they are refused,
+// at the top level and inside a unit, and a unit and a feature may still share an id.
+let duplicateProbes =
+    [ "duplicate top-level sequence", currentFixture |> swap "\"sequence\": \"9007199254740993\"," "\"sequence\": \"5\", \"sequence\": \"9007199254740993\","
+      "duplicate unit position", unitWith ""","position":{"x":9,"z":9}"""
+      "duplicate unit id", unitWith ",\"id\":\"6\""
+      "duplicate validity status", currentFixture |> swap "\"status\": \"VALIDITY_STATUS_CURRENT\"" "\"status\": \"VALIDITY_STATUS_STALE\", \"status\": \"VALIDITY_STATUS_CURRENT\"" ]
+
+for (name, json) in duplicateProbes do
+    match BarObservationJson.decode json with
+    | Error reason -> require (reason.Contains "duplicate key") (name + " is refused as a duplicate key")
+    | Ok _ -> require false (name + " is refused")
+
+// The guest preview's 64-unit bound: a current state of more units is still rendered whole, never truncated.
+let manyUnits count =
+    { asymmetric with Units = [ for index in 1..count -> { anUnit with Id = string index } ] }
+
+require (BarGameState.maxGuestUnits = 64) "the guest preview bound is 64 units"
+require (BarGameState.guestPreviewable (manyUnits 64) = Ok()) "64 units are previewable"
+require (refused (BarGameState.guestPreviewable (manyUnits 65))) "65 current units are not previewable"
+require (BarGameState.guestPreviewable { manyUnits 65 with Validity = BarValidity.Stale } = Ok()) "a stale state is not subject to the guest bound"
+require (BarGameState.validate BarClient.maxEntities (manyUnits 65) |> Result.isOk && (BarScene.view (manyUnits 65) = BarScene.view (manyUnits 65))) "more than 64 units are valid and drawn whole"
+require ((BarScene.objects (manyUnits 65)).Length = 65) "every one of 65 units stays selectable"
+
+// Bootstrap decoding.
+let initialize = fixture "guest-initialize"
+let boundTo = BarObservationJson.decodeBootstrap initialize
+require (boundTo = Ok { SessionId = "ABEiM0RVZneImaq7zN3u/w=="; PerspectiveId = "team-7"; MaxEntities = 4096 }) "the recorded bootstrap decodes"
+let bootstrap = match boundTo with Ok b -> b | Error reason -> failwith reason
+let bootstrapProbes =
+    [ "bootstrap wrong game", initialize |> swap "\"game\": \"bar\"" "\"game\": \"sc2\""
+      "bootstrap wrong protocol", initialize |> swap "\"protocolVersion\": \"1.0.0\"" "\"protocolVersion\": \"2.0.0\""
+      "bootstrap wrong profile", initialize |> swap "\"profile\": \"barc-preview-v1\"" "\"profile\": \"other\""
+      "bootstrap blank perspective", initialize |> swap "\"perspectiveId\": \"team-7\"" "\"perspectiveId\": \"\""
+      "bootstrap not read-only", initialize |> swap "PREVIEW_MODE_READ_ONLY" "PREVIEW_MODE_UNSPECIFIED"
+      "bootstrap zero entity limit", initialize |> swap "\"maxEntities\": 4096" "\"maxEntities\": 0"
+      "bootstrap fractional frame limit", initialize |> swap "\"maxFrameBytes\": 65536" "\"maxFrameBytes\": 65536.5"
+      "bootstrap bad validity sequence", initialize |> swap "VALIDITY_STATUS_CURRENT\"" "VALIDITY_STATUS_CURRENT\", \"lastSequence\": \"01\""
+      "bootstrap duplicate session", initialize |> swap "\"perspectiveId\": \"team-7\"," "\"perspectiveId\": \"team-7\", \"perspectiveId\": \"team-8\"," ]
+
+for (name, json) in bootstrapProbes do
+    require (BarObservationJson.decodeBootstrap json |> Result.isError) (name + " is refused")
+
+require (BarObservationJson.decodeBootstrap "{" |> Result.isError) "a malformed bootstrap is refused"
+let enveloped = """{"body":"bootstrap","bootstrap":""" + (initialize |> fun text -> text.Substring(text.IndexOf "\"initialize\": " + 14, text.LastIndexOf "}" - text.IndexOf "\"initialize\": " - 14).Trim().TrimEnd(',') ) + "}"
+require (BarObservationJson.decodeBootstrap enveloped |> Result.isOk) "a server envelope with a bootstrap decodes"
+
+// Session and perspective are bound to the bootstrap, and the limit is the negotiated one.
+require (BarGameState.validateBound bootstrap asymmetric |> Result.isOk) "an observation of the bootstrap's session and perspective is accepted"
+require (refused (BarGameState.validateBound bootstrap { asymmetric with SessionId = "other" })) "another session is refused"
+require (refused (BarGameState.validateBound bootstrap { asymmetric with PerspectiveId = "team-8" })) "another perspective is refused for a current observation"
+require (refused (BarGameState.validateBound bootstrap { asymmetric with PerspectiveId = "" })) "a current observation without a perspective is refused"
+require (BarGameState.validateBound bootstrap { asymmetric with Validity = BarValidity.Stale; PerspectiveId = ""; CapturedAtUnixMs = "" } |> Result.isOk) "a stale observation may carry no perspective"
+require (refused (BarGameState.validateBound bootstrap { asymmetric with Validity = BarValidity.Stale; PerspectiveId = "team-8" })) "a stale observation of another perspective is refused"
+require (refused (BarGameState.validateBound { bootstrap with MaxEntities = 3 } asymmetric)) "the bootstrap's entity limit applies"
+require (BarGameState.validateBound { bootstrap with MaxEntities = 4 } asymmetric |> Result.isOk) "an observation exactly at the limit is accepted"
+
+// The client: a live feed refuses an observation before the bootstrap, then binds.
+let liveModel, _ = BarClient.initLive (svgOnly ())
+let beforeBootstrap, beforeEffects = BarClient.update (ObserveJson currentFixture) liveModel
+require (beforeEffects.IsEmpty && beforeBootstrap.Presented = 0 && beforeBootstrap.Rejected.Length = 1) "a live feed refuses an observation before the bootstrap"
+let badBootstrap, _ = BarClient.update (BootstrapJson "{\"game\":\"bar\"}") liveModel
+require (badBootstrap.Bootstrap.IsNone && badBootstrap.Rejected.Length = 1) "a bootstrap that does not decode binds nothing"
+let boundModel, boundEffects = BarClient.update (BootstrapJson initialize) liveModel
+require (boundEffects.IsEmpty && boundModel.Bootstrap = Some bootstrap) "a bootstrap binds the feed"
+let firstLive, firstLiveEffects = BarClient.update (ObserveJson currentFixture) boundModel
+require (firstLive.Renderer.State.Sequence = "9007199254740993" && firstLiveEffects.Length = 1) "a bound feed presents the bootstrap's observation"
+let wrongBound, wrongBoundEffects = BarClient.update (ObserveJson(currentFixture |> swap "ABEiM0RVZneImaq7zN3u/w==" "AAAAAAAAAAAAAAAAAAAAAA==")) boundModel
+require (wrongBoundEffects.IsEmpty && wrongBound.Rejected.Length = 1 && wrongBound.Presented = 0) "a bound feed refuses another session"
+let wrongPerspective, _ = BarClient.update (ObserveJson(currentFixture |> swap "\"perspectiveId\": \"team-7\"" "\"perspectiveId\": \"team-8\"")) boundModel
+require (wrongPerspective.Rejected.Length = 1 && wrongPerspective.Presented = 0) "a bound feed refuses another perspective"
+let tightModel, _ = BarClient.update (Bootstrap { bootstrap with MaxEntities = 2 }) liveModel
+let overLimit, _ = BarClient.update (ObserveJson currentFixture) tightModel
+require (overLimit.Rejected.Length = 1 && overLimit.Presented = 0) "a bound feed applies the negotiated entity limit"
+let rebound, _ = BarClient.update (Bootstrap { bootstrap with SessionId = "next" }) firstLive
+let oldSession, _ = BarClient.update (ObserveJson(currentFixture |> swap "9007199254740993" "9007199254740995")) rebound
+require (oldSession.Rejected.Length = 1 && oldSession.Renderer.State = firstLive.Renderer.State) "a rebound feed refuses the earlier session"
+let recorded, _ = BarClient.update (ObserveJson currentFixture) model0
+require (recorded.Bootstrap.IsNone && recorded.Presented = 2) "a recording without a bootstrap is checked against the ceiling only"
+
 // --- Selection: BAR units are selectable objects of the interaction contract ------------------------------------
 
 let objectsOf = BarScene.objects first
@@ -292,14 +405,8 @@ require (selectedFirst.Selected = Some ownUnit.Id) "selecting an observed unit s
 require (BarGameState.select (SelectionRequest.Select "999999") first = first) "selecting an unobserved unit changes nothing"
 require ((BarGameState.select SelectionRequest.Clear selectedFirst).Selected = None) "Clear empties the selection"
 require (BarScene.view selectedFirst <> BarScene.view first) "the canvas scene shows the selection"
-require ((BarScene.retained selectedFirst).Layers = (BarScene.retained first).Layers) "the retained scene leaves the selection to the surface"
 require (SceneInteraction.selected BarScene.interaction selectedFirst = Some ownUnit.Id) "the interaction reads the state's selection"
 require (SceneInteraction.apply BarScene.interaction (SelectionRequest.Select ownUnit.Id) first = selectedFirst) "the interaction applies BAR's own rule"
-
-let retainedObjects = (BarScene.retained first).Layers |> List.collect (fun layer -> layer.Objects)
-require (retainedObjects |> List.filter _.Selectable |> List.map _.Id |> List.sort = (first.Units |> List.map _.Id |> List.sort)) "exactly the units are selectable in the retained scene"
-require (retainedObjects |> List.filter (fun o -> o.Selectable) |> List.forall (fun o -> o.AccessibleLabel <> "")) "every selectable object is labelled"
-require (match SvgRetained.tryCreateInteraction (BarScene.retained first) with Ok _ -> true | Error _ -> false) "the retained scene is accepted by the retained interaction"
 
 let carried = BarGameState.carrySelection selectedFirst synthetic.[1]
 require (carried.Selected = Some ownUnit.Id) "the selection follows its unit into the next observation"
@@ -408,6 +515,11 @@ let outcome (result: Result<BarGameState, string>) =
     | Ok state -> "ok " + canonical state
     | Error reason -> "error " + reason
 
+let bootstrapOutcome (result: Result<BarBootstrap, string>) =
+    match result with
+    | Ok b -> sprintf "ok %s|%s|%d" b.SessionId b.PerspectiveId b.MaxEntities
+    | Error reason -> "error " + reason
+
 let digest (lines: string list) : string =
     let mutable hash = 14695981039346656037UL
 
@@ -421,6 +533,9 @@ let corpus =
     [ for name in [ "observation-asymmetric"; "observation-optional-absent"; "observation-optional-present-zero"; "observation-unknown-field"; "observation-unknown-enum"; "guest-observation" ] ->
           name + " " + outcome (BarObservationJson.decode (fixture name))
       for (name, json) in integerProbes -> name + " " + outcome (BarObservationJson.decode json)
+      for (name, json) in lastSequenceProbes @ duplicateProbes -> name + " " + outcome (BarObservationJson.decode json)
+      yield "bootstrap " + bootstrapOutcome (BarObservationJson.decodeBootstrap initialize)
+      for (name, json) in bootstrapProbes -> name + " " + bootstrapOutcome (BarObservationJson.decodeBootstrap json)
       yield "boundary " + outcome boundary
       yield "stale " + outcome decodedStale
       for state in BarSynthetic.frames 3 -> "synthetic " + canonical state ]

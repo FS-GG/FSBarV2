@@ -18,6 +18,7 @@ module BarHost =
         abstract observe: unit -> obj
         abstract step: unit -> unit
         abstract observeJson: json: string -> unit
+        abstract bootstrapJson: json: string -> unit
         abstract dispose: unit -> unit
 
     let private status (model: BarClientModel) =
@@ -46,38 +47,73 @@ module BarHost =
               "units" ==> state.Units.Length
               "features" ==> state.Features.Length
               "selectedUnit" ==> (match state.Selected with Some id -> id | None -> "")
+              "guestPreviewable" ==> (BarGameState.guestPreviewable state |> Result.isOk)
+              "bootstrapSession" ==> (match model.Bootstrap with Some b -> b.SessionId | None -> "")
               "presented" ==> model.Presented
               "remaining" ==> model.Remaining.Length
               "rejected" ==> (model.Rejected |> Array.ofList) ]
 
-    let private selectionMsg (selected: string option) =
-        match selected with
-        | Some id -> Select(SelectionRequest.Select id)
-        | None -> Select SelectionRequest.Clear
-
     let private label = "BAR tactical map"
 
-    /// The registry of the BAR renderers in `container`: the retained SVG surface is the default adapter
-    /// (`RendererRegistry.create`), so each observed unit is a selectable object with an accessible label, and a
-    /// selection the player makes on it is reported to `onSelect`.
-    let private registry (container: HTMLElement) (onSelect: string option -> unit) : RendererRegistry<BarGameState> =
-        let surface =
-            RetainedSvgSurface.create container label (fun _ -> BarScene.width, BarScene.height) BarScene.retained
-            |> RetainedSvgSurface.withSelection (fun state -> state.Selected) onSelect
+    /// The BAR renderers in `container`, registered for the game-state type: the published interactive SVG, Pixi and
+    /// Babylon surfaces, each projecting `BarScene.view` and made interactive by `BarScene.interaction`. A pointer
+    /// press, the keys and the accessible mirror of whichever backend is mounted ask `selection` for a change of the
+    /// selected unit. SVG is the default adapter (`RendererRegistry.create`). `lateFailure` is called each time a Pixi
+    /// mount is created and returns where that mount reports an asynchronous initialisation failure.
+    let private registry
+        (container: HTMLElement)
+        (selection: SelectionRoute)
+        (lateFailure: unit -> (RendererBackend -> string -> unit))
+        : RendererRegistry<BarGameState> =
+        let adapt surface =
+            SceneSurface.interactiveAdapter BarScene.view BarScene.interaction selection surface
 
-        RetainedSvgSurface.registry surface
+        let svg = SvgSurface.surface container (SvgSurface.defaultOptions label BarScene.width BarScene.height)
 
-    let private mount (container: HTMLElement) (frames: BarGameState list) (intervalMs: int) : Handle =
+        let pixi =
+            let options () =
+                { PixiSurface.defaultOptions label BarScene.width BarScene.height with
+                    OnFailure = lateFailure () RendererBackend.Pixi }
+
+            SceneSurface.create RendererBackend.Pixi (fun scene -> PixiSurface.mountScene container (options ()) scene)
+            |> SceneSurface.withInteraction (fun request frame -> PixiSurface.mountInteractive container (options ()) request frame)
+
+        let babylon =
+            BabylonSurface.surface container (BabylonSurface.defaultOptions label BarScene.width BarScene.height)
+
+        match RendererRegistry.create (adapt svg) with
+        | Ok registry ->
+            registry
+            |> RendererRegistry.register (adapt pixi)
+            |> RendererRegistry.register (adapt babylon)
+        | Error reason -> failwithf "the SVG surface is not an SVG adapter: %s" reason
+
+    let private mount (container: HTMLElement) (frames: BarGameState list option) (intervalMs: int) : Handle =
         let mutable latest: BarClientModel option = None
         let mutable send: BarClientMsg -> unit = ignore
-        let registry = registry container (fun selected -> send (selectionMsg selected))
         let mutable disposed = false
+        let selection = SelectionRoute.create ()
+        selection |> SelectionRoute.bind (fun request -> send (Select request))
+
+        // A Pixi mount that fails after it returned `Ok` reports here while it is undisposed (the adapter guarantees
+        // that); it fails the program's current attempt, which is that mount's, and the model falls back to SVG.
+        let lateFailure () =
+            fun (backend: RendererBackend) (reason: string) ->
+                match latest with
+                | Some model when not disposed -> send (Renderer(RendererMsg.MountFailed(backend, model.Renderer.Attempt, reason)))
+                | _ -> ()
+
+        let registry = registry container selection lateFailure
         let mutable timer: float option = None
 
+        let render model dispatch =
+            latest <- Some model
+            send <- dispatch
+
         let program, host =
-            BarClient.program registry frames (fun model dispatch ->
-                latest <- Some model
-                send <- dispatch)
+            match frames with
+            | Some frames -> BarClient.program registry frames render
+            | None -> BarClient.programLive registry render
 
         program
         |> Program.withErrorHandler (fun (context, error) ->
@@ -118,6 +154,7 @@ module BarHost =
 
             member _.step() = if not disposed then send Step
             member _.observeJson json = if not disposed then send (ObserveJson json)
+            member _.bootstrapJson json = if not disposed then send (BootstrapJson json)
 
             member _.dispose() =
                 if not disposed then
@@ -126,7 +163,16 @@ module BarHost =
                     host.Dispose() }
 
     let mountSynthetic (container: HTMLElement) (frames: int) (intervalMs: int) : Handle =
-        mount container (BarSynthetic.frames frames) intervalMs
+        mount container (Some(BarSynthetic.frames frames)) intervalMs
+
+    let mountLive (container: HTMLElement) : Handle = mount container None 0
+
+    [<Emit("(window.__glHook.failNext.pixi = 1, undefined)")>]
+    let private armNextPixiMount () : unit = jsNative
+
+    let armPixiInitFailure () : unit =
+        BrowserConformance.installContextProbe ()
+        armNextPixiMount ()
 
     let mountRecorded (container: HTMLElement) (observations: string[]) (intervalMs: int) : Handle =
         let decoded =
@@ -137,53 +183,104 @@ module BarHost =
                 | Error reason -> failwithf "recorded observation %d did not decode: %s" index reason)
             |> List.ofArray
 
-        mount container decoded intervalMs
+        mount container (Some decoded) intervalMs
 
-    // What the retained SVG shows of a unit: its object's circle centre, or its square's centre.
-    let private unitCentre (container: HTMLElement) (unit: BarUnit) : (float * float) option =
-        let selector = sprintf "[data-scene-object-id='%s']" unit.Id
+    // --- The conformance kit ---------------------------------------------------------------------------------------
 
-        match container.querySelector selector with
-        | null -> None
-        | objectNode ->
-            match objectNode.querySelector "circle" with
-            | null ->
-                match objectNode.querySelector "rect" with
-                | null -> None
-                | square ->
-                    let half = float (square.getAttribute "width") / 2.0
-                    Some(float (square.getAttribute "x") + half, float (square.getAttribute "y") + half)
-            | circle -> Some(float (circle.getAttribute "cx"), float (circle.getAttribute "cy"))
+    let private near (a: float * float) (b: float * float) =
+        abs (fst a - fst b) < 14.0 && abs (snd a - snd b) < 14.0
 
-    // The SVG shows exactly the state's units, each where the state puts it, and nothing else.
-    let private shows (container: HTMLElement) (_: ConformanceHost<BarGameState>) (_: RendererBackend) (state: BarGameState) =
+    let private centreOf (unit: BarUnit) =
+        let p = BarScene.toViewport unit.Position
+        p.X, p.Y
+
+    // What the SVG draws of the units: the centre of every circle (own and visual units) and of every 14-pixel
+    // square (radar). The hit shapes in the selectables layer are ellipses and rectangles with no fill, and are not
+    // counted: only shapes with a `fill-opacity` other than 0 are drawn.
+    let private svgMarkers (container: HTMLElement) : (float * float) list =
+        let number (element: Element) (name: string) = float (element.getAttribute name)
+        let drawn (element: Element) = element.getAttribute "fill-opacity" <> "0"
+        let all (selector: string) = container.querySelectorAll selector
+
+        [ for index in 0 .. int (all "circle").length - 1 do
+              let circle = (all "circle").[index]
+              if drawn circle then yield number circle "cx", number circle "cy"
+          for index in 0 .. int (all "rect").length - 1 do
+              let square = (all "rect").[index]
+              if drawn square && number square "width" = 14.0 then
+                  yield number square "x" + 7.0, number square "y" + 7.0 ]
+
+    // The SVG draws exactly the state's units, each where the state puts it, and has one mirror entry for each.
+    let private showsSvg (container: HTMLElement) (state: BarGameState) =
+        let markers = svgMarkers container
+        let entries = int (container.querySelectorAll "[data-scene-control-id]").length
+        let centres = state.Units |> List.map centreOf
+
+        let missing = centres |> List.filter (fun centre -> not (markers |> List.exists (near centre)))
+
+        if markers.Length = centres.Length && entries = centres.Length && missing.IsEmpty then
+            Ok()
+        else
+            Error(sprintf "the surface draws %d units and %d mirror entries, not the %d units of sequence %s, or draws one elsewhere (%d)" markers.Length entries centres.Length state.Sequence missing.Length)
+
+    // A canvas is read back: every unit's centre is a unit colour, and the centre of a unit that only another state has
+    // is the backdrop. Babylon draws lit (about three quarters of the scene colour), so "unit colour" is "not backdrop".
+    let private isBackdrop (pixel: int[]) =
+        pixel.Length >= 3 && abs (pixel.[0] - 18) < 30 && abs (pixel.[1] - 24) < 30 && abs (pixel.[2] - 32) < 30
+
+    let private showsCanvas
+        (container: HTMLElement)
+        (others: BarGameState list)
+        (host: ConformanceHost<BarGameState>)
+        (backend: RendererBackend)
+        (state: BarGameState)
+        =
         async {
-            let objects = int (container.querySelectorAll "[data-scene-control-id]").length
-            let wrong =
-                state.Units
-                |> List.filter (fun unit ->
-                    let expected = BarScene.toViewport unit.Position
-                    unitCentre container unit <> Some(expected.X, expected.Y))
+            let ownCentres = state.Units |> List.map centreOf
+
+            let onlyElsewhere =
+                others
+                |> List.collect (fun other -> other.Units |> List.map centreOf)
+                |> List.filter (fun centre -> ownCentres |> List.forall (fun own -> not (near own centre)))
+                |> List.truncate 3
+
+            let mutable problem = None
+
+            for (x, y) in state.Units |> List.map centreOf |> List.truncate 4 do
+                if problem.IsNone then
+                    let! pixel = BrowserConformance.readPixel host container backend (int x) (int y) (fun p -> not (isBackdrop p)) 30
+                    if isBackdrop pixel || pixel.Length = 0 then
+                        problem <- Some(sprintf "%s: the unit at (%g, %g) is not drawn" (RendererBackend.id backend) x y)
+
+            for (x, y) in onlyElsewhere do
+                if problem.IsNone then
+                    let! pixel = BrowserConformance.readPixel host container backend (int x) (int y) isBackdrop 30
+                    if not (isBackdrop pixel) then
+                        problem <- Some(sprintf "%s: (%g, %g) belongs to another state but is not backdrop" (RendererBackend.id backend) x y)
 
             return
-                if objects = state.Units.Length && wrong.IsEmpty then
-                    Ok()
-                else
-                    Error(sprintf "the surface shows %d objects, not the %d units of sequence %s, or draws a unit elsewhere (%d)" objects state.Units.Length state.Sequence wrong.Length)
+                match problem with
+                | None -> Ok()
+                | Some reason -> Error reason
         }
+
+    /// The states the kit presents: three recorded-shape frames whose units sit in different places.
+    let private kitStates = BarSynthetic.frames 3
 
     let runConformance (container: HTMLElement) : JS.Promise<obj[]> =
         BrowserConformance.installContextProbe ()
         let route = BrowserRenderers.route ()
+        let selection = SelectionRoute.create ()
+        let registry = registry container selection route.Capture
+
+        let shows (host: ConformanceHost<BarGameState>) (backend: RendererBackend) (state: BarGameState) =
+            match backend with
+            | RendererBackend.Svg -> async { return showsSvg container state }
+            | _ -> showsCanvas container (kitStates |> List.filter (fun other -> other <> state)) host backend state
 
         let subject =
-            BrowserConformance.subject
-                container
-                route
-                (registry container ignore)
-                [ RendererBackend.Svg ]
-                (BarSynthetic.frames 3)
-                (shows container)
+            BrowserConformance.subject container route registry RendererBackend.all kitStates shows
+            |> RendererConformance.withInteraction BarScene.interaction selection (BrowserConformance.interactionProbe container)
 
         async {
             let! results = RendererConformance.run subject

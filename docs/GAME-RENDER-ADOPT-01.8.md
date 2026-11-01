@@ -1,5 +1,9 @@
 # GAME-RENDER-ADOPT-01.8 — BAR adopts the Game.Render renderer selection
 
+Superseded in part by `docs/GAME-RENDER-ADOPT-01.9.md`: the three-backend registry there uses the interactive `SvgSurface`
+instead of the retained surface registered here, because the conformance kit's interaction section cannot run on the retained
+surface. The published-package switch, the game-state type and the client described here stand.
+
 Delivery: [FS-GG/.github#5180](https://github.com/FS-GG/.github/issues/5180). Outcome:
 [FS-GG/.github#5179](https://github.com/FS-GG/.github/issues/5179). Builds on GAME-RENDER-MULTI-01 (Atlas
 `game/renderer-selection-contract`). Siblings: FS.GG.Game#745 (authoring and conformance kit), FS.GG.FourD#56 (the
