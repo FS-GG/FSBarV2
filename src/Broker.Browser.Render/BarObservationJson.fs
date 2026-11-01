@@ -279,7 +279,8 @@ module BarObservationJson =
           Validity = validity json
           Units = items "units" json |> List.map unitOf
           Features = items "features" json |> List.map featureOf
-          Economy = field "teamEconomy" json |> Option.map economyOf }
+          Economy = field "teamEconomy" json |> Option.map economyOf
+          Selected = None }
 
     let decode (json: string) : Result<BarGameState, string> =
         try

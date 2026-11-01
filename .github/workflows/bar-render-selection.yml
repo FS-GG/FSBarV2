@@ -1,6 +1,6 @@
 name: bar-render-selection
 
-# GAME-RENDER-ADOPT-01.8 (FS-GG/.github#5180). Runs scripts/verify-bar-render.sh: the pinned FS.GG.Game sources,
+# GAME-RENDER-ADOPT-01.8 (FS-GG/.github#5180). Runs scripts/verify-bar-render.sh: the published FS.GG.Game.Render 0.18.0 packages,
 # the BAR game-state and renderer-selection checks under .NET and under Fable/Node (identical output), the Fable
 # compile of the browser host, and the Chromium journeys. No secrets, no network service and no native engine.
 on:
@@ -9,8 +9,6 @@ on:
       - .github/workflows/bar-render-selection.yml
       - Directory.Build.props
       - .config/dotnet-tools.json
-      - eng/game-render/**
-      - scripts/check-game-render-pin.py
       - scripts/verify-bar-render.sh
       - src/Broker.Browser.Render/**
       - src/Broker.Browser.Render.Host/**
@@ -58,10 +56,6 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24.8.0
-
-      - name: Verify the pinned sources against the upstream commit
-        shell: bash
-        run: python3 scripts/check-game-render-pin.py --against-upstream
 
       - name: Install the pinned Chromium
         shell: bash

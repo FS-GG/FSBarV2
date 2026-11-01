@@ -10,7 +10,9 @@
     "test:browser": "npm run compile-host && playwright test"
   },
   "dependencies": {
-    "@fable-org/fable-library-js": "2.8.0"
+    "@babylonjs/core": "9.33.1",
+    "@fable-org/fable-library-js": "2.8.0",
+    "pixi.js": "8.22.0"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"

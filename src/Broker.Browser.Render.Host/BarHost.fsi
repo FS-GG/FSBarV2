@@ -28,3 +28,9 @@ module BarHost =
     /// barc.browser.v1 `Observation` (the shape of `fixtures/barc-browser/semantic`). A frame that does not
     /// decode raises, naming its position.
     val mountRecorded: container: HTMLElement -> observations: string[] -> intervalMs: int -> Handle
+
+    /// Run the published conformance kit (`RendererConformance`, FS.GG.Game.Render 0.18.0) on the BAR renderers in
+    /// `container`, which must be empty: the kit mounts and disposes the registered backends itself, on the recorded
+    /// synthetic states, and reads each backend's output back. Resolves to one object per requirement,
+    /// `{ check, passed, detail }`.
+    val runConformance: container: HTMLElement -> Fable.Core.JS.Promise<obj[]>

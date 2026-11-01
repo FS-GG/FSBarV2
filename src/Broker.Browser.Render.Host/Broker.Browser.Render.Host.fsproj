@@ -7,21 +7,18 @@
     <IsPackable>false</IsPackable>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
-    <Nullable>disable</Nullable>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <WarningsAsErrors>FS0025;FS0026;FS0052;FS0064</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Upstream/SvgSurface.fsi" />
-    <Compile Include="Upstream/SvgSurface.fs" />
     <Compile Include="BarHost.fsi" />
     <Compile Include="BarHost.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Broker.Browser.Render/Broker.Browser.Render.fsproj" />
-    <PackageReference Include="Fable.Core" Version="[5.3.0]" />
+    <PackageReference Include="Fable.Core" Version="[5.6.1]" />
     <PackageReference Include="Fable.Elmish" Version="[5.0.2]" />
     <PackageReference Include="Fable.Browser.Dom" Version="[2.20.0]" />
+    <PackageReference Include="FS.GG.Game.Render" Version="[0.18.0]" />
+    <PackageReference Include="FS.GG.Game.Render.Browser" Version="[0.18.0]" />
     <PackageReference Include="FS.GG.UI.Scene" Version="[0.32.3]" />
     <PackageReference Include="FS.GG.UI.Scene.SvgBrowser" Version="[0.32.3]" />
   </ItemGroup>

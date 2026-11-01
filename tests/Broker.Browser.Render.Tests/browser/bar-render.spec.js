@@ -3,9 +3,10 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 
-// GAME-RENDER-ADOPT-01.8: the Fable-compiled BAR host in a real browser. The default SVG adapter draws the
-// recorded and synthetic state; Pixi and Babylon are not registered yet (01.9), so selecting them is refused
-// with the surface and game state intact.
+// GAME-RENDER-ADOPT-01.8: the Fable-compiled BAR host in a real browser, on the published FS.GG.Game.Render 0.18.0
+// and FS.GG.Game.Render.Browser 0.18.0. The default adapter is the retained SVG surface: it draws the recorded and
+// synthetic state with one selectable, labelled object per unit. Pixi and Babylon are not registered yet (01.9), so
+// selecting them is refused with the surface and game state intact. The published conformance kit runs on the registry.
 const hostRoot = resolve("host-output");
 const fixtures = resolve("../../fixtures/barc-browser/semantic");
 let server, port;
@@ -17,6 +18,7 @@ test.beforeAll(async () => {
       let path;
       if (url.pathname === "/") path = new URL("./harness.html", import.meta.url).pathname;
       else if (url.pathname.startsWith("/host/")) path = resolve(hostRoot, url.pathname.slice("/host/".length));
+      else if (url.pathname.startsWith("/npm/")) path = resolve("node_modules", url.pathname.slice("/npm/".length));
       else if (url.pathname.startsWith("/fixtures/")) path = resolve(fixtures, url.pathname.slice("/fixtures/".length));
       else { response.statusCode = 404; response.end(); return; }
       response.setHeader("content-type", extname(path) === ".html" ? "text/html" : extname(path) === ".json" ? "application/json" : "text/javascript");
@@ -56,6 +58,35 @@ test("the default SVG adapter draws the synthetic state and a step moves it", as
   const after = await circleX(page);
   expect(after).not.toEqual(before);
   expect(await counts(page)).toEqual({ circles: 3, rects: 5, svgs: 1 });
+  expect(errors).toEqual([]);
+});
+
+const unitObjects = page => page.evaluate(() => [...document.querySelectorAll("#stage svg [data-scene-object-id]")]
+  .filter(node => /^[0-9]+$/.test(node.dataset.sceneObjectId))
+  .map(node => ({ id: node.dataset.sceneObjectId, label: node.getAttribute("aria-label"), selected: node.dataset.selected })));
+
+test("every observed unit is a selectable, labelled object, and a selection from the accessible mirror is game state", async ({ page }) => {
+  const errors = await open(page);
+  await page.evaluate(() => { window.handle = window.BAR_HOST.mountSynthetic(document.querySelector("#stage"), 4, 0); });
+  const units = await unitObjects(page);
+  expect(units.map(u => u.id).sort()).toEqual(["1", "2", "3", "4"]);
+  expect(units.find(u => u.id === "1").label).toBe("Own unit 1, team 0, health 800 of 800");
+  expect(units.find(u => u.id === "4").label).toBe("Radar unit 4");
+  expect(await page.evaluate(() => [...document.querySelectorAll("#stage [data-scene-control-id]")].map(b => b.textContent))).toHaveLength(4);
+  // A real click on the accessible mirror's button for unit 2 selects it as game state.
+  await page.click("#stage [data-scene-control-id='2']");
+  expect(await page.evaluate(() => window.handle.observe().selectedUnit)).toBe("2");
+  expect((await unitObjects(page)).filter(u => u.selected === "true").map(u => u.id)).toEqual(["2"]);
+  // The selection follows the unit through the next observation, and the surface is not rebuilt.
+  await page.evaluate(() => { document.querySelector("#stage svg").dataset.probe = "same-node"; window.handle.step(); });
+  expect(await page.evaluate(() => window.handle.observe())).toMatchObject({ sequence: "2", selectedUnit: "2" });
+  expect(await page.evaluate(() => document.querySelector("#stage svg").dataset.probe)).toBe("same-node");
+  expect((await unitObjects(page)).filter(u => u.selected === "true").map(u => u.id)).toEqual(["2"]);
+  // The keyboard: Escape clears it through the surface.
+  await page.focus("#stage svg");
+  await page.keyboard.press("Escape");
+  expect(await page.evaluate(() => window.handle.observe().selectedUnit)).toBe("");
+  expect((await unitObjects(page)).filter(u => u.selected === "true")).toEqual([]);
   expect(errors).toEqual([]);
 });
 
@@ -119,5 +150,16 @@ test("the broker's stale observation veils the retained units, and dispose relea
   expect(await counts(page)).toEqual({ circles: 2, rects: 4, svgs: 1 });
   await page.evaluate(() => window.handle.dispose());
   expect(await page.evaluate(() => document.querySelectorAll("#stage svg").length)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+// The published conformance kit (FS.GG.Game.Render 0.18.0 `RendererConformance`) on the BAR registry, in the real browser.
+test("the published conformance kit passes on the BAR registry", async ({ page }) => {
+  const errors = await open(page);
+  const results = await page.evaluate(() => window.BAR_HOST.runConformance(document.querySelector("#stage")));
+  console.log(`bar-render kit results=${results.length} failed=${results.filter(r => !r.passed).length}`);
+  console.log(results.map(r => `${r.passed ? "pass" : "FAIL"} ${r.check}`).join("\n"));
+  expect(results.filter(r => !r.passed)).toEqual([]);
+  expect(results.length).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });

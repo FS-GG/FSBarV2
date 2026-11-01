@@ -77,23 +77,38 @@ presented state keeps its entities and turns `Stale` (veiled). A second equal-se
 behind the presented sequence, is refused. `program` runs the renderer effects on one `RendererHost` through `Cmd.ofEffect` and dispatches the host
 feedback afterwards, so no adapter reenters the host. The mounted backend never enters the model.
 
-**Default adapter.** `Broker.Browser.Render.Host` is the Fable-only host. `BarHost` registers the retained SVG surface
-(`SvgSurface.registry`, pinned from FS.GG.Game) with `BarScene.view`. Pixi and Babylon are not registered, so selecting
-them is refused with `Unavailable`, the SVG surface and the game state unchanged. They are #5181.
+**Default adapter.** `Broker.Browser.Render.Host` is the Fable-only host. `BarHost` registers the game's retained SVG
+surface as the default adapter: `RetainedSvgSurface.create` over `BarScene.retained`, registered with
+`RendererRegistry.create` (through `RetainedSvgSurface.registry`, which also declares the viewport). Each observed unit is
+one selectable semantic object whose id is the unit's `Id`, with an accessible label (for example "Own unit 77, team 0,
+health 80 of 100") and an entry in the surface's accessible mirror; the backdrop, the features and a stale veil are not
+selectable. The user's selection is game state (`BarGameState.Selected`): the surface reports it, `BarClient` applies
+it with `BarGameState.select` and presents it like any new state, and the surface follows the state afterwards, so it
+survives the next observation while its unit is still observed. Pixi and Babylon are not registered, so selecting them
+is refused with `Unavailable`, the SVG surface and the game state unchanged. They are #5181.
 
-**Consuming FS.GG.Game, not a fork.** No published `FS.GG.Game.Render` carries `RendererSelection` (0.17.0, the newest,
-predates it), and the SVG surface is in the unpacked `Render.Browser` project. As in FourD#56, the BAR projects compile
-four byte-exact files from FS.GG.Game `main` at `d602c2d4` (`RendererSelection.fsi/.fs`, `SvgSurface.fsi/.fs`) under
-the two `Upstream/` directories. `eng/game-render/pin.env` and `scripts/check-game-render-pin.py` keep them unedited
-(sha256 offline; `--against-upstream` compares to the commit). This is a bridge, not the accepted state.
+**Consuming FS.GG.Game, not a fork.** The BAR projects reference the published `FS.GG.Game.Render` 0.18.0 (the
+renderer-selection contract, `SceneInteraction` and the conformance kit; its bounded Fable source view serves the Fable
+compile) and, in the Fable host, `FS.GG.Game.Render.Browser` 0.18.0 (the retained SVG surface, the Pixi and Babylon
+surfaces and the browser conformance support, shipped as Fable source). The four byte-exact pinned copies of
+FS.GG.Game `main` (`eng/game-render/`, both `Upstream/` directories and `scripts/check-game-render-pin.py`) that the
+first slice carried are deleted. The packages need `Fable.Core` 5.6.1, so both projects moved from 5.3.0, and the
+browser test installs the exact JavaScript packages the bindings were generated against, `pixi.js` 8.22.0 and
+`@babylonjs/core` 9.33.1, mapped by an import map (`tests/Broker.Browser.Render.Tests/browser/harness.html`) as
+FS.GG.Game's own browser smoke does. With no pinned file to keep byte-exact, both projects build under the repository
+defaults (nullness on, warnings as errors).
 
-**Known limits.** `Broker.Browser.Render` and `.Host` set `TreatWarningsAsErrors=false` (the repository default is true)
-because the byte-exact pinned FS.GG.Game files cannot be edited to satisfy this repository's nullness and warning
-settings; the explicit `WarningsAsErrors` list is kept. `BarHost.Handle.select` returns whether the token names a
-declared backend, so it is true for `pixi` and `babylon` even though they are refused; read `observe().refusal` for the
-outcome. Decode strictness equal to the client's `validateObservation` (capture time, session and perspective binding),
-the 64-entity guest limit, generation and validity sequences and duplicate-key semantics are held for the live slice
-(#5181).
+**Conformance kit.** `BarHost.runConformance` runs `RendererConformance` (FS.GG.Game.Render 0.18.0) in the real browser
+on the BAR registry through `BrowserConformance.subject`, on three distinct recorded-shape states. Its `shows` probe reads
+the retained SVG back (the number of selectable objects and each unit's drawn centre, which must match the state), so a
+surface that ignored the state would fail. With only the SVG backend registered the kit runs the `subject`, `registry`,
+`round-trip`, `dispose` and `present failure` sections (18 requirements); `switch`, `late failure` and `interaction`
+need a second backend and join with #5181.
+
+**Known limits.** `BarHost.Handle.select` returns whether the token names a declared backend, so it is true for `pixi`
+and `babylon` even though they are refused; read `observe().refusal` for the outcome. Decode strictness equal to the
+client's `validateObservation` (capture time, session and perspective binding), the 64-entity guest limit, generation
+and validity sequences and duplicate-key semantics are held for the live slice (#5181).
 
 **The existing client is untouched.** `src/Broker.Browser.Client`, its runtime, the receiver and the WASM path are not
 changed. The new SVG surface does not yet carry the preview's selection, ground-target pick, guest preview or live
@@ -101,14 +116,14 @@ control; replacing the hand-written view is a later slice.
 
 ## Upstream gaps found (candidate Deliveries under the Outcome)
 
-1. **Publication.** `RendererSelection` and the SVG surface are on `main` but in no published package. Same as FourD
-   gap 1.
+1. **Publication.** Resolved: `FS.GG.Game.Render` and `FS.GG.Game.Render.Browser` 0.18.0 are published and this slice
+   consumes them. Same as FourD gap 1.
 2. **The Fable view of `FS.GG.UI.Scene` has the types but not the `Scene` module's constructors.** `Scene.filledRectangle`,
    `Scene.circle` and `Scene.group` exist for .NET only, so a portable `view: State -> Scene` must build `SceneNode`
    values by hand. The authoring kit (FS.GG.Game#745) or FS.GG.Rendering should expose the constructors to Fable.
-3. **No retained-scene SVG path for the template.** `RendererRegistry.svg` and `SvgSurface` wrap the whole `Scene` as one
-   non-selectable object, so BAR units get no per-unit selection or accessible labels on the template path. Same as
-   FourD gap 2 and 3; BAR's selection and ground-target pick need the retained interaction contract.
+3. **No retained-scene SVG path for the template.** Resolved by `RetainedSvgSurface` and `RendererRegistry.create` in 0.18.0,
+   which this slice uses: BAR units are selectable, labelled objects. Selection and the accessible mirror come from the
+   surface; BAR's ground-target pick is still the existing client's.
 4. **No recording format.** There is no capture-and-replay format for broker state. A recording is a list of canonical
    observation JSON, which `BarObservationJson` and `BarClient.ObserveJson` already consume. A capture tool (broker
    side) and a manifest are an FSBarV2 follow-up; it is not an FS.GG.Game gap.
@@ -117,22 +132,24 @@ control; replacing the hand-written view is a later slice.
 
 ## Evidence in this slice
 
-- `scripts/verify-bar-render.sh`: 104 checks (`bar-render checks=104`) and a decoded-value digest
-  (`bar-render digest=... over=20`: the canonical text of every decoded fixture, integer probe, stale frame and
-  synthetic frame, hashed with FNV-1a 64). .NET and the Fable-emitted code under Node must print identical output, so
-  the gate compares values, not only counts. The Fable compile of the host. Four Chromium journeys (default SVG draws
-  the state and a step moves it; Pixi, Babylon and unknown tokens refused with the same SVG node and state; recorded
-  fixture decoded, drawn, and a bad frame refused; the broker's stale shape veils the retained units, a replayed stale
-  frame is refused, dispose releases the surface).
+- `scripts/verify-bar-render.sh` (the hosted workflow runs exactly this): 130 checks (`bar-render checks=130`) and a
+  decoded-value digest (`bar-render digest=179673289a01e215 over=20`: the canonical text of every decoded fixture,
+  integer probe, stale frame and synthetic frame, hashed with FNV-1a 64). .NET and the Fable-emitted code under Node
+  must print identical output, so the gate compares values, not only counts. The Fable compile of the host. Six
+  Chromium journeys: default retained SVG draws the state and a step moves it; every unit is a selectable, labelled
+  object and a real click on the accessible mirror and a real Escape key change the game state, which survives the next
+  observation without rebuilding the surface; Pixi, Babylon and unknown tokens refused with the same SVG node and state;
+  recorded fixture decoded, drawn, and a bad frame refused; the broker's stale shape veils the retained units, a
+  replayed stale frame is refused, dispose releases the surface; and the published conformance kit.
+- Conformance kit: `bar-render kit results=18 failed=0` (FS.GG.Game.Render 0.18.0, SVG only).
 - Mutation controls: the previous stale handling fails the unit check and the Chromium journey; the previous lenient
-  decoder fails the refusal checks; a Fable-only change to a field no check asserts leaves all 104 checks passing but
-  changes the digest, so `cmp` fails.
-- `python3 scripts/check-game-render-pin.py --against-upstream`: 4 files at `d602c2d4`.
+  decoder fails the refusal checks; a Fable-only change to a field no check asserts leaves all checks passing but
+  changes the digest, so `cmp` fails; drawing every unit at the wrong x fails three kit requirements (the backend shows
+  every presented state, the recovered SVG, the next state).
 
 ## Held remainder (not accepted by this slice)
 
 - #5180's "fed from the broker's state stream": this slice feeds recorded and synthetic state. The live stream joins
   when Coordination#1032 and #4842 qualify the headless BAR route.
-- Switch to the published `FS.GG.Game.Render` and the #745 kit, delete the pinned copies, run the conformance kit.
 - Pixi and Babylon adapters, the three-backend switch test and the selector UI (#5181).
 - Replacing the existing hand-written preview view with the registered surface, and carrying its input.

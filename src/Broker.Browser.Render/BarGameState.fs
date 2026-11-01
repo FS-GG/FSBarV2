@@ -49,7 +49,8 @@ type BarGameState =
       Validity: BarValidity
       Units: BarUnit list
       Features: BarFeature list
-      Economy: BarEconomy option }
+      Economy: BarEconomy option
+      Selected: string option }
 
 [<RequireQualifiedAccess>]
 module BarGameState =
@@ -62,7 +63,8 @@ module BarGameState =
           Validity = BarValidity.Stale
           Units = []
           Features = []
-          Economy = None }
+          Economy = None
+          Selected = None }
 
     let private isFinite (value: float) =
         not (System.Double.IsNaN value) && not (System.Double.IsInfinity value)
@@ -126,3 +128,17 @@ module BarGameState =
         let a = current.Sequence
         let b = next.Sequence
         b.Length > a.Length || (b.Length = a.Length && System.String.CompareOrdinal(b, a) > 0)
+
+    let private observes (id: string) (state: BarGameState) =
+        state.Units |> List.exists (fun u -> u.Id = id)
+
+    let select (request: FS.GG.Game.Render.SelectionRequest) (state: BarGameState) : BarGameState =
+        match request with
+        | FS.GG.Game.Render.SelectionRequest.Clear -> { state with Selected = None }
+        | FS.GG.Game.Render.SelectionRequest.Select id when observes id state -> { state with Selected = Some id }
+        | FS.GG.Game.Render.SelectionRequest.Select _ -> state
+
+    let carrySelection (current: BarGameState) (next: BarGameState) : BarGameState =
+        match current.Selected with
+        | Some id when observes id next -> { next with Selected = Some id }
+        | _ -> { next with Selected = None }

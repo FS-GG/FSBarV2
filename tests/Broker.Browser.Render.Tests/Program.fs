@@ -272,6 +272,53 @@ require (recovered.Renderer.State.Validity = BarValidity.Current && recovered.Re
 let lateCurrent, lateEffects = BarClient.update (Observe live.Renderer.State) veiled
 require (lateEffects.IsEmpty && lateCurrent.Rejected.Length = 1) "an equal-sequence current frame does not undo stale"
 
+// --- Selection: BAR units are selectable objects of the interaction contract ------------------------------------
+
+let objectsOf = BarScene.objects first
+require (objectsOf.Length = first.Units.Length) "every observed unit is one selectable object"
+require (BarScene.objects first = BarScene.objects { first with Units = List.rev first.Units }) "the selectable objects do not depend on input order"
+require (SceneInteraction.problems objectsOf = []) "the selectable objects are valid for the interaction contract"
+require (objectsOf |> List.map _.Id |> List.sort = (first.Units |> List.map _.Id |> List.sort)) "an object's id is the unit's id"
+require (objectsOf |> List.map _.Label |> List.forall (fun label -> label.Contains "unit")) "every object carries an accessible label"
+
+let ownUnit = first.Units |> List.find (fun u -> u.Kind = BarObservationKind.Own)
+let ownCentre = BarScene.toViewport ownUnit.Position
+require (SceneInteraction.hitTest ownCentre objectsOf = Some ownUnit.Id) "a point on a unit hits that unit"
+require (SceneInteraction.hitTest { X = 0.0; Y = 0.0 } objectsOf = None) "a point on empty ground hits nothing"
+require ((BarScene.describeUnit ownUnit).StartsWith "Own unit ") "an own unit is labelled as one"
+
+let selectedFirst = BarGameState.select (SelectionRequest.Select ownUnit.Id) first
+require (selectedFirst.Selected = Some ownUnit.Id) "selecting an observed unit selects it"
+require (BarGameState.select (SelectionRequest.Select "999999") first = first) "selecting an unobserved unit changes nothing"
+require ((BarGameState.select SelectionRequest.Clear selectedFirst).Selected = None) "Clear empties the selection"
+require (BarScene.view selectedFirst <> BarScene.view first) "the canvas scene shows the selection"
+require ((BarScene.retained selectedFirst).Layers = (BarScene.retained first).Layers) "the retained scene leaves the selection to the surface"
+require (SceneInteraction.selected BarScene.interaction selectedFirst = Some ownUnit.Id) "the interaction reads the state's selection"
+require (SceneInteraction.apply BarScene.interaction (SelectionRequest.Select ownUnit.Id) first = selectedFirst) "the interaction applies BAR's own rule"
+
+let retainedObjects = (BarScene.retained first).Layers |> List.collect (fun layer -> layer.Objects)
+require (retainedObjects |> List.filter _.Selectable |> List.map _.Id |> List.sort = (first.Units |> List.map _.Id |> List.sort)) "exactly the units are selectable in the retained scene"
+require (retainedObjects |> List.filter (fun o -> o.Selectable) |> List.forall (fun o -> o.AccessibleLabel <> "")) "every selectable object is labelled"
+require (match SvgRetained.tryCreateInteraction (BarScene.retained first) with Ok _ -> true | Error _ -> false) "the retained scene is accepted by the retained interaction"
+
+let carried = BarGameState.carrySelection selectedFirst synthetic.[1]
+require (carried.Selected = Some ownUnit.Id) "the selection follows its unit into the next observation"
+require ((BarGameState.carrySelection selectedFirst { synthetic.[1] with Units = [] }).Selected = None) "the selection is dropped when its unit is no longer observed"
+
+let clientSelected, selectEffects = BarClient.update (Select(SelectionRequest.Select ownUnit.Id)) model0
+require (clientSelected.Renderer.State.Selected = Some ownUnit.Id && selectEffects.Length = 1) "the client presents a selection like any new state"
+let clientRepeat, repeatEffects = BarClient.update (Select(SelectionRequest.Select ownUnit.Id)) clientSelected
+require (repeatEffects.IsEmpty && clientRepeat.Renderer.State = clientSelected.Renderer.State && clientRepeat.Presented = clientSelected.Presented) "selecting the selected unit presents nothing"
+let clientRefused, refusedEffects = BarClient.update (Select(SelectionRequest.Select "999999")) clientSelected
+require (refusedEffects.IsEmpty && clientRefused.Renderer.State.Selected = Some ownUnit.Id) "an unobserved unit leaves the selection"
+let clientStepped, _ = BarClient.update Step clientSelected
+require (clientStepped.Renderer.State.Selected = Some ownUnit.Id && clientStepped.Renderer.State.Sequence = "2") "the selection survives the next observation"
+let clientNewSession, _ = BarClient.update (Observe otherSession) clientSelected
+require (clientNewSession.Renderer.State.Selected = None) "a new session starts with nothing selected"
+let liveSelected, _ = BarClient.update (Select(SelectionRequest.Select "77")) live
+let staleSelected, _ = BarClient.update (ObserveJson(brokerStale "9007199254740993")) liveSelected
+require (liveSelected.Renderer.State.Selected = Some "77" && staleSelected.Renderer.State.Validity = BarValidity.Stale && staleSelected.Renderer.State.Selected = Some "77") "the stale veil keeps the selection"
+
 // --- The Elmish program ------------------------------------------------------------------------------------------
 
 let run (registry: RendererRegistry<BarGameState>) frames =
