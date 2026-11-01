@@ -265,6 +265,8 @@ test("the published conformance kit passes on the BAR registry", async ({ page }
   console.log(`bar-render kit results=${results.length} failed=${results.filter(r => !r.passed).length}`);
   console.log(results.map(r => `${r.passed ? "pass" : "FAIL"} ${r.check}${r.passed ? "" : " :: " + r.detail}`).join("\n"));
   expect(results.filter(r => !r.passed)).toEqual([]);
+  // The kit's pixels section (FS.GG.Game 0.19.0, #753) reads back what each backend drew: 1 + 3 + 3 requirements.
+  expect(results.filter(r => r.check.startsWith("pixels")).length).toBe(7);
   expect(results.length).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });

@@ -17,8 +17,8 @@
     <PackageReference Include="Fable.Core" Version="[5.6.1]" />
     <PackageReference Include="Fable.Elmish" Version="[5.0.2]" />
     <PackageReference Include="Fable.Browser.Dom" Version="[2.20.0]" />
-    <PackageReference Include="FS.GG.Game.Render" Version="[0.18.0]" />
-    <PackageReference Include="FS.GG.Game.Render.Browser" Version="[0.18.0]" />
+    <PackageReference Include="FS.GG.Game.Render" Version="[0.19.0]" />
+    <PackageReference Include="FS.GG.Game.Render.Browser" Version="[0.19.0]" />
     <PackageReference Include="FS.GG.UI.Scene" Version="[0.32.3]" />
     <PackageReference Include="FS.GG.UI.Scene.SvgBrowser" Version="[0.32.3]" />
   </ItemGroup>
