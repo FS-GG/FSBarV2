@@ -41,6 +41,11 @@ type BarValidity =
     | Current
     | Stale
 
+type BarBootstrap =
+    { SessionId: string
+      PerspectiveId: string
+      MaxEntities: int }
+
 type BarGameState =
     { SessionId: string
       Sequence: string
@@ -74,6 +79,11 @@ module BarGameState =
 
     let private isNonzeroId (text: string) = isDecimal text && text.[0] <> '0'
 
+    // The existing client's `sequence`: zero, or a decimal without leading zeros.
+    let private isSequence (text: string) = text = "0" || isNonzeroId text
+
+    let maxGuestUnits = 64
+
     let private positionOk (position: BarPosition) =
         isFinite position.X
         && isFinite position.Z
@@ -96,8 +106,10 @@ module BarGameState =
         ids |> List.countBy id |> List.exists (fun (_, count) -> count > 1)
 
     let validate (maxEntities: int) (state: BarGameState) : Result<BarGameState, string> =
-        if not (isDecimal state.Sequence) || state.Sequence = "0" then
+        if not (isNonzeroId state.Sequence) then
             Error "observation sequence is not a nonzero decimal"
+        elif state.Validity = BarValidity.Current && not (isSequence state.CapturedAtUnixMs) then
+            Error "current observation capture time is invalid"
         elif state.Units.Length + state.Features.Length > maxEntities then
             Error "observation exceeds the negotiated entity limit"
         elif state.Units |> List.exists (fun u -> not (isNonzeroId u.Id)) then
@@ -122,6 +134,26 @@ module BarGameState =
             Error "economy is non-finite"
         else
             Ok state
+
+    let validateBound (bootstrap: BarBootstrap) (state: BarGameState) : Result<BarGameState, string> =
+        if state.SessionId <> bootstrap.SessionId then
+            Error "observation session does not match bootstrap"
+        else
+            let perspectiveOk =
+                match state.Validity with
+                | BarValidity.Current -> state.PerspectiveId = bootstrap.PerspectiveId
+                | BarValidity.Stale -> state.PerspectiveId = "" || state.PerspectiveId = bootstrap.PerspectiveId
+
+            if not perspectiveOk then
+                Error "observation perspective does not match bootstrap"
+            else
+                validate bootstrap.MaxEntities state
+
+    let guestPreviewable (state: BarGameState) : Result<unit, string> =
+        if state.Validity = BarValidity.Current && state.Units.Length > maxGuestUnits then
+            Error "snapshot exceeds the 64-unit guest preview limit; no units were truncated"
+        else
+            Ok()
 
     let follows (current: BarGameState) (next: BarGameState) : bool =
         // Decimal strings compare numerically by length, then lexicographically.

@@ -9,13 +9,17 @@ type BarClientModel =
     { Renderer: RendererModel<BarGameState>
       Remaining: BarGameState list
       Presented: int
-      Rejected: string list }
+      Rejected: string list
+      Bootstrap: BarBootstrap option
+      RequireBootstrap: bool }
 
 type BarClientMsg =
     | Renderer of RendererMsg<BarGameState>
     | Observe of BarGameState
     | ObserveJson of string
     | Select of SelectionRequest
+    | Bootstrap of BarBootstrap
+    | BootstrapJson of string
     | Step
 
 [<RequireQualifiedAccess>]
@@ -38,8 +42,14 @@ module BarClient =
         { Renderer = renderer
           Remaining = rest
           Presented = (if frames.IsEmpty then 0 else 1)
-          Rejected = [] },
+          Rejected = []
+          Bootstrap = None
+          RequireBootstrap = false },
         effects
+
+    let initLive (registry: RendererRegistry<BarGameState>) =
+        let model, effects = init registry []
+        { model with RequireBootstrap = true }, effects
 
     // The broker's stale observation (Gateway.fs `envelope`) carries the last sequence, the session and the
     // validity, and no units, features, economy, perspective or capture time. It says "the feed went stale", not
@@ -61,7 +71,13 @@ module BarClient =
     let private observe (state: BarGameState) (model: BarClientModel) =
         let current = model.Renderer.State
 
-        match BarGameState.validate maxEntities state with
+        let checkedState =
+            match model.Bootstrap with
+            | Some bootstrap -> BarGameState.validateBound bootstrap state
+            | None when model.RequireBootstrap -> Error "observation arrived before bootstrap"
+            | None -> BarGameState.validate maxEntities state
+
+        match checkedState with
         | Error reason -> reject reason model, []
         | Ok checked' ->
             let sameSession = checked'.SessionId = current.SessionId
@@ -103,6 +119,11 @@ module BarClient =
             match BarObservationJson.decode json with
             | Ok state -> observe state model
             | Error reason -> reject ("observation did not decode: " + reason) model, []
+        | Bootstrap bootstrap -> { model with Bootstrap = Some bootstrap }, []
+        | BootstrapJson json ->
+            match BarObservationJson.decodeBootstrap json with
+            | Ok bootstrap -> { model with Bootstrap = Some bootstrap }, []
+            | Error reason -> reject ("bootstrap did not decode: " + reason) model, []
         | Select request ->
             let current = model.Renderer.State
             let next = BarGameState.select request current
@@ -119,9 +140,9 @@ module BarClient =
 
     let available (model: BarClientModel) = RendererSelection.available model.Renderer
 
-    let program
+    let private programFrom
         (registry: RendererRegistry<BarGameState>)
-        (frames: BarGameState list)
+        (initial: unit -> BarClientModel * RendererEffect<BarGameState> list)
         (render: BarClientModel -> (BarClientMsg -> unit) -> unit)
         =
         let host = RendererHost.create registry
@@ -135,7 +156,7 @@ module BarClient =
                     host.Run effects |> List.iter (fun feedback -> dispatch (Renderer feedback)))
 
         let start () =
-            let model, effects = init registry frames
+            let model, effects = initial ()
             model, perform effects
 
         let step msg model =
@@ -143,3 +164,16 @@ module BarClient =
             next, perform effects
 
         Program.mkProgram start step render, (host :> IDisposable)
+
+    let program
+        (registry: RendererRegistry<BarGameState>)
+        (frames: BarGameState list)
+        (render: BarClientModel -> (BarClientMsg -> unit) -> unit)
+        =
+        programFrom registry (fun () -> init registry frames) render
+
+    let programLive
+        (registry: RendererRegistry<BarGameState>)
+        (render: BarClientModel -> (BarClientMsg -> unit) -> unit)
+        =
+        programFrom registry (fun () -> initLive registry) render

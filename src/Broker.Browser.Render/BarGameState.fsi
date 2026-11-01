@@ -48,6 +48,14 @@ type BarValidity =
     | Current
     | Stale
 
+/// What the broker's bootstrap binds a live feed to: the session and perspective every observation must carry, and the
+/// negotiated entity limit. It is the `barc.browser.v1` `Bootstrap` of the session, checked by `BarObservationJson`.
+type BarBootstrap =
+    { SessionId: string
+      PerspectiveId: string
+      /// The negotiated `limits.maxEntities`: units and features together.
+      MaxEntities: int }
+
 /// The BAR observable game state: the single type registered with Game.Render `RendererSelection`. It is the
 /// browser projection of the broker's `Snapshot.BrowserObservation` (barc.browser.v1 `Observation`), and holds
 /// everything every renderer backend draws, so no backend owns game state and a switch cannot lose it.
@@ -73,10 +81,25 @@ module BarGameState =
     /// A state with no entities, for a client that has not yet received an observation.
     val empty: BarGameState
 
-    /// Check the invariants the browser client enforces on a wire observation: nonzero decimal ids, no
-    /// duplicate id within units or within features, finite coordinates and metrics, a nonzero feature
+    /// The guest preview's own entity bound (the existing client's `MAX_GUEST_ENTITIES`). It is not the negotiated
+    /// limit: a state of more units is still rendered whole, and is simply not previewable by the guest.
+    val maxGuestUnits: int
+
+    /// Check the invariants the browser client enforces on a wire observation (`validateObservation`): a nonzero
+    /// decimal sequence without leading zeros, a decimal capture time when the state is `Current` (a stale
+    /// observation carries none), nonzero decimal ids, no duplicate id within units or within features (a unit and a
+    /// feature may share one: they are separate identity spaces), finite coordinates and metrics, a nonzero feature
     /// definition, and at most `maxEntities` units and features together.
     val validate: maxEntities: int -> state: BarGameState -> Result<BarGameState, string>
+
+    /// `validate` with the session, perspective and entity limit bound to the bootstrap: the observation must carry the
+    /// bootstrap's session; a `Current` one its perspective, a `Stale` one that perspective or none; and the limit
+    /// is the bootstrap's `MaxEntities`.
+    val validateBound: bootstrap: BarBootstrap -> state: BarGameState -> Result<BarGameState, string>
+
+    /// Whether the guest preview can take the state: a `Current` state of at most `maxGuestUnits` units. An `Error`
+    /// says so; no unit is ever truncated, and rendering is unaffected.
+    val guestPreviewable: state: BarGameState -> Result<unit, string>
 
     /// The state after the player's request, by BAR's own selection rule: `Select id` selects that unit when the state
     /// observes it and changes nothing otherwise; `Clear` empties the selection.

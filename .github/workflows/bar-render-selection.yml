@@ -1,6 +1,6 @@
 name: bar-render-selection
 
-# GAME-RENDER-ADOPT-01.8 (FS-GG/.github#5180). Runs scripts/verify-bar-render.sh: the published FS.GG.Game.Render 0.18.0 packages,
+# GAME-RENDER-ADOPT-01.8 and 01.9 (FS-GG/.github#5180, #5181). Runs scripts/verify-bar-render.sh: the published FS.GG.Game.Render 0.18.0 packages,
 # the BAR game-state and renderer-selection checks under .NET and under Fable/Node (identical output), the Fable
 # compile of the browser host, and the Chromium journeys. No secrets, no network service and no native engine.
 on:

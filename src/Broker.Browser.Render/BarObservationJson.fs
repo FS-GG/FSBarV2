@@ -105,6 +105,11 @@ module BarObservationJson =
                         skip ()
                         let key = readString ()
                         expect ':'
+                        // JSON.parse (the existing client's canonical decoder) keeps the LAST duplicate and other readers the
+                        // first, so a duplicate key has no single meaning: it is refused.
+                        if members.Exists(fun (existing, _) -> existing = key) then
+                            fail (sprintf "duplicate key '%s'" key)
+
                         members.Add((key, value ()))
                         skip ()
 
@@ -188,6 +193,17 @@ module BarObservationJson =
 
     let private field (name: string) (json: Json) = tryMember name json
 
+    // The existing client's `sequence`: a decimal string that is zero or has no leading zero.
+    let private checkedSequence (what: string) (json: Json) : unit =
+        match json with
+        | JString text when text = "0" || (text.Length > 0 && text.[0] <> '0' && text |> Seq.forall (fun c -> c >= '0' && c <= '9')) -> ()
+        | _ -> raise (Malformed(sprintf "%s is invalid" what))
+
+    let private optionalSequence (name: string) (what: string) (json: Json) : unit =
+        match field name json with
+        | None -> ()
+        | Some value -> checkedSequence what value
+
     let private optionalNumber (name: string) (json: Json) : float option =
         match field name json with
         | None -> None
@@ -231,6 +247,8 @@ module BarObservationJson =
         required "identity is not a decimal string" (field "id" json |> Option.bind decimalString)
 
     let private unitOf (json: Json) : BarUnit =
+        optionalSequence "generation" "unit generation" json
+
         { Id = bigId json
           DefinitionId = optionalUInt32 "definitionId" json
           TeamId = optionalInt32 "teamId" json
@@ -259,6 +277,8 @@ module BarObservationJson =
 
     let private validity (json: Json) : BarValidity =
         let v = required "validity is missing" (field "validity" json)
+        optionalSequence "lastSequence" "validity sequence" v
+        optionalSequence "receivedSequence" "validity sequence" v
 
         match field "status" v with
         | Some(JString "VALIDITY_STATUS_CURRENT") -> BarValidity.Current
@@ -292,6 +312,60 @@ module BarObservationJson =
                 | _ -> root
 
             Ok(observationOf observation)
+        with
+        | Malformed message -> Error message
+        | :? FormatException as e -> Error e.Message
+
+    // --- Bootstrap ------------------------------------------------------------------------------------------------
+
+    let private expectText (name: string) (expected: string) (json: Json) =
+        match field name json with
+        | Some(JString actual) when actual = expected -> ()
+        | _ -> raise (Malformed "unsupported game, protocol, or browser profile")
+
+    let private nonBlank (name: string) (json: Json) : string =
+        match field name json with
+        | Some(JString text) when text <> "" -> text
+        | _ -> raise (Malformed "bootstrap identity or read-only mode is missing")
+
+    let private positiveInteger (name: string) (json: Json) : int =
+        match optionalInteger name 1.0 2147483647.0 json with
+        | Some value -> int value
+        | None -> raise (Malformed "bootstrap limits are invalid")
+
+    let private bootstrapOf (json: Json) : BarBootstrap =
+        expectText "game" "bar" json
+        expectText "protocolVersion" "1.0.0" json
+        expectText "profile" "barc-preview-v1" json
+        let session = nonBlank "sessionId" json
+        let perspective = nonBlank "perspectiveId" json
+
+        match field "mode" json with
+        | Some(JString "PREVIEW_MODE_READ_ONLY") -> ()
+        | _ -> raise (Malformed "bootstrap identity or read-only mode is missing")
+
+        validity json |> ignore
+
+        match field "limits" json with
+        | Some limits ->
+            positiveInteger "maxFrameBytes" limits |> ignore
+
+            { SessionId = session
+              PerspectiveId = perspective
+              MaxEntities = positiveInteger "maxEntities" limits }
+        | None -> raise (Malformed "bootstrap limits are invalid")
+
+    let decodeBootstrap (json: string) : Result<BarBootstrap, string> =
+        try
+            let root = parse json
+
+            let bootstrap =
+                match field "bootstrap" root, field "initialize" root with
+                | Some(JObject _ as inner), _ when (field "game" root).IsNone -> inner
+                | _, Some(JObject _ as inner) when (field "game" root).IsNone -> inner
+                | _ -> root
+
+            Ok(bootstrapOf bootstrap)
         with
         | Malformed message -> Error message
         | :? FormatException as e -> Error e.Message

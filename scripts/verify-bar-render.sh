@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# GAME-RENDER-ADOPT-01.8: the gates for the BAR renderer-selection client. The hosted workflow runs exactly this.
+# GAME-RENDER-ADOPT-01.8 and 01.9: the gates for the BAR renderer-selection client. The hosted workflow runs exactly this.
 #   --no-browser   skip the Chromium journeys (they need `npx playwright install chromium` and its system libraries)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS="$ROOT/tests/Broker.Browser.Render.Tests"
-EXPECTED_CHECKS=130
+EXPECTED_CHECKS=200
 BROWSER=1
 [[ "${1:-}" == "--no-browser" ]] && BROWSER=0
 
@@ -29,4 +29,4 @@ if [[ "$BROWSER" == 1 ]]; then
 else
   npm run compile-host
 fi
-echo "GAME-RENDER-ADOPT-01.8: BAR renderer selection verified"
+echo "GAME-RENDER-ADOPT-01.8 and 01.9: BAR renderer selection verified"
