@@ -96,16 +96,27 @@ test("recorded fixture state decodes, draws and refuses a bad frame without losi
   expect(errors).toEqual([]);
 });
 
-test("a stale observation is veiled, and dispose releases the surface", async ({ page }) => {
+// The broker's stale observation (Gateway.fs `envelope`): the session, the LAST sequence and a stale validity, with no
+// units, no features, no economy, no perspective and no capture time.
+const brokerStale = (sequence, session = "ABEiM0RVZneImaq7zN3u/w==") => JSON.stringify({
+  body: "observation",
+  observation: { sessionId: session, sequence, validity: { status: "VALIDITY_STATUS_STALE", lastSequence: sequence, receivedSequence: "9007199254740999", detail: "feed expired" } }
+});
+
+test("the broker's stale observation veils the retained units, and dispose releases the surface", async ({ page }) => {
   const errors = await open(page);
-  const stale = await page.evaluate(() => fetch("/fixtures/observation-asymmetric.json").then(r => r.json()).then(o => {
-    o.observation.sequence = "9007199254740994"; o.observation.validity = { status: "VALIDITY_STATUS_STALE", lastSequence: "9007199254740993" };
-    return JSON.stringify(o);
-  }));
   await page.evaluate(() => fetch("/fixtures/observation-asymmetric.json").then(r => r.text()).then(json => { window.handle = window.BAR_HOST.mountRecorded(document.querySelector("#stage"), [json], 0); }));
-  await page.evaluate(json => window.handle.observeJson(json), stale);
-  expect(await page.evaluate(() => window.handle.observe())).toMatchObject({ validity: "stale", sequence: "9007199254740994" });
-  expect((await counts(page)).rects).toBe(4);
+  expect(await counts(page)).toEqual({ circles: 2, rects: 3, svgs: 1 });
+  await page.evaluate(json => window.handle.observeJson(json), brokerStale("9007199254740993"));
+  const observed = await page.evaluate(() => window.handle.observe());
+  expect(observed).toMatchObject({ validity: "stale", sequence: "9007199254740993", units: 3, features: 1, presented: 2 });
+  expect(observed.rejected).toEqual([]);
+  // The retained units are still drawn, under one more rectangle: the veil.
+  expect(await counts(page)).toEqual({ circles: 2, rects: 4, svgs: 1 });
+  // The same stale frame again is a replay and is refused without touching the surface.
+  await page.evaluate(json => window.handle.observeJson(json), brokerStale("9007199254740993"));
+  expect((await page.evaluate(() => window.handle.observe())).rejected.length).toBe(1);
+  expect(await counts(page)).toEqual({ circles: 2, rects: 4, svgs: 1 });
   await page.evaluate(() => window.handle.dispose());
   expect(await page.evaluate(() => document.querySelectorAll("#stage svg").length)).toBe(0);
   expect(errors).toEqual([]);

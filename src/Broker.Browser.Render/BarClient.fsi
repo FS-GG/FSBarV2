@@ -20,7 +20,9 @@ type BarClientModel =
 type BarClientMsg =
     /// A renderer-selection message: a backend switch, or host feedback.
     | Renderer of RendererMsg<BarGameState>
-    /// One observation from any feed (live, recorded or synthetic). It is checked before it is presented.
+    /// One observation from any feed (live, recorded or synthetic). It is checked before it is presented. It must
+    /// follow the presented sequence of the same session, except the broker's stale observation: that repeats the
+    /// last sequence, carries no entities, and turns the presented state `Stale` while keeping its units.
     | Observe of BarGameState
     /// One observation as canonical JSON, decoded then treated as `Observe`.
     | ObserveJson of string

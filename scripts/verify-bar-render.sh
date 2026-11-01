@@ -5,7 +5,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS="$ROOT/tests/Broker.Browser.Render.Tests"
-EXPECTED_CHECKS=76
+EXPECTED_CHECKS=104
 BROWSER=1
 [[ "${1:-}" == "--no-browser" ]] && BROWSER=0
 
@@ -19,10 +19,11 @@ cd "$TESTS"
 npm ci --ignore-scripts
 npm run test:dotnet
 npm run test:fable
-# One check list, two runtimes: the .NET and the emitted-Fable/Node output must be identical.
+# One check list, two runtimes: the output of both (the decoded-value digest and the check count) must be identical.
 cmp output-dotnet.txt output-node.txt
 # Pin the exact count so a silently skipped check fails the gate.
-grep -qx "bar-render checks=$EXPECTED_CHECKS" output-dotnet.txt || { echo "expected bar-render checks=$EXPECTED_CHECKS" >&2; exit 1; }
+grep -qx "bar-render checks=$EXPECTED_CHECKS" output-dotnet.txt && grep -qx "bar-render checks=$EXPECTED_CHECKS" output-node.txt || { echo "expected bar-render checks=$EXPECTED_CHECKS from both runtimes" >&2; exit 1; }
+grep -Eq "^bar-render digest=[0-9a-f]{16} over=[0-9]+$" output-dotnet.txt || { echo "missing the bar-render digest line" >&2; exit 1; }
 
 if [[ "$BROWSER" == 1 ]]; then
   npm run test:browser

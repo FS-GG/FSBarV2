@@ -59,7 +59,9 @@ invented. `BarGameState.validate` enforces the same invariants as the client's `
 
 **Mapping from the broker state.** `BarObservationJson.decode` reads the canonical JSON form of a
 `barc.browser.v1` `Observation` (bare or inside a server envelope): the form `decodeServerFrame` yields and the
-fixtures record. Unknown fields are ignored and an unknown enum value is refused, matching the corpus expectations.
+fixtures record. Unknown fields are ignored and an unknown enum value is refused, matching the corpus expectations. `uint32` and `int32`
+fields (`definitionId`, `teamId`) must be whole numbers in range: .NET and Fable narrow `-1` or `2.7` differently
+(`Some 0u` against `4294967295`; 2 against 2.7), so the decoder refuses them instead.
 The producer side, from HighBar `StateSnapshot` through `Snapshot.BrowserObservation` to the wire, is unchanged.
 
 **Shared Scene projection.** `BarScene.view : BarGameState -> Scene` is what all three backends draw: a backdrop,
@@ -69,7 +71,10 @@ is veiled.
 
 **Elmish client.** `BarClient` (`init`, `update`, `program`) holds `RendererModel<BarGameState>` and a replay feed.
 `Observe`, `ObserveJson` and `Step` present a frame only if it validates and follows the presented sequence of the same
-session. `program` runs the renderer effects on one `RendererHost` through `Cmd.ofEffect` and dispatches the host
+session. The one exception is the broker's stale observation (`Gateway.fs` `envelope`): it repeats the last sequence and
+carries no units, features, economy or perspective, so an equal-sequence Current-to-Stale frame is accepted and the
+presented state keeps its entities and turns `Stale` (veiled). A second equal-sequence stale frame, or a stale frame
+behind the presented sequence, is refused. `program` runs the renderer effects on one `RendererHost` through `Cmd.ofEffect` and dispatches the host
 feedback afterwards, so no adapter reenters the host. The mounted backend never enters the model.
 
 **Default adapter.** `Broker.Browser.Render.Host` is the Fable-only host. `BarHost` registers the retained SVG surface
@@ -81,6 +86,14 @@ predates it), and the SVG surface is in the unpacked `Render.Browser` project. A
 four byte-exact files from FS.GG.Game `main` at `d602c2d4` (`RendererSelection.fsi/.fs`, `SvgSurface.fsi/.fs`) under
 the two `Upstream/` directories. `eng/game-render/pin.env` and `scripts/check-game-render-pin.py` keep them unedited
 (sha256 offline; `--against-upstream` compares to the commit). This is a bridge, not the accepted state.
+
+**Known limits.** `Broker.Browser.Render` and `.Host` set `TreatWarningsAsErrors=false` (the repository default is true)
+because the byte-exact pinned FS.GG.Game files cannot be edited to satisfy this repository's nullness and warning
+settings; the explicit `WarningsAsErrors` list is kept. `BarHost.Handle.select` returns whether the token names a
+declared backend, so it is true for `pixi` and `babylon` even though they are refused; read `observe().refusal` for the
+outcome. Decode strictness equal to the client's `validateObservation` (capture time, session and perspective binding),
+the 64-entity guest limit, generation and validity sequences and duplicate-key semantics are held for the live slice
+(#5181).
 
 **The existing client is untouched.** `src/Broker.Browser.Client`, its runtime, the receiver and the WASM path are not
 changed. The new SVG surface does not yet carry the preview's selection, ground-target pick, guest preview or live
@@ -104,11 +117,16 @@ control; replacing the hand-written view is a later slice.
 
 ## Evidence in this slice
 
-- `scripts/verify-bar-render.sh`: 76 checks (`bar-render checks=76`), byte-identical output from .NET and from the
-  Fable-emitted code under Node; the Fable compile of the host; four Chromium journeys (default SVG draws the state and
-  a step moves it; Pixi, Babylon and unknown tokens refused with the same SVG node and state; recorded fixture decoded,
-  drawn, and a bad frame refused; stale veil and dispose). The Chromium journeys were mutation-checked once (an altered
-  expectation failed).
+- `scripts/verify-bar-render.sh`: 104 checks (`bar-render checks=104`) and a decoded-value digest
+  (`bar-render digest=... over=20`: the canonical text of every decoded fixture, integer probe, stale frame and
+  synthetic frame, hashed with FNV-1a 64). .NET and the Fable-emitted code under Node must print identical output, so
+  the gate compares values, not only counts. The Fable compile of the host. Four Chromium journeys (default SVG draws
+  the state and a step moves it; Pixi, Babylon and unknown tokens refused with the same SVG node and state; recorded
+  fixture decoded, drawn, and a bad frame refused; the broker's stale shape veils the retained units, a replayed stale
+  frame is refused, dispose releases the surface).
+- Mutation controls: the previous stale handling fails the unit check and the Chromium journey; the previous lenient
+  decoder fails the refusal checks; a Fable-only change to a field no check asserts leaves all 104 checks passing but
+  changes the digest, so `cmp` fails.
 - `python3 scripts/check-game-render-pin.py --against-upstream`: 4 files at `d602c2d4`.
 
 ## Held remainder (not accepted by this slice)

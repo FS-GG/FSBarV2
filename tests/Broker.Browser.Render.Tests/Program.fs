@@ -74,6 +74,36 @@ require ((decoded "guest-observation").Units.Length = 2) "an observation inside 
 require (BarObservationJson.decode "{" |> Result.isError) "malformed JSON is refused"
 require (BarObservationJson.decode """{"sequence":"1"}""" |> Result.isError) "an observation without validity is refused"
 
+// --- Integer fields: .NET and Fable narrow out-of-range numbers differently, so the decoder refuses them -------
+
+let unitWith (extra: string) =
+    sprintf
+        """{"sessionId":"s","sequence":"1","perspectiveId":"p","validity":{"status":"VALIDITY_STATUS_CURRENT","lastSequence":"1"},"units":[{"id":"5","observation":"OBSERVATION_KIND_OWN","position":{"x":1,"z":2}%s}],"features":[]}"""
+        extra
+
+let featureWith (definition: string) =
+    sprintf
+        """{"sessionId":"s","sequence":"1","perspectiveId":"p","validity":{"status":"VALIDITY_STATUS_CURRENT","lastSequence":"1"},"units":[],"features":[{"id":"5","definitionId":%s,"position":{"x":1,"z":2}}]}"""
+        definition
+
+let integerProbes =
+    [ "unit definitionId -1", unitWith ""","definitionId":-1"""
+      "unit definitionId 4294967296", unitWith ""","definitionId":4294967296"""
+      "unit definitionId 1.5", unitWith ""","definitionId":1.5"""
+      "unit teamId 2.7", unitWith ""","teamId":2.7"""
+      "unit teamId 2147483648", unitWith ""","teamId":2147483648"""
+      "unit teamId -2147483649", unitWith ""","teamId":-2147483649"""
+      "feature definitionId -1", featureWith "-1"
+      "feature definitionId 4294967296", featureWith "4294967296"
+      "feature definitionId 0.5", featureWith "0.5" ]
+
+for (name, json) in integerProbes do
+    require (BarObservationJson.decode json |> Result.isError) (name + " is refused")
+
+let boundary = BarObservationJson.decode (unitWith ""","definitionId":4294967295,"teamId":-2147483648""")
+require (match boundary with Ok s -> s.Units.Head.DefinitionId = Some 4294967295u && s.Units.Head.TeamId = Some -2147483648 | _ -> false) "the int32 and uint32 limits are accepted exactly"
+require ((BarObservationJson.decode (featureWith "4294967295") |> Result.map (fun s -> s.Features.Head.DefinitionId)) = Ok 4294967295u) "a feature definition at the uint32 limit is accepted"
+
 // --- Invariants ------------------------------------------------------------------------------------------------
 
 let withUnits units = { asymmetric with Units = units }
@@ -199,6 +229,49 @@ let unavailable, unavailableEffects = BarClient.update (Renderer(RendererMsg.Sel
 require (unavailableEffects.IsEmpty && unavailable.Renderer.State = stepped.Renderer.State) "selecting an unregistered backend is refused with state intact"
 require (unavailable.Renderer.Refusal = Some(RendererRefusal.Unavailable RendererBackend.Pixi) && unavailable.Renderer.Selected = RendererBackend.Svg) "the refusal is typed and the selection unchanged"
 
+// --- The broker's stale observation ------------------------------------------------------------------------------
+// Gateway.fs `envelope`: a `Snapshot.Stale` is a ServerEnvelope whose Observation has the session, the LAST sequence
+// and a stale validity, and nothing else: no units, no features, no economy, no perspective, no capture time.
+
+let brokerStale (sequence: string) =
+    sprintf
+        """{"body":"observation","observation":{"sessionId":"ABEiM0RVZneImaq7zN3u/w==","sequence":"%s","validity":{"status":"VALIDITY_STATUS_STALE","lastSequence":"%s","receivedSequence":"9007199254740999","detail":"feed expired"}}}"""
+        sequence
+        sequence
+
+let decodedStale = BarObservationJson.decode (brokerStale "9007199254740993")
+require (match decodedStale with Ok s -> s.Validity = BarValidity.Stale && s.Units.IsEmpty && s.PerspectiveId = "" && s.Sequence = "9007199254740993" | _ -> false) "the broker's stale shape decodes: stale, no units, empty perspective"
+
+let live, _ = BarClient.update (ObserveJson(fixture "observation-asymmetric")) empty0
+require (live.Renderer.State.Validity = BarValidity.Current && live.Presented = 1) "the current observation is presented first"
+
+let veiled, veilEffects = BarClient.update (ObserveJson(brokerStale "9007199254740993")) live
+require (veiled.Rejected.IsEmpty) "the equal-sequence stale transition is not refused"
+require (veiled.Renderer.State.Validity = BarValidity.Stale && veiled.Renderer.State.Sequence = "9007199254740993") "the presented state turns stale at the same sequence"
+require (veiled.Renderer.State.Units = live.Renderer.State.Units && veiled.Renderer.State.Features = live.Renderer.State.Features) "the prior units and features are retained"
+require (veiled.Renderer.State.PerspectiveId = "team-7" && veiled.Renderer.State.Economy = live.Renderer.State.Economy) "the prior perspective and economy are retained"
+require (match veilEffects with [ RendererEffect.Present(RendererBackend.Svg, s) ] -> s.Validity = BarValidity.Stale | _ -> false) "the stale state is presented on the mounted backend"
+require (BarScene.view veiled.Renderer.State <> BarScene.view live.Renderer.State) "the stale state is veiled"
+
+let again, againEffects = BarClient.update (ObserveJson(brokerStale "9007199254740993")) veiled
+require (againEffects.IsEmpty && again.Rejected.Length = 1) "a second equal-sequence stale frame is a replay and is refused"
+
+let wrongSession = brokerStale "9007199254740993" |> fun json -> json.Replace("ABEiM0RVZneImaq7zN3u/w==", "other")
+let other, _ = BarClient.update (ObserveJson wrongSession) live
+require (other.Renderer.State.Validity = BarValidity.Stale && other.Renderer.State.Units.IsEmpty) "a stale frame of a different session is a new session, not a transition"
+
+let ahead, _ = BarClient.update (ObserveJson(brokerStale "9007199254740995")) live
+require (ahead.Renderer.State.Units.Length = 3 && ahead.Renderer.State.Sequence = "9007199254740995") "a later stale sequence with no entities keeps the units and takes the sequence"
+
+let behind, behindEffects = BarClient.update (ObserveJson(brokerStale "9007199254740990")) live
+require (behindEffects.IsEmpty && behind.Rejected.Length = 1) "a stale frame behind the presented sequence is refused"
+
+let recovered, _ = BarClient.update (ObserveJson(fixture "observation-asymmetric" |> fun j -> j.Replace("9007199254740993", "9007199254740997"))) veiled
+require (recovered.Renderer.State.Validity = BarValidity.Current && recovered.Renderer.State.Sequence = "9007199254740997") "a later current observation recovers from stale"
+
+let lateCurrent, lateEffects = BarClient.update (Observe live.Renderer.State) veiled
+require (lateEffects.IsEmpty && lateCurrent.Rejected.Length = 1) "an equal-sequence current frame does not undo stale"
+
 // --- The Elmish program ------------------------------------------------------------------------------------------
 
 let run (registry: RendererRegistry<BarGameState>) frames =
@@ -254,4 +327,68 @@ require (brokenModel().Renderer.State.Sequence = "2") "the fallback keeps the ga
 require (match brokenModel().Renderer.Refusal with Some(RendererRefusal.MountFailed(RendererBackend.Babylon, "no WebGL")) -> true | _ -> false) "the failure cause is reported"
 brokenHost.Dispose()
 
+// --- Cross-runtime digest ----------------------------------------------------------------------------------------
+// A canonical text of every decoded value, hashed with FNV-1a 64. .NET and the Fable-emitted code both print it, and
+// the gate compares the two outputs, so a value the two runtimes decode differently cannot hide behind equal counts.
+
+let private optional (render: 'a -> string) (value: 'a option) =
+    match value with
+    | Some v -> render v
+    | None -> "-"
+
+let private position (p: BarPosition) =
+    sprintf "%s,%s,%s" (string p.X) (optional string p.Elevation) (string p.Z)
+
+let private resource (r: BarResource) =
+    sprintf "%s/%s/%s/%s" (optional string r.Current) (optional string r.Storage) (optional string r.Income) (optional string r.Expenditure)
+
+let canonical (state: BarGameState) : string =
+    let units =
+        state.Units
+        |> List.map (fun u ->
+            sprintf "u%s:%s:%s:%A:%s:%s:%s" u.Id (optional string u.DefinitionId) (optional string u.TeamId) u.Kind (position u.Position) (optional string u.Health) (optional string u.MaxHealth))
+
+    let features =
+        state.Features |> List.map (fun f -> sprintf "f%s:%s:%s" f.Id (string f.DefinitionId) (position f.Position))
+
+    let economy =
+        optional (fun (e: BarEconomy) -> sprintf "%s;%s;%s" (optional string e.TeamId) (resource e.Metal) (resource e.Energy)) state.Economy
+
+    sprintf "%s|%s|%s|%s|%A|%s|%s|%s" state.SessionId state.Sequence state.CapturedAtUnixMs state.PerspectiveId state.Validity (String.Join(",", units)) (String.Join(",", features)) economy
+
+let outcome (result: Result<BarGameState, string>) =
+    match result with
+    | Ok state -> "ok " + canonical state
+    | Error reason -> "error " + reason
+
+let digest (lines: string list) : string =
+    let mutable hash = 14695981039346656037UL
+
+    for line in lines do
+        for c in line + "\n" do
+            hash <- (hash ^^^ uint64 c) * 1099511628211UL
+
+    hash.ToString("x16")
+
+let corpus =
+    [ for name in [ "observation-asymmetric"; "observation-optional-absent"; "observation-optional-present-zero"; "observation-unknown-field"; "observation-unknown-enum"; "guest-observation" ] ->
+          name + " " + outcome (BarObservationJson.decode (fixture name))
+      for (name, json) in integerProbes -> name + " " + outcome (BarObservationJson.decode json)
+      yield "boundary " + outcome boundary
+      yield "stale " + outcome decodedStale
+      for state in BarSynthetic.frames 3 -> "synthetic " + canonical state ]
+
+let corpusDigest = digest corpus
+
+// The digest must see a one-value divergence, such as the one the lenient decoder showed: `definitionId -1` was
+// `Some 0u` on .NET and `Some 4294967295u` on Fable.
+let divergent =
+    corpus
+    |> List.map (fun line -> if line.StartsWith "boundary" then line.Replace("4294967295", "0") else line)
+
+require (divergent <> corpus && digest divergent <> corpusDigest) "the digest changes when one decoded value differs between runtimes"
+require (digest (List.rev corpus) <> corpusDigest) "the digest depends on order"
+require (digest corpus = corpusDigest && corpusDigest.Length = 16) "the digest is stable and sixteen hex digits"
+
+printfn "bar-render digest=%s over=%d" corpusDigest corpus.Length
 printfn "bar-render checks=%d" checks

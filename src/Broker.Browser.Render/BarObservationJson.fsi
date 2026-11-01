@@ -9,6 +9,7 @@ namespace Broker.Browser.Render
 [<RequireQualifiedAccess>]
 module BarObservationJson =
 
-    /// Decode one observation. An unknown enum value, a missing required field or malformed JSON is an
-    /// `Error`; unknown fields are ignored, as the wire decoder does. The result is not yet `validate`d.
+    /// Decode one observation. An unknown enum value, a missing required field, malformed JSON, or an
+    /// `int32`/`uint32` field (`teamId`, `definitionId`) that is fractional or outside its range is an
+    /// `Error` (the same on .NET and Fable, which narrow out-of-range numbers differently); unknown fields are ignored, as the wire decoder does. The result is not yet `validate`d.
     val decode: json: string -> Result<BarGameState, string>

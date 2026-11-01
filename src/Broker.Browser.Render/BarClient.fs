@@ -40,19 +40,48 @@ module BarClient =
           Rejected = [] },
         effects
 
+    // The broker's stale observation (Gateway.fs `envelope`) carries the last sequence, the session and the
+    // validity, and no units, features, economy, perspective or capture time. It says "the feed went stale", not
+    // "the world is empty", so the prior entities are retained and only the validity changes.
+    let private carriesEntities (state: BarGameState) =
+        not state.Units.IsEmpty || not state.Features.IsEmpty || state.Economy.IsSome
+
+    let private retained (current: BarGameState) (stale: BarGameState) : BarGameState =
+        if carriesEntities stale then
+            stale
+        else
+            { current with
+                Sequence = stale.Sequence
+                Validity = BarValidity.Stale }
+
     // A frame is presented only when it is valid and follows the current one. A new session id starts a new
-    // sequence, so replaying a different recording is not mistaken for a replayed frame.
+    // sequence, so replaying a different recording is not mistaken for a replayed frame. The one frame that may
+    // repeat the presented sequence is the Current-to-Stale transition: the broker reuses the last sequence.
     let private observe (state: BarGameState) (model: BarClientModel) =
         let current = model.Renderer.State
 
         match BarGameState.validate maxEntities state with
         | Error reason -> reject reason model, []
         | Ok checked' ->
-            if checked'.SessionId = current.SessionId && not (BarGameState.follows current checked') then
+            let sameSession = checked'.SessionId = current.SessionId
+
+            let staleTransition =
+                sameSession
+                && checked'.Validity = BarValidity.Stale
+                && current.Validity = BarValidity.Current
+                && checked'.Sequence = current.Sequence
+
+            if sameSession && not staleTransition && not (BarGameState.follows current checked') then
                 reject "observation sequence does not follow the presented one" model, []
             else
+                let next =
+                    if sameSession && checked'.Validity = BarValidity.Stale then
+                        retained current checked'
+                    else
+                        checked'
+
                 let renderer, effects =
-                    RendererSelection.update (RendererMsg.StateChanged checked') model.Renderer
+                    RendererSelection.update (RendererMsg.StateChanged next) model.Renderer
 
                 { model with
                     Renderer = renderer

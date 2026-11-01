@@ -193,8 +193,19 @@ module BarObservationJson =
         | None -> None
         | Some value -> Some(required (sprintf "%s is not a number" name) (number value))
 
-    let private optionalInt (name: string) (json: Json) : int option =
-        optionalNumber name json |> Option.map int
+    // A 32-bit integer field must be a whole number in range. Narrowing a float with `int` or `uint32` wraps or
+    // truncates differently under .NET and Fable, so out-of-range and fractional values are refused here.
+    let private optionalInteger (name: string) (low: float) (high: float) (json: Json) : float option =
+        match optionalNumber name json with
+        | None -> None
+        | Some value when Math.Floor value = value && value >= low && value <= high -> Some value
+        | Some _ -> raise (Malformed(sprintf "%s is not an integer in [%.0f, %.0f]" name low high))
+
+    let private optionalUInt32 (name: string) (json: Json) : uint32 option =
+        optionalInteger name 0.0 4294967295.0 json |> Option.map uint32
+
+    let private optionalInt32 (name: string) (json: Json) : int option =
+        optionalInteger name -2147483648.0 2147483647.0 json |> Option.map int
 
     let private position (json: Json) : BarPosition =
         let p = required "position is missing" (field "position" json)
@@ -221,8 +232,8 @@ module BarObservationJson =
 
     let private unitOf (json: Json) : BarUnit =
         { Id = bigId json
-          DefinitionId = optionalNumber "definitionId" json |> Option.map uint32
-          TeamId = optionalInt "teamId" json
+          DefinitionId = optionalUInt32 "definitionId" json
+          TeamId = optionalInt32 "teamId" json
           Kind = kind json
           Position = position json
           Health = optionalNumber "health" json
@@ -230,7 +241,7 @@ module BarObservationJson =
 
     let private featureOf (json: Json) : BarFeature =
         { Id = bigId json
-          DefinitionId = required "feature definitionId is missing" (optionalNumber "definitionId" json) |> uint32
+          DefinitionId = required "feature definitionId is missing" (optionalUInt32 "definitionId" json)
           Position = position json }
 
     let private resource (name: string) (json: Json) : BarResource =
@@ -242,7 +253,7 @@ module BarObservationJson =
           Expenditure = optionalNumber "expenditure" r }
 
     let private economyOf (json: Json) : BarEconomy =
-        { TeamId = optionalInt "teamId" json
+        { TeamId = optionalInt32 "teamId" json
           Metal = resource "metal" json
           Energy = resource "energy" json }
 
