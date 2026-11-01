@@ -1,0 +1,18 @@
+{
+  "name": "fs-gg-bar-render-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:dotnet": "dotnet run -c Release --no-restore > output-dotnet.txt && cat output-dotnet.txt",
+    "test:fable": "dotnet fable Broker.Browser.Render.Tests.fsproj --outDir output --noCache --noRestore && node output/Program.js > output-node.txt && cat output-node.txt",
+    "test": "npm run test:dotnet && npm run test:fable && cmp output-dotnet.txt output-node.txt",
+    "compile-host": "dotnet fable ../../src/Broker.Browser.Render.Host/Broker.Browser.Render.Host.fsproj --outDir host-output --noCache --noRestore",
+    "test:browser": "npm run compile-host && playwright test"
+  },
+  "dependencies": {
+    "@fable-org/fable-library-js": "2.8.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

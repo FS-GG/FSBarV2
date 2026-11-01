@@ -1,0 +1,7 @@
+node_modules/
+output/
+host-output/
+output-dotnet.txt
+output-node.txt
+test-results/
+playwright-report/
