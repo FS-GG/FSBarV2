@@ -36,11 +36,11 @@
       },
       "FS.GG.Game.Render": {
         "type": "Direct",
-        "requested": "[0.18.0, 0.18.0]",
-        "resolved": "0.18.0",
-        "contentHash": "ED/X9DvowwIUAB6XOqVhuK8Aw3hc2YWpfCRDcn40iNx08tMCN6br/C3RTeY9CiWd+KPHCG3MdaG/mGVSVUcRJg==",
+        "requested": "[0.19.0, 0.19.0]",
+        "resolved": "0.19.0",
+        "contentHash": "rtLt6HHQ+Trt84JvNZ/ahK6yTBjLuaEQ2SOIM1OG3NE3iy8QrB2g00I5B+0B2/SSvbu+D42l8lZnQgN+pVtqNg==",
         "dependencies": {
-          "FS.GG.Game.Core": "0.18.0",
+          "FS.GG.Game.Core": "0.19.0",
           "FS.GG.UI.KeyboardInput": "0.31.0",
           "FS.GG.UI.Scene": "0.31.0",
           "FSharp.Core": "10.1.302"
@@ -48,11 +48,11 @@
       },
       "FS.GG.Game.Render.Browser": {
         "type": "Direct",
-        "requested": "[0.18.0, 0.18.0]",
-        "resolved": "0.18.0",
-        "contentHash": "xD+VHqPei0u0PQGpNRgldQ0li/K8mhorWqFE4BDEGCO8BFdxSXyWdgXU2JhBTqF8GAoNx1hcHsf9254Gc1Kipw==",
+        "requested": "[0.19.0, 0.19.0]",
+        "resolved": "0.19.0",
+        "contentHash": "oBUAlDxR0q46SpDrdupKEmW0nivmZGWo3E8V2I2cCFAijWi+maWqSQOO6NhaGLn2JKtWVYgxY+Bc6Ha5+0NlHw==",
         "dependencies": {
-          "FS.GG.Game.Render": "0.18.0",
+          "FS.GG.Game.Render": "0.19.0",
           "FS.GG.UI.KeyboardInput": "0.31.0",
           "FS.GG.UI.Scene": "0.31.0",
           "FS.GG.UI.Scene.SvgBrowser": "0.31.0",
@@ -128,8 +128,8 @@
       },
       "FS.GG.Game.Core": {
         "type": "Transitive",
-        "resolved": "0.18.0",
-        "contentHash": "Zy+o+7AVCOBzCuhn94TRRVU6l5wsRC58HHVQkWJKEz9zvJKf+9ejtrp8l1OqCR7tKS12HKSjXbojSwfo7ocVtg==",
+        "resolved": "0.19.0",
+        "contentHash": "k+i0a3SnXHyyF1oseE+VJhD7F1Tju+2N3ak/N+pWJV3UOGa95L8W5cnubGwQfzAAUTybxsHntckZX6zLYfH9lA==",
         "dependencies": {
           "FSharp.Core": "10.1.302"
         }
@@ -146,7 +146,7 @@
       "broker.browser.render": {
         "type": "Project",
         "dependencies": {
-          "FS.GG.Game.Render": "[0.18.0, 0.18.0]",
+          "FS.GG.Game.Render": "[0.19.0, 0.19.0]",
           "FS.GG.UI.Scene": "[0.32.3, 0.32.3]",
           "FSharp.Core": "[10.1.403, )",
           "Fable.Core": "[5.6.1, 5.6.1]",

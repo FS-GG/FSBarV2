@@ -280,6 +280,11 @@ module BarHost =
 
         let subject =
             BrowserConformance.subject container route registry RendererBackend.all kitStates shows
+            // What each backend DREW (FS.GG.Game#753): the pixels BarScene.view decides, read back from the SVG, Pixi's canvas
+            // and Babylon's canvas, with Babylon's lit appearance declared by the probe.
+            |> RendererConformance.withPixels
+                (fun state -> ScenePixels.expectations BarScene.width BarScene.height (BarScene.view state))
+                (BrowserConformance.pixelProbe container BarScene.width BarScene.height)
             |> RendererConformance.withInteraction BarScene.interaction selection (BrowserConformance.interactionProbe container)
 
         async {
