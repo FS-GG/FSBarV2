@@ -26,6 +26,9 @@ type BarClientMsg =
     | Observe of BarGameState
     /// One observation as canonical JSON, decoded then treated as `Observe`.
     | ObserveJson of string
+    /// The player's selection request from any backend's input host (pointer, keyboard or accessible mirror),
+    /// applied by `BarGameState.select` and presented like any new state, so it survives every backend switch.
+    | Select of SelectionRequest
     /// Present the next frame of the replay feed. A feed with no frames left ignores it.
     | Step
 

@@ -15,6 +15,7 @@ type BarClientMsg =
     | Renderer of RendererMsg<BarGameState>
     | Observe of BarGameState
     | ObserveJson of string
+    | Select of SelectionRequest
     | Step
 
 [<RequireQualifiedAccess>]
@@ -77,8 +78,12 @@ module BarClient =
                 let next =
                     if sameSession && checked'.Validity = BarValidity.Stale then
                         retained current checked'
+                    elif sameSession then
+                        // The selection is the player's, not the broker's: it follows the unit while it is observed.
+                        BarGameState.carrySelection current checked'
                     else
-                        checked'
+                        // A new session is a new world: nothing is selected in it.
+                        { checked' with Selected = None }
 
                 let renderer, effects =
                     RendererSelection.update (RendererMsg.StateChanged next) model.Renderer
@@ -98,6 +103,15 @@ module BarClient =
             match BarObservationJson.decode json with
             | Ok state -> observe state model
             | Error reason -> reject ("observation did not decode: " + reason) model, []
+        | Select request ->
+            let current = model.Renderer.State
+            let next = BarGameState.select request current
+
+            if next = current then
+                model, []
+            else
+                let renderer, effects = RendererSelection.update (RendererMsg.StateChanged next) model.Renderer
+                { model with Renderer = renderer }, effects
         | Step ->
             match model.Remaining with
             | [] -> model, []

@@ -60,7 +60,12 @@ type BarGameState =
       Validity: BarValidity
       Units: BarUnit list
       Features: BarFeature list
-      Economy: BarEconomy option }
+      Economy: BarEconomy option
+      /// The unit the player selected: a `BarUnit.Id` of `Units`, or `None`. It is game state, not backend state, so
+      /// every renderer backend shows it and a backend switch cannot lose it. It never comes from the broker: a wire
+      /// observation decodes with `None`, and the client carries the selection across observations while the unit
+      /// is still observed.
+      Selected: string option }
 
 [<RequireQualifiedAccess>]
 module BarGameState =
@@ -72,6 +77,14 @@ module BarGameState =
     /// duplicate id within units or within features, finite coordinates and metrics, a nonzero feature
     /// definition, and at most `maxEntities` units and features together.
     val validate: maxEntities: int -> state: BarGameState -> Result<BarGameState, string>
+
+    /// The state after the player's request, by BAR's own selection rule: `Select id` selects that unit when the state
+    /// observes it and changes nothing otherwise; `Clear` empties the selection.
+    val select: request: FS.GG.Game.Render.SelectionRequest -> state: BarGameState -> BarGameState
+
+    /// The selection carried from `current` into `next`: kept while `next` still observes the unit, dropped when the
+    /// unit is gone. The result is `next` with that selection.
+    val carrySelection: current: BarGameState -> next: BarGameState -> BarGameState
 
     /// True when `next` follows `current` in the same session: the sequence is strictly greater.
     val follows: current: BarGameState -> next: BarGameState -> bool

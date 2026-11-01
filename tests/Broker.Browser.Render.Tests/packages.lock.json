@@ -10,8 +10,8 @@
       },
       "Fable.Core": {
         "type": "Transitive",
-        "resolved": "5.3.0",
-        "contentHash": "UAAdJeT3OEayd2x97U+fXxj6SCTByzTbjw8Rw5VKuYfcereVG4rYMAfoykIxm+Zr0g2FXwlcw1LR9c+AAXeyMQ==",
+        "resolved": "5.6.1",
+        "contentHash": "c/lKM8ptY8havLmPWU4OuZcweTcwFnhqYHdWUXqDL0B9KURABQMpzfCjCsc+bJhJFTSw58ABT4o1UDODLSPBAA==",
         "dependencies": {
           "FSharp.Core": "4.7.2"
         }
@@ -25,6 +25,34 @@
           "Fable.Core": "4.0.0"
         }
       },
+      "FS.GG.Game.Core": {
+        "type": "Transitive",
+        "resolved": "0.18.0",
+        "contentHash": "Zy+o+7AVCOBzCuhn94TRRVU6l5wsRC58HHVQkWJKEz9zvJKf+9ejtrp8l1OqCR7tKS12HKSjXbojSwfo7ocVtg==",
+        "dependencies": {
+          "FSharp.Core": "10.1.302"
+        }
+      },
+      "FS.GG.Game.Render": {
+        "type": "Transitive",
+        "resolved": "0.18.0",
+        "contentHash": "ED/X9DvowwIUAB6XOqVhuK8Aw3hc2YWpfCRDcn40iNx08tMCN6br/C3RTeY9CiWd+KPHCG3MdaG/mGVSVUcRJg==",
+        "dependencies": {
+          "FS.GG.Game.Core": "0.18.0",
+          "FS.GG.UI.KeyboardInput": "0.31.0",
+          "FS.GG.UI.Scene": "0.31.0",
+          "FSharp.Core": "10.1.302"
+        }
+      },
+      "FS.GG.UI.KeyboardInput": {
+        "type": "Transitive",
+        "resolved": "0.31.0",
+        "contentHash": "SaxeJjtdPZDT9a8JTlmEEyQHfyvx8lxIPW7P39gh8GLYqRmP4WTMol4iEEcw4aetI9vFONy1EhDj+Ei4UTQgSg==",
+        "dependencies": {
+          "FS.GG.UI.Scene": "0.31.0",
+          "FSharp.Core": "10.1.302"
+        }
+      },
       "FS.GG.UI.Scene": {
         "type": "Transitive",
         "resolved": "0.32.3",
@@ -36,9 +64,10 @@
       "broker.browser.render": {
         "type": "Project",
         "dependencies": {
+          "FS.GG.Game.Render": "[0.18.0, 0.18.0]",
           "FS.GG.UI.Scene": "[0.32.3, 0.32.3]",
           "FSharp.Core": "[10.1.403, )",
-          "Fable.Core": "[5.3.0, 5.3.0]",
+          "Fable.Core": "[5.6.1, 5.6.1]",
           "Fable.Elmish": "[5.0.2, 5.0.2]"
         }
       }

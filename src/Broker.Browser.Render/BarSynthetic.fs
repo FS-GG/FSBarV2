@@ -67,6 +67,7 @@ module BarSynthetic =
             Some
                 { TeamId = Some 0
                   Metal = resource (42.5 + 7.5 * t)
-                  Energy = resource 3000.0 } }
+                  Energy = resource 3000.0 }
+          Selected = None }
 
     let frames (count: int) : BarGameState list = [ for step in 0 .. count - 1 -> frame step ]

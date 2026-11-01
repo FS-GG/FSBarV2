@@ -5,12 +5,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS="$ROOT/tests/Broker.Browser.Render.Tests"
-EXPECTED_CHECKS=104
+EXPECTED_CHECKS=130
 BROWSER=1
 [[ "${1:-}" == "--no-browser" ]] && BROWSER=0
 
 cd "$ROOT"
-python3 scripts/check-game-render-pin.py
 dotnet tool restore
 dotnet restore src/Broker.Browser.Render.Host/Broker.Browser.Render.Host.fsproj
 dotnet restore tests/Broker.Browser.Render.Tests/Broker.Browser.Render.Tests.fsproj

@@ -31,6 +31,7 @@ module BarHost =
         | Some(RendererRefusal.Unavailable backend) -> sprintf "unavailable:%s" (RendererBackend.id backend)
         | Some(RendererRefusal.MountFailed(backend, reason)) -> sprintf "mount-failed:%s:%s" (RendererBackend.id backend) reason
         | Some(RendererRefusal.DisposeFailed(backend, reason)) -> sprintf "dispose-failed:%s:%s" (RendererBackend.id backend) reason
+        | Some(RendererRefusal.PresentFailed(backend, reason)) -> sprintf "present-failed:%s:%s" (RendererBackend.id backend) reason
 
     let private observation (model: BarClientModel) : obj =
         let state = model.Renderer.State
@@ -44,19 +45,32 @@ module BarHost =
               "validity" ==> (match state.Validity with BarValidity.Current -> "current" | BarValidity.Stale -> "stale")
               "units" ==> state.Units.Length
               "features" ==> state.Features.Length
+              "selectedUnit" ==> (match state.Selected with Some id -> id | None -> "")
               "presented" ==> model.Presented
               "remaining" ==> model.Remaining.Length
               "rejected" ==> (model.Rejected |> Array.ofList) ]
 
-    let private mount (container: HTMLElement) (frames: BarGameState list) (intervalMs: int) : Handle =
-        let registry =
-            SvgSurface.registry
-                container
-                (SvgSurface.defaultOptions "BAR tactical map" BarScene.width BarScene.height)
-                BarScene.view
+    let private selectionMsg (selected: string option) =
+        match selected with
+        | Some id -> Select(SelectionRequest.Select id)
+        | None -> Select SelectionRequest.Clear
 
+    let private label = "BAR tactical map"
+
+    /// The registry of the BAR renderers in `container`: the retained SVG surface is the default adapter
+    /// (`RendererRegistry.create`), so each observed unit is a selectable object with an accessible label, and a
+    /// selection the player makes on it is reported to `onSelect`.
+    let private registry (container: HTMLElement) (onSelect: string option -> unit) : RendererRegistry<BarGameState> =
+        let surface =
+            RetainedSvgSurface.create container label (fun _ -> BarScene.width, BarScene.height) BarScene.retained
+            |> RetainedSvgSurface.withSelection (fun state -> state.Selected) onSelect
+
+        RetainedSvgSurface.registry surface
+
+    let private mount (container: HTMLElement) (frames: BarGameState list) (intervalMs: int) : Handle =
         let mutable latest: BarClientModel option = None
         let mutable send: BarClientMsg -> unit = ignore
+        let registry = registry container (fun selected -> send (selectionMsg selected))
         let mutable disposed = false
         let mutable timer: float option = None
 
@@ -100,7 +114,7 @@ module BarHost =
             member _.observe() =
                 match latest with
                 | Some model -> observation model
-                | None -> null
+                | None -> Unchecked.defaultof<obj>
 
             member _.step() = if not disposed then send Step
             member _.observeJson json = if not disposed then send (ObserveJson json)
@@ -124,3 +138,63 @@ module BarHost =
             |> List.ofArray
 
         mount container decoded intervalMs
+
+    // What the retained SVG shows of a unit: its object's circle centre, or its square's centre.
+    let private unitCentre (container: HTMLElement) (unit: BarUnit) : (float * float) option =
+        let selector = sprintf "[data-scene-object-id='%s']" unit.Id
+
+        match container.querySelector selector with
+        | null -> None
+        | objectNode ->
+            match objectNode.querySelector "circle" with
+            | null ->
+                match objectNode.querySelector "rect" with
+                | null -> None
+                | square ->
+                    let half = float (square.getAttribute "width") / 2.0
+                    Some(float (square.getAttribute "x") + half, float (square.getAttribute "y") + half)
+            | circle -> Some(float (circle.getAttribute "cx"), float (circle.getAttribute "cy"))
+
+    // The SVG shows exactly the state's units, each where the state puts it, and nothing else.
+    let private shows (container: HTMLElement) (_: ConformanceHost<BarGameState>) (_: RendererBackend) (state: BarGameState) =
+        async {
+            let objects = int (container.querySelectorAll "[data-scene-control-id]").length
+            let wrong =
+                state.Units
+                |> List.filter (fun unit ->
+                    let expected = BarScene.toViewport unit.Position
+                    unitCentre container unit <> Some(expected.X, expected.Y))
+
+            return
+                if objects = state.Units.Length && wrong.IsEmpty then
+                    Ok()
+                else
+                    Error(sprintf "the surface shows %d objects, not the %d units of sequence %s, or draws a unit elsewhere (%d)" objects state.Units.Length state.Sequence wrong.Length)
+        }
+
+    let runConformance (container: HTMLElement) : JS.Promise<obj[]> =
+        BrowserConformance.installContextProbe ()
+        let route = BrowserRenderers.route ()
+
+        let subject =
+            BrowserConformance.subject
+                container
+                route
+                (registry container ignore)
+                [ RendererBackend.Svg ]
+                (BarSynthetic.frames 3)
+                (shows container)
+
+        async {
+            let! results = RendererConformance.run subject
+
+            return
+                results
+                |> List.map (fun result ->
+                    createObj
+                        [ "check" ==> result.Check
+                          "passed" ==> result.Passed
+                          "detail" ==> result.Detail ])
+                |> Array.ofList
+        }
+        |> Async.StartAsPromise
